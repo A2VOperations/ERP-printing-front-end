@@ -46,25 +46,29 @@ export default function Home() {
         let userRole = data.user.user_metadata?.role || 'employee';
         let userName = data.user.user_metadata?.name || data.user.email.split('@')[0];
         let userMongoId = null;
+        let tenantInfo = null;
+        let permissions = [];
 
-        // Fetch up-to-date role profile from MongoDB
+        // Fetch authoritative server-verified profile via /api/v1/auth/me
         try {
-          const profileRes = await fetch(`${API_BASE_URL}/api/users`, {
-            headers: { 'x-user-id': data.user.email },
+          const authMeRes = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+            },
           });
-          const profileData = await profileRes.json();
-          if (profileData.success && Array.isArray(profileData.users)) {
-            const found = profileData.users.find(
-              (u) => u.email?.toLowerCase() === data.user.email?.toLowerCase()
-            );
-            if (found) {
-              if (found.role) userRole = found.role;
-              if (found.name) userName = found.name;
-              if (found._id) userMongoId = found._id;
+          if (authMeRes.ok) {
+            const authMeData = await authMeRes.json();
+            if (authMeData.success && authMeData.data) {
+              const u = authMeData.data.user;
+              if (u.role) userRole = u.role;
+              if (u.name) userName = u.name;
+              if (u.id) userMongoId = u.id;
+              tenantInfo = authMeData.data.tenant;
+              permissions = authMeData.data.permissions || [];
             }
           }
         } catch (pErr) {
-          console.warn('MongoDB user profile role sync notice:', pErr);
+          console.warn('Backend /api/v1/auth/me profile sync notice:', pErr);
         }
 
         const userObj = {
@@ -73,13 +77,24 @@ export default function Home() {
           name: userName,
           email: data.user.email,
           role: userRole,
+          tenant: tenantInfo,
+          permissions: permissions,
         };
 
         setSuccess(`Logged in successfully as ${userObj.name}!`);
         localStorage.setItem('user', JSON.stringify(userObj));
+        if (data.session?.access_token) {
+          localStorage.setItem('token', data.session.access_token);
+        }
+        if (tenantInfo?.id || tenantInfo?._id) {
+          localStorage.setItem('tenantId', tenantInfo.id || tenantInfo._id);
+        }
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userName', userName);
         setTimeout(() => {
           router.push('/dashboard');
         }, 500);
+
       }
     } catch (err) {
       console.error('Login error:', err);

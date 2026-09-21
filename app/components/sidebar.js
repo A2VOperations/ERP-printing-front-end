@@ -1,402 +1,638 @@
-import React from "react";
+"use client";
 
-const Sidebar = ({
-  activeTab,
-  setActiveTab,
-  user,
-  onLogout,
-  isCollapsed,
-  isMobileOpen,
-  onCloseMobile,
-  incomingCount = 0,
-  unreadChatCount = 0,
-}) => {
-  const isDesigner = user?.role === "designer";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  Clock,
+  ShoppingBag,
+  FileText,
+  CreditCard,
+  Palette,
+  Folder,
+  BarChart3,
+  TrendingUp,
+  Award,
+  Settings,
+  ShieldCheck,
+  History,
+  Layers,
+  FileCheck,
+  RefreshCw,
+  MapPin,
+  CheckSquare,
+  DollarSign,
+  Eye,
+  Lock,
+  Target,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-  const companyItems = [
-    ...(!isDesigner
-      ? [
-          {
-            id: "dashboard",
-            label: "Dashboard",
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
-            ),
-          },
-        ]
-      : []),
-    {
-      id: "design-projects",
-      label: "Design Projects",
-      icon: (
-        <svg
-          className="w-4.5 h-4.5 shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "chat",
-      label: "Messages & Chat",
-      badge: unreadChatCount,
-      icon: (
-        <svg
-          className="w-4.5 h-4.5 shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-      ),
-    },
-    ...(!isDesigner
-      ? [
-          {
-            id: "incoming-leads",
-            label: "Incoming Leads",
-            badge: incomingCount,
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                />
-              </svg>
-            ),
-          },
-          {
-            id: "leads",
-            label: "Leads",
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            ),
-          },
-          {
-            id: "follow-ups",
-            label: "Follow-ups",
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            ),
-          },
-        ]
-      : []),
-  ];
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [userRole, setUserRole] = useState("admin");
+  const [currentFilter, setCurrentFilter] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
-  const featureItems = [
-    {
-      id: "reports",
-      label: "Reports & Analytics",
-      icon: (
-        <svg
-          className="w-4.5 h-4.5 shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
-      ),
-    },
-    ...(user?.role === "admin"
-      ? [
+  useEffect(() => {
+    const storedRole = (
+      localStorage.getItem("userRole") || "admin"
+    ).toLowerCase();
+
+    setUserRole(storedRole);
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setCurrentFilter(params.get("filter") || "");
+
+      const savedCollapsed = localStorage.getItem("sidebar_collapsed");
+      if (savedCollapsed === "true") {
+        setCollapsed(true);
+      }
+
+      const handleToggle = () => {
+        setCollapsed((prev) => {
+          const next = !prev;
+          localStorage.setItem("sidebar_collapsed", String(next));
+          return next;
+        });
+      };
+
+      window.addEventListener("toggle-sidebar", handleToggle);
+      return () => window.removeEventListener("toggle-sidebar", handleToggle);
+    }
+  }, [pathname]);
+
+  // Determine role-based menu structures strictly matching specification
+  const getNavSections = () => {
+    const role = userRole.toLowerCase();
+
+    // 1. DESIGNER MENU
+    if (role.includes("designer")) {
+      return [
+        {
+          title: "MAIN",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Designer Dashboard",
+              href: "/dashboard/designer",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Design Analytics",
+              href: "/dashboard/reports",
+              icon: BarChart3,
+            },
+          ],
+        },
+        {
+          title: "DESIGN",
+          items: [
+            { name: "My Projects", href: "/dashboard/design", icon: Folder },
+            {
+              name: "New Assignments",
+              href: "/dashboard/design?filter=NEW",
+              icon: FileCheck,
+            },
+            {
+              name: "Due / Overdue",
+              href: "/dashboard/design?filter=DUE",
+              icon: Clock,
+            },
+            {
+              name: "Client Review",
+              href: "/dashboard/design?filter=CLIENT_REVIEW",
+              icon: Eye,
+            },
+            {
+              name: "Revisions",
+              href: "/dashboard/design?filter=REVISION",
+              icon: RefreshCw,
+            },
+            {
+              name: "Preflight",
+              href: "/dashboard/design?filter=PREFLIGHT",
+              icon: ShieldCheck,
+            },
+            {
+              name: "Production Ready",
+              href: "/dashboard/design?filter=PRODUCTION_READY",
+              icon: CheckSquare,
+            },
+          ],
+        },
+        {
+          title: "PRODUCTION",
+          items: [
+            {
+              name: "Production Dashboard",
+              href: "/dashboard/production",
+              icon: Layers,
+              exact: true,
+            },
+          ],
+        },
+        {
+          title: "OTHER",
+          items: [
+            { name: "Documents", href: "/dashboard/documents", icon: Folder },
+          ],
+        },
+      ];
+    }
+
+    // 2. MANAGER MENU
+    if (role.includes("manager")) {
+      return [
+        {
+          title: "MAIN",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Manager Dashboard",
+              href: "/dashboard/manager",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Analytics & Reports",
+              href: "/dashboard/reports",
+              icon: BarChart3,
+            },
+          ],
+        },
+        {
+          title: "TEAM OPERATIONS",
+          items: [
+            { name: "Leads", href: "/dashboard/leads", icon: Users },
+            { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
+            {
+              name: "Quotations",
+              href: "/dashboard/quotations",
+              icon: FileText,
+            },
+            { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+            { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
+            {
+              name: "Receivables",
+              href: "/dashboard/receivables",
+              icon: DollarSign,
+            },
+          ],
+        },
+        {
+          title: "COMMUNICATION",
+          items: [
+            { name: "Omnichannel Inbox", href: "/dashboard/communication", icon: MessageSquare },
+            { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
+            { name: "Gateways & Settings", href: "/dashboard/communication/settings", icon: Settings },
+          ],
+        },
+        {
+          title: "APPROVALS",
+          items: [
+            {
+              name: "Approval Center",
+              href: "/dashboard/manager/approvals",
+              icon: CheckSquare,
+            },
+          ],
+        },
+        {
+          title: "DESIGN STUDIO",
+          items: [
+            {
+              name: "Design Projects",
+              href: "/dashboard/design",
+              icon: Palette,
+            },
+            {
+              name: "Production Releases",
+              href: "/dashboard/manager/production-release",
+              icon: Lock,
+            },
+          ],
+        },
+        {
+          title: "PRODUCTION",
+          items: [
+            {
+              name: "Production Jobs",
+              href: "/dashboard/production",
+              icon: Layers,
+              exact: true,
+            },
+            {
+              name: "Production Partners",
+              href: "/dashboard/production/partners",
+              icon: Users,
+            },
+            {
+              name: "Deliveries",
+              href: "/dashboard/production/delivery",
+              icon: MapPin,
+            },
+          ],
+        },
+        {
+          title: "TEAM",
+          items: [
+            { name: "My Team", href: "/dashboard/manager/team", icon: Users },
+            {
+              name: "Sales Targets",
+              href: "/dashboard/admin/targets",
+              icon: Target,
+            },
+            {
+              name: "Performance",
+              href: "/dashboard/admin/targets",
+              icon: TrendingUp,
+            },
+            {
+              name: "Leaderboard",
+              href: "/dashboard/leaderboard",
+              icon: Award,
+            },
+          ],
+        },
+        {
+          title: "OTHER",
+          items: [
+            { name: "Documents", href: "/dashboard/documents", icon: Folder },
+          ],
+        },
+      ];
+    }
+
+    // 3. SALES MENU
+    if (
+      role.includes("sales") ||
+      role.includes("employee") ||
+      role.includes("executive")
+    ) {
+      return [
+        {
+          title: "MAIN",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Sales Dashboard",
+              href: "/dashboard/sales",
+              icon: LayoutDashboard,
+              exact: true,
+            },
+            {
+              name: "Sales Analytics",
+              href: "/dashboard/reports",
+              icon: BarChart3,
+            },
+          ],
+        },
+        {
+          title: "SALES",
+          items: [
+            { name: "My Leads", href: "/dashboard/leads", icon: Users },
+            { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
+            {
+              name: "Quotations",
+              href: "/dashboard/quotations",
+              icon: FileText,
+            },
+            { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+            { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
+            {
+              name: "Receivables",
+              href: "/dashboard/receivables",
+              icon: DollarSign,
+            },
+          ],
+        },
+        {
+          title: "COMMUNICATION",
+          items: [
+            { name: "Communication Inbox", href: "/dashboard/communication", icon: MessageSquare },
+            { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
+          ],
+        },
+        {
+          title: "DESIGN & PRODUCTION",
+          items: [
+            { name: "Design Status", href: "/dashboard/design", icon: Palette },
+            {
+              name: "Production Tracking",
+              href: "/dashboard/production",
+              icon: Layers,
+              exact: true,
+            },
+            {
+              name: "Dispatch & Delivery",
+              href: "/dashboard/production/delivery",
+              icon: MapPin,
+            },
+          ],
+        },
+        {
+          title: "PERFORMANCE",
+          items: [
+            {
+              name: "Performance",
+              href: "/dashboard/performance",
+              icon: TrendingUp,
+            },
+            {
+              name: "Leaderboard",
+              href: "/dashboard/leaderboard",
+              icon: Award,
+            },
+          ],
+        },
+        {
+          title: "OTHER",
+          items: [
+            { name: "Documents", href: "/dashboard/documents", icon: Folder },
+          ],
+        },
+      ];
+    }
+
+    // 4. ADMIN MENU
+    return [
+      {
+        title: "MAIN",
+        items: [
           {
-            id: "recycle-bin",
-            label: "Recycle Bin",
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-            ),
+            name: "Dashboard",
+            href: "/dashboard",
+            icon: LayoutDashboard,
+            exact: true,
           },
           {
-            id: "users",
-            label: "User Authorization",
-            icon: (
-              <svg
-                className="w-4.5 h-4.5 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            ),
+            name: "Admin Dashboard",
+            href: "/dashboard/admin",
+            icon: LayoutDashboard,
+            exact: true,
           },
-        ]
-      : []),
-    {
-      id: "settings",
-      label: "Settings",
-      icon: (
-        <svg
-          className="w-4.5 h-4.5 shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-        </svg>
-      ),
-    },
-  ];
+          {
+            name: "Analytics & Reports",
+            href: "/dashboard/reports",
+            icon: BarChart3,
+          },
+          { name: "Leads", href: "/dashboard/leads", icon: Users },
+          { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
+          { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
+          { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+          { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
+          {
+            name: "Receivables",
+            href: "/dashboard/receivables",
+            icon: DollarSign,
+          },
+          { name: "Design Studio", href: "/dashboard/design", icon: Palette },
+          {
+            name: "Production Releases",
+            href: "/dashboard/manager/production-release",
+            icon: Lock,
+          },
+          { name: "Documents", href: "/dashboard/documents", icon: Folder },
+          { name: "Leaderboard", href: "/dashboard/leaderboard", icon: Award },
+        ],
+      },
+      {
+        title: "PRODUCTION",
+        items: [
+          {
+            name: "Production Jobs",
+            href: "/dashboard/production",
+            icon: Layers,
+            exact: true,
+          },
+          {
+            name: "Production Partners",
+            href: "/dashboard/production/partners",
+            icon: Users,
+          },
+          {
+            name: "Deliveries",
+            href: "/dashboard/production/delivery",
+            icon: MapPin,
+          },
+        ],
+      },
+      {
+        title: "COMMUNICATION",
+        items: [
+          { name: "Omnichannel Inbox", href: "/dashboard/communication", icon: MessageSquare },
+          { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
+          { name: "Gateways & Settings", href: "/dashboard/communication/settings", icon: Settings },
+        ],
+      },
+      {
+        title: "ADMINISTRATION",
+        items: [
+          {
+            name: "Users Directory",
+            href: "/dashboard/admin/users",
+            icon: Users,
+          },
+          {
+            name: "Sales Targets",
+            href: "/dashboard/admin/targets",
+            icon: Target,
+          },
+          {
+            name: "Roles & Permissions",
+            href: "/dashboard/admin/roles",
+            icon: ShieldCheck,
+          },
+          {
+            name: "Areas & Territories",
+            href: "/dashboard/admin/areas",
+            icon: MapPin,
+          },
+          {
+            name: "Company Settings",
+            href: "/dashboard/admin/settings/company",
+            icon: Settings,
+          },
+          {
+            name: "System Settings",
+            href: "/dashboard/admin/settings/system",
+            icon: Settings,
+          },
+          { name: "Audit Logs", href: "/dashboard/admin/audit", icon: History },
+        ],
+      },
+    ];
+  };
 
-  const renderNavContent = (collapsed = isCollapsed) => (
-    <>
-      <div className="flex-1 overflow-y-auto">
-        {/* YOUR COMPANY SECTION */}
-        <div className="px-2 mb-6">
-          <nav className="flex flex-col gap-0.5">
-            {companyItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (onCloseMobile) onCloseMobile();
-                  }}
-                  title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center ${collapsed ? "justify-center px-2 py-2.5" : "justify-between px-3 py-2.5"} rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
-                    isActive
-                      ? "bg-sky-50/70 text-[#2d8cf0] font-bold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center ${collapsed ? "justify-center relative" : "gap-3"}`}
-                  >
-                    <span
-                      className={`transition-colors ${isActive ? "text-[#2d8cf0]" : "text-slate-400 group-hover:text-slate-600"}`}
-                    >
-                      {item.icon}
-                    </span>
-                    {!collapsed && <span>{item.label}</span>}
-                    {collapsed && item.badge > 0 && (
-                      <span className="absolute -top-1 -right-1.5 bg-blue-500 text-white text-[9px] font-black rounded-full h-4 w-4 flex items-center justify-center border border-white">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                  {!collapsed && (
-                    <div className="flex items-center gap-1.5">
-                      {item.badge > 0 && (
-                        <span className="bg-blue-900 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
-                          {item.badge}
-                        </span>
-                      )}
-                      <span
-                        className={`text-[10px] transition-transform ${isActive ? "text-[#2d8cf0]" : "text-slate-300 group-hover:text-slate-400"}`}
-                      >
-                        ▶
-                      </span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* OUR FEATURES SECTION */}
-        <div className="px-2">
-          {!collapsed && (
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block mb-2 px-3">
-              Our Features
-            </span>
-          )}
-          <nav className="flex flex-col gap-0.5">
-            {featureItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (onCloseMobile) onCloseMobile();
-                  }}
-                  title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center ${collapsed ? "justify-center px-2 py-2.5" : "justify-between px-3 py-2.5"} rounded text-xs font-semibold tracking-wide transition-all text-left cursor-pointer group ${
-                    isActive
-                      ? "bg-sky-50/70 text-[#2d8cf0] font-bold"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
-                  >
-                    <span
-                      className={`transition-colors ${isActive ? "text-[#2d8cf0]" : "text-slate-400 group-hover:text-slate-600"}`}
-                    >
-                      {item.icon}
-                    </span>
-                    {!collapsed && <span>{item.label}</span>}
-                  </div>
-                  {!collapsed && (
-                    <span
-                      className={`text-[10px] transition-transform ${isActive ? "text-[#2d8cf0]" : "text-slate-300 group-hover:text-slate-400"}`}
-                    >
-                      ▶
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
-      {/* Logout button at Sidebar bottom */}
-      <div className="px-2 pt-4 border-t border-slate-100 mt-auto">
-        <button
-          onClick={onLogout}
-          title={collapsed ? "Logout" : undefined}
-          className="w-full py-2 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold uppercase rounded tracking-wide transition-colors cursor-pointer flex items-center justify-center gap-2"
-        >
-          <svg
-            className="w-4 h-4 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
-          {!collapsed && <span>Logout</span>}
-        </button>
-      </div>
-    </>
-  );
+  const navSections = getNavSections();
 
   return (
-    <>
-      {/* Mobile Drawer Backdrop Overlay */}
-      {isMobileOpen && (
+    <aside
+      className={`hidden md:flex flex-col justify-between shrink-0 bg-[#0F172A] text-slate-300 min-h-screen border-r border-slate-800 select-none transition-all duration-300 ease-in-out sticky top-0 h-screen z-20 ${
+        collapsed ? "w-20" : "w-64"
+      }`}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Brand Header */}
         <div
-          onClick={onCloseMobile}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 md:hidden transition-opacity"
-        />
-      )}
+          className={`h-16 flex items-center border-b border-slate-800/80 shrink-0 transition-all ${
+            collapsed ? "px-0 justify-center" : "px-6 gap-3"
+          }`}
+        >
+          <button
+            type="button"
+            title={collapsed ? "Expand sidebar" : "A2V Prints Enterprise CRM"}
+            onClick={() => {
+              setCollapsed((prev) => {
+                const next = !prev;
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("sidebar_collapsed", String(next));
+                }
+                return next;
+              });
+            }}
+            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-sm shadow-md shadow-blue-500/20 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+          >
+            A2V
+          </button>
+          {!collapsed && (
+            <div className="min-w-0 flex-1 overflow-hidden animate-fade-in">
+              <span className="font-black tracking-wider text-sm text-white block truncate">
+                A2V PRINTS
+              </span>
+              <span className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase block truncate">
+                Enterprise CRM
+              </span>
+            </div>
+          )}
+        </div>
 
-      {/* Mobile Slide-Over Drawer Sidebar */}
-      {isMobileOpen && (
-        <aside className="fixed top-0 bottom-0 left-0 w-64 bg-white z-50 flex flex-col justify-between py-4 shadow-2xl md:hidden animate-fade-in border-r border-slate-200">
-          <div className="flex items-center justify-between px-4 pb-3 border-b border-slate-100 mb-2">
-            <span className="font-extrabold text-sm tracking-tight text-slate-900 uppercase">
-              Navigation Menu
-            </span>
-            <button
-              onClick={onCloseMobile}
-              className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-          {renderNavContent(false)}
-        </aside>
-      )}
+        {/* Dynamic Navigation Sections */}
+        <div className="flex-1 px-3 py-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+          {navSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              {collapsed ? (
+                <div className="h-px bg-slate-800/80 my-2 mx-1" />
+              ) : (
+                <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1.5 truncate">
+                  {section.title}
+                </span>
+              )}
+              {section.items.map((item) => {
+                const Icon = item.icon;
 
-      {/* Desktop Sticky Sidebar */}
-      <aside
-        className={`hidden md:flex ${
-          isCollapsed ? "w-16" : "w-64"
-        } bg-white border-r border-slate-200/80 flex-col justify-between h-[calc(100vh-64px)] sticky top-16 select-none shrink-0 py-4 transition-all duration-300 overflow-hidden`}
-      >
-        {renderNavContent(isCollapsed)}
-      </aside>
-    </>
+                let isActive = false;
+                if (item.href.includes("?filter=")) {
+                  const itemFilter = item.href.split("?filter=")[1];
+                  isActive =
+                    pathname === "/dashboard/design" &&
+                    currentFilter === itemFilter;
+                } else if (item.href === "/dashboard/design") {
+                  isActive = pathname === "/dashboard/design" && !currentFilter;
+                } else if (item.exact) {
+                  isActive = pathname === item.href;
+                } else {
+                  isActive =
+                    pathname === item.href ||
+                    (item.href !== "/dashboard" &&
+                      pathname.startsWith(item.href) &&
+                      !item.href.includes("design"));
+                }
+
+                return (
+                  <Link
+                    key={item.name + item.href}
+                    href={item.href}
+                    title={collapsed ? item.name : undefined}
+                    onClick={() => {
+                      if (item.href.includes("?filter=")) {
+                        setCurrentFilter(item.href.split("?filter=")[1]);
+                      } else if (item.href === "/dashboard/design") {
+                        setCurrentFilter("");
+                      }
+                    }}
+                    className={`relative group flex items-center rounded-xl text-xs font-semibold transition-all duration-150 ${
+                      collapsed
+                        ? "justify-center p-2.5"
+                        : "gap-3 px-3 py-2"
+                    } ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${
+                        isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                      }`}
+                    />
+                    {!collapsed && (
+                      <span className="truncate">{item.name}</span>
+                    )}
+
+                    {/* Floating Tooltip in Collapsed Mode */}
+                    {collapsed && (
+                      <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
+                        {item.name}
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Collapse Toggle Footer */}
+        <div className="p-3 border-t border-slate-800/80 shrink-0">
+          <button
+            onClick={() => {
+              setCollapsed((prev) => {
+                const next = !prev;
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("sidebar_collapsed", String(next));
+                }
+                return next;
+              });
+            }}
+            className={`w-full flex items-center ${
+              collapsed ? "justify-center p-2" : "justify-between px-3 py-2"
+            } rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors`}
+            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {!collapsed && <span>Collapse Sidebar</span>}
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      </div>
+    </aside>
   );
-};
+}
 
-export default Sidebar;

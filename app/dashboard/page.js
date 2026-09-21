@@ -1,608 +1,862 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Sidebar from "../components/sidebar";
-import Navbar from "../components/navbar";
-import DashboardOverview from "../components/dashboard-overview";
-import LeadsManager from "../components/leads-manager";
-import FollowUpsView from "../components/follow-ups-view";
-import ReportsView from "../components/reports-view";
-import SettingsView from "../components/settings-view";
-import UserManagement from "../components/user-management";
-import IncomingLeadsView from "../components/incoming-leads-view";
-import ChatView from "../components/chat-view";
-import DesignProjectsView from "../components/design-projects-view";
-import { API_BASE_URL } from "../../lib/apiConfig";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Sidebar from '@/app/components/sidebar';
+import Navbar from '@/app/components/navbar';
+import { api } from '@/lib/api';
 
-export default function Dashboard() {
+import {
+  TrendingUp,
+  Users,
+  Clock,
+  ShoppingBag,
+  CreditCard,
+  Plus,
+  PhoneCall,
+  MessageSquare,
+  Eye,
+  MapPin,
+  Award,
+  Bell,
+  CheckCircle2,
+  Calendar,
+  ChevronDown,
+  ArrowRight,
+  FileText,
+  Upload,
+  Trophy,
+  DollarSign,
+  Activity,
+  Check,
+  RefreshCw,
+  Lock,
+  UserCheck,
+} from 'lucide-react';
+
+export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userName, setUserName] = useState('User');
+  const [timeframe, setTimeframe] = useState('This Month');
+  const [loading, setLoading] = useState(true);
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed((prev) => !prev);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
-  // Interactive Leads State with complete fields
+  // Live Data States
   const [leads, setLeads] = useState([]);
+  const [followups, setFollowups] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  const [todos, setTodos] = useState([]);
-  const [newTodoText, setNewTodoText] = useState("");
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [targetProgress, setTargetProgress] = useState(null);
+  const [topPerformers, setTopPerformers] = useState([]);
 
-  const fetchUsers = useCallback(
-    async (currentUser) => {
-      try {
-        const activeUser = currentUser || user;
-        const response = await fetch(`${API_BASE_URL}/api/users`, {
-          headers: {
-            "x-user-id":
-              activeUser?.email || activeUser?.id || activeUser?._id || "",
-            "x-user-role": activeUser?.role || "",
-          },
-        });
-        const data = await response.json();
-        if (data.success) {
-          setUsers(data.users);
-          const myProfile = data.users.find(
-            (u) =>
-              (activeUser?.email &&
-                u.email?.toLowerCase() === activeUser.email.toLowerCase()) ||
-              (activeUser?.id && String(u._id) === String(activeUser.id)),
-          );
-          if (
-            myProfile &&
-            myProfile.role &&
-            myProfile.role !== activeUser?.role
-          ) {
-            const updatedUser = {
-              ...activeUser,
-              role: myProfile.role,
-              name: myProfile.name || activeUser.name,
-              _id: myProfile._id,
-            };
-            setUser(updatedUser);
-            localStorage.setItem("user", JSON.stringify(updatedUser));
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    },
-    [user?.id, user?._id, user?.email, user?.role],
-  );
+  // New Lead Form State
+  const [newLead, setNewLead] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    companyName: '',
+    requirement: '',
+    source: 'WALK_IN',
+    estimatedValue: 15000,
+    assignedToId: '',
+    nextFollowUp: '',
+  });
 
-  const fetchLeads = useCallback(
-    async (currentUser) => {
-      try {
-        const activeUser = currentUser || user;
-        const userId =
-          activeUser?.email || activeUser?.id || activeUser?._id || "";
-        const response = await fetch(`${API_BASE_URL}/api/leads`, {
-          headers: {
-            "x-user-id": userId,
-            "x-user-role": activeUser?.role || "",
-          },
-        });
-        const data = await response.json();
-        if (data.success) {
-          const formattedLeads = data.leads.map((l) => ({ ...l, id: l._id }));
-          setLeads(formattedLeads);
-        }
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-      }
-    },
-    [user?.id, user?._id, user?.email, user?.role],
-  );
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
 
-  const fetchFollowUps = useCallback(
-    async (currentUser) => {
       try {
-        const activeUser = currentUser || user;
-        const userId =
-          activeUser?.email || activeUser?.id || activeUser?._id || "";
-        const userRole = activeUser?.role || "";
-        const response = await fetch(`${API_BASE_URL}/api/followups`, {
-          headers: {
-            "x-user-id": userId,
-            "x-user-role": userRole,
-          },
-        });
-        const data = await response.json();
-        if (data.success) {
-          const formattedTodos = data.followUps.map((f) => ({
-            id: f._id,
-            text: f.description || `Follow up with ${f.leadName || "client"}`,
-            completed: f.status === "Completed",
-          }));
-          setTodos(formattedTodos);
-        }
-      } catch (error) {
-        console.error("Error fetching follow-ups:", error);
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) setCurrentUser(JSON.parse(storedUser));
+      } catch (e) {}
+
+      const [leadsRes, followupsRes, ordersRes, targetRes, leaderRes, usersRes, meRes] = await Promise.allSettled([
+        api.get('/leads?limit=10'),
+        api.get('/followups?limit=10'),
+        api.get('/orders?limit=10'),
+        api.get('/targets/my-achievement'),
+        api.get('/targets/leaderboard'),
+        api.get('/users'),
+        api.get('/auth/me'),
+      ]);
+
+      if (leadsRes.status === 'fulfilled' && leadsRes.value?.data) {
+        setLeads(leadsRes.value.data);
       }
-    },
-    [user?.id, user?._id, user?.email, user?.role],
-  );
+      if (followupsRes.status === 'fulfilled' && followupsRes.value?.data) {
+        setFollowups(followupsRes.value.data);
+      }
+      if (ordersRes.status === 'fulfilled' && ordersRes.value?.data) {
+        setOrders(ordersRes.value.data);
+      }
+      if (targetRes.status === 'fulfilled' && targetRes.value?.data) {
+        setTargetProgress(targetRes.value.data);
+      }
+      if (leaderRes.status === 'fulfilled' && leaderRes.value?.data) {
+        const raw = leaderRes.value.data;
+        const list = Array.isArray(raw) ? raw : (raw?.rankings || []);
+        const nonAdmin = list.filter((p) => {
+          const u = p.user || p;
+          const role = String(u.role || p.role || '').toLowerCase();
+          const name = String(u.name || p.userName || p.name || '').toLowerCase();
+          const email = String(u.email || p.email || '').toLowerCase();
+          return !role.includes('admin') && !name.includes('admin') && !email.includes('admin');
+        });
+        setTopPerformers(nonAdmin);
+      }
+      if (usersRes.status === 'fulfilled' && usersRes.value?.data) {
+        setUsers(usersRes.value.data);
+      }
+      if (meRes.status === 'fulfilled' && meRes.value?.data) {
+        const me = meRes.value.data.user || meRes.value.data;
+        setCurrentUser(me);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      router.push("/");
-    } else {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        if (parsedUser?.role === "designer" && activeTab === "dashboard") {
-          setActiveTab("design-projects");
-        }
-        setUser(parsedUser);
-      } catch (err) {
-        console.error("Error parsing user from localStorage:", err);
-        router.push("/");
-      }
-    }
+    const storedName = localStorage.getItem('userName');
+    if (storedName) setUserName(storedName.split(' ')[0] || storedName);
+    loadDashboardData();
   }, [router]);
 
-  useEffect(() => {
-    if (user) {
-      fetchUsers(user);
-      fetchLeads(user);
-      fetchFollowUps(user);
-    }
-  }, [user, fetchUsers, fetchLeads, fetchFollowUps]);
+  const userRole = (currentUser?.roleSlug || currentUser?.role || (typeof window !== 'undefined' ? localStorage.getItem('userRole') : '') || '').toLowerCase();
+  const isManagerOrAdmin = ['admin', 'super_admin', 'manager', 'sales_manager'].includes(userRole);
 
-  // Presence Heartbeat & Window Closure Tracking
-  const sendPresenceStatus = useCallback(
-    (isOnlineState) => {
-      if (!user) return;
-      const userId = user.id || user._id || user.email;
-      const payload = JSON.stringify({
-        userId,
-        email: user.email,
-        isOnline: isOnlineState,
-      });
-
-      if (
-        typeof navigator !== "undefined" &&
-        navigator.sendBeacon &&
-        !isOnlineState
-      ) {
-        const blob = new Blob([payload], { type: "application/json" });
-        navigator.sendBeacon(`${API_BASE_URL}/api/users/status`, blob);
-      } else {
-        fetch(`${API_BASE_URL}/api/users/status`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": userId,
-          },
-          body: payload,
-          keepalive: !isOnlineState,
-        }).catch((err) =>
-          console.warn("Presence status update notice:", err.message),
-        );
-      }
-    },
-    [user],
-  );
-
-  useEffect(() => {
-    if (!user) return;
-
-    // Send immediate online status
-    sendPresenceStatus(true);
-
-    // Heartbeat ping every 15 seconds to maintain active status
-    const intervalId = setInterval(() => {
-      sendPresenceStatus(true);
-    }, 15000);
-
-    // Unload handlers for browser/tab closure
-    const handleUnload = () => {
-      sendPresenceStatus(false);
-    };
-
-    window.addEventListener("beforeunload", handleUnload);
-    window.addEventListener("pagehide", handleUnload);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener("beforeunload", handleUnload);
-      window.removeEventListener("pagehide", handleUnload);
-    };
-  }, [user, sendPresenceStatus]);
-
-  // Redirect non-admins away from user management and recycle bin tabs, and designers away from lead tabs
-  useEffect(() => {
-    if (
-      (activeTab === "users" || activeTab === "recycle-bin") &&
-      user &&
-      user.role !== "admin"
-    ) {
-      setActiveTab("dashboard");
-    }
-
-    if (
-      (activeTab === "dashboard" ||
-        activeTab === "incoming-leads" ||
-        activeTab === "leads" ||
-        activeTab === "follow-ups" ||
-        activeTab === "recycle-bin" ||
-        activeTab === "users") &&
-      user &&
-      user.role === "designer"
-    ) {
-      setActiveTab("design-projects");
-    }
-  }, [activeTab, user]);
-
-  const handleLogout = () => {
-    if (user) {
-      sendPresenceStatus(false);
-    }
-    localStorage.removeItem("user");
-    setUser(null);
-    setLeads([]);
-    setUsers([]);
-    setTodos([]);
-    router.push("/");
-  };
-
-  if (!user) {
-    return (
-      <main className="flex min-h-screen bg-slate-50 items-center justify-center font-sans text-slate-800">
-        <div className="flex flex-col items-center gap-3">
-          <svg
-            className="animate-spin h-8 w-8 text-sky-500"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Verifying Credentials...
-          </span>
-        </div>
-      </main>
-    );
-  }
-
-  // Todo handlers
-  const handleAddTodo = async (e) => {
+  const handleCreateLead = async (e) => {
     e.preventDefault();
-    if (!newTodoText.trim()) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/followups`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          leadName: "Manual Task",
-          description: newTodoText.trim(),
-          status: "Pending",
-          scheduledAt: new Date(),
-        }),
+      const payload = {
+        ...newLead,
+        assignedToId: isManagerOrAdmin ? (newLead.assignedToId || undefined) : (currentUser?._id || currentUser?.id || undefined),
+      };
+      await api.post('/leads', payload);
+      setShowAddLeadModal(false);
+      setNewLead({
+        name: '',
+        phone: '',
+        email: '',
+        companyName: '',
+        requirement: '',
+        source: 'WALK_IN',
+        estimatedValue: 15000,
+        assignedToId: '',
+        nextFollowUp: '',
       });
-      const data = await response.json();
-      if (data.success) {
-        setTodos((prev) => [
-          ...prev,
-          {
-            id: data.followUp._id,
-            text: data.followUp.description,
-            completed: false,
-          },
-        ]);
-        setNewTodoText("");
-      }
+      loadDashboardData();
     } catch (err) {
-      console.error("Error adding todo:", err);
+      alert(err.message || 'Failed to create lead');
     }
   };
 
-  const toggleTodo = async (id) => {
-    const todo = todos.find((t) => t.id === id);
-    if (!todo) return;
+  // Authoritative dynamic computations from backend data
+  const totalLeadsCount = leads.length;
+  const contactedCount = leads.filter(l => ['CONTACTED', 'INTERESTED', 'QUOTATION_SENT', 'NEGOTIATION', 'WON'].includes(l.status)).length;
+  const interestedCount = leads.filter(l => ['INTERESTED', 'QUOTATION_SENT', 'NEGOTIATION', 'WON'].includes(l.status)).length;
+  const quotationSentCount = leads.filter(l => ['QUOTATION_SENT', 'NEGOTIATION', 'WON'].includes(l.status)).length;
+  const wonCount = leads.filter(l => l.status === 'WON').length;
 
-    const newStatus = todo.completed ? "Pending" : "Completed";
+  const totalSalesPaise = orders.reduce((sum, o) => sum + (o.grandTotalPaise || (o.grandTotal ? o.grandTotal * 100 : 0)), 0);
+  const totalSalesRupees = totalSalesPaise / 100;
 
-    // Optimistic update
-    setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-    );
+  const totalPaymentsPaise = orders.reduce((sum, o) => sum + (o.paidPaise || (o.paidAmount ? o.paidAmount * 100 : 0)), 0);
+  const totalPaymentsRupees = totalPaymentsPaise / 100;
 
-    try {
-      await fetch(`${API_BASE_URL}/api/followups/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-    } catch (err) {
-      console.error("Error updating todo:", err);
-      // Revert on error
-      setTodos((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-      );
-    }
-  };
+  const targetRupees = targetProgress?.targetPaise ? targetProgress.targetPaise / 100 : (targetProgress?.target || 0);
+  const achievedRupees = targetProgress?.achievedPaise ? targetProgress.achievedPaise / 100 : (targetProgress?.achieved || totalSalesRupees);
+  const targetPercent = targetRupees > 0 ? ((achievedRupees / targetRupees) * 100).toFixed(0) : 0;
 
-  const deleteTodo = async (id) => {
-    // Optimistic update
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-
-    try {
-      await fetch(`${API_BASE_URL}/api/followups/${id}`, {
-        method: "DELETE",
-      });
-    } catch (err) {
-      console.error("Error deleting todo:", err);
-      fetchFollowUps(); // Refresh from server on error
-    }
-  };
-
-  const incomingCount = leads.filter(
-    (l) => !l.handledBy || l.status === "Incoming",
-  ).length;
-
-  const handleAcceptLead = async (leadId, customUser = null) => {
-    const acceptingUser = customUser || user;
-    if (!acceptingUser || !leadId) return;
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/leads/${leadId}/accept`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user: acceptingUser,
-            status: "Active",
-          }),
-        },
-      );
-      const data = await response.json();
-      if (data.success) {
-        const updatedLead = { ...data.lead, id: data.lead._id };
-        setLeads((prev) =>
-          prev.map((l) => (l.id === leadId ? updatedLead : l)),
-        );
-      } else {
-        alert("Failed to accept lead: " + (data.error || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Error accepting lead:", err);
-      alert("Error connecting to backend server.");
-    }
-  };
-
-  const handleForwardLead = async (leadId, targetUser, remark = "") => {
-    if (!user || !leadId || !targetUser)
-      return { success: false, error: "Missing required parameters" };
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/leads/${leadId}/forward`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": user?.id || user?._id || "",
-          },
-          body: JSON.stringify({
-            targetUserId: targetUser.id || targetUser._id,
-            targetUserName: targetUser.name,
-            targetUserEmail: targetUser.email,
-            remark,
-            user,
-          }),
-        },
-      );
-      const data = await response.json();
-      if (data.success) {
-        const updatedLead = { ...data.lead, id: data.lead._id };
-        setLeads((prev) =>
-          prev.map((l) => (l.id === leadId ? updatedLead : l)),
-        );
-        return { success: true, message: data.message, lead: updatedLead };
-      } else {
-        alert("Failed to forward lead: " + (data.error || "Unknown error"));
-        return { success: false, error: data.error };
-      }
-    } catch (err) {
-      console.error("Error forwarding lead:", err);
-      alert("Error connecting to backend server.");
-      return { success: false, error: err.message };
-    }
-  };
-
-  const handleForwardBulkLeads = async (leadIds, targetUser, remark = "") => {
-    if (
-      !user ||
-      !Array.isArray(leadIds) ||
-      leadIds.length === 0 ||
-      !targetUser
-    ) {
-      return { success: false, error: "Missing required parameters" };
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/leads/forward-bulk`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-id": user?.id || user?._id || "",
-        },
-        body: JSON.stringify({
-          leadIds,
-          targetUserId: targetUser.id || targetUser._id,
-          targetUserName: targetUser.name,
-          targetUserEmail: targetUser.email,
-          remark,
-          user,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        const updatedMap = new Map(
-          (data.leads || []).map((l) => [l._id, { ...l, id: l._id }]),
-        );
-        setLeads((prev) => prev.map((l) => updatedMap.get(l.id) || l));
-        return { success: true, message: data.message, leads: data.leads };
-      } else {
-        alert("Failed to forward leads: " + (data.error || "Unknown error"));
-        return { success: false, error: data.error };
-      }
-    } catch (err) {
-      console.error("Error forwarding leads:", err);
-      alert("Error connecting to backend server.");
-      return { success: false, error: err.message };
-    }
-  };
-
-  // Rendering Helper for active tab
-  const renderContent = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return (
-          <DashboardOverview
-            todos={todos}
-            toggleTodo={toggleTodo}
-            deleteTodo={deleteTodo}
-            newTodoText={newTodoText}
-            setNewTodoText={setNewTodoText}
-            handleAddTodo={handleAddTodo}
-            leads={leads}
-            setActiveTab={setActiveTab}
-            user={user}
-            users={users}
-            handleAcceptLead={handleAcceptLead}
-            handleForwardLead={handleForwardLead}
-          />
-        );
-      case "incoming-leads":
-        return (
-          <IncomingLeadsView
-            leads={leads}
-            setLeads={setLeads}
-            user={user}
-            users={users}
-            handleAcceptLead={handleAcceptLead}
-            handleForwardLead={handleForwardLead}
-          />
-        );
-      case "leads":
-        return (
-          <LeadsManager
-            leads={leads}
-            setLeads={setLeads}
-            user={user}
-            users={users}
-            handleAcceptLead={handleAcceptLead}
-            handleForwardLead={handleForwardLead}
-            handleForwardBulkLeads={handleForwardBulkLeads}
-          />
-        );
-      case "follow-ups":
-        return <FollowUpsView user={user} />;
-      case "design-projects":
-        return <DesignProjectsView user={user} users={users} />;
-      case "chat":
-        return (
-          <ChatView
-            user={user}
-            onUnreadCountChange={(count) => setUnreadChatCount(count)}
-          />
-        );
-      case "reports":
-        return <ReportsView user={user} />;
-      case "settings":
-        return <SettingsView user={user} />;
-      case "users":
-        return <UserManagement user={user} />;
-      case "recycle-bin":
-        return (
-          <LeadsManager
-            leads={leads}
-            setLeads={setLeads}
-            user={user}
-            users={users}
-            handleAcceptLead={handleAcceptLead}
-            handleForwardLead={handleForwardLead}
-            handleForwardBulkLeads={handleForwardBulkLeads}
-            initialFilter="recycled"
-          />
-        );
-      default:
-        return (
-          <div className="text-slate-500 text-xs font-semibold">
-            Tab page not found.
-          </div>
-        );
-    }
-  };
+  const pendingFollowupsCount = followups.filter(f => f.status === 'PENDING').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-700">
-      {/* Top Navbar */}
-      <Navbar
-        user={user}
-        onToggleSidebar={toggleSidebar}
-        onToggleMobileMenu={toggleMobileMenu}
-        leads={leads}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          closeMobileMenu();
-        }}
-        unreadChatCount={unreadChatCount}
-      />
+    <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
+      <Sidebar />
 
-      {/* Main Container */}
-      <div className="flex flex-1 relative">
-        {/* Left Sidebar */}
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            closeMobileMenu();
-          }}
-          user={user}
-          onLogout={handleLogout}
-          isCollapsed={isSidebarCollapsed}
-          isMobileOpen={isMobileMenuOpen}
-          onCloseMobile={closeMobileMenu}
-          incomingCount={incomingCount}
-          unreadChatCount={unreadChatCount}
-        />
+      <main className="flex-1 flex flex-col min-w-0">
+        <Navbar />
 
-        {/* Scrollable Main Console */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-8 max-h-[calc(100vh-64px)]">
-          {renderContent()}
-        </main>
-      </div>
+        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+          {/* Top Greeting Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                Good Morning, {userName}! 👋
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                Here&apos;s what&apos;s happening with your sales today.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={loadDashboardData}
+                disabled={loading}
+                className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xs"
+                title="Refresh live data"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+              </button>
+
+              <div className="relative">
+                <select
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value)}
+                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 pr-8 rounded-xl focus:outline-none shadow-xs cursor-pointer"
+                >
+                  <option>This Month</option>
+                  <option>This Quarter</option>
+                  <option>This Year</option>
+                </select>
+                <ChevronDown className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+
+              <button
+                onClick={() => setShowAddLeadModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add Lead
+              </button>
+            </div>
+          </div>
+
+          {/* 5 KPI Metric Cards with Live Values */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Card 1: Total Sales */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-medium">Total Sales</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">₹{totalSalesRupees.toLocaleString('en-IN')}</h3>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    <strong className="text-emerald-600 font-bold">{targetPercent}%</strong> of ₹{targetRupees.toLocaleString('en-IN')} Target
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-9 w-full">
+                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,25 Q25,5 50,20 T100,5 L100,30 L0,30 Z" fill="rgba(16, 185, 129, 0.08)" />
+                  <path d="M0,25 Q25,5 50,20 T100,5" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 2: Leads Assigned */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-medium">Leads Assigned</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">{totalLeadsCount}</h3>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    <strong className="text-emerald-600 font-bold">{leads.filter(l => l.status === 'NEW').length}</strong> New this month
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-9 w-full">
+                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,25 Q20,15 45,22 T100,8 L100,30 L0,30 Z" fill="rgba(59, 130, 246, 0.08)" />
+                  <path d="M0,25 Q20,15 45,22 T100,8" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 3: Follow-ups Due */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-medium">Follow-ups Due</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">{pendingFollowupsCount}</h3>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    <strong className="text-amber-600 font-bold">{followups.filter(f => f.priority === 'HIGH' && f.status === 'PENDING').length}</strong> High Priority
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-9 w-full">
+                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,20 Q30,28 60,10 T100,12 L100,30 L0,30 Z" fill="rgba(245, 158, 11, 0.08)" />
+                  <path d="M0,20 Q30,28 60,10 T100,12" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 4: Orders Confirmed */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-medium">Orders Confirmed</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">{orders.length}</h3>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    <strong className="text-purple-600 font-bold">₹{totalSalesRupees.toLocaleString('en-IN')}</strong> Value
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-9 w-full">
+                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,24 Q35,8 65,22 T100,6 L100,30 L0,30 Z" fill="rgba(147, 51, 234, 0.08)" />
+                  <path d="M0,24 Q35,8 65,22 T100,6" fill="none" stroke="#9333EA" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Card 5: Payments Received */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-medium">Payments Received</span>
+                  <h3 className="text-xl font-bold text-slate-900 mt-0.5">₹{totalPaymentsRupees.toLocaleString('en-IN')}</h3>
+                  <span className="text-[11px] text-slate-400 font-medium">This month</span>
+                </div>
+                <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-9 w-full">
+                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                  <path d="M0,22 Q30,12 55,20 T100,4 L100,30 L0,30 Z" fill="rgba(244, 63, 94, 0.08)" />
+                  <path d="M0,22 Q30,12 55,20 T100,4" fill="none" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle 3 Columns Section: Funnel (4.5 Cols) + Today's Activities (4.5 Cols) + Top Performers & Notifications (3 Cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Column 1: Sales Pipeline Funnel (4.5 Cols) */}
+            <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <h2 className="text-xs font-bold text-slate-900">Sales Pipeline</h2>
+
+                {/* Funnel Layout */}
+                <div className="flex items-center gap-4 pt-3">
+                  {/* Visual Trapezoids */}
+                  <div className="flex flex-col items-center gap-1.5 w-44">
+                    <div className="w-full bg-[#34D399] text-white text-[11px] font-bold py-2 rounded-t-lg flex justify-between px-3">
+                      <span>New Lead</span><span>{totalLeadsCount}</span>
+                    </div>
+                    <div className="w-[85%] bg-[#60A5FA] text-white text-[11px] font-bold py-2 flex justify-between px-3">
+                      <span>Contacted</span><span>{contactedCount}</span>
+                    </div>
+                    <div className="w-[70%] bg-[#FBBF24] text-white text-[11px] font-bold py-2 flex justify-between px-3">
+                      <span>Interested</span><span>{interestedCount}</span>
+                    </div>
+                    <div className="w-[55%] bg-[#C084FC] text-white text-[11px] font-bold py-2 flex justify-between px-2">
+                      <span>Quotation</span><span>{quotationSentCount}</span>
+                    </div>
+                    <div className="w-[40%] bg-[#F472B6] text-white text-[11px] font-bold py-2 rounded-b-lg flex justify-between px-2">
+                      <span>Order</span><span>{wonCount}</span>
+                    </div>
+                  </div>
+
+                  {/* Funnel Stats Table */}
+                  <div className="flex-1 space-y-2.5 text-xs">
+                    <div className="grid grid-cols-2 text-[10px] text-slate-400 font-bold uppercase pb-1 border-b border-slate-100">
+                      <span>Stage</span>
+                      <span className="text-right">Conversion</span>
+                    </div>
+                    <div className="grid grid-cols-2 font-semibold text-slate-800">
+                      <span>New ({totalLeadsCount})</span>
+                      <span className="text-right font-bold text-slate-900">100%</span>
+                    </div>
+                    <div className="grid grid-cols-2 font-semibold text-slate-800">
+                      <span>Contacted ({contactedCount})</span>
+                      <span className="text-right font-bold text-slate-900">
+                        {totalLeadsCount > 0 ? ((contactedCount / totalLeadsCount) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 font-semibold text-slate-800">
+                      <span>Interested ({interestedCount})</span>
+                      <span className="text-right font-bold text-slate-900">
+                        {totalLeadsCount > 0 ? ((interestedCount / totalLeadsCount) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 font-semibold text-slate-800">
+                      <span>Quotes ({quotationSentCount})</span>
+                      <span className="text-right font-bold text-slate-900">
+                        {totalLeadsCount > 0 ? ((quotationSentCount / totalLeadsCount) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 font-semibold text-slate-800">
+                      <span>Orders ({wonCount})</span>
+                      <span className="text-right font-bold text-slate-900">
+                        {totalLeadsCount > 0 ? ((wonCount / totalLeadsCount) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-700">
+                <span>Overall Conversion Rate</span>
+                <span className="text-emerald-600 text-sm font-extrabold">
+                  {totalLeadsCount > 0 ? ((wonCount / totalLeadsCount) * 100).toFixed(1) : 0}%
+                </span>
+              </div>
+            </div>
+
+            {/* Column 2: Today's Activities (4.5 Cols) */}
+            <div className="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-slate-900">Today&apos;s Activities</h3>
+
+                <div className="space-y-3 pt-2 text-xs">
+                  {followups.length > 0 ? (
+                    followups.slice(0, 5).map((f) => {
+                      const timeStr = f.scheduledAt ? new Date(f.scheduledAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Today';
+                      const isDone = f.status === 'COMPLETED';
+
+                      return (
+                        <div key={f._id} className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-[10px] text-slate-400 w-14 shrink-0 font-medium">{timeStr}</span>
+                            <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                              {f.type === 'WHATSAPP' ? <MessageSquare className="w-3 h-3" /> : <PhoneCall className="w-3 h-3" />}
+                            </div>
+                            <div className="truncate">
+                              <p className="font-bold text-slate-900 text-xs truncate">{f.title || 'Client Follow-up'}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{f.notes || 'Requirement Discussion'}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                            isDone ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {f.status}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-8 text-center text-slate-400 text-xs">
+                      No follow-up activities scheduled yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => router.push('/dashboard/followups')}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                >
+                  View All Activities →
+                </button>
+              </div>
+            </div>
+
+            {/* Column 3: Top Performers & Recent Notifications (3 Cols) */}
+            <div className="lg:col-span-3 space-y-4">
+              {/* Top Performers Widget */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-amber-500" /> Top Performers
+                  </h3>
+                  <button onClick={() => router.push('/dashboard/leaderboard')} className="text-[10px] font-bold text-blue-600 hover:underline">
+                    View All
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  {topPerformers.length > 0 ? (
+                    topPerformers.slice(0, 5).map((perf, idx) => {
+                      const userObj = perf.user || perf;
+                      const name = userObj.name || perf.userName || perf.name || `Executive ${idx + 1}`;
+                      const achievedPaise = perf.achievedPaise !== undefined ? perf.achievedPaise : ((perf.revenueAchieved || perf.achieved || 0) * 100);
+                      const achievedRupees = achievedPaise / 100;
+                      const dealsCount = perf.ordersWonCount !== undefined ? perf.ordersWonCount : (perf.ordersCount || perf.dealsWon || 0);
+                      const rank = perf.rank || idx + 1;
+
+                      return (
+                        <div key={userObj._id || perf._id || idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={`text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                              rank === 1 ? 'bg-amber-100 text-amber-800' : rank === 2 ? 'bg-slate-200 text-slate-700' : rank === 3 ? 'bg-amber-50 text-amber-900' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+                            </span>
+                            <div className={`w-7 h-7 rounded-lg text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-2xs ${
+                              rank === 1 ? 'bg-gradient-to-br from-amber-500 to-amber-600' : rank === 2 ? 'bg-gradient-to-br from-slate-600 to-slate-700' : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+                            }`}>
+                              {(name || 'EX').slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-bold text-slate-800 text-xs block truncate">{name}</span>
+                              <span className="text-[10px] text-slate-400 font-medium block">{dealsCount} {dealsCount === 1 ? 'deal' : 'deals'} won</span>
+                            </div>
+                          </div>
+                          <span className="font-black text-emerald-600 text-xs shrink-0 ml-2">
+                            ₹{achievedRupees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-4 text-center text-slate-400 text-[11px]">
+                      No performance rankings recorded yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Notifications Widget */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-purple-600" /> Live System Status
+                  </h3>
+                </div>
+
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div>
+                      <p className="text-slate-800 font-semibold leading-snug">
+                        Multi-tenant CRM connected to MongoDB.
+                      </p>
+                      <span className="text-[9px] text-slate-400">Server verified</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <div>
+                      <p className="text-slate-800 font-semibold leading-snug">
+                        {totalLeadsCount} total inquiries in pipeline.
+                      </p>
+                      <span className="text-[9px] text-slate-400">Active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section: Recent Leads (8 Cols) + Quick Actions (4 Cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Recent Leads Table (8 Cols) */}
+            <div className="lg:col-span-8 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-900">Recent Leads</h3>
+                <button
+                  onClick={() => router.push('/dashboard/leads')}
+                  className="text-[10px] font-bold text-blue-600 hover:underline"
+                >
+                  View All Leads →
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-bold">
+                      <th className="pb-2">Lead / Business</th>
+                      <th className="pb-2">Contact</th>
+                      <th className="pb-2">Source</th>
+                      <th className="pb-2">Status</th>
+                      <th className="pb-2">Value</th>
+                      <th className="pb-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {leads.length > 0 ? (
+                      leads.slice(0, 5).map((lead) => (
+                        <tr
+                          key={lead._id}
+                          onClick={() => router.push(`/dashboard/leads/${lead._id}`)}
+                          className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <td className="py-3 font-bold text-slate-900">{lead.companyName || lead.businessName || lead.name}</td>
+                          <td className="py-3 text-slate-600">{lead.phone}</td>
+                          <td className="py-3 text-slate-500">{lead.source}</td>
+                          <td className="py-3">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                              {lead.status}
+                            </span>
+                          </td>
+                          <td className="py-3 font-bold text-slate-900">
+                            ₹{(lead.estimatedValue || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td className="py-3 text-right">
+                            <div className="flex items-center justify-end gap-2 text-slate-400">
+                              <button className="hover:text-blue-600"><Eye className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                          No leads in database. Click &quot;Add Lead&quot; to create your first inquiry.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Quick Actions (4 Cols - 8 Tiles in 4x2 Grid) */}
+            <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
+              <h3 className="text-xs font-bold text-slate-900">Quick Actions</h3>
+
+              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                {/* 1. Add New Lead */}
+                <button
+                  onClick={() => setShowAddLeadModal(true)}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-blue-50/70 hover:bg-blue-100 text-blue-700 border border-blue-100 transition-colors"
+                >
+                  <Users className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Add New Lead</span>
+                </button>
+
+                {/* 2. Log a Call */}
+                <button
+                  onClick={() => router.push('/dashboard/followups')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-rose-50/70 hover:bg-rose-100 text-rose-700 border border-rose-100 transition-colors"
+                >
+                  <PhoneCall className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Log a Call</span>
+                </button>
+
+                {/* 3. Send WhatsApp */}
+                <button
+                  onClick={() => router.push('/dashboard/leads')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Send WhatsApp</span>
+                </button>
+
+                {/* 4. Create Quotation */}
+                <button
+                  onClick={() => router.push('/dashboard/quotations')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-purple-50/70 hover:bg-purple-100 text-purple-700 border border-purple-100 transition-colors"
+                >
+                  <FileText className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Create Quotation</span>
+                </button>
+
+                {/* 5. Add New Order */}
+                <button
+                  onClick={() => router.push('/dashboard/orders')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 border border-indigo-100 transition-colors"
+                >
+                  <ShoppingBag className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Add New Order</span>
+                </button>
+
+                {/* 6. Record Payment */}
+                <button
+                  onClick={() => router.push('/dashboard/orders')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-teal-50/70 hover:bg-teal-100 text-teal-700 border border-teal-100 transition-colors"
+                >
+                  <CreditCard className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Record Payment</span>
+                </button>
+
+                {/* 7. Upload Design */}
+                <button
+                  onClick={() => router.push('/dashboard/design')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50/70 hover:bg-amber-100 text-amber-700 border border-amber-100 transition-colors"
+                >
+                  <Upload className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Upload Design</span>
+                </button>
+
+                {/* 8. Schedule Follow-up */}
+                <button
+                  onClick={() => router.push('/dashboard/followups')}
+                  className="flex flex-col items-center justify-center p-2 rounded-xl bg-pink-50/70 hover:bg-pink-100 text-pink-700 border border-pink-100 transition-colors"
+                >
+                  <Clock className="w-4 h-4 mb-1" />
+                  <span className="text-[9px] font-bold leading-tight">Schedule Follow-up</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Copyright */}
+          <div className="pt-4 text-center text-slate-400 text-xs font-medium">
+            © 2026 A2V Prints CRM. All rights reserved.
+          </div>
+        </div>
+      </main>
+
+      {/* Add Lead Modal */}
+      {showAddLeadModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">Add New Lead</h3>
+              <button onClick={() => setShowAddLeadModal(false)} className="text-slate-400 hover:text-slate-700">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateLead} className="space-y-3.5 text-xs">
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">Contact Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rajesh Kumar"
+                  value={newLead.name}
+                  onChange={(e) => setNewLead({ ...newLead, name: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="9876543210"
+                    value={newLead.phone}
+                    onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">Business Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Shop"
+                    value={newLead.companyName}
+                    onChange={(e) => setNewLead({ ...newLead, companyName: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">Lead Source</label>
+                  <select
+                    value={newLead.source}
+                    onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="WALK_IN">Walk-In / Store Visit</option>
+                    <option value="PHONE_CALL">Phone Call</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="WEBSITE">Website Inquiry</option>
+                    <option value="REFERRAL">Referral</option>
+                    <option value="GOOGLE">Google Search / Maps</option>
+                    <option value="INDIAMART">IndiaMART</option>
+                    <option value="META_ADS">Meta Ads (FB/IG)</option>
+                    <option value="FACEBOOK">Facebook</option>
+                    <option value="INSTAGRAM">Instagram</option>
+                    <option value="MANUAL">Manual Entry</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">Est. Value (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="15000"
+                    value={newLead.estimatedValue}
+                    onChange={(e) => setNewLead({ ...newLead, estimatedValue: Number(e.target.value) || 0 })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">Printing Requirement</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Flex banner 10x4 ft and 1000 visiting cards"
+                  value={newLead.requirement}
+                  onChange={(e) => setNewLead({ ...newLead, requirement: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1 flex items-center justify-between">
+                  <span>Assign To</span>
+                  {!isManagerOrAdmin && (
+                    <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Auto-assigned to you
+                    </span>
+                  )}
+                </label>
+                {isManagerOrAdmin ? (
+                  <select
+                    value={newLead.assignedToId}
+                    onChange={(e) => setNewLead({ ...newLead, assignedToId: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.name} ({u.roleSlug || u.role})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between">
+                    <div className="flex items-center gap-2 truncate">
+                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                        {(currentUser?.name || userName || 'ME').slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="truncate">{currentUser?.name || userName || 'Current User'} (You)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-semibold shrink-0">Locked</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1 flex items-center justify-between">
+                  <span>Schedule Next Follow-up</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Optional date &amp; time</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newLead.nextFollowUp || ''}
+                  onChange={(e) => setNewLead({ ...newLead, nextFollowUp: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddLeadModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+                >
+                  Save Lead
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

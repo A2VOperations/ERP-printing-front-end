@@ -102,7 +102,7 @@ export default function ReportsView({ user: currentUser }) {
           {
             _id: "1",
             name: currentUser?.name || "Admin",
-            email: currentUser?.email || "admin@crm.com",
+            email: currentUser?.email || "operation.a2vgroups@gmail.com",
             role: currentUser?.role || "admin",
           },
         ]);
@@ -322,6 +322,12 @@ export default function ReportsView({ user: currentUser }) {
   // User Activeness Leaderboard Calculation
   const userActivenessList = useMemo(() => {
     return allUserOptions
+      .filter((usr) => {
+        const role = String(usr.role || usr.roleSlug || '').toLowerCase();
+        const name = String(usr.name || '').toLowerCase();
+        const email = String(usr.email || '').toLowerCase();
+        return !role.includes('admin') && !name.includes('admin') && !email.includes('admin');
+      })
       .map((usr) => {
         // Leads added by user in selected month
         const monthLeads = leads.filter((l) => {
