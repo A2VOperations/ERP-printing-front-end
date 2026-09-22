@@ -118,11 +118,11 @@ export default function ProductionReleaseCenterPage() {
       setSendingEmail(true);
       const res = await api.post(`/design-projects/${emailModalProject._id}/send-production-email`, emailForm);
       if (res && (res.success || res.email)) {
-        const isReal = res.dispatchResult?.mode === 'SMTP';
+        const isReal = res.dispatchResult?.mode === 'SMTP' || res.dispatchResult?.mode === 'RESEND_HTTPS' || res.dispatchResult?.mode === 'BREVO_HTTPS';
         if (isReal) {
-          setEmailSuccessToast(`Real email successfully dispatched to ${emailForm.to.trim()} via SMTP!`);
+          setEmailSuccessToast(`Real email successfully dispatched to ${emailForm.to.trim()}!`);
         } else {
-          setEmailSuccessToast(`Email recorded in Simulated mode for ${emailForm.to.trim()}. Note: To deliver to real inboxes over the internet, add SMTP credentials to backend/.env.`);
+          setEmailSuccessToast(`Email recorded in Simulated mode for ${emailForm.to.trim()}. Note: Configure RESEND_API_KEY or SMTP credentials in backend to dispatch live emails.`);
         }
         setEmailModalProject(null);
         setTimeout(() => setEmailSuccessToast(''), 9000);
