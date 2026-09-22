@@ -19,7 +19,6 @@ import {
   X,
   Mail,
   Send,
-  Users,
   CheckCircle2,
   AlertTriangle,
   FileCheck,
@@ -36,7 +35,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
   const jobId = params?.id;
 
   const [job, setJob] = useState(null);
-  const [partners, setPartners] = useState([]);
   const [deliveryJobs, setDeliveryJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState('admin');
@@ -46,10 +44,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
   // Modals & Action States
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
-
-  // Assign Partner Modal
-  const [showPartnerModal, setShowPartnerModal] = useState(false);
-  const [selectedPartnerId, setSelectedPartnerId] = useState('');
 
   // Email Release Modal
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -76,25 +70,14 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
       const role = (localStorage.getItem('userRole') || 'admin').toLowerCase();
       setUserRole(role);
 
-      const [jobRes, partnersRes, deliveryRes] = await Promise.allSettled([
+      const [jobRes, deliveryRes] = await Promise.allSettled([
         api.get(`/production-jobs/${jobId}`),
-        api.get('/production-partners?isActive=true'),
         api.get(`/delivery-jobs?productionJobId=${jobId}`),
       ]);
 
       if (jobRes.status === 'fulfilled') {
         const jData = jobRes.value?.data || jobRes.value;
         setJob(jData);
-        if (jData.productionPartnerId?._id) {
-          setSelectedPartnerId(jData.productionPartnerId._id);
-        } else if (jData.productionPartnerId) {
-          setSelectedPartnerId(jData.productionPartnerId);
-        }
-      }
-
-      if (partnersRes.status === 'fulfilled') {
-        const pList = partnersRes.value?.data || (Array.isArray(partnersRes.value) ? partnersRes.value : []);
-        setPartners(pList);
       }
 
       if (deliveryRes.status === 'fulfilled') {
@@ -112,37 +95,13 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     if (jobId) loadJobData();
   }, [jobId]);
 
-  // Handle Assign Partner
-  const handleAssignPartner = async (e) => {
-    e.preventDefault();
-    if (!selectedPartnerId) return;
-    setActionLoading(true);
-    setActionError('');
-    try {
-      await api.post(`/production-jobs/${jobId}/assign-partner`, {
-        productionPartnerId: selectedPartnerId,
-      });
-      setShowPartnerModal(false);
-      loadJobData();
-    } catch (err) {
-      setActionError(err.message || 'Failed to assign partner');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   // Open Email Modal with Pre-filled Data
   const openEmailModal = () => {
-    const partner =
-      job?.productionPartnerSnapshot ||
-      (typeof job?.productionPartnerId === 'object' ? job.productionPartnerId : null) ||
-      partners.find((p) => p._id === selectedPartnerId);
-
-    const partnerEmail = partner?.email || '';
+    const defaultEmail = job?.customerId?.email || '';
     const subject = `[PRODUCTION ORDER] ${job?.productionJobNumber} - Order #${job?.orderId?.orderNumber || 'A2V'}`;
-    const defaultNote = `Dear ${partner?.name || 'Production Partner'},\n\nPlease find the approved artwork and technical print specifications for Job #${job?.productionJobNumber}. Please review the attached specs and begin printing.`;
+    const defaultNote = `Dear Production Team,\n\nPlease find the approved artwork and technical print specifications for Job #${job?.productionJobNumber}. Please review the attached specs and begin printing.`;
 
-    setEmailTo(partnerEmail);
+    setEmailTo(defaultEmail);
     setEmailSubject(subject);
     setEmailMessage(defaultNote);
     setIncludeSpecs(true);
@@ -163,7 +122,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     setActionError('');
     try {
       await api.post(`/production-jobs/${jobId}/send-production-email`, {
-        partnerId: selectedPartnerId || undefined,
         to: emailTo,
         subject: emailSubject,
         message: emailMessage,
@@ -188,8 +146,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     setActionError('');
     try {
       await api.post(`/production-jobs/${jobId}/mark-sent-manually`, {
-        partnerId: selectedPartnerId || undefined,
-        notes: manualNotes || 'Dispatched files to artisan manually',
+        notes: manualNotes || 'Dispatched files to production manually',
       });
       alert('Production job marked as SENT_FOR_PRODUCTION manually.');
       setShowManualModal(false);
@@ -217,7 +174,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
 
   // Handle Mark Ready for Dispatch
   const handleMarkReadyDispatch = async () => {
-    if (!confirm('Printing completed & goods received from partner? Mark as READY_FOR_DISPATCH?')) return;
+    if (!confirm('Printing completed & goods ready? Mark as READY_FOR_DISPATCH?')) return;
     setActionLoading(true);
     try {
       await api.post(`/production-jobs/${jobId}/mark-ready-dispatch`, {});
@@ -305,10 +262,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     job?.customerId?.name ||
     'Customer';
 
-  const partner =
-    job.productionPartnerSnapshot ||
-    (typeof job.productionPartnerId === 'object' ? job.productionPartnerId : null);
-
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
       <Sidebar />
@@ -384,9 +337,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
               </div>
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <span>
-                  Printing Partner: <strong className="text-slate-800">{partner?.name || 'Unassigned'}</strong>
-                </span>
-                <span>
                   Target Due: <strong className="text-slate-800">{job.dueDate ? new Date(job.dueDate).toLocaleDateString() : 'None'}</strong>
                 </span>
                 {job.releaseMethod && (
@@ -403,13 +353,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 {/* 1. READY_FOR_RELEASE Actions */}
                 {job.productionStatus === 'READY_FOR_RELEASE' && (
                   <>
-                    <button
-                      onClick={() => setShowPartnerModal(true)}
-                      className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Users className="w-3.5 h-3.5 text-blue-600" />
-                      <span>{partner ? 'Change Partner' : 'Select Partner'}</span>
-                    </button>
                     <button
                       onClick={openEmailModal}
                       className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
@@ -490,7 +433,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
             {[
               { key: 'SPECS', label: 'Artwork & Specifications', icon: FileText },
-              { key: 'PARTNER', label: 'Printing Partner / Artisan', icon: Users },
               { key: 'DELIVERY', label: 'Delivery & Tracking', icon: Truck },
               { key: 'HISTORY', label: 'Activity Audit Log', icon: Clock },
             ].map((tab) => {
@@ -634,80 +576,13 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
             </div>
           )}
 
-          {/* Tab 2: Printing Partner / Artisan */}
-          {activeTab === 'PARTNER' && (
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Printing Partner / Artisan Coordinates</h4>
-                  <p className="text-xs text-slate-500">External vendor responsible for physical printing and assembly</p>
-                </div>
-                {canManage && (
-                  <button
-                    onClick={() => setShowPartnerModal(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                  >
-                    {partner ? 'Change Partner' : 'Assign Partner'}
-                  </button>
-                )}
-              </div>
-
-              {partner ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Vendor Name &amp; Code</span>
-                    <h5 className="font-bold text-slate-900 text-sm">{partner.name}</h5>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-block">
-                      {partner.partnerCode} • {partner.type}
-                    </span>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Contact Person</span>
-                    <p className="font-semibold text-slate-800">{partner.contactPerson || 'Direct Dispatch'}</p>
-                    <p className="text-slate-600 text-[11px] flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-slate-400" />
-                      <span>{partner.phone || 'No phone recorded'}</span>
-                    </p>
-                    <p className="text-slate-600 text-[11px] flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-slate-400" />
-                      <span>{partner.email || 'No email recorded'}</span>
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block">Workshop Address</span>
-                    <p className="text-slate-700 text-xs">
-                      {partner.address?.street && `${partner.address.street}, `}
-                      {partner.address?.city || ''} {partner.address?.state || ''} {partner.address?.postalCode || ''}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-8 text-center text-slate-500">
-                  <Users className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                  <p className="text-xs font-semibold text-slate-700">No printing partner assigned to this job.</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Select an external partner before releasing the print job.</p>
-                  {canManage && (
-                    <button
-                      onClick={() => setShowPartnerModal(true)}
-                      className="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                    >
-                      Assign Printing Partner
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Tab 3: Delivery & Tracking */}
+          {/* Tab 2: Delivery & Tracking */}
           {activeTab === 'DELIVERY' && (
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h4 className="text-sm font-bold text-slate-900">Dispatch &amp; Proof of Delivery (POD)</h4>
-                  <p className="text-xs text-slate-500">Delivery tracking from partner pickup to customer handover</p>
+                  <p className="text-xs text-slate-500">Delivery tracking from production handover to customer delivery</p>
                 </div>
                 <Link
                   href="/dashboard/production/delivery"
@@ -800,58 +675,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         </div>
       </main>
 
-      {/* Select / Assign Partner Modal */}
-      {showPartnerModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Select Printing Partner / Artisan</h3>
-              <button
-                onClick={() => setShowPartnerModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {actionError && <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{actionError}</p>}
-            <form onSubmit={handleAssignPartner} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Choose Partner</label>
-                <select
-                  value={selectedPartnerId}
-                  onChange={(e) => setSelectedPartnerId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                  required
-                >
-                  <option value="">-- Choose Partner --</option>
-                  {partners.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} ({p.partnerCode}) • {p.type} {p.phone && `• ${p.phone}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowPartnerModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  Save Assignment
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Send Production Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -859,7 +682,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Send Production Release Email</h3>
-                <p className="text-xs text-slate-500">Email artwork link and specifications to external printing partner</p>
+                <p className="text-xs text-slate-500">Email artwork link and specifications to production team</p>
               </div>
               <button
                 onClick={() => setShowEmailModal(false)}
@@ -962,7 +785,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Mark Sent to Partner Manually</h3>
+              <h3 className="text-base font-bold text-slate-900">Mark Sent to Production Manually</h3>
               <button
                 onClick={() => setShowManualModal(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"

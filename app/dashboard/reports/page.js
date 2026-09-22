@@ -886,7 +886,7 @@ export default function ReportsDashboard() {
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-500 truncate">In Production</div>
                   <div className="text-sm font-black text-slate-900">
-                    {kpis?.production?.inProduction || 0} Partner Jobs
+                    {kpis?.production?.inProduction || 0} Active Jobs
                   </div>
                 </div>
               </Link>
@@ -2281,37 +2281,6 @@ export default function ReportsDashboard() {
                     </div>
                   </div>
                 </div>
-
-                {/* Vendor Partner Breakdown */}
-                {production?.partnerBreakdown && production.partnerBreakdown.length > 0 && (
-                  <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Production Partner Workload</h3>
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-xs text-left">
-                        <thead className="text-[10px] uppercase font-bold text-slate-500 bg-slate-50 border-b border-slate-200">
-                          <tr>
-                            <th className="py-2.5 px-4">Partner Name</th>
-                            <th className="py-2.5 px-4 text-center">Total Jobs</th>
-                            <th className="py-2.5 px-4 text-center">Pending / Active</th>
-                            <th className="py-2.5 px-4 text-center">Completed</th>
-                            <th className="py-2.5 px-4 text-center text-rose-600">Overdue</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {production.partnerBreakdown.map((p) => (
-                            <tr key={p._id || "inhouse"} className="hover:bg-slate-50/70 transition">
-                              <td className="py-2.5 px-4 font-bold text-slate-900">{p.partnerName}</td>
-                              <td className="py-2.5 px-4 text-center text-slate-600">{p.totalJobs}</td>
-                              <td className="py-2.5 px-4 text-center text-cyan-600 font-bold">{p.pendingJobs}</td>
-                              <td className="py-2.5 px-4 text-center text-emerald-600 font-semibold">{p.completedJobs}</td>
-                              <td className="py-2.5 px-4 text-center text-rose-600 font-bold">{p.overdueJobs}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 

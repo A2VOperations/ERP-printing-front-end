@@ -73,7 +73,6 @@ export default function AdminOverviewPage() {
   const [designProjects, setDesignProjects] = useState([]);
   const [productionJobs, setProductionJobs] = useState([]);
   const [prodMetrics, setProdMetrics] = useState(null);
-  const [productionPartners, setProductionPartners] = useState([]);
   const [deliveryJobs, setDeliveryJobs] = useState([]);
   const [payments, setPayments] = useState([]);
   const [topPerformers, setTopPerformers] = useState([]);
@@ -151,7 +150,6 @@ export default function AdminOverviewPage() {
         designsRes,
         prodJobsRes,
         prodMetricsRes,
-        partnersRes,
         deliveryRes,
         paymentsRes,
         leaderRes,
@@ -165,7 +163,6 @@ export default function AdminOverviewPage() {
         api.get('/design-projects?limit=100'),
         api.get('/production-jobs?limit=100'),
         api.get('/production-jobs/metrics'),
-        api.get('/production-partners?limit=100'),
         api.get('/delivery-jobs?limit=100'),
         api.get('/payments?limit=100'),
         api.get('/targets/leaderboard?timeframe=month'),
@@ -198,10 +195,6 @@ export default function AdminOverviewPage() {
       }
       if (prodMetricsRes.status === 'fulfilled' && prodMetricsRes.value?.data) {
         setProdMetrics(prodMetricsRes.value.data);
-      }
-      if (partnersRes.status === 'fulfilled' && partnersRes.value?.data) {
-        const raw = partnersRes.value.data;
-        setProductionPartners(Array.isArray(raw) ? raw : (raw.partners || raw.records || []));
       }
       if (deliveryRes.status === 'fulfilled' && deliveryRes.value?.data) {
         const raw = deliveryRes.value.data;
@@ -343,15 +336,17 @@ export default function AdminOverviewPage() {
       : productionJobs.filter((j) =>
           ['SENT_FOR_PRODUCTION', 'IN_PRODUCTION'].includes(j.productionStatus)
         ).length;
-    const sentToPartnerCount = prodMetrics?.sentForProduction !== undefined
+    const sentToProdCount = prodMetrics?.sentForProduction !== undefined
       ? prodMetrics.sentForProduction
       : productionJobs.filter((j) => j.productionStatus === 'SENT_FOR_PRODUCTION').length;
     const prodTrend = productionJobs.length > 0 ? Math.round((jobsInProd / productionJobs.length) * 100) : 0;
-    const jobsInProdFooter = `${sentToPartnerCount} sent to partners`;
+    const jobsInProdFooter = `${sentToProdCount} in queue`;
 
-    // 7. Production Partners
-    const activePartnersCount = productionPartners.filter((p) => p.isActive !== false).length;
-    const partnersFooter = `${activePartnersCount} active vendors & artisans`;
+    // 7. Ready for Release
+    const readyForReleaseCount = prodMetrics?.readyForRelease !== undefined
+      ? prodMetrics.readyForRelease
+      : productionJobs.filter((j) => j.productionStatus === 'READY_FOR_RELEASE').length;
+    const readyReleaseFooter = `${readyForReleaseCount} awaiting release`;
 
     // 8. Ready for Dispatch
     const readyDispatch =
@@ -489,8 +484,8 @@ export default function AdminOverviewPage() {
       { label: 'Payments awaiting verification', count: payments.filter((p) => p.status === 'PENDING_VERIFICATION').length, href: '/dashboard/payments' },
       { label: 'Designs awaiting client approval', count: designProjects.filter((d) => d.approvalStatus === 'PENDING').length, href: '/dashboard/design?filter=CLIENT_REVIEW' },
       { label: 'Production jobs overdue', count: productionJobs.filter((j) => j.dueDate && new Date(j.dueDate) < now && j.productionStatus !== 'DELIVERED').length, href: '/dashboard/production' },
-      { label: 'Jobs awaiting partner release', count: productionJobs.filter((j) => j.productionStatus === 'READY_FOR_RELEASE').length, href: '/dashboard/production' },
-      { label: 'Jobs sent to external partners', count: productionJobs.filter((j) => ['SENT_FOR_PRODUCTION', 'IN_PRODUCTION'].includes(j.productionStatus)).length, href: '/dashboard/production' },
+      { label: 'Jobs awaiting release', count: productionJobs.filter((j) => j.productionStatus === 'READY_FOR_RELEASE').length, href: '/dashboard/production' },
+      { label: 'Jobs in active production', count: productionJobs.filter((j) => ['SENT_FOR_PRODUCTION', 'IN_PRODUCTION'].includes(j.productionStatus)).length, href: '/dashboard/production' },
       { label: 'Failed deliveries', count: deliveryJobs.filter((d) => d.status === 'FAILED').length, href: '/dashboard/production/delivery' },
       { label: 'Outstanding payments', count: orders.filter((o) => (o.balancePaise || 0) > 0).length, href: '/dashboard/receivables' },
     ];
@@ -549,8 +544,8 @@ export default function AdminOverviewPage() {
       jobsInProd,
       prodTrend,
       jobsInProdFooter,
-      activePartnersCount,
-      partnersFooter,
+      readyForReleaseCount,
+      readyReleaseFooter,
       readyDispatch,
       dispatchTrend,
       dispatchFooter,
@@ -597,7 +592,6 @@ export default function AdminOverviewPage() {
     designProjects,
     prodMetrics,
     productionJobs,
-    productionPartners,
     deliveryJobs,
     payments,
     users,
@@ -627,20 +621,18 @@ export default function AdminOverviewPage() {
         (l.phone && l.phone.includes(q))
     ).slice(0, 4);
 
-    const matchedPartners = productionPartners.filter(
-      (p) =>
-        (p.partnerName && p.partnerName.toLowerCase().includes(q)) ||
-        (p.partnerCode && p.partnerCode.toLowerCase().includes(q)) ||
-        (p.contactPerson && p.contactPerson.toLowerCase().includes(q))
+    const matchedJobs = productionJobs.filter(
+      (j) =>
+        (j.productionJobNumber && j.productionJobNumber.toLowerCase().includes(q))
     ).slice(0, 3);
 
     return {
       orders: matchedOrders,
       leads: matchedLeads,
-      partners: matchedPartners,
-      totalMatches: matchedOrders.length + matchedLeads.length + matchedPartners.length,
+      jobs: matchedJobs,
+      totalMatches: matchedOrders.length + matchedLeads.length + matchedJobs.length,
     };
-  }, [searchQuery, orders, leads, productionPartners]);
+  }, [searchQuery, orders, leads, productionJobs]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -804,23 +796,23 @@ export default function AdminOverviewPage() {
               </div>
             </Link>
 
-            {/* 7. Outsourced Partners */}
+            {/* 7. Ready for Release */}
             <Link
               href="/dashboard/production"
               className="bg-[#EEF2FF] p-4 rounded-2xl border border-indigo-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
                 <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Building2 className="w-4 h-4" />
+                  <Layers className="w-4 h-4" />
                 </div>
                 <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded-md">
-                  {productionPartners.filter((p) => p.isActive !== false).length} Active
+                  Queue
                 </span>
               </div>
               <div>
-                <span className="text-[11px] font-bold text-slate-500 block">Outsourced Partners</span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">{productionPartners.length}</span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">{metrics.partnersFooter}</span>
+                <span className="text-[11px] font-bold text-slate-500 block">Ready for Release</span>
+                <span className="text-2xl font-black text-slate-900 block mt-0.5">{metrics.readyForReleaseCount}</span>
+                <span className="text-[10px] text-slate-400 font-medium block mt-1">{metrics.readyReleaseFooter}</span>
               </div>
             </Link>
 
@@ -1290,7 +1282,7 @@ export default function AdminOverviewPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">Sent to Partner</span>
+                  <span className="text-slate-600 font-medium">Sent to Production</span>
                   <span className="w-6 h-6 rounded-md bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">
                     {metrics.prodStats.sentForProduction}
                   </span>
@@ -1322,12 +1314,12 @@ export default function AdminOverviewPage() {
               </div>
             </div>
 
-            {/* Printing Partners & Artisans (Dynamic from /production-partners) */}
+            {/* Active Production Jobs */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">Printing Partners & Artisans</h3>
+                  <Layers className="w-4 h-4 text-slate-700" />
+                  <h3 className="font-bold text-slate-900 text-xs">Active Production Jobs</h3>
                 </div>
                 <Link href="/dashboard/production" className="text-[11px] font-bold text-blue-600 hover:underline">
                   View All
@@ -1338,38 +1330,29 @@ export default function AdminOverviewPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="text-[10px] text-slate-400 font-bold uppercase border-b border-slate-100">
-                      <th className="pb-2 font-bold">Partner</th>
-                      <th className="pb-2 font-bold">Type</th>
-                      <th className="pb-2 font-bold text-right">Active Jobs</th>
+                      <th className="pb-2 font-bold">Job #</th>
+                      <th className="pb-2 font-bold">Status</th>
+                      <th className="pb-2 font-bold text-right">Priority</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
-                    {productionPartners.length > 0 ? (
-                      productionPartners.map((p) => {
-                        const activeJobsCount = productionJobs.filter(
-                          (j) =>
-                            (String(j.productionPartnerId) === String(p._id) ||
-                              j.productionPartnerSnapshot?.partnerName === p.partnerName) &&
-                            !['DELIVERED', 'CANCELLED'].includes(j.productionStatus)
-                        ).length;
-                        return (
-                          <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="py-2 text-slate-800 font-semibold">{p.partnerName}</td>
-                            <td className="py-2">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700">
-                                {p.partnerType || 'VENDOR'}
-                              </span>
-                            </td>
-                            <td className="py-2 text-right text-slate-700 font-mono text-[11px]">
-                              {activeJobsCount}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
+                    {productionJobs.slice(0, 5).map((j) => (
+                      <tr key={j._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-2 text-slate-800 font-semibold">{j.productionJobNumber}</td>
+                        <td className="py-2">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700">
+                            {j.productionStatus}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right text-slate-700 font-mono text-[11px]">
+                          {j.priority}
+                        </td>
+                      </tr>
+                    ))}
+                    {productionJobs.length === 0 && (
                       <tr>
                         <td colSpan={3} className="py-4 text-center text-slate-400">
-                          No production partners configured
+                          No active production jobs
                         </td>
                       </tr>
                     )}
@@ -1383,7 +1366,7 @@ export default function AdminOverviewPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">Partner Fulfillment</h3>
+                  <h3 className="font-bold text-slate-900 text-xs">Production Fulfillment</h3>
                 </div>
                 <Link href="/dashboard/production" className="text-[11px] font-bold text-blue-600 hover:underline">
                   View All
@@ -1412,7 +1395,7 @@ export default function AdminOverviewPage() {
                     <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
                       <RefreshCw className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800">Sent to Partner</span>
+                    <span className="text-xs font-bold text-slate-800">Sent to Production</span>
                   </div>
                   <span className="font-bold text-xs text-slate-700">{metrics.prodStats.sentForProduction}</span>
                 </Link>
@@ -1748,10 +1731,10 @@ export default function AdminOverviewPage() {
               </Link>
 
               <Link
-                href="/dashboard/production"
+                href="/dashboard/production/delivery"
                 className="px-4 py-2 rounded-xl bg-[#0D9488] hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
               >
-                <Building2 className="w-4 h-4" /> Production Partners
+                <Truck className="w-4 h-4" /> Deliveries Hub
               </Link>
 
               <Link

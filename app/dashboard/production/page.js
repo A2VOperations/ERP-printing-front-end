@@ -19,7 +19,6 @@ import {
   X,
   AlertCircle,
   Truck,
-  Users,
   Send,
   Calendar,
   ExternalLink,
@@ -29,7 +28,7 @@ import {
 const STATUS_TABS = [
   { key: 'ALL', label: 'All Jobs' },
   { key: 'READY_FOR_RELEASE', label: 'Ready for Release' },
-  { key: 'SENT_FOR_PRODUCTION', label: 'Sent to Partner' },
+  { key: 'SENT_FOR_PRODUCTION', label: 'Sent to Production' },
   { key: 'IN_PRODUCTION', label: 'In Production' },
   { key: 'READY_FOR_DISPATCH', label: 'Ready for Dispatch' },
   { key: 'DISPATCHED', label: 'Dispatched' },
@@ -174,23 +173,10 @@ export default function ProductionDashboardPage() {
         job.customerId?.name ||
         ''
       ).toLowerCase();
-      const partnerName = (
-        job.productionPartnerSnapshot?.name ||
-        job.productionPartnerId?.name ||
-        ''
-      ).toLowerCase();
-      const partnerCode = (
-        job.productionPartnerSnapshot?.partnerCode ||
-        job.productionPartnerId?.partnerCode ||
-        ''
-      ).toLowerCase();
-
       return (
         (job.productionJobNumber || '').toLowerCase().includes(q) ||
         (job.orderId?.orderNumber || '').toLowerCase().includes(q) ||
         custName.includes(q) ||
-        partnerName.includes(q) ||
-        partnerCode.includes(q) ||
         (job.releaseMethod || '').toLowerCase().includes(q)
       );
     });
@@ -311,17 +297,10 @@ export default function ProductionDashboardPage() {
                 Outsourced Print Production &amp; Delivery
               </h1>
               <p className="text-xs text-slate-500 mt-1">
-                External printing partner &amp; artisan job tracking, file releases, proof snapshots &amp; delivery handoffs
+                Production job tracking, file releases, proof snapshots &amp; delivery handoffs
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/dashboard/production/partners"
-                className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-              >
-                <Users className="w-4 h-4 text-blue-600" />
-                <span>Printing Partners</span>
-              </Link>
               <button
                 onClick={loadData}
                 className="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 shadow-2xs transition-colors cursor-pointer"
@@ -348,7 +327,7 @@ export default function ProductionDashboardPage() {
                 <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
                 <span>
                   <strong>View-Only Access Mode:</strong> Signed in as{' '}
-                  <span className="uppercase font-bold text-slate-900">{userRole}</span>. You can inspect partner assignments, locked artwork, and delivery tracking. Action controls are restricted to Admins &amp; Managers.
+                  <span className="uppercase font-bold text-slate-900">{userRole}</span>. You can inspect jobs, locked artwork, and delivery tracking. Action controls are restricted to Admins &amp; Managers.
                 </span>
               </div>
             </div>
@@ -363,15 +342,15 @@ export default function ProductionDashboardPage() {
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Sent to Partner</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Sent to Production</span>
               <p className="text-xl font-black text-blue-600 mt-1">{mSent}</p>
-              <span className="text-[9px] text-slate-400">Awaiting artisan start</span>
+              <span className="text-[9px] text-slate-400">Awaiting production start</span>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">In Production</span>
               <p className="text-xl font-black text-indigo-600 mt-1">{mInProd}</p>
-              <span className="text-[9px] text-slate-400">At print shop</span>
+              <span className="text-[9px] text-slate-400">In production process</span>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs">
@@ -460,7 +439,7 @@ export default function ProductionDashboardPage() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search job #, customer, partner..."
+                placeholder="Search job #, customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 shadow-2xs transition-colors"
@@ -476,7 +455,6 @@ export default function ProductionDashboardPage() {
                   <tr>
                     <th className="py-3 px-4">Job / Order</th>
                     <th className="py-3 px-4">Customer</th>
-                    <th className="py-3 px-4">Printing Partner / Artisan</th>
                     <th className="py-3 px-4">Priority</th>
                     <th className="py-3 px-4">Target Due Date</th>
                     <th className="py-3 px-4">Production Status</th>
@@ -487,14 +465,14 @@ export default function ProductionDashboardPage() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-slate-500">
+                      <td colSpan="7" className="py-12 text-center text-slate-500">
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
                         <span>Loading production jobs...</span>
                       </td>
                     </tr>
                   ) : filteredJobs.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-slate-500">
+                      <td colSpan="7" className="py-12 text-center text-slate-500">
                         <Layers className="w-8 h-8 mx-auto mb-2 text-slate-400" />
                         <p className="font-semibold text-slate-700">No production jobs found matching this criteria.</p>
                         <p className="text-[11px] text-slate-500 mt-1">
@@ -523,19 +501,6 @@ export default function ProductionDashboardPage() {
                           ? job.customerId?.companyName
                           : job.customerId?.phone || '';
 
-                      const partnerName =
-                        job.productionPartnerSnapshot?.name ||
-                        job.productionPartnerId?.name ||
-                        null;
-                      const partnerCode =
-                        job.productionPartnerSnapshot?.partnerCode ||
-                        job.productionPartnerId?.partnerCode ||
-                        '';
-                      const partnerType =
-                        job.productionPartnerSnapshot?.type ||
-                        job.productionPartnerId?.type ||
-                        '';
-
                       const isOverdue =
                         job.dueDate &&
                         new Date(job.dueDate) < new Date() &&
@@ -561,20 +526,6 @@ export default function ProductionDashboardPage() {
                             <span className="text-[10px] text-slate-500 block truncate max-w-[150px]">
                               {custSub || job.customerId?.phone || ''}
                             </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            {partnerName ? (
-                              <div>
-                                <span className="text-slate-900 font-semibold block truncate max-w-[160px]">
-                                  {partnerName}
-                                </span>
-                                <span className="text-[10px] text-slate-500 block">
-                                  {partnerCode} {partnerType && `• ${partnerType}`}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 italic text-[11px]">Unassigned</span>
-                            )}
                           </td>
                           <td className="py-3 px-4">{getPriorityBadge(job.priority)}</td>
                           <td className="py-3 px-4">

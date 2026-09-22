@@ -239,11 +239,6 @@ export default function Sidebar() {
               exact: true,
             },
             {
-              name: "Production Partners",
-              href: "/dashboard/production/partners",
-              icon: Users,
-            },
-            {
               name: "Deliveries",
               href: "/dashboard/production/delivery",
               icon: MapPin,
@@ -426,11 +421,6 @@ export default function Sidebar() {
             href: "/dashboard/production",
             icon: Layers,
             exact: true,
-          },
-          {
-            name: "Production Partners",
-            href: "/dashboard/production/partners",
-            icon: Users,
           },
           {
             name: "Deliveries",
