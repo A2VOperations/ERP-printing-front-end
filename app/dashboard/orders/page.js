@@ -520,7 +520,7 @@ export default function OrdersBillingPage() {
                           setSelectedOrder(ord);
                           setPaymentAmountRupees(
                             balanceRupees > 0
-                              ? (balanceRupees / 2).toString()
+                              ? balanceRupees.toFixed(2)
                               : "0",
                           );
                           setShowPaymentModal(true);
@@ -558,11 +558,53 @@ export default function OrdersBillingPage() {
               </button>
             </div>
 
+            {/* Order Payment Summary */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Order Number:</span>
+                <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  {selectedOrder.orderNumber}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 text-center">
+                <div className="bg-white p-2 rounded-lg border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-medium block">Total</span>
+                  <strong className="text-slate-800 font-bold text-xs">
+                    ₹{((selectedOrder.grandTotalPaise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </strong>
+                </div>
+                <div className="bg-white p-2 rounded-lg border border-slate-100">
+                  <span className="text-[10px] text-emerald-600 font-medium block">Paid</span>
+                  <strong className="text-emerald-700 font-bold text-xs">
+                    ₹{(((selectedOrder.grandTotalPaise || 0) - (selectedOrder.balancePaise || 0)) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </strong>
+                </div>
+                <div className="bg-blue-50/80 p-2 rounded-lg border border-blue-200/60">
+                  <span className="text-[10px] text-blue-700 font-medium block">Balance Due</span>
+                  <strong className="text-blue-800 font-black text-xs">
+                    ₹{((selectedOrder.balancePaise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
             <form onSubmit={handleRecordPayment} className="space-y-4 text-xs">
               <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  Amount (₹) *
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-slate-700 font-semibold block">
+                    Amount (₹) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const bal = (selectedOrder.balancePaise || 0) / 100;
+                      setPaymentAmountRupees(bal > 0 ? bal.toFixed(2) : "0");
+                    }}
+                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline"
+                  >
+                    Set Full Balance (₹{((selectedOrder.balancePaise || 0) / 100).toFixed(2)})
+                  </button>
+                </div>
                 <input
                   type="number"
                   step="0.01"
