@@ -27,7 +27,6 @@ import {
   Eye,
   Lock,
   Target,
-  MessageSquare,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -197,14 +196,6 @@ export default function Sidebar() {
           ],
         },
         {
-          title: "COMMUNICATION",
-          items: [
-            { name: "Omnichannel Inbox", href: "/dashboard/communication", icon: MessageSquare },
-            { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
-            { name: "Gateways & Settings", href: "/dashboard/communication/settings", icon: Settings },
-          ],
-        },
-        {
           title: "APPROVALS",
           items: [
             {
@@ -324,13 +315,6 @@ export default function Sidebar() {
           ],
         },
         {
-          title: "COMMUNICATION",
-          items: [
-            { name: "Communication Inbox", href: "/dashboard/communication", icon: MessageSquare },
-            { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
-          ],
-        },
-        {
           title: "DESIGN & PRODUCTION",
           items: [
             { name: "Design Status", href: "/dashboard/design", icon: Palette },
@@ -427,14 +411,6 @@ export default function Sidebar() {
             href: "/dashboard/production/delivery",
             icon: MapPin,
           },
-        ],
-      },
-      {
-        title: "COMMUNICATION",
-        items: [
-          { name: "Omnichannel Inbox", href: "/dashboard/communication", icon: MessageSquare },
-          { name: "Templates", href: "/dashboard/communication/templates", icon: FileText },
-          { name: "Gateways & Settings", href: "/dashboard/communication/settings", icon: Settings },
         ],
       },
       {

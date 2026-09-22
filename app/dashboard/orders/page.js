@@ -1208,37 +1208,18 @@ export default function OrdersBillingPage() {
                           selectedDesignOrder.customerId?.email ||
                           selectedDesignOrder.customerSnapshot?.email;
 
-                        return (
                           <div className="flex flex-wrap sm:justify-end gap-2">
                             {phone && (
-                              <a
-                                href={`tel:${phone}`}
-                                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-all"
-                              >
-                                <Phone className="w-3.5 h-3.5" /> Call: {phone}
-                              </a>
-                            )}
-                            {phone && (
-                              <a
-                                href={`https://wa.me/${phone.replace(/[^0-9]/g, "")}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-all"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5" /> WhatsApp
-                              </a>
+                              <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-mono text-xs flex items-center gap-1.5 border border-slate-200">
+                                <Phone className="w-3.5 h-3.5 text-slate-400" /> {phone}
+                              </span>
                             )}
                             {email && (
-                              <a
-                                href={`mailto:${email}`}
-                                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-all"
-                              >
-                                <Mail className="w-3.5 h-3.5 text-slate-500" />{" "}
-                                {email}
-                              </a>
+                              <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs flex items-center gap-1.5 border border-slate-200">
+                                <Mail className="w-3.5 h-3.5 text-slate-400" /> {email}
+                              </span>
                             )}
                           </div>
-                        );
                       })()}
                     </div>
                   </div>

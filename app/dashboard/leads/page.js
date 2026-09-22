@@ -15,7 +15,6 @@ import {
   Plus,
   Upload,
   Filter,
-  PhoneCall,
   MoreVertical,
   ChevronDown,
   TrendingUp,
@@ -667,14 +666,6 @@ export default function LeadsDashboardPage() {
                             </div>
 
                             <div className="flex items-center gap-1">
-                              <a
-                                href={`tel:${lead.phone}`}
-                                className="w-6 h-6 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center transition-colors"
-                                title="Call Lead"
-                              >
-                                <PhoneCall className="w-3 h-3" />
-                              </a>
-
                               {isManagerOrAdmin && (
                                 <button
                                   onClick={() => {

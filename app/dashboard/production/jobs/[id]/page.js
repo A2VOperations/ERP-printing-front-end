@@ -45,15 +45,6 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
 
-  // Email Release Modal
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailTo, setEmailTo] = useState('');
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailMessage, setEmailMessage] = useState('');
-  const [includeSpecs, setIncludeSpecs] = useState(true);
-  const [includeFileUrl, setIncludeFileUrl] = useState(true);
-  const [includeSha256, setIncludeSha256] = useState(true);
-
   // Manual Release Modal
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualNotes, setManualNotes] = useState('');
@@ -95,49 +86,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     if (jobId) loadJobData();
   }, [jobId]);
 
-  // Open Email Modal with Pre-filled Data
-  const openEmailModal = () => {
-    const defaultEmail = job?.customerId?.email || '';
-    const subject = `[PRODUCTION ORDER] ${job?.productionJobNumber} - Order #${job?.orderId?.orderNumber || 'A2V'}`;
-    const defaultNote = `Dear Production Team,\n\nPlease find the approved artwork and technical print specifications for Job #${job?.productionJobNumber}. Please review the attached specs and begin printing.`;
 
-    setEmailTo(defaultEmail);
-    setEmailSubject(subject);
-    setEmailMessage(defaultNote);
-    setIncludeSpecs(true);
-    setIncludeFileUrl(true);
-    setIncludeSha256(true);
-    setActionError('');
-    setShowEmailModal(true);
-  };
-
-  // Handle Send Production Email
-  const handleSendEmail = async (e) => {
-    e.preventDefault();
-    if (!emailTo.trim()) {
-      alert('Recipient email address is required.');
-      return;
-    }
-    setActionLoading(true);
-    setActionError('');
-    try {
-      await api.post(`/production-jobs/${jobId}/send-production-email`, {
-        to: emailTo,
-        subject: emailSubject,
-        message: emailMessage,
-        includeSpecs,
-        includeFileUrl,
-        includeSha256,
-      });
-      alert(`Production job successfully released via email to ${emailTo}!`);
-      setShowEmailModal(false);
-      loadJobData();
-    } catch (err) {
-      setActionError(err.message || 'Failed to dispatch email release');
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   // Handle Mark Sent Manually
   const handleMarkSentManually = async (e) => {
@@ -352,21 +301,12 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
               <div className="flex flex-wrap items-center gap-2">
                 {/* 1. READY_FOR_RELEASE Actions */}
                 {job.productionStatus === 'READY_FOR_RELEASE' && (
-                  <>
-                    <button
-                      onClick={openEmailModal}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>Send Production Email</span>
-                    </button>
-                    <button
-                      onClick={() => setShowManualModal(true)}
-                      className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      <span>Mark Sent Manually</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowManualModal(true)}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>Release to Production (Manual)</span>
+                  </button>
                 )}
 
                 {/* 2. SENT_FOR_PRODUCTION Actions */}
@@ -675,110 +615,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         </div>
       </main>
 
-      {/* Send Production Email Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-xl text-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Send Production Release Email</h3>
-                <p className="text-xs text-slate-500">Email artwork link and specifications to production team</p>
-              </div>
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {actionError && <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{actionError}</p>}
-
-            <form onSubmit={handleSendEmail} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Recipient Email</label>
-                <input
-                  type="email"
-                  value={emailTo}
-                  onChange={(e) => setEmailTo(e.target.value)}
-                  placeholder="artisan@printshop.com"
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Subject</label>
-                <input
-                  type="text"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Instructions / Message</label>
-                <textarea
-                  rows={4}
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <label className="flex items-center gap-2 text-xs text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={includeSpecs}
-                    onChange={(e) => setIncludeSpecs(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600"
-                  />
-                  <span>Include job print specifications snapshot in email body</span>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={includeFileUrl}
-                    onChange={(e) => setIncludeFileUrl(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600"
-                  />
-                  <span>Include locked Cloudinary high-res artwork download link</span>
-                </label>
-                <label className="flex items-center gap-2 text-xs text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={includeSha256}
-                    onChange={(e) => setIncludeSha256(e.target.checked)}
-                    className="rounded border-slate-300 text-blue-600"
-                  />
-                  <span>Include SHA-256 integrity verification hash</span>
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowEmailModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  {actionLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Dispatch Email</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Manual Release Modal */}
       {showManualModal && (
