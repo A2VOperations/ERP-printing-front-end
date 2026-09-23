@@ -94,8 +94,8 @@ export default function DashboardPage() {
         api.get("/targets/leaderboard"),
         api.get("/users"),
         api.get("/auth/me"),
-        api.get("/leads/stats"),
-        api.get("/activities?limit=10"),
+        api.get("/leads/stats", { silent: true }),
+        api.get("/activities?limit=10", { silent: true }),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
