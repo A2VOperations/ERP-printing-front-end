@@ -94,8 +94,16 @@ export default function Home() {
         }
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('userName', userName);
+        const roleNormalized = (userRole || '').toLowerCase();
+        const targetRoute = roleNormalized.includes('designer')
+          ? '/dashboard/designer'
+          : roleNormalized.includes('admin')
+          ? '/dashboard/admin'
+          : roleNormalized.includes('manager')
+          ? '/dashboard/manager'
+          : '/dashboard';
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push(targetRoute);
         }, 500);
 
       }

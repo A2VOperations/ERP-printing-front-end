@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import AlertCenterDrawer from './alertCenterDrawer';
 import {
+  Home,
   Menu,
   Search,
   PhoneCall,
@@ -335,10 +336,9 @@ export default function Navbar() {
 
     if (role === 'designer') {
       return [
-        ...common,
-        { name: 'Designer Studio', href: '/dashboard/designer', icon: Palette },
+        { name: 'Home', href: '/dashboard/designer', icon: Home },
+        { name: 'Reports & Analytics', href: '/dashboard/reports', icon: BarChart3 },
         { name: 'My Design Projects', href: '/dashboard/design', icon: Folder },
-        { name: 'Production Queue', href: '/dashboard/production', icon: Layers },
         { name: 'Communications', href: '/dashboard/communication', icon: MessageSquare },
       ];
     }

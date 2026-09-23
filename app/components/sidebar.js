@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Home,
   LayoutDashboard,
   Users,
   Clock,
@@ -78,15 +79,9 @@ export default function Sidebar() {
           title: "MAIN",
           items: [
             {
-              name: "Dashboard",
-              href: "/dashboard",
-              icon: LayoutDashboard,
-              exact: true,
-            },
-            {
-              name: "Designer Dashboard",
+              name: "Home",
               href: "/dashboard/designer",
-              icon: LayoutDashboard,
+              icon: Home,
               exact: true,
             },
             {
@@ -129,27 +124,6 @@ export default function Sidebar() {
               name: "Production Ready",
               href: "/dashboard/design?filter=PRODUCTION_READY",
               icon: CheckSquare,
-            },
-          ],
-        },
-        {
-          title: "PRODUCTION",
-          items: [
-            {
-              name: "Production Dashboard",
-              href: "/dashboard/production",
-              icon: Layers,
-              exact: true,
-            },
-          ],
-        },
-        {
-          title: "WHATSAPP",
-          items: [
-            {
-              name: "WhatsApp Web",
-              href: "/dashboard/whatsapp",
-              icon: MessageCircle,
             },
           ],
         },

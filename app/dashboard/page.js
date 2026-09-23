@@ -121,6 +121,11 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    const role = (localStorage.getItem('userRole') || '').toLowerCase();
+    if (role.includes('designer')) {
+      router.replace('/dashboard/designer');
+      return;
+    }
     const storedName = localStorage.getItem('userName');
     if (storedName) setUserName(storedName.split(' ')[0] || storedName);
     loadDashboardData();
