@@ -172,7 +172,8 @@ export default function FollowUpsView({ user }) {
             ? JSON.parse(localStorage.getItem("user"))
             : null);
         const creatorId = currentUser?.id || currentUser?._id || "";
-        const userIdHeader = currentUser?.id || currentUser?._id || currentUser?.email || "";
+        const userIdHeader =
+          currentUser?.id || currentUser?._id || currentUser?.email || "";
         const payload = {
           ...formData,
           createdBy: currentUser?.name || currentUser?.email || "Agent",
@@ -279,8 +280,12 @@ export default function FollowUpsView({ user }) {
   // Metric Stats Calculations
   const stats = useMemo(() => {
     const total = userVisibleFollowUps.length;
-    const completed = userVisibleFollowUps.filter((f) => f.status === "Completed").length;
-    const pending = userVisibleFollowUps.filter((f) => f.status === "Pending").length;
+    const completed = userVisibleFollowUps.filter(
+      (f) => f.status === "Completed",
+    ).length;
+    const pending = userVisibleFollowUps.filter(
+      (f) => f.status === "Pending",
+    ).length;
 
     const now = new Date();
     const todayStr = now.toDateString();
@@ -466,7 +471,7 @@ export default function FollowUpsView({ user }) {
       )}
 
       {/* Modern Header Banner */}
-      <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-4 relative overflow-hidden">
+      <div className="bg-white border border-slate-200/80 p-6 rounded-md shadow-sm flex flex-wrap items-center justify-between gap-4 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-sky-50 rounded-full blur-2xl pointer-events-none opacity-60" />
         <div className="relative z-10">
           <div className="flex items-center gap-3">
@@ -506,7 +511,7 @@ export default function FollowUpsView({ user }) {
       </div>
 
       {/* Controls Bar: Search, Category Tabs & Sort */}
-      <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 p-4 rounded-md shadow-xs flex flex-wrap items-center justify-between gap-4">
         {/* Search Input */}
         <div className="relative flex-1 min-w-60">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -580,7 +585,7 @@ export default function FollowUpsView({ user }) {
           {[1, 2, 3, 4].map((n) => (
             <div
               key={n}
-              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs animate-pulse flex flex-col gap-3"
+              className="bg-white border border-slate-200 rounded-md p-5 shadow-xs animate-pulse flex flex-col gap-3"
             >
               <div className="flex items-center justify-between">
                 <div className="w-24 h-4 bg-slate-200 rounded-md" />
@@ -594,7 +599,7 @@ export default function FollowUpsView({ user }) {
         </div>
       ) : filteredFollowUps.length === 0 ? (
         /* Empty State */
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
+        <div className="bg-white border border-slate-200/80 rounded-md p-12 text-center flex flex-col items-center justify-center gap-3">
           <div className="w-14 h-14 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center border border-sky-100">
             <Calendar className="w-7 h-7" />
           </div>
@@ -639,7 +644,7 @@ export default function FollowUpsView({ user }) {
             return (
               <div
                 key={f._id}
-                className={`bg-white border rounded-2xl p-5 shadow-xs transition-all duration-200 flex flex-col justify-between gap-4 group ${
+                className={`bg-white border rounded-md p-5 shadow-xs transition-all duration-200 flex flex-col justify-between gap-4 group ${
                   isCompleted
                     ? "border-emerald-200/60 bg-emerald-50/10 opacity-80"
                     : "border-slate-200/90 hover:border-sky-300 hover:shadow-md"
@@ -777,7 +782,7 @@ export default function FollowUpsView({ user }) {
         typeof window !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-9999 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-scale-up my-auto">
+            <div className="bg-white rounded-md shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-scale-up my-auto">
               {/* Modal Header */}
               <div className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-2.5">

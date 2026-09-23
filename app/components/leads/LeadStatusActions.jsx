@@ -3,7 +3,11 @@
 import React, { useState } from "react";
 import { apiClient } from "../../../lib/apiClient";
 
-export default function LeadStatusActions({ lead, currentUser, onActionComplete }) {
+export default function LeadStatusActions({
+  lead,
+  currentUser,
+  onActionComplete,
+}) {
   const [loading, setLoading] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [lostReason, setLostReason] = useState("");
@@ -11,7 +15,10 @@ export default function LeadStatusActions({ lead, currentUser, onActionComplete 
   const handleAction = async (endpoint, payload = {}) => {
     setLoading(true);
     try {
-      const res = await apiClient.post(`/api/v1/leads/${lead._id}/${endpoint}`, payload);
+      const res = await apiClient.post(
+        `/api/v1/leads/${lead._id}/${endpoint}`,
+        payload,
+      );
       if (res.success) {
         if (onActionComplete) onActionComplete(res.data);
       }
@@ -27,7 +34,10 @@ export default function LeadStatusActions({ lead, currentUser, onActionComplete 
     if (!lostReason.trim()) return;
     setLoading(true);
     try {
-      const res = await apiClient.post(`/api/v1/leads/${lead._id}/mark-not-interested`, { lostReason });
+      const res = await apiClient.post(
+        `/api/v1/leads/${lead._id}/mark-not-interested`,
+        { lostReason },
+      );
       if (res.success) {
         setShowLostModal(false);
         if (onActionComplete) onActionComplete(res.data);
@@ -44,7 +54,9 @@ export default function LeadStatusActions({ lead, currentUser, onActionComplete 
       {lead.status === "NEW" && (
         <button
           disabled={loading}
-          onClick={() => handleAction("contact", { notes: "Direct customer contact" })}
+          onClick={() =>
+            handleAction("contact", { notes: "Direct customer contact" })
+          }
           className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
         >
           Contact
@@ -54,24 +66,32 @@ export default function LeadStatusActions({ lead, currentUser, onActionComplete 
       {(lead.status === "CONTACTED" || lead.status === "FOLLOW_UP") && (
         <button
           disabled={loading}
-          onClick={() => handleAction("mark-interested", { notes: "Customer expressed strong interest" })}
+          onClick={() =>
+            handleAction("mark-interested", {
+              notes: "Customer expressed strong interest",
+            })
+          }
           className="px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
         >
           Interested
         </button>
       )}
 
-      {lead.status !== "NOT_INTERESTED" && lead.status !== "LOST" && lead.status !== "WON" && (
-        <button
-          disabled={loading}
-          onClick={() => setShowLostModal(true)}
-          className="px-2 py-1 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
-        >
-          Lost
-        </button>
-      )}
+      {lead.status !== "NOT_INTERESTED" &&
+        lead.status !== "LOST" &&
+        lead.status !== "WON" && (
+          <button
+            disabled={loading}
+            onClick={() => setShowLostModal(true)}
+            className="px-2 py-1 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+          >
+            Lost
+          </button>
+        )}
 
-      {(lead.status === "NOT_INTERESTED" || lead.status === "LOST" || lead.status === "ON_HOLD") && (
+      {(lead.status === "NOT_INTERESTED" ||
+        lead.status === "LOST" ||
+        lead.status === "ON_HOLD") && (
         <button
           disabled={loading}
           onClick={() => handleAction("reopen")}
@@ -84,8 +104,10 @@ export default function LeadStatusActions({ lead, currentUser, onActionComplete 
       {/* Lost Reason Modal */}
       {showLostModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-left">
-            <h4 className="text-base font-bold text-white">Mark Lead as Lost / Not Interested</h4>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-md w-full max-w-sm p-5 space-y-4 shadow-2xl text-left">
+            <h4 className="text-base font-bold text-white">
+              Mark Lead as Lost / Not Interested
+            </h4>
             <form onSubmit={handleMarkLost} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-zinc-400 mb-1">

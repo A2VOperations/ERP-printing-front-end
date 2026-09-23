@@ -65,7 +65,11 @@ export default function PublicProofPortal() {
     const yNorm = (e.clientY - rect.top) / rect.height;
 
     if (xNorm >= 0 && xNorm <= 1 && yNorm >= 0 && yNorm <= 1) {
-      setActivePinDraft({ xNormalized: xNorm, yNormalized: yNorm, pageIndex: 0 });
+      setActivePinDraft({
+        xNormalized: xNorm,
+        yNormalized: yNorm,
+        pageIndex: 0,
+      });
     }
   };
 
@@ -87,14 +91,19 @@ export default function PublicProofPortal() {
     setIsSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/proofs/public/${token}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientName: clientSignName || "Client" }),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/proofs/public/${token}/approve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientName: clientSignName || "Client" }),
+        },
+      );
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg("Proof Approved! Thank you. Your artwork has been verified and approved for production.");
+        setSuccessMsg(
+          "Proof Approved! Thank you. Your artwork has been verified and approved for production.",
+        );
         setIsApproveModalOpen(false);
         fetchProof();
       } else {
@@ -115,19 +124,24 @@ export default function PublicProofPortal() {
     setIsSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/proofs/public/${token}/request-revision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reason: revisionReason,
-          notes: revisionNotes,
-          pinComments: pins,
-          requesterName: authorName || "Client",
-        }),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/proofs/public/${token}/request-revision`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reason: revisionReason,
+            notes: revisionNotes,
+            pinComments: pins,
+            requesterName: authorName || "Client",
+          }),
+        },
+      );
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg("Revision Request Sent! Our design team will review your comments and upload a revised proof.");
+        setSuccessMsg(
+          "Revision Request Sent! Our design team will review your comments and upload a revised proof.",
+        );
         setIsRevisionModalOpen(false);
         fetchProof();
       } else {
@@ -154,9 +168,13 @@ export default function PublicProofPortal() {
   if (error && !proof) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 text-white">
-        <div className="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 text-center shadow-2xl">
-          <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">⚠️</div>
-          <h2 className="text-xl font-bold text-white mb-2">Invalid or Expired Link</h2>
+        <div className="max-w-md w-full bg-slate-800 border border-slate-700 rounded-md p-8 text-center shadow-2xl">
+          <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
+            Invalid or Expired Link
+          </h2>
           <p className="text-slate-400 text-sm mb-6">{error}</p>
         </div>
       </div>
@@ -175,8 +193,12 @@ export default function PublicProofPortal() {
             A2V
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-white leading-tight">{proof?.company?.name}</h1>
-            <p className="text-xs text-slate-400">Digital Proofing Portal • {proof?.projectNumber}</p>
+            <h1 className="text-sm font-semibold text-white leading-tight">
+              {proof?.company?.name}
+            </h1>
+            <p className="text-xs text-slate-400">
+              Digital Proofing Portal • {proof?.projectNumber}
+            </p>
           </div>
         </div>
 
@@ -213,7 +235,9 @@ export default function PublicProofPortal() {
             >
               -
             </button>
-            <span className="text-xs font-mono text-slate-400">{Math.round(zoomLevel * 100)}%</span>
+            <span className="text-xs font-mono text-slate-400">
+              {Math.round(zoomLevel * 100)}%
+            </span>
             <button
               onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
               className="p-1 text-slate-300 hover:text-white"
@@ -225,7 +249,9 @@ export default function PublicProofPortal() {
             <button
               onClick={() => setIsPinMode(!isPinMode)}
               className={`px-2 py-1 rounded-lg text-xs font-medium transition ${
-                isPinMode ? "bg-amber-500 text-slate-950 font-bold" : "bg-slate-700 text-slate-200 hover:bg-slate-600"
+                isPinMode
+                  ? "bg-amber-500 text-slate-950 font-bold"
+                  : "bg-slate-700 text-slate-200 hover:bg-slate-600"
               }`}
             >
               {isPinMode ? "📍 Click Artwork to Pin" : "📍 Add Pin Comment"}
@@ -236,7 +262,10 @@ export default function PublicProofPortal() {
           <div
             ref={imageContainerRef}
             onClick={handleImageClick}
-            style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
+            style={{
+              transform: `scale(${zoomLevel})`,
+              transformOrigin: "center center",
+            }}
             className={`relative max-w-full max-h-[75vh] transition-transform duration-150 shadow-2xl rounded-lg overflow-hidden border border-slate-700 bg-white ${
               isPinMode ? "cursor-crosshair ring-2 ring-amber-400" : ""
             }`}
@@ -257,14 +286,19 @@ export default function PublicProofPortal() {
             {pins.map((pin, idx) => (
               <div
                 key={idx}
-                style={{ left: `${pin.xNormalized * 100}%`, top: `${pin.yNormalized * 100}%` }}
+                style={{
+                  left: `${pin.xNormalized * 100}%`,
+                  top: `${pin.yNormalized * 100}%`,
+                }}
                 className="absolute -translate-x-1/2 -translate-y-1/2 z-10 group"
               >
                 <div className="w-6 h-6 bg-amber-500 text-slate-950 rounded-full font-bold text-xs flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-amber-500/50 cursor-pointer">
                   {idx + 1}
                 </div>
                 <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-slate-900 border border-slate-700 text-white text-xs rounded-lg p-2 shadow-2xl z-20">
-                  <div className="font-semibold text-amber-400">{pin.authorName || "Comment"}:</div>
+                  <div className="font-semibold text-amber-400">
+                    {pin.authorName || "Comment"}:
+                  </div>
                   <div className="text-slate-300">{pin.comment}</div>
                 </div>
               </div>
@@ -273,10 +307,15 @@ export default function PublicProofPortal() {
             {/* Active Pin Draft */}
             {activePinDraft && (
               <div
-                style={{ left: `${activePinDraft.xNormalized * 100}%`, top: `${activePinDraft.yNormalized * 100}%` }}
+                style={{
+                  left: `${activePinDraft.xNormalized * 100}%`,
+                  top: `${activePinDraft.yNormalized * 100}%`,
+                }}
                 className="absolute -translate-x-1/2 -translate-y-1/2 z-20 w-64 bg-slate-900 border-2 border-amber-400 text-white rounded-xl p-3 shadow-2xl"
               >
-                <h4 className="text-xs font-bold text-amber-400 mb-1">Add Feedback at Pin</h4>
+                <h4 className="text-xs font-bold text-amber-400 mb-1">
+                  Add Feedback at Pin
+                </h4>
                 <textarea
                   value={draftComment}
                   onChange={(e) => setDraftComment(e.target.value)}
@@ -307,27 +346,36 @@ export default function PublicProofPortal() {
         {/* Sidebar Controls */}
         <div className="w-full md:w-80 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 p-4 flex flex-col justify-between overflow-y-auto">
           <div>
-            <h2 className="text-sm font-bold text-white mb-3">{proof?.projectTitle}</h2>
+            <h2 className="text-sm font-bold text-white mb-3">
+              {proof?.projectTitle}
+            </h2>
 
             <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50 mb-4 space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-400">Product:</span>
-                <span className="text-slate-200 font-medium">{proof?.productDescription?.title}</span>
+                <span className="text-slate-200 font-medium">
+                  {proof?.productDescription?.title}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Dimensions:</span>
                 <span className="text-slate-200 font-medium">
-                  {proof?.productDescription?.dimensions?.width} x {proof?.productDescription?.dimensions?.height}{" "}
+                  {proof?.productDescription?.dimensions?.width} x{" "}
+                  {proof?.productDescription?.dimensions?.height}{" "}
                   {proof?.productDescription?.dimensions?.unit}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Quantity:</span>
-                <span className="text-slate-200 font-medium">{proof?.productDescription?.quantity} units</span>
+                <span className="text-slate-200 font-medium">
+                  {proof?.productDescription?.quantity} units
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Print Sides:</span>
-                <span className="text-slate-200 font-medium">{proof?.productDescription?.printSides}</span>
+                <span className="text-slate-200 font-medium">
+                  {proof?.productDescription?.printSides}
+                </span>
               </div>
             </div>
 
@@ -337,11 +385,16 @@ export default function PublicProofPortal() {
                 Feedback Pins ({pins.length})
               </h3>
               {pins.length === 0 ? (
-                <p className="text-xs text-slate-500 italic">No pin comments added yet.</p>
+                <p className="text-xs text-slate-500 italic">
+                  No pin comments added yet.
+                </p>
               ) : (
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {pins.map((pin, i) => (
-                    <div key={i} className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-2 text-xs flex gap-2">
+                    <div
+                      key={i}
+                      className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-2 text-xs flex gap-2"
+                    >
                       <span className="w-5 h-5 bg-amber-500 text-slate-950 font-bold rounded-full flex items-center justify-center text-[10px] shrink-0">
                         {i + 1}
                       </span>
@@ -389,13 +442,19 @@ export default function PublicProofPortal() {
       {/* Approval Modal */}
       {isApproveModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-2">Approve Artwork Proof</h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-md p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">
+              Approve Artwork Proof
+            </h3>
             <p className="text-xs text-slate-400 mb-4">
-              By approving, you confirm that spelling, layout, dimensions, and visual elements in Version {proof?.versionLabel} are final and verified for print manufacturing.
+              By approving, you confirm that spelling, layout, dimensions, and
+              visual elements in Version {proof?.versionLabel} are final and
+              verified for print manufacturing.
             </p>
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Your Full Name (Digital Signature)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Your Full Name (Digital Signature)
+              </label>
               <input
                 type="text"
                 value={clientSignName}
@@ -426,13 +485,18 @@ export default function PublicProofPortal() {
       {/* Revision Modal */}
       {isRevisionModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-2">Request Artwork Revision</h3>
+          <div className="bg-slate-900 border border-slate-800 rounded-md p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">
+              Request Artwork Revision
+            </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Describe the specific changes you would like our designers to make on Version {proof?.versionLabel}.
+              Describe the specific changes you would like our designers to make
+              on Version {proof?.versionLabel}.
             </p>
             <div className="mb-3">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Revision Reason *</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Revision Reason *
+              </label>
               <input
                 type="text"
                 value={revisionReason}
@@ -442,7 +506,9 @@ export default function PublicProofPortal() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Additional Instructions</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Additional Instructions
+              </label>
               <textarea
                 value={revisionNotes}
                 onChange={(e) => setRevisionNotes(e.target.value)}

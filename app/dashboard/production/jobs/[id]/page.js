@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, use } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, { useState, useEffect, use } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   ArrowLeft,
   RefreshCw,
@@ -27,7 +27,7 @@ import {
   Ban,
   Check,
   Copy,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ProductionJobDetailPage({ params: paramsPromise }) {
   const router = useRouter();
@@ -37,28 +37,28 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
   const [job, setJob] = useState(null);
   const [deliveryJobs, setDeliveryJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState('admin');
-  const [activeTab, setActiveTab] = useState('SPECS');
+  const [userRole, setUserRole] = useState("admin");
+  const [activeTab, setActiveTab] = useState("SPECS");
   const [copiedHash, setCopiedHash] = useState(false);
 
   // Modals & Action States
   const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState('');
+  const [actionError, setActionError] = useState("");
 
   // Manual Release Modal
   const [showManualModal, setShowManualModal] = useState(false);
-  const [manualNotes, setManualNotes] = useState('');
+  const [manualNotes, setManualNotes] = useState("");
 
   // Cancel Job Modal
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  const [cancelReason, setCancelReason] = useState("");
 
-  const canManage = userRole === 'admin' || userRole === 'manager';
+  const canManage = userRole === "admin" || userRole === "manager";
 
   const loadJobData = async () => {
     try {
       setLoading(true);
-      const role = (localStorage.getItem('userRole') || 'admin').toLowerCase();
+      const role = (localStorage.getItem("userRole") || "admin").toLowerCase();
       setUserRole(role);
 
       const [jobRes, deliveryRes] = await Promise.allSettled([
@@ -66,17 +66,19 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         api.get(`/delivery-jobs?productionJobId=${jobId}`),
       ]);
 
-      if (jobRes.status === 'fulfilled') {
+      if (jobRes.status === "fulfilled") {
         const jData = jobRes.value?.data || jobRes.value;
         setJob(jData);
       }
 
-      if (deliveryRes.status === 'fulfilled') {
-        const dList = deliveryRes.value?.data || (Array.isArray(deliveryRes.value) ? deliveryRes.value : []);
+      if (deliveryRes.status === "fulfilled") {
+        const dList =
+          deliveryRes.value?.data ||
+          (Array.isArray(deliveryRes.value) ? deliveryRes.value : []);
         setDeliveryJobs(dList);
       }
     } catch (err) {
-      console.error('Failed to load job card details:', err);
+      console.error("Failed to load job card details:", err);
     } finally {
       setLoading(false);
     }
@@ -86,22 +88,20 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     if (jobId) loadJobData();
   }, [jobId]);
 
-
-
   // Handle Mark Sent Manually
   const handleMarkSentManually = async (e) => {
     e.preventDefault();
     setActionLoading(true);
-    setActionError('');
+    setActionError("");
     try {
       await api.post(`/production-jobs/${jobId}/mark-sent-manually`, {
-        notes: manualNotes || 'Dispatched files to production manually',
+        notes: manualNotes || "Dispatched files to production manually",
       });
-      alert('Production job marked as SENT_FOR_PRODUCTION manually.');
+      alert("Production job marked as SENT_FOR_PRODUCTION manually.");
       setShowManualModal(false);
       loadJobData();
     } catch (err) {
-      setActionError(err.message || 'Failed to mark job as sent manually');
+      setActionError(err.message || "Failed to mark job as sent manually");
     } finally {
       setActionLoading(false);
     }
@@ -109,13 +109,18 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
 
   // Handle Mark In Production
   const handleMarkInProduction = async () => {
-    if (!confirm('Mark this job as IN_PRODUCTION (printer/artisan has confirmed start)?')) return;
+    if (
+      !confirm(
+        "Mark this job as IN_PRODUCTION (printer/artisan has confirmed start)?",
+      )
+    )
+      return;
     setActionLoading(true);
     try {
       await api.post(`/production-jobs/${jobId}/mark-in-production`, {});
       loadJobData();
     } catch (err) {
-      alert(err.message || 'Failed to update job to In Production');
+      alert(err.message || "Failed to update job to In Production");
     } finally {
       setActionLoading(false);
     }
@@ -123,13 +128,16 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
 
   // Handle Mark Ready for Dispatch
   const handleMarkReadyDispatch = async () => {
-    if (!confirm('Printing completed & goods ready? Mark as READY_FOR_DISPATCH?')) return;
+    if (
+      !confirm("Printing completed & goods ready? Mark as READY_FOR_DISPATCH?")
+    )
+      return;
     setActionLoading(true);
     try {
       await api.post(`/production-jobs/${jobId}/mark-ready-dispatch`, {});
       loadJobData();
     } catch (err) {
-      alert(err.message || 'Failed to mark job as ready for dispatch');
+      alert(err.message || "Failed to mark job as ready for dispatch");
     } finally {
       setActionLoading(false);
     }
@@ -139,16 +147,16 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
   const handleCancelJob = async (e) => {
     e.preventDefault();
     setActionLoading(true);
-    setActionError('');
+    setActionError("");
     try {
       await api.post(`/production-jobs/${jobId}/cancel`, {
-        reason: cancelReason || 'Cancelled by manager',
+        reason: cancelReason || "Cancelled by manager",
       });
-      alert('Production job has been cancelled.');
+      alert("Production job has been cancelled.");
       setShowCancelModal(false);
       loadJobData();
     } catch (err) {
-      setActionError(err.message || 'Failed to cancel job');
+      setActionError(err.message || "Failed to cancel job");
     } finally {
       setActionLoading(false);
     }
@@ -169,7 +177,9 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center text-slate-500">
             <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
-            <p className="text-xs font-semibold text-slate-700">Loading Production Job Card...</p>
+            <p className="text-xs font-semibold text-slate-700">
+              Loading Production Job Card...
+            </p>
           </div>
         </main>
       </div>
@@ -181,13 +191,20 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
       <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
         <Sidebar />
         <main className="flex-1 p-8">
-          <Link href="/dashboard/production" className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 mb-6 hover:underline">
+          <Link
+            href="/dashboard/production"
+            className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 mb-6 hover:underline"
+          >
             <ArrowLeft className="w-4 h-4" /> Back to Production Queue
           </Link>
-          <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center shadow-xs">
+          <div className="p-8 rounded-md bg-white border border-slate-200 text-center shadow-xs">
             <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
-            <h3 className="text-base font-bold text-slate-900">Job Record Not Found</h3>
-            <p className="text-xs text-slate-500 mt-1">The requested production job does not exist or has been removed.</p>
+            <h3 className="text-base font-bold text-slate-900">
+              Job Record Not Found
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              The requested production job does not exist or has been removed.
+            </p>
           </div>
         </main>
       </div>
@@ -203,13 +220,13 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
     job.fileSha256 ||
     job.productionFiles?.[0]?.sha256Hash ||
     job.productionFileLockId?.sha256 ||
-    'VERIFIED_SHA256';
+    "VERIFIED_SHA256";
 
   const custName =
     job?.customerId?.displayName ||
     job?.customerId?.companyName ||
     job?.customerId?.name ||
-    'Customer';
+    "Customer";
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -235,7 +252,12 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 </h1>
               </div>
               <p className="text-sm text-slate-500 mt-1">
-                Order: <strong className="text-slate-800">{job.orderId?.orderNumber || 'N/A'}</strong> • Customer: <strong className="text-slate-800">{custName}</strong>
+                Order:{" "}
+                <strong className="text-slate-800">
+                  {job.orderId?.orderNumber || "N/A"}
+                </strong>{" "}
+                • Customer:{" "}
+                <strong className="text-slate-800">{custName}</strong>
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -257,27 +279,29 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           </div>
 
           {/* Top Banner Card */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="p-6 rounded-md bg-white border border-slate-200 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <span className="text-2xl font-black text-slate-900 tracking-wide">
                   {job.productionJobNumber}
                 </span>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                  job.productionStatus === 'READY_FOR_RELEASE'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : job.productionStatus === 'SENT_FOR_PRODUCTION'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : job.productionStatus === 'IN_PRODUCTION'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse'
-                    : job.productionStatus === 'READY_FOR_DISPATCH'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : job.productionStatus === 'DISPATCHED'
-                    ? 'bg-cyan-50 text-cyan-700 border-cyan-200'
-                    : job.productionStatus === 'DELIVERED'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-slate-100 text-slate-600 border-slate-200'
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    job.productionStatus === "READY_FOR_RELEASE"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : job.productionStatus === "SENT_FOR_PRODUCTION"
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : job.productionStatus === "IN_PRODUCTION"
+                          ? "bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse"
+                          : job.productionStatus === "READY_FOR_DISPATCH"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : job.productionStatus === "DISPATCHED"
+                              ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                              : job.productionStatus === "DELIVERED"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-slate-100 text-slate-600 border-slate-200"
+                  }`}
+                >
                   {job.productionStatus}
                 </span>
                 <span className="px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase bg-slate-100 text-slate-700 border border-slate-200">
@@ -286,11 +310,20 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
               </div>
               <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                 <span>
-                  Target Due: <strong className="text-slate-800">{job.dueDate ? new Date(job.dueDate).toLocaleDateString() : 'None'}</strong>
+                  Target Due:{" "}
+                  <strong className="text-slate-800">
+                    {job.dueDate
+                      ? new Date(job.dueDate).toLocaleDateString()
+                      : "None"}
+                  </strong>
                 </span>
                 {job.releaseMethod && (
                   <span>
-                    Release: <strong className="text-slate-800">{job.releaseMethod} ({new Date(job.releaseSentAt).toLocaleDateString()})</strong>
+                    Release:{" "}
+                    <strong className="text-slate-800">
+                      {job.releaseMethod} (
+                      {new Date(job.releaseSentAt).toLocaleDateString()})
+                    </strong>
                   </span>
                 )}
               </div>
@@ -300,7 +333,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
             {canManage && (
               <div className="flex flex-wrap items-center gap-2">
                 {/* 1. READY_FOR_RELEASE Actions */}
-                {job.productionStatus === 'READY_FOR_RELEASE' && (
+                {job.productionStatus === "READY_FOR_RELEASE" && (
                   <button
                     onClick={() => setShowManualModal(true)}
                     className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
@@ -310,7 +343,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 )}
 
                 {/* 2. SENT_FOR_PRODUCTION Actions */}
-                {job.productionStatus === 'SENT_FOR_PRODUCTION' && (
+                {job.productionStatus === "SENT_FOR_PRODUCTION" && (
                   <button
                     onClick={handleMarkInProduction}
                     disabled={actionLoading}
@@ -322,7 +355,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 )}
 
                 {/* 3. IN_PRODUCTION Actions */}
-                {job.productionStatus === 'IN_PRODUCTION' && (
+                {job.productionStatus === "IN_PRODUCTION" && (
                   <button
                     onClick={handleMarkReadyDispatch}
                     disabled={actionLoading}
@@ -334,7 +367,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 )}
 
                 {/* 4. READY_FOR_DISPATCH Actions */}
-                {job.productionStatus === 'READY_FOR_DISPATCH' && (
+                {job.productionStatus === "READY_FOR_DISPATCH" && (
                   <Link
                     href="/dashboard/production/delivery"
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center gap-2 transition-all cursor-pointer"
@@ -345,7 +378,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 )}
 
                 {/* 5. DISPATCHED Actions */}
-                {job.productionStatus === 'DISPATCHED' && (
+                {job.productionStatus === "DISPATCHED" && (
                   <Link
                     href="/dashboard/production/delivery"
                     className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold shadow-xs flex items-center gap-2 transition-all cursor-pointer"
@@ -356,7 +389,9 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 )}
 
                 {/* Cancel Button (if non-terminal) */}
-                {!['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(job.productionStatus) && (
+                {!["DELIVERED", "COMPLETED", "CANCELLED"].includes(
+                  job.productionStatus,
+                ) && (
                   <button
                     onClick={() => setShowCancelModal(true)}
                     className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
@@ -372,9 +407,13 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           {/* Navigation Tabs */}
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
             {[
-              { key: 'SPECS', label: 'Artwork & Specifications', icon: FileText },
-              { key: 'DELIVERY', label: 'Delivery & Tracking', icon: Truck },
-              { key: 'HISTORY', label: 'Activity Audit Log', icon: Clock },
+              {
+                key: "SPECS",
+                label: "Artwork & Specifications",
+                icon: FileText,
+              },
+              { key: "DELIVERY", label: "Delivery & Tracking", icon: Truck },
+              { key: "HISTORY", label: "Activity Audit Log", icon: Clock },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -383,8 +422,8 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeTab === tab.key
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:text-slate-900 hover:bg-slate-50'
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-white text-slate-600 border border-slate-200 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -395,14 +434,16 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           </div>
 
           {/* Tab 1: Artwork & Specifications */}
-          {activeTab === 'SPECS' && (
+          {activeTab === "SPECS" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Artwork Preview Card */}
-              <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <div className="p-6 rounded-md bg-white border border-slate-200 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-emerald-600" />
-                    <h4 className="text-sm font-bold text-slate-900">Locked Production Artwork</h4>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Locked Production Artwork
+                    </h4>
                   </div>
                   <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                     READ-ONLY IMMUTABLE
@@ -430,8 +471,12 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                   ) : (
                     <div className="text-center text-slate-500 space-y-2">
                       <FileText className="w-10 h-10 mx-auto text-slate-400" />
-                      <p className="text-xs font-semibold text-slate-700">Locked Asset File URL Attached</p>
-                      <p className="text-[11px] text-slate-500">Secure Cloudinary Production Lock</p>
+                      <p className="text-xs font-semibold text-slate-700">
+                        Locked Asset File URL Attached
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Secure Cloudinary Production Lock
+                      </p>
                     </div>
                   )}
                 </div>
@@ -446,69 +491,94 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                       onClick={() => handleCopySha(sha256Hash)}
                       className="text-[10px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
                     >
-                      {copiedHash ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedHash ? 'Copied' : 'Copy'}</span>
+                      {copiedHash ? (
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      <span>{copiedHash ? "Copied" : "Copy"}</span>
                     </button>
                   </div>
                   <p className="font-mono text-xs text-blue-600 break-all select-all font-semibold">
                     {sha256Hash}
                   </p>
                   <p className="text-[10px] text-slate-500 pt-1">
-                    Matches Phase 4 client approved proof lock. File cannot be modified.
+                    Matches Phase 4 client approved proof lock. File cannot be
+                    modified.
                   </p>
                 </div>
               </div>
 
               {/* Technical Specifications Snapshot */}
-              <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <div className="p-6 rounded-md bg-white border border-slate-200 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h4 className="text-sm font-bold text-slate-900">Outsourced Print Specifications</h4>
-                  <span className="text-[10px] font-bold text-slate-500">Order Snapshot</span>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Outsourced Print Specifications
+                  </h4>
+                  <span className="text-[10px] font-bold text-slate-500">
+                    Order Snapshot
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Dimensions</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                      Dimensions
+                    </span>
                     <p className="font-bold text-slate-800">
-                      {job.specificationsSnapshot?.width || 'Standard'} x {job.specificationsSnapshot?.height || 'Standard'}{' '}
-                      {job.specificationsSnapshot?.unit || 'inches'}
+                      {job.specificationsSnapshot?.width || "Standard"} x{" "}
+                      {job.specificationsSnapshot?.height || "Standard"}{" "}
+                      {job.specificationsSnapshot?.unit || "inches"}
                     </p>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Quantity</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                      Quantity
+                    </span>
                     <p className="font-bold text-blue-600 text-sm">
                       {job.specificationsSnapshot?.quantity || 1} units
                     </p>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Substrate / Media</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                      Substrate / Media
+                    </span>
                     <p className="font-bold text-slate-800">
-                      {job.specificationsSnapshot?.material || job.specificationsSnapshot?.substrate || 'Standard Media'}
+                      {job.specificationsSnapshot?.material ||
+                        job.specificationsSnapshot?.substrate ||
+                        "Standard Media"}
                     </p>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Color Mode</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                      Color Mode
+                    </span>
                     <p className="font-bold text-slate-800">
-                      {job.specificationsSnapshot?.colorMode || 'CMYK'}
+                      {job.specificationsSnapshot?.colorMode || "CMYK"}
                     </p>
                   </div>
 
                   <div className="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">Finishings &amp; Notes</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
+                      Finishings &amp; Notes
+                    </span>
                     <p className="text-slate-700">
                       {Array.isArray(job.specificationsSnapshot?.finishings)
-                        ? job.specificationsSnapshot.finishings.join(', ')
-                        : job.specificationsSnapshot?.finishing || 'Standard Edge Finish / Hemming'}
+                        ? job.specificationsSnapshot.finishings.join(", ")
+                        : job.specificationsSnapshot?.finishing ||
+                          "Standard Edge Finish / Hemming"}
                     </p>
                   </div>
                 </div>
 
                 {job.notes && (
                   <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs">
-                    <span className="text-[10px] font-bold uppercase text-blue-800 block mb-0.5">Production Notes</span>
+                    <span className="text-[10px] font-bold uppercase text-blue-800 block mb-0.5">
+                      Production Notes
+                    </span>
                     <p className="text-blue-900">{job.notes}</p>
                   </div>
                 )}
@@ -517,12 +587,17 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           )}
 
           {/* Tab 2: Delivery & Tracking */}
-          {activeTab === 'DELIVERY' && (
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+          {activeTab === "DELIVERY" && (
+            <div className="p-6 rounded-md bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Dispatch &amp; Proof of Delivery (POD)</h4>
-                  <p className="text-xs text-slate-500">Delivery tracking from production handover to customer delivery</p>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Dispatch &amp; Proof of Delivery (POD)
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Delivery tracking from production handover to customer
+                    delivery
+                  </p>
                 </div>
                 <Link
                   href="/dashboard/production/delivery"
@@ -536,43 +611,69 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
               {deliveryJobs.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <Truck className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                  <p className="text-xs font-semibold text-slate-700">No delivery job created for this package yet.</p>
+                  <p className="text-xs font-semibold text-slate-700">
+                    No delivery job created for this package yet.
+                  </p>
                   <p className="text-[11px] text-slate-500 mt-1">
-                    Deliveries can be dispatched once printing is completed and marked READY_FOR_DISPATCH.
+                    Deliveries can be dispatched once printing is completed and
+                    marked READY_FOR_DISPATCH.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {deliveryJobs.map((del) => (
-                    <div key={del._id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div
+                      key={del._id}
+                      className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+                    >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs">{del.deliveryNumber}</span>
+                          <span className="font-bold text-slate-900 text-xs">
+                            {del.deliveryNumber}
+                          </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
                             {del.status}
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-500 font-medium">{del.deliveryType}</span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {del.deliveryType}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                         <div className="p-2.5 rounded bg-white border border-slate-200">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Courier / Van</span>
-                          <p className="font-medium text-slate-800">{del.courierMetadata?.courierName || 'Internal Van'}</p>
-                        </div>
-                        <div className="p-2.5 rounded bg-white border border-slate-200">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Driver</span>
-                          <p className="font-medium text-slate-800">{del.courierMetadata?.driverName || 'N/A'}</p>
-                        </div>
-                        <div className="p-2.5 rounded bg-white border border-slate-200">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Dispatched</span>
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                            Courier / Van
+                          </span>
                           <p className="font-medium text-slate-800">
-                            {del.dispatchedAt ? new Date(del.dispatchedAt).toLocaleDateString() : 'Pending'}
+                            {del.courierMetadata?.courierName || "Internal Van"}
                           </p>
                         </div>
                         <div className="p-2.5 rounded bg-white border border-slate-200">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">POD Recipient</span>
-                          <p className="font-medium text-emerald-600">{del.proofOfDelivery?.recipientName || 'Pending'}</p>
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                            Driver
+                          </span>
+                          <p className="font-medium text-slate-800">
+                            {del.courierMetadata?.driverName || "N/A"}
+                          </p>
+                        </div>
+                        <div className="p-2.5 rounded bg-white border border-slate-200">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                            Dispatched
+                          </span>
+                          <p className="font-medium text-slate-800">
+                            {del.dispatchedAt
+                              ? new Date(del.dispatchedAt).toLocaleDateString()
+                              : "Pending"}
+                          </p>
+                        </div>
+                        <div className="p-2.5 rounded bg-white border border-slate-200">
+                          <span className="text-[10px] text-slate-500 uppercase font-bold block">
+                            POD Recipient
+                          </span>
+                          <p className="font-medium text-emerald-600">
+                            {del.proofOfDelivery?.recipientName || "Pending"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -583,15 +684,21 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
           )}
 
           {/* Tab 4: Activity Audit Log */}
-          {activeTab === 'HISTORY' && (
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+          {activeTab === "HISTORY" && (
+            <div className="p-6 rounded-md bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h4 className="text-sm font-bold text-slate-900">Activity &amp; State Audit Trail</h4>
-                <span className="text-[10px] font-bold text-slate-500">Immutable Log</span>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Activity &amp; State Audit Trail
+                </h4>
+                <span className="text-[10px] font-bold text-slate-500">
+                  Immutable Log
+                </span>
               </div>
 
-              {(!job.activityHistory || job.activityHistory.length === 0) ? (
-                <p className="text-xs text-slate-500 p-4 text-center">No activity history recorded yet.</p>
+              {!job.activityHistory || job.activityHistory.length === 0 ? (
+                <p className="text-xs text-slate-500 p-4 text-center">
+                  No activity history recorded yet.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {job.activityHistory.map((act, idx) => (
@@ -600,11 +707,19 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                       className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between text-xs"
                     >
                       <div className="space-y-0.5">
-                        <span className="font-bold text-slate-900">{act.action}</span>
-                        {act.notes && <p className="text-slate-600 text-[11px]">{act.notes}</p>}
+                        <span className="font-bold text-slate-900">
+                          {act.action}
+                        </span>
+                        {act.notes && (
+                          <p className="text-slate-600 text-[11px]">
+                            {act.notes}
+                          </p>
+                        )}
                       </div>
                       <span className="text-[10px] text-slate-400">
-                        {act.performedAt ? new Date(act.performedAt).toLocaleString() : ''}
+                        {act.performedAt
+                          ? new Date(act.performedAt).toLocaleString()
+                          : ""}
                       </span>
                     </div>
                   ))}
@@ -615,14 +730,14 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         </div>
       </main>
 
-
-
       {/* Manual Release Modal */}
       {showManualModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Mark Sent to Production Manually</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                Mark Sent to Production Manually
+              </h3>
               <button
                 onClick={() => setShowManualModal(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
@@ -630,7 +745,11 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {actionError && <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{actionError}</p>}
+            {actionError && (
+              <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                {actionError}
+              </p>
+            )}
             <form onSubmit={handleMarkSentManually} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
@@ -668,9 +787,11 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
       {/* Cancel Job Modal */}
       {showCancelModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900">Cancel Production Job</h3>
+              <h3 className="text-base font-bold text-slate-900">
+                Cancel Production Job
+              </h3>
               <button
                 onClick={() => setShowCancelModal(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
@@ -678,10 +799,16 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            {actionError && <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{actionError}</p>}
+            {actionError && (
+              <p className="text-xs text-rose-700 p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                {actionError}
+              </p>
+            )}
             <form onSubmit={handleCancelJob} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Reason for Cancellation</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Reason for Cancellation
+                </label>
                 <textarea
                   rows={3}
                   value={cancelReason}

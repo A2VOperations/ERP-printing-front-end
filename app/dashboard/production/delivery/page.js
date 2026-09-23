@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   Truck,
   CheckCircle2,
@@ -14,65 +14,75 @@ import {
   X,
   ShieldCheck,
   Package,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function DispatchDeliveryPage() {
   const [deliveryJobs, setDeliveryJobs] = useState([]);
   const [readyProductionJobs, setReadyProductionJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [userRole, setUserRole] = useState('admin');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userRole, setUserRole] = useState("admin");
 
   // Modals
   const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [selectedJobForDispatch, setSelectedJobForDispatch] = useState(null);
-  const [deliveryType, setDeliveryType] = useState('CUSTOMER_DELIVERY');
-  const [courierName, setCourierName] = useState('');
-  const [driverName, setDriverName] = useState('');
-  const [driverPhone, setDriverPhone] = useState('');
-  const [vehicleNumber, setVehicleNumber] = useState('');
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [scheduledDate, setScheduledDate] = useState('');
+  const [deliveryType, setDeliveryType] = useState("CUSTOMER_DELIVERY");
+  const [courierName, setCourierName] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverPhone, setDriverPhone] = useState("");
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
 
   // Attempt Modal
   const [showAttemptModal, setShowAttemptModal] = useState(false);
   const [selectedDeliveryJob, setSelectedDeliveryJob] = useState(null);
-  const [attemptReason, setAttemptReason] = useState('Customer unavailable / Premises closed');
-  const [attemptNotes, setAttemptNotes] = useState('');
+  const [attemptReason, setAttemptReason] = useState(
+    "Customer unavailable / Premises closed",
+  );
+  const [attemptNotes, setAttemptNotes] = useState("");
 
   // Complete POD Modal
   const [showPodModal, setShowPodModal] = useState(false);
-  const [podRecipientName, setPodRecipientName] = useState('');
-  const [podNotes, setPodNotes] = useState('');
+  const [podRecipientName, setPodRecipientName] = useState("");
+  const [podNotes, setPodNotes] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const canManage = userRole === 'admin' || userRole === 'manager';
+  const canManage = userRole === "admin" || userRole === "manager";
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const role = (localStorage.getItem('userRole') || 'admin').toLowerCase();
+      const role = (localStorage.getItem("userRole") || "admin").toLowerCase();
       setUserRole(role);
 
       const [deliveryRes, prodRes] = await Promise.allSettled([
-        api.get('/delivery-jobs'),
-        api.get('/production-jobs?productionStatus=READY_FOR_DISPATCH&status=READY_FOR_DISPATCH'),
+        api.get("/delivery-jobs"),
+        api.get(
+          "/production-jobs?productionStatus=READY_FOR_DISPATCH&status=READY_FOR_DISPATCH",
+        ),
       ]);
 
-      if (deliveryRes.status === 'fulfilled') {
-        const list = deliveryRes.value?.data || (Array.isArray(deliveryRes.value) ? deliveryRes.value : []);
+      if (deliveryRes.status === "fulfilled") {
+        const list =
+          deliveryRes.value?.data ||
+          (Array.isArray(deliveryRes.value) ? deliveryRes.value : []);
         setDeliveryJobs(list);
       }
 
-      if (prodRes.status === 'fulfilled') {
-        const pList = prodRes.value?.data || (Array.isArray(prodRes.value) ? prodRes.value : []);
-        const readyOnly = pList.filter((j) => j.productionStatus === 'READY_FOR_DISPATCH');
+      if (prodRes.status === "fulfilled") {
+        const pList =
+          prodRes.value?.data ||
+          (Array.isArray(prodRes.value) ? prodRes.value : []);
+        const readyOnly = pList.filter(
+          (j) => j.productionStatus === "READY_FOR_DISPATCH",
+        );
         setReadyProductionJobs(readyOnly);
       }
     } catch (err) {
-      console.error('Failed to load delivery data:', err);
+      console.error("Failed to load delivery data:", err);
     } finally {
       setLoading(false);
     }
@@ -83,34 +93,36 @@ export default function DispatchDeliveryPage() {
   }, []);
 
   const openDispatchModalForProduction = (prodJob) => {
-    setSelectedJobForDispatch({ type: 'PRODUCTION', data: prodJob });
-    setDeliveryType('CUSTOMER_DELIVERY');
-    setCourierName('Internal Delivery Van');
-    setDriverName('');
-    setDriverPhone('');
-    setVehicleNumber('');
-    setTrackingNumber('');
-    setErrorMsg('');
+    setSelectedJobForDispatch({ type: "PRODUCTION", data: prodJob });
+    setDeliveryType("CUSTOMER_DELIVERY");
+    setCourierName("Internal Delivery Van");
+    setDriverName("");
+    setDriverPhone("");
+    setVehicleNumber("");
+    setTrackingNumber("");
+    setErrorMsg("");
     setShowDispatchModal(true);
   };
 
   const openDispatchModalForDelivery = (delJob) => {
-    setSelectedJobForDispatch({ type: 'DELIVERY', data: delJob });
-    setDeliveryType(delJob.deliveryType || 'CUSTOMER_DELIVERY');
-    setCourierName(delJob.courierMetadata?.courierName || 'Internal Delivery Van');
-    setDriverName(delJob.courierMetadata?.driverName || '');
-    setDriverPhone(delJob.courierMetadata?.driverPhone || '');
-    setVehicleNumber(delJob.courierMetadata?.vehicleNumber || '');
-    setTrackingNumber(delJob.courierMetadata?.trackingNumber || '');
-    setErrorMsg('');
+    setSelectedJobForDispatch({ type: "DELIVERY", data: delJob });
+    setDeliveryType(delJob.deliveryType || "CUSTOMER_DELIVERY");
+    setCourierName(
+      delJob.courierMetadata?.courierName || "Internal Delivery Van",
+    );
+    setDriverName(delJob.courierMetadata?.driverName || "");
+    setDriverPhone(delJob.courierMetadata?.driverPhone || "");
+    setVehicleNumber(delJob.courierMetadata?.vehicleNumber || "");
+    setTrackingNumber(delJob.courierMetadata?.trackingNumber || "");
+    setErrorMsg("");
     setShowDispatchModal(true);
   };
 
   const openAttemptModal = (delJob) => {
     setSelectedDeliveryJob(delJob);
-    setAttemptReason('Customer unavailable / Premises closed');
-    setAttemptNotes('');
-    setErrorMsg('');
+    setAttemptReason("Customer unavailable / Premises closed");
+    setAttemptNotes("");
+    setErrorMsg("");
     setShowAttemptModal(true);
   };
 
@@ -118,20 +130,20 @@ export default function DispatchDeliveryPage() {
     setSelectedDeliveryJob(delJob);
     setPodRecipientName(
       delJob.customerId?.displayName ||
-      delJob.customerId?.name ||
-      delJob.orderId?.customerSnapshot?.displayName ||
-      delJob.orderId?.customerSnapshot?.name ||
-      ''
+        delJob.customerId?.name ||
+        delJob.orderId?.customerSnapshot?.displayName ||
+        delJob.orderId?.customerSnapshot?.name ||
+        "",
     );
-    setPodNotes('');
-    setErrorMsg('');
+    setPodNotes("");
+    setErrorMsg("");
     setShowPodModal(true);
   };
 
   const handleConfirmDispatch = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
     try {
       const courierMetadata = {
@@ -142,10 +154,10 @@ export default function DispatchDeliveryPage() {
         trackingNumber,
       };
 
-      if (selectedJobForDispatch?.type === 'PRODUCTION') {
+      if (selectedJobForDispatch?.type === "PRODUCTION") {
         // Create delivery job first, then dispatch
         const prodJob = selectedJobForDispatch.data;
-        const created = await api.post('/delivery-jobs', {
+        const created = await api.post("/delivery-jobs", {
           productionJobId: prodJob._id,
           deliveryType,
           courierMetadata,
@@ -155,14 +167,16 @@ export default function DispatchDeliveryPage() {
         await api.post(`/delivery-jobs/${delId}/dispatch`, { courierMetadata });
       } else {
         const delJob = selectedJobForDispatch.data;
-        await api.post(`/delivery-jobs/${delJob._id}/dispatch`, { courierMetadata });
+        await api.post(`/delivery-jobs/${delJob._id}/dispatch`, {
+          courierMetadata,
+        });
       }
 
-      alert('Job successfully dispatched with transit manifest!');
+      alert("Job successfully dispatched with transit manifest!");
       setShowDispatchModal(false);
       loadData();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to dispatch job');
+      setErrorMsg(err.message || "Failed to dispatch job");
     } finally {
       setSubmitting(false);
     }
@@ -171,19 +185,19 @@ export default function DispatchDeliveryPage() {
   const handleRecordAttempt = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
     try {
       await api.post(`/delivery-jobs/${selectedDeliveryJob._id}/attempt`, {
         reason: attemptReason,
-        outcome: 'FAILED',
+        outcome: "FAILED",
         notes: attemptNotes,
       });
-      alert('Failed delivery attempt recorded. Status updated.');
+      alert("Failed delivery attempt recorded. Status updated.");
       setShowAttemptModal(false);
       loadData();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to record attempt');
+      setErrorMsg(err.message || "Failed to record attempt");
     } finally {
       setSubmitting(false);
     }
@@ -192,7 +206,7 @@ export default function DispatchDeliveryPage() {
   const handleCompleteDelivery = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setErrorMsg('');
+    setErrorMsg("");
 
     try {
       await api.post(`/delivery-jobs/${selectedDeliveryJob._id}/complete`, {
@@ -200,29 +214,36 @@ export default function DispatchDeliveryPage() {
         receivedAt: new Date().toISOString(),
         notes: podNotes,
       });
-      alert('Delivery marked Completed with Proof of Delivery!');
+      alert("Delivery marked Completed with Proof of Delivery!");
       setShowPodModal(false);
       loadData();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to complete delivery');
+      setErrorMsg(err.message || "Failed to complete delivery");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const inTransitCount = deliveryJobs.filter((d) => d.status === 'DISPATCHED' || d.status === 'OUT_FOR_DELIVERY').length;
-  const deliveredCount = deliveryJobs.filter((d) => d.status === 'DELIVERED').length;
-  const failedAttemptsCount = deliveryJobs.reduce((acc, d) => acc + (d.attempts?.length || 0), 0);
+  const inTransitCount = deliveryJobs.filter(
+    (d) => d.status === "DISPATCHED" || d.status === "OUT_FOR_DELIVERY",
+  ).length;
+  const deliveredCount = deliveryJobs.filter(
+    (d) => d.status === "DELIVERED",
+  ).length;
+  const failedAttemptsCount = deliveryJobs.reduce(
+    (acc, d) => acc + (d.attempts?.length || 0),
+    0,
+  );
 
   const filteredDeliveryJobs = useMemo(() => {
     if (!searchQuery.trim()) return deliveryJobs;
     const q = searchQuery.toLowerCase();
     return deliveryJobs.filter(
       (d) =>
-        (d.deliveryNumber || '').toLowerCase().includes(q) ||
-        (d.customerId?.name || '').toLowerCase().includes(q) ||
-        (d.orderId?.orderNumber || '').toLowerCase().includes(q) ||
-        (d.courierMetadata?.driverName || '').toLowerCase().includes(q)
+        (d.deliveryNumber || "").toLowerCase().includes(q) ||
+        (d.customerId?.name || "").toLowerCase().includes(q) ||
+        (d.orderId?.orderNumber || "").toLowerCase().includes(q) ||
+        (d.courierMetadata?.driverName || "").toLowerCase().includes(q),
     );
   }, [deliveryJobs, searchQuery]);
 
@@ -241,7 +262,8 @@ export default function DispatchDeliveryPage() {
                 Dispatch &amp; Delivery Operations
               </h1>
               <p className="text-xs text-slate-500 mt-1">
-                Quality gate enforcement, dispatch manifests, attempt audit history &amp; proof of delivery (POD)
+                Quality gate enforcement, dispatch manifests, attempt audit
+                history &amp; proof of delivery (POD)
               </p>
             </div>
             <button
@@ -249,66 +271,101 @@ export default function DispatchDeliveryPage() {
               className="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 shadow-2xs transition-colors cursor-pointer self-start sm:self-auto"
               title="Refresh"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
           </div>
 
           {/* Metrics Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+            <div className="p-4 rounded-md bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Ready for Dispatch</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Ready for Dispatch
+                </span>
                 <Package className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-2xl font-black text-emerald-700">{readyProductionJobs.length}</p>
-              <span className="text-[10px] text-slate-400 font-medium">Passed QC Quality Gate</span>
+              <p className="text-2xl font-black text-emerald-700">
+                {readyProductionJobs.length}
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Passed QC Quality Gate
+              </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+            <div className="p-4 rounded-md bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">In Transit</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  In Transit
+                </span>
                 <Truck className="w-4 h-4 text-cyan-600" />
               </div>
-              <p className="text-2xl font-black text-cyan-700">{inTransitCount}</p>
-              <span className="text-[10px] text-slate-400 font-medium">Dispatched on route</span>
+              <p className="text-2xl font-black text-cyan-700">
+                {inTransitCount}
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Dispatched on route
+              </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+            <div className="p-4 rounded-md bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Delivered</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Delivered
+                </span>
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl font-black text-slate-900">{deliveredCount}</p>
-              <span className="text-[10px] text-slate-400 font-medium">Confirmed with POD</span>
+              <p className="text-2xl font-black text-slate-900">
+                {deliveredCount}
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Confirmed with POD
+              </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+            <div className="p-4 rounded-md bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between text-slate-400 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Failed Attempts</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Failed Attempts
+                </span>
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
               </div>
-              <p className="text-2xl font-black text-rose-700">{failedAttemptsCount}</p>
-              <span className="text-[10px] text-slate-400 font-medium">Audit preserved</span>
+              <p className="text-2xl font-black text-rose-700">
+                {failedAttemptsCount}
+              </p>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Audit preserved
+              </span>
             </div>
           </div>
 
           {/* Section 1: Ready to Dispatch Queue (QC-Passed Jobs) */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+          <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>QC-Passed Ready for Dispatch ({readyProductionJobs.length})</span>
+                  <span>
+                    QC-Passed Ready for Dispatch ({readyProductionJobs.length})
+                  </span>
                 </h3>
-                <p className="text-xs text-slate-500">Quality gate enforced: Only jobs with passed QC can be dispatched</p>
+                <p className="text-xs text-slate-500">
+                  Quality gate enforced: Only jobs with passed QC can be
+                  dispatched
+                </p>
               </div>
             </div>
 
             {readyProductionJobs.length === 0 ? (
               <div className="p-6 text-center text-slate-500">
                 <Package className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                <p className="text-xs font-semibold text-slate-700">No jobs waiting for dispatch.</p>
-                <p className="text-[11px] text-slate-500 mt-1">Jobs clear into this queue once QC inspection passes.</p>
+                <p className="text-xs font-semibold text-slate-700">
+                  No jobs waiting for dispatch.
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Jobs clear into this queue once QC inspection passes.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -329,8 +386,12 @@ export default function DispatchDeliveryPage() {
                           QC PASSED
                         </span>
                       </div>
-                      <p className="text-xs text-slate-700 mt-1">Customer: {pJob.customerId?.name || 'Customer'}</p>
-                      <p className="text-[11px] text-slate-500">Order: {pJob.orderId?.orderNumber || 'N/A'}</p>
+                      <p className="text-xs text-slate-700 mt-1">
+                        Customer: {pJob.customerId?.name || "Customer"}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Order: {pJob.orderId?.orderNumber || "N/A"}
+                      </p>
                     </div>
 
                     <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
@@ -346,7 +407,9 @@ export default function DispatchDeliveryPage() {
                           <span>Dispatch</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-400 italic">View Only</span>
+                        <span className="text-[10px] text-slate-400 italic">
+                          View Only
+                        </span>
                       )}
                     </div>
                   </div>
@@ -356,11 +419,15 @@ export default function DispatchDeliveryPage() {
           </div>
 
           {/* Section 2: Active & Historical Delivery Jobs */}
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="bg-white rounded-md border border-slate-200 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Dispatched Consignments &amp; Tracking</h4>
-                <p className="text-[11px] text-slate-500">Courier metadata, transit attempts &amp; POD verification</p>
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Dispatched Consignments &amp; Tracking
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Courier metadata, transit attempts &amp; POD verification
+                </p>
               </div>
 
               <div className="relative w-full md:w-64">
@@ -392,75 +459,108 @@ export default function DispatchDeliveryPage() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-slate-500">
+                      <td
+                        colSpan="8"
+                        className="py-12 text-center text-slate-500"
+                      >
                         <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
                         <span>Loading delivery records...</span>
                       </td>
                     </tr>
                   ) : filteredDeliveryJobs.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="py-12 text-center text-slate-500">
+                      <td
+                        colSpan="8"
+                        className="py-12 text-center text-slate-500"
+                      >
                         <Truck className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-                        <p className="font-semibold text-slate-700">No delivery consignments found.</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Dispatched jobs will automatically populate here.</p>
+                        <p className="font-semibold text-slate-700">
+                          No delivery consignments found.
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Dispatched jobs will automatically populate here.
+                        </p>
                       </td>
                     </tr>
                   ) : (
                     filteredDeliveryJobs.map((del) => {
-                      const isDispatched = del.status === 'DISPATCHED' || del.status === 'OUT_FOR_DELIVERY';
-                      const isDelivered = del.status === 'DELIVERED';
+                      const isDispatched =
+                        del.status === "DISPATCHED" ||
+                        del.status === "OUT_FOR_DELIVERY";
+                      const isDelivered = del.status === "DELIVERED";
 
                       return (
-                        <tr key={del._id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-4 font-bold text-slate-900">{del.deliveryNumber}</td>
+                        <tr
+                          key={del._id}
+                          className="hover:bg-slate-50/80 transition-colors"
+                        >
+                          <td className="py-3 px-4 font-bold text-slate-900">
+                            {del.deliveryNumber}
+                          </td>
                           <td className="py-3 px-4">
                             <span className="font-semibold text-slate-900 block">
-                              {del.customerId?.name || 'Customer'}
+                              {del.customerId?.name || "Customer"}
                             </span>
                             <span className="text-[10px] text-slate-500 block">
-                              Order: {del.orderId?.orderNumber || 'N/A'}
+                              Order: {del.orderId?.orderNumber || "N/A"}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-slate-700">{del.deliveryType}</td>
+                          <td className="py-3 px-4 text-slate-700">
+                            {del.deliveryType}
+                          </td>
                           <td className="py-3 px-4">
                             <span className="text-slate-900 block">
-                              {del.courierMetadata?.courierName || del.courierMetadata?.driverName || 'Internal'}
+                              {del.courierMetadata?.courierName ||
+                                del.courierMetadata?.driverName ||
+                                "Internal"}
                             </span>
                             <span className="text-[10px] text-slate-500 block">
-                              {del.courierMetadata?.driverPhone || del.courierMetadata?.vehicleNumber || ''}
+                              {del.courierMetadata?.driverPhone ||
+                                del.courierMetadata?.vehicleNumber ||
+                                ""}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
                                 isDelivered
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                   : isDispatched
-                                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
+                                    : "bg-slate-100 text-slate-600 border border-slate-200"
                               }`}
                             >
                               {del.status}
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="text-slate-800 font-bold">{del.attempts?.length || 0}</span>
+                            <span className="text-slate-800 font-bold">
+                              {del.attempts?.length || 0}
+                            </span>
                             {del.attempts?.length > 0 && (
                               <span className="text-[10px] text-rose-600 block">
-                                Last: {del.attempts[del.attempts.length - 1]?.reason}
+                                Last:{" "}
+                                {del.attempts[del.attempts.length - 1]?.reason}
                               </span>
                             )}
                           </td>
                           <td className="py-3 px-4">
                             {del.proofOfDelivery?.recipientName ? (
                               <div>
-                                <span className="font-bold text-emerald-700 block">{del.proofOfDelivery.recipientName}</span>
+                                <span className="font-bold text-emerald-700 block">
+                                  {del.proofOfDelivery.recipientName}
+                                </span>
                                 <span className="text-[10px] text-slate-500">
-                                  {new Date(del.deliveredAt || del.proofOfDelivery.receivedAt).toLocaleDateString()}
+                                  {new Date(
+                                    del.deliveredAt ||
+                                      del.proofOfDelivery.receivedAt,
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-slate-400 italic">Pending</span>
+                              <span className="text-slate-400 italic">
+                                Pending
+                              </span>
                             )}
                           </td>
                           <td className="py-3 px-4 text-right">
@@ -497,39 +597,58 @@ export default function DispatchDeliveryPage() {
       {/* Dispatch Modal */}
       {showDispatchModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Create Dispatch Manifest</h3>
-                <p className="text-xs text-slate-500">Quality gate cleared: Hand off package to courier/driver</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Create Dispatch Manifest
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Quality gate cleared: Hand off package to courier/driver
+                </p>
               </div>
-              <button onClick={() => setShowDispatchModal(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer">
+              <button
+                onClick={() => setShowDispatchModal(false)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{errorMsg}</p>
+              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                {errorMsg}
+              </p>
             )}
 
             <form onSubmit={handleConfirmDispatch} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Delivery Channel</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Delivery Channel
+                </label>
                 <select
                   value={deliveryType}
                   onChange={(e) => setDeliveryType(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
                 >
-                  <option value="CUSTOMER_DELIVERY">CUSTOMER_DELIVERY (Internal Driver)</option>
+                  <option value="CUSTOMER_DELIVERY">
+                    CUSTOMER_DELIVERY (Internal Driver)
+                  </option>
                   <option value="COURIER">COURIER (External Logistics)</option>
-                  <option value="CUSTOMER_PICKUP">CUSTOMER_PICKUP (Workshop Counter)</option>
-                  <option value="DIRECT_DELIVERY">DIRECT_DELIVERY (Direct Drop)</option>
+                  <option value="CUSTOMER_PICKUP">
+                    CUSTOMER_PICKUP (Workshop Counter)
+                  </option>
+                  <option value="DIRECT_DELIVERY">
+                    DIRECT_DELIVERY (Direct Drop)
+                  </option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Courier / Service</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Courier / Service
+                  </label>
                   <input
                     type="text"
                     value={courierName}
@@ -539,7 +658,9 @@ export default function DispatchDeliveryPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Driver Name</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Driver Name
+                  </label>
                   <input
                     type="text"
                     value={driverName}
@@ -552,7 +673,9 @@ export default function DispatchDeliveryPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Driver Phone</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Driver Phone
+                  </label>
                   <input
                     type="text"
                     value={driverPhone}
@@ -562,7 +685,9 @@ export default function DispatchDeliveryPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Vehicle / Tracking #</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Vehicle / Tracking #
+                  </label>
                   <input
                     type="text"
                     value={vehicleNumber || trackingNumber}
@@ -600,39 +725,60 @@ export default function DispatchDeliveryPage() {
       {/* Attempt Logger Modal */}
       {showAttemptModal && selectedDeliveryJob && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Record Delivery Attempt</h3>
-                <p className="text-xs text-slate-500">Preserves audit history without deleting job</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Record Delivery Attempt
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Preserves audit history without deleting job
+                </p>
               </div>
-              <button onClick={() => setShowAttemptModal(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer">
+              <button
+                onClick={() => setShowAttemptModal(false)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{errorMsg}</p>
+              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                {errorMsg}
+              </p>
             )}
 
             <form onSubmit={handleRecordAttempt} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Reason for Failure</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Reason for Failure
+                </label>
                 <select
                   value={attemptReason}
                   onChange={(e) => setAttemptReason(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
                 >
-                  <option value="Customer unavailable / Premises closed">Customer unavailable / Premises closed</option>
-                  <option value="Wrong address / Relocated">Wrong address / Relocated</option>
+                  <option value="Customer unavailable / Premises closed">
+                    Customer unavailable / Premises closed
+                  </option>
+                  <option value="Wrong address / Relocated">
+                    Wrong address / Relocated
+                  </option>
                   <option value="Refused delivery">Refused delivery</option>
-                  <option value="Weather / Road blockage">Weather / Road blockage</option>
-                  <option value="Payment pending on delivery">Payment pending on delivery</option>
+                  <option value="Weather / Road blockage">
+                    Weather / Road blockage
+                  </option>
+                  <option value="Payment pending on delivery">
+                    Payment pending on delivery
+                  </option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Attempt Notes</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Attempt Notes
+                </label>
                 <textarea
                   rows="3"
                   value={attemptNotes}
@@ -666,33 +812,49 @@ export default function DispatchDeliveryPage() {
       {/* Proof of Delivery (POD) Modal */}
       {showPodModal && selectedDeliveryJob && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Record Proof of Delivery (POD)</h3>
-                <p className="text-xs text-slate-500">Final handover to customer</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Record Proof of Delivery (POD)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Final handover to customer
+                </p>
               </div>
-              <button onClick={() => setShowPodModal(false)} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer">
+              <button
+                onClick={() => setShowPodModal(false)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-lg transition-colors cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {errorMsg && (
-              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">{errorMsg}</p>
+              <p className="text-xs text-rose-800 p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                {errorMsg}
+              </p>
             )}
 
             <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
-              <span className="font-bold block text-blue-950">Automated Financial Settlement Logic:</span>
+              <span className="font-bold block text-blue-950">
+                Automated Financial Settlement Logic:
+              </span>
               <p className="text-[11px] text-blue-800 leading-relaxed">
-                If the associated Order balance is fully settled (0 balance due), the Order will automatically advance to{' '}
-                <strong className="text-blue-950">COMPLETED</strong>. If an outstanding balance remains, the Order will transition to{' '}
-                <strong className="text-blue-950">DELIVERED</strong> awaiting financial closure.
+                If the associated Order balance is fully settled (0 balance
+                due), the Order will automatically advance to{" "}
+                <strong className="text-blue-950">COMPLETED</strong>. If an
+                outstanding balance remains, the Order will transition to{" "}
+                <strong className="text-blue-950">DELIVERED</strong> awaiting
+                financial closure.
               </p>
             </div>
 
             <form onSubmit={handleCompleteDelivery} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Recipient Name</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Recipient Name
+                </label>
                 <input
                   type="text"
                   value={podRecipientName}
@@ -704,7 +866,9 @@ export default function DispatchDeliveryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Handover Notes</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Handover Notes
+                </label>
                 <textarea
                   rows="2"
                   value={podNotes}

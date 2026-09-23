@@ -46,7 +46,9 @@ export default function IncomingLeadsView({
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(() => getCurrentMonthKey());
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    getCurrentMonthKey(),
+  );
   const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'table'
   const [sortBy, setSortBy] = useState("newest"); // 'newest' | 'oldest' | 'name'
   const [quickViewLead, setQuickViewLead] = useState(null);
@@ -84,8 +86,18 @@ export default function IncomingLeadsView({
     const year = parts[0];
     const month = parts[1];
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     const monthIndex = parseInt(month, 10) - 1;
     if (monthIndex >= 0 && monthIndex < 12) {
@@ -241,7 +253,7 @@ export default function IncomingLeadsView({
         </div>
 
         <div className="relative z-10 flex items-center gap-3 shrink-0">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center gap-4 text-white">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-md flex items-center gap-4 text-white">
             <div className="p-3 bg-white/20 rounded-xl">
               <UserCheck className="w-6 h-6 text-white" />
             </div>
@@ -256,7 +268,7 @@ export default function IncomingLeadsView({
       </div>
 
       {/* Control Bar: Search, Bulk Accept, View Switcher & Sort */}
-      <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 p-4 rounded-md shadow-xs flex flex-wrap items-center justify-between gap-4">
         {/* Search Bar */}
         <div className="relative flex-1 min-w-60">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -363,7 +375,7 @@ export default function IncomingLeadsView({
       {/* Main Content Area */}
       {incomingLeads.length === 0 ? (
         <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center flex flex-col items-center gap-3 shadow-xs">
-          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl">
+          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-md">
             <ShieldCheck className="w-10 h-10" />
           </div>
           <h3 className="text-lg font-bold text-slate-900">
@@ -393,15 +405,17 @@ export default function IncomingLeadsView({
             return (
               <div
                 key={leadId}
-                className={`border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-4 relative group overflow-hidden ${
+                className={`border rounded-md p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-4 relative group overflow-hidden ${
                   isSelected
                     ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40"
                     : lead.handledBy
-                    ? "border-emerald-200/90 bg-linear-to-b from-emerald-50/30 via-white to-white hover:border-emerald-300"
-                    : "border-blue-200/90 bg-linear-to-b from-blue-50/30 via-white to-white hover:border-blue-300"
+                      ? "border-emerald-200/90 bg-linear-to-b from-emerald-50/30 via-white to-white hover:border-emerald-300"
+                      : "border-blue-200/90 bg-linear-to-b from-blue-50/30 via-white to-white hover:border-blue-300"
                 }`}
               >
-                <div className={`absolute top-0 left-0 right-0 h-1.5 ${lead.handledBy ? "bg-emerald-500" : "bg-blue-500 animate-pulse"}`} />
+                <div
+                  className={`absolute top-0 left-0 right-0 h-1.5 ${lead.handledBy ? "bg-emerald-500" : "bg-blue-500 animate-pulse"}`}
+                />
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -515,7 +529,7 @@ export default function IncomingLeadsView({
         </div>
       ) : (
         /* TABLE VIEW */
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-md shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -618,7 +632,7 @@ export default function IncomingLeadsView({
               {/* Premium Header */}
               <div className="bg-blue-900 text-white p-6 flex items-start justify-between shadow-md">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center font-black text-lg shadow-lg border border-white/30 shrink-0">
+                  <div className="w-13 h-13 rounded-md bg-white/20 backdrop-blur-md text-white flex items-center justify-center font-black text-lg shadow-lg border border-white/30 shrink-0">
                     {(quickViewLead.name || "L").substring(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -649,7 +663,7 @@ export default function IncomingLeadsView({
               {/* Body */}
               <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-5 text-xs text-slate-700">
                 {/* Status & Campaign */}
-                <div className="bg-blue-50/90 border border-blue-200/80 p-4 rounded-2xl flex items-center justify-between shadow-2xs">
+                <div className="bg-blue-50/90 border border-blue-200/80 p-4 rounded-md flex items-center justify-between shadow-2xs">
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wider text-blue-800">
                       Status
@@ -669,7 +683,7 @@ export default function IncomingLeadsView({
                   <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                     Financial Breakdown
                   </h4>
-                  <div className="bg-linear-to-br from-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-slate-800 shadow-xl flex flex-col gap-3.5">
+                  <div className="bg-linear-to-br from-slate-900 to-slate-950 text-white p-4 rounded-md border border-slate-800 shadow-xl flex flex-col gap-3.5">
                     <div className="grid grid-cols-3 gap-2.5 text-center">
                       <div className="bg-white/5 border border-white/10 p-2.5 rounded-xl">
                         <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
@@ -740,7 +754,7 @@ export default function IncomingLeadsView({
                   <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                     Contact Details
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50/80 p-4 rounded-md border border-slate-200/80 shadow-2xs">
                     <div>
                       <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">
                         Phone Number
@@ -816,7 +830,7 @@ export default function IncomingLeadsView({
                     <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                       Initial Remarks
                     </h4>
-                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-2xl flex flex-col gap-2 shadow-2xs text-slate-800 font-medium">
+                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-md flex flex-col gap-2 shadow-2xs text-slate-800 font-medium">
                       {quickViewLead.remark && <p>{quickViewLead.remark}</p>}
                       {quickViewLead.remark2 && (
                         <p
@@ -862,7 +876,7 @@ export default function IncomingLeadsView({
                                   currentIndex: idx,
                                 })
                               }
-                              className="relative h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group cursor-pointer shadow-2xs hover:shadow-md transition-all"
+                              className="relative h-28 rounded-md overflow-hidden bg-slate-100 border border-slate-200 group cursor-pointer shadow-2xs hover:shadow-md transition-all"
                             >
                               <img
                                 src={img.url}
@@ -879,7 +893,7 @@ export default function IncomingLeadsView({
                           ))}
                         </div>
                       ) : (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-slate-400 font-medium text-xs flex flex-col items-center gap-1">
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 font-medium text-xs flex flex-col items-center gap-1">
                           <ImageIcon className="w-5 h-5 text-slate-300" />
                           <span>No images attached to this incoming lead.</span>
                         </div>
@@ -900,7 +914,9 @@ export default function IncomingLeadsView({
                       </h4>
                     </div>
                     <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
-                      {((quickViewLead.history?.length || 0) + (quickViewLead.forwardHistory?.length || 0))} Entry(s)
+                      {(quickViewLead.history?.length || 0) +
+                        (quickViewLead.forwardHistory?.length || 0)}{" "}
+                      Entry(s)
                     </span>
                   </div>
 
@@ -912,15 +928,24 @@ export default function IncomingLeadsView({
                         combinedHistory.push({
                           id: h._id || Math.random().toString(),
                           type: h.action || "ACTIVITY",
-                          title: h.action === "CREATED" ? "Lead Created"
-                               : h.action === "FORWARDED" ? "Lead Forwarded"
-                               : h.action === "ACCEPTED" ? "Lead Accepted"
-                               : h.action === "UPDATED" ? "Profile Updated"
-                               : h.action === "DOCUMENT_UPLOADED" ? "Document Uploaded"
-                               : h.action === "DOCUMENT_DELETED" ? "Document Deleted"
-                               : h.action === "SOFT_DELETED" ? "Moved to Recycle Bin"
-                               : h.action === "RESTORED" ? "Restored from Recycle Bin"
-                               : "Lead Activity",
+                          title:
+                            h.action === "CREATED"
+                              ? "Lead Created"
+                              : h.action === "FORWARDED"
+                                ? "Lead Forwarded"
+                                : h.action === "ACCEPTED"
+                                  ? "Lead Accepted"
+                                  : h.action === "UPDATED"
+                                    ? "Profile Updated"
+                                    : h.action === "DOCUMENT_UPLOADED"
+                                      ? "Document Uploaded"
+                                      : h.action === "DOCUMENT_DELETED"
+                                        ? "Document Deleted"
+                                        : h.action === "SOFT_DELETED"
+                                          ? "Moved to Recycle Bin"
+                                          : h.action === "RESTORED"
+                                            ? "Restored from Recycle Bin"
+                                            : "Lead Activity",
                           performedBy: h.performedBy || "System",
                           timestamp: h.timestamp || h.createdAt,
                           details: h.details,
@@ -932,7 +957,10 @@ export default function IncomingLeadsView({
                     if (Array.isArray(quickViewLead.forwardHistory)) {
                       quickViewLead.forwardHistory.forEach((fh) => {
                         const isDuplicate = combinedHistory.some(
-                          (c) => c.type === "FORWARDED" && new Date(c.timestamp).getTime() === new Date(fh.forwardedAt).getTime()
+                          (c) =>
+                            c.type === "FORWARDED" &&
+                            new Date(c.timestamp).getTime() ===
+                              new Date(fh.forwardedAt).getTime(),
                         );
                         if (!isDuplicate) {
                           combinedHistory.push({
@@ -941,8 +969,15 @@ export default function IncomingLeadsView({
                             title: `Forwarded to ${fh.forwardedTo || "Employee"}`,
                             performedBy: fh.forwardedBy || "System",
                             timestamp: fh.forwardedAt,
-                            details: fh.remark ? `Note: ${fh.remark}` : `Lead responsibility assigned to ${fh.forwardedTo}`,
-                            changes: { handledBy: { from: "Previous Owner", to: fh.forwardedTo } }
+                            details: fh.remark
+                              ? `Note: ${fh.remark}`
+                              : `Lead responsibility assigned to ${fh.forwardedTo}`,
+                            changes: {
+                              handledBy: {
+                                from: "Previous Owner",
+                                to: fh.forwardedTo,
+                              },
+                            },
                           });
                         }
                       });
@@ -954,12 +989,16 @@ export default function IncomingLeadsView({
                         type: "CREATED",
                         title: "Lead Created",
                         performedBy: quickViewLead.createdBy || "System",
-                        timestamp: quickViewLead.createdAt || quickViewLead.leadDate,
+                        timestamp:
+                          quickViewLead.createdAt || quickViewLead.leadDate,
                         details: "Lead created in system",
                       });
                     }
 
-                    combinedHistory.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                    combinedHistory.sort(
+                      (a, b) =>
+                        new Date(b.timestamp || 0) - new Date(a.timestamp || 0),
+                    );
 
                     return (
                       <div className="relative pl-5 space-y-3.5 pt-1 before:absolute before:left-2 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-slate-200">
@@ -975,33 +1014,57 @@ export default function IncomingLeadsView({
                               })
                             : "Recent";
 
-                          let badgeBg = "bg-slate-100 text-slate-700 border-slate-200";
-                          let icon = <Clock className="w-3 h-3 text-slate-500" />;
+                          let badgeBg =
+                            "bg-slate-100 text-slate-700 border-slate-200";
+                          let icon = (
+                            <Clock className="w-3 h-3 text-slate-500" />
+                          );
 
                           if (item.type === "FORWARDED") {
-                            badgeBg = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                            badgeBg =
+                              "bg-indigo-50 text-indigo-700 border-indigo-200";
                             icon = <Send className="w-3 h-3 text-indigo-600" />;
                           } else if (item.type === "CREATED") {
-                            badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                            icon = <Plus className="w-3 h-3 text-emerald-600" />;
+                            badgeBg =
+                              "bg-emerald-50 text-emerald-700 border-emerald-200";
+                            icon = (
+                              <Plus className="w-3 h-3 text-emerald-600" />
+                            );
                           } else if (item.type === "ACCEPTED") {
-                            badgeBg = "bg-blue-50 text-blue-700 border-blue-200";
-                            icon = <CheckCircle2 className="w-3 h-3 text-blue-600" />;
+                            badgeBg =
+                              "bg-blue-50 text-blue-700 border-blue-200";
+                            icon = (
+                              <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                            );
                           } else if (item.type === "UPDATED") {
-                            badgeBg = "bg-purple-50 text-purple-700 border-purple-200";
-                            icon = <RefreshCw className="w-3 h-3 text-purple-600" />;
-                          } else if (item.type === "DOCUMENT_UPLOADED" || item.type === "DOCUMENT_DELETED") {
-                            badgeBg = "bg-amber-50 text-amber-700 border-amber-200";
-                            icon = <ImageIcon className="w-3 h-3 text-amber-600" />;
+                            badgeBg =
+                              "bg-purple-50 text-purple-700 border-purple-200";
+                            icon = (
+                              <RefreshCw className="w-3 h-3 text-purple-600" />
+                            );
+                          } else if (
+                            item.type === "DOCUMENT_UPLOADED" ||
+                            item.type === "DOCUMENT_DELETED"
+                          ) {
+                            badgeBg =
+                              "bg-amber-50 text-amber-700 border-amber-200";
+                            icon = (
+                              <ImageIcon className="w-3 h-3 text-amber-600" />
+                            );
                           }
 
                           return (
-                            <div key={item.id || idx} className="relative group">
+                            <div
+                              key={item.id || idx}
+                              className="relative group"
+                            >
                               <div className="absolute -left-5.25 top-1.5 w-3 h-3 rounded-full bg-white border-2 border-indigo-500 group-hover:scale-125 transition-transform" />
 
-                              <div className="bg-slate-50/90 hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-xs transition-all shadow-2xs">
+                              <div className="bg-slate-50/90 hover:bg-slate-50 border border-slate-200/80 rounded-md p-3 text-xs transition-all shadow-2xs">
                                 <div className="flex items-center justify-between gap-2 mb-1">
-                                  <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md border inline-flex items-center gap-1 ${badgeBg}`}>
+                                  <span
+                                    className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md border inline-flex items-center gap-1 ${badgeBg}`}
+                                  >
                                     {icon}
                                     <span>{item.title}</span>
                                   </span>
@@ -1018,7 +1081,12 @@ export default function IncomingLeadsView({
 
                                 {item.performedBy && (
                                   <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-semibold">
-                                    <span>Action By: <strong className="text-slate-700">{item.performedBy}</strong></span>
+                                    <span>
+                                      Action By:{" "}
+                                      <strong className="text-slate-700">
+                                        {item.performedBy}
+                                      </strong>
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -1114,7 +1182,7 @@ export default function IncomingLeadsView({
               <img
                 src={imageModal.images[imageModal.currentIndex]?.url}
                 alt="Lead Preview"
-                className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl border border-slate-800 animate-scale-up"
+                className="max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl border border-slate-800 animate-scale-up"
               />
 
               {imageModal.images.length > 1 && (

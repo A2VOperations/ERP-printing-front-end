@@ -682,11 +682,18 @@ function DesignStudioContent() {
   const hasAutoOpenedRef = useRef(false);
 
   useEffect(() => {
-    if (!projects || projects.length === 0 || !orderIdParam || hasAutoOpenedRef.current) return;
+    if (
+      !projects ||
+      projects.length === 0 ||
+      !orderIdParam ||
+      hasAutoOpenedRef.current
+    )
+      return;
     const targetProj = projects.find(
       (p) =>
         String(p.orderId?._id || p.orderId) === String(orderIdParam) ||
-        String(p.orderId?.orderNumber || "").toLowerCase() === String(orderIdParam).toLowerCase()
+        String(p.orderId?.orderNumber || "").toLowerCase() ===
+          String(orderIdParam).toLowerCase(),
     );
     if (targetProj) {
       hasAutoOpenedRef.current = true;
@@ -758,7 +765,8 @@ function DesignStudioContent() {
       if (orderIdParam) {
         const matchesOrder =
           String(p.orderId?._id || p.orderId) === String(orderIdParam) ||
-          String(p.orderId?.orderNumber || "").toLowerCase() === String(orderIdParam).toLowerCase();
+          String(p.orderId?.orderNumber || "").toLowerCase() ===
+            String(orderIdParam).toLowerCase();
         if (!matchesOrder) return false;
       }
 
@@ -995,7 +1003,10 @@ function DesignStudioContent() {
               <div>
                 <span className="font-bold">Sales Project Status Monitor:</span>{" "}
                 <span>
-                  You can see live designer status, proofs, and artwork progress for each order to update and contact your customers. Technical specifications, artwork uploads, and production releases are read-only.
+                  You can see live designer status, proofs, and artwork progress
+                  for each order to update and contact your customers. Technical
+                  specifications, artwork uploads, and production releases are
+                  read-only.
                 </span>
               </div>
             </div>
@@ -1011,7 +1022,8 @@ function DesignStudioContent() {
             <div className="flex items-center gap-2.5">
               <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" />
               <span>
-                Filtered to specific design project for Order <strong>#{orderIdParam}</strong>
+                Filtered to specific design project for Order{" "}
+                <strong>#{orderIdParam}</strong>
               </span>
             </div>
             <Link
@@ -1084,7 +1096,7 @@ function DesignStudioContent() {
                 return (
                   <div
                     key={col.id}
-                    className="flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200 p-3.5 min-h-[700px] shadow-2xs"
+                    className="flex flex-col bg-slate-100/70 rounded-md border border-slate-200 p-3.5 min-h-[700px] shadow-2xs"
                   >
                     {/* Column Header */}
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
@@ -1227,7 +1239,7 @@ function DesignStudioContent() {
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
                   <Palette className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
@@ -1510,8 +1522,8 @@ function DesignStudioContent() {
                               7-Point Technical Production Brief (Step 12)
                             </h4>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Live Order
-                              Synced
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />{" "}
+                              Live Order Synced
                             </span>
                           </div>
 
@@ -1526,12 +1538,13 @@ function DesignStudioContent() {
                             </button>
                           ) : (
                             <span className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 font-semibold flex items-center gap-1">
-                              <Lock className="w-3 h-3 text-slate-400" /> Specs Locked for Sales
+                              <Lock className="w-3 h-3 text-slate-400" /> Specs
+                              Locked for Sales
                             </span>
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 bg-slate-50 p-4 rounded-md border border-slate-200">
                           {/* 1. Size / Dimensions */}
                           <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <div className="flex items-center justify-between mb-1">
@@ -1701,7 +1714,7 @@ function DesignStudioContent() {
                           7. Instructions, Sales Remarks &amp; Customer Notes
                         </h4>
                         {dynamicSpecs.specialInstructions ? (
-                          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 font-medium whitespace-pre-wrap leading-relaxed">
+                          <div className="p-4 rounded-md bg-amber-50 border border-amber-200 text-amber-900 font-medium whitespace-pre-wrap leading-relaxed">
                             {dynamicSpecs.specialInstructions}
                           </div>
                         ) : (
@@ -1727,7 +1740,7 @@ function DesignStudioContent() {
 
                         {!selectedProject.briefAttachments ||
                         selectedProject.briefAttachments.length === 0 ? (
-                          <div className="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
+                          <div className="p-6 rounded-md bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
                             No reference photos or artwork files were attached
                             during hand-off.
                           </div>
@@ -1785,13 +1798,17 @@ function DesignStudioContent() {
               {activeTab === "assets" && (
                 <div className="space-y-6">
                   {isSalesRole ? (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
+                    <div className="p-4 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
                       <div className="flex items-center gap-2.5">
                         <Eye className="w-4 h-4 text-blue-600 shrink-0" />
                         <div>
-                          <strong className="block text-slate-900">Artwork &amp; Proof Files (Read Only)</strong>
+                          <strong className="block text-slate-900">
+                            Artwork &amp; Proof Files (Read Only)
+                          </strong>
                           <span className="text-slate-500 text-[11px]">
-                            File uploads are managed by the assigned designer. You can preview and download all client assets below to contact your customer.
+                            File uploads are managed by the assigned designer.
+                            You can preview and download all client assets below
+                            to contact your customer.
                           </span>
                         </div>
                       </div>
@@ -1803,7 +1820,7 @@ function DesignStudioContent() {
                     /* Uploader Card */
                     <form
                       onSubmit={handleUploadAsset}
-                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+                      className="p-5 rounded-md bg-slate-50 border border-slate-200 space-y-4"
                     >
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -1890,7 +1907,7 @@ function DesignStudioContent() {
                     </h4>
 
                     {projectAssets.length === 0 ? (
-                      <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
+                      <div className="p-8 rounded-md bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
                         No artwork assets uploaded yet. Upload your first proof
                         file above.
                       </div>
@@ -1967,13 +1984,17 @@ function DesignStudioContent() {
               {activeTab === "versions" && (
                 <div className="space-y-6">
                   {isSalesRole ? (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
+                    <div className="p-4 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
                       <div className="flex items-center gap-2.5">
                         <History className="w-4 h-4 text-purple-600 shrink-0" />
                         <div>
-                          <strong className="block text-slate-900">Design Versions &amp; Proof History (Read Only)</strong>
+                          <strong className="block text-slate-900">
+                            Design Versions &amp; Proof History (Read Only)
+                          </strong>
                           <span className="text-slate-500 text-[11px]">
-                            Publishing design versions is handled by the designer. You can inspect all proofs and versions below to update your client.
+                            Publishing design versions is handled by the
+                            designer. You can inspect all proofs and versions
+                            below to update your client.
                           </span>
                         </div>
                       </div>
@@ -1985,7 +2006,7 @@ function DesignStudioContent() {
                     /* Publish Version Form */
                     <form
                       onSubmit={handleCreateVersion}
-                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+                      className="p-5 rounded-md bg-slate-50 border border-slate-200 space-y-4"
                     >
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -2010,7 +2031,9 @@ function DesignStudioContent() {
                             }
                             className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-purple-600"
                           >
-                            <option value="">-- Choose Uploaded Asset --</option>
+                            <option value="">
+                              -- Choose Uploaded Asset --
+                            </option>
                             {projectAssets.map((asset) => (
                               <option key={asset._id} value={asset._id}>
                                 [{asset.category}] {asset.originalFilename} (
@@ -2069,7 +2092,7 @@ function DesignStudioContent() {
                     </h4>
 
                     {projectVersions.length === 0 ? (
-                      <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
+                      <div className="p-8 rounded-md bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
                         No published versions yet. Upload an asset and publish
                         your first version above.
                       </div>
@@ -2078,7 +2101,7 @@ function DesignStudioContent() {
                         {projectVersions.map((v) => (
                           <div
                             key={v._id}
-                            className={`p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                            className={`p-4 rounded-md border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                               v.isCurrent
                                 ? "bg-purple-50/60 border-purple-200"
                                 : "bg-white border-slate-200 shadow-2xs"
@@ -2169,7 +2192,7 @@ function DesignStudioContent() {
                   </div>
 
                   {projectRevisions.length === 0 ? (
-                    <div className="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
+                    <div className="p-8 rounded-md bg-slate-50 border border-dashed border-slate-200 text-center text-slate-500">
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                       <p className="font-semibold text-slate-700">
                         No revisions requested by client.
@@ -2184,7 +2207,7 @@ function DesignStudioContent() {
                       {projectRevisions.map((rev, idx) => (
                         <div
                           key={rev._id || idx}
-                          className="p-5 rounded-2xl bg-white border border-rose-200 shadow-xs space-y-3.5"
+                          className="p-5 rounded-md bg-white border border-rose-200 shadow-xs space-y-3.5"
                         >
                           <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex items-center gap-2">
@@ -2287,7 +2310,7 @@ function DesignStudioContent() {
               {activeTab === "approval" && (
                 <div className="space-y-6">
                   {/* Step 17: Client Approval Status */}
-                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="p-5 rounded-md bg-slate-50 border border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-0.5 flex items-center gap-2">
@@ -2305,12 +2328,13 @@ function DesignStudioContent() {
 
                       {selectedProject.approvalStatus === "APPROVED" ? (
                         <span className="px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-xs flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" /> V
-                          {selectedProject.currentVersionNumber || 1} APPROVED
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />{" "}
+                          V{selectedProject.currentVersionNumber || 1} APPROVED
                         </span>
                       ) : (
                         <span className="px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xs flex items-center gap-1.5">
-                          <Clock className="w-4 h-4 text-amber-600" /> PENDING CLIENT APPROVAL
+                          <Clock className="w-4 h-4 text-amber-600" /> PENDING
+                          CLIENT APPROVAL
                         </span>
                       )}
                     </div>
@@ -2327,7 +2351,8 @@ function DesignStudioContent() {
                           </button>
                         ) : (
                           <div className="text-xs text-slate-500 italic">
-                            Awaiting client review &amp; designer/manager approval.
+                            Awaiting client review &amp; designer/manager
+                            approval.
                           </div>
                         )
                       ) : (
@@ -2339,7 +2364,7 @@ function DesignStudioContent() {
                   </div>
 
                   {/* Production File Lock & Press Release */}
-                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                  <div className="p-5 rounded-md bg-slate-50 border border-slate-200 space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-0.5 flex items-center gap-2">
@@ -2353,7 +2378,8 @@ function DesignStudioContent() {
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        {selectedProject.status !== "PRODUCTION_LOCKED" && !isSalesRole ? (
+                        {selectedProject.status !== "PRODUCTION_LOCKED" &&
+                        !isSalesRole ? (
                           <>
                             <button
                               onClick={() => setShowOverrideModal(true)}
@@ -2376,7 +2402,8 @@ function DesignStudioContent() {
                               Lock for Production
                             </button>
                           </>
-                        ) : isSalesRole && selectedProject.status !== "PRODUCTION_LOCKED" ? (
+                        ) : isSalesRole &&
+                          selectedProject.status !== "PRODUCTION_LOCKED" ? (
                           <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
                             Lock Managed by Production
                           </span>
@@ -2465,7 +2492,7 @@ function DesignStudioContent() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-60 flex items-center justify-center p-4">
           <form
             onSubmit={handleRecordApproval}
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-xl animate-scale-up text-slate-800"
+            className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-6 space-y-4 shadow-xl animate-scale-up text-slate-800"
           >
             <div className="flex items-center gap-3 text-emerald-600">
               <CheckCircle2 className="w-6 h-6" />
@@ -2561,7 +2588,7 @@ function DesignStudioContent() {
       {/* EDIT TECHNICAL SPECIFICATIONS (DESIGNER HANDOFF) MODAL */}
       {showEditSpecsModal && selectedProject && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-60 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto text-slate-800">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-2xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5 text-blue-600">
                 <Layers className="w-5 h-5" />
@@ -2978,7 +3005,7 @@ function DesignStudioContent() {
       {/* CEO OVERRIDE MODAL */}
       {showOverrideModal && selectedProject && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-60 flex items-center justify-center p-4">
-          <div className="bg-white border border-amber-200 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-xl animate-scale-up text-slate-800">
+          <div className="bg-white border border-amber-200 rounded-md w-full max-w-lg p-6 space-y-4 shadow-xl animate-scale-up text-slate-800">
             <div className="flex items-center gap-3 text-amber-600">
               <ShieldAlert className="w-6 h-6" />
               <h3 className="text-base font-bold text-slate-900">

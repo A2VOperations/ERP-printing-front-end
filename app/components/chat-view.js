@@ -9,7 +9,9 @@ const safeFetchJson = async (url, options = {}) => {
   const contentType = res.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     const text = await res.text();
-    throw new Error(`Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}`);
+    throw new Error(
+      `Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}`,
+    );
   }
   return await res.json();
 };
@@ -61,17 +63,20 @@ export default function ChatView({ user, onUnreadCountChange }) {
   const fetchConversations = useCallback(async () => {
     if (!userId) return;
     try {
-      const data = await safeFetchJson(`${API_BASE_URL}/api/chat/conversations`, {
-        headers: {
-          "x-user-id": userId,
-          "x-user-role": userRole,
+      const data = await safeFetchJson(
+        `${API_BASE_URL}/api/chat/conversations`,
+        {
+          headers: {
+            "x-user-id": userId,
+            "x-user-role": userRole,
+          },
         },
-      });
+      );
       if (data.success) {
         setConversations(data.conversations || []);
         const totalUnread = (data.conversations || []).reduce(
           (acc, c) => acc + (c.unreadCount || 0),
-          0
+          0,
         );
         if (onUnreadCountChange) onUnreadCountChange(totalUnread);
       }
@@ -93,7 +98,7 @@ export default function ChatView({ user, onUnreadCountChange }) {
               "x-user-id": userId,
               "x-user-role": userRole,
             },
-          }
+          },
         );
         if (data.success) {
           setMessages(data.messages || []);
@@ -110,7 +115,7 @@ export default function ChatView({ user, onUnreadCountChange }) {
         if (!silent) setLoading(false);
       }
     },
-    [userId, userRole]
+    [userId, userRole],
   );
 
   // Initial load
@@ -134,7 +139,13 @@ export default function ChatView({ user, onUnreadCountChange }) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [userId, selectedContact, fetchConversations, fetchContacts, fetchMessages]);
+  }, [
+    userId,
+    selectedContact,
+    fetchConversations,
+    fetchContacts,
+    fetchMessages,
+  ]);
 
   const handleSelectContact = (contact) => {
     setSelectedContact(contact);
@@ -181,7 +192,7 @@ export default function ChatView({ user, onUnreadCountChange }) {
       if (data.success) {
         // Replace temp message with server response
         setMessages((prev) =>
-          prev.map((m) => (m._id === tempId ? data.message : m))
+          prev.map((m) => (m._id === tempId ? data.message : m)),
         );
         fetchConversations();
       } else {
@@ -192,7 +203,9 @@ export default function ChatView({ user, onUnreadCountChange }) {
     } catch (err) {
       console.error("Error sending message:", err);
       setMessages((prev) => prev.filter((m) => m._id !== tempId));
-      setErrorMessage(err.message || "Network error: Could not reach backend server.");
+      setErrorMessage(
+        err.message || "Network error: Could not reach backend server.",
+      );
     } finally {
       setSending(false);
     }
@@ -221,7 +234,7 @@ export default function ChatView({ user, onUnreadCountChange }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] max-w-7xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden font-sans">
+    <div className="flex flex-col h-[calc(100vh-100px)] max-w-7xl mx-auto bg-white rounded-md shadow-xl border border-slate-200 overflow-hidden font-sans">
       {/* Top Banner & Header */}
       <div className="bg-slate-900 text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-3">
@@ -291,7 +304,9 @@ export default function ChatView({ user, onUnreadCountChange }) {
               <input
                 type="text"
                 placeholder={
-                  isAdmin ? "Search employees & admins..." : "Search admins & managers..."
+                  isAdmin
+                    ? "Search employees & admins..."
+                    : "Search admins & managers..."
                 }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -378,7 +393,9 @@ export default function ChatView({ user, onUnreadCountChange }) {
                       </div>
                       <span
                         className={`w-3 h-3 rounded-full absolute -bottom-0.5 -right-0.5 border-2 border-white ${
-                          contact.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                          contact.isOnline
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-slate-300"
                         }`}
                         title={contact.isOnline ? "Online Now" : "Offline"}
                       />
@@ -396,10 +413,13 @@ export default function ChatView({ user, onUnreadCountChange }) {
                         </span>
                         {lastMsg?.createdAt && (
                           <span className="text-[10px] text-slate-400 shrink-0">
-                            {new Date(lastMsg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {new Date(lastMsg.createdAt).toLocaleTimeString(
+                              [],
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
                           </span>
                         )}
                       </div>
@@ -481,13 +501,13 @@ export default function ChatView({ user, onUnreadCountChange }) {
                       {selectedContact.isOnline
                         ? "Active now"
                         : selectedContact.lastActiveAt
-                        ? `Last active ${new Date(
-                            selectedContact.lastActiveAt
-                          ).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        : selectedContact.email}
+                          ? `Last active ${new Date(
+                              selectedContact.lastActiveAt,
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}`
+                          : selectedContact.email}
                     </p>
                   </div>
                 </div>
@@ -586,8 +606,10 @@ export default function ChatView({ user, onUnreadCountChange }) {
                       .filter(Boolean)
                       .map((id) => String(id).toLowerCase());
 
-                    const msgSenderId = String(msg.senderId || "").toLowerCase();
-                    
+                    const msgSenderId = String(
+                      msg.senderId || "",
+                    ).toLowerCase();
+
                     const isMe =
                       myIds.includes(msgSenderId) ||
                       (!targetIds.includes(msgSenderId) && msgSenderId !== "");
@@ -596,11 +618,13 @@ export default function ChatView({ user, onUnreadCountChange }) {
                       <div
                         key={msg._id || msg.createdAt || Math.random()}
                         className={`w-full flex flex-col ${
-                          isMe ? "items-end text-right" : "items-start text-left"
+                          isMe
+                            ? "items-end text-right"
+                            : "items-start text-left"
                         }`}
                       >
                         <div
-                          className={`max-w-xs sm:max-w-md md:max-w-lg px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm transition-all ${
+                          className={`max-w-xs sm:max-w-md md:max-w-lg px-4 py-2.5 rounded-md text-xs leading-relaxed shadow-sm transition-all ${
                             isMe
                               ? "bg-linear-to-r from-blue-600 via-sky-600 to-indigo-600 text-white rounded-tr-xs border border-sky-400/30"
                               : "bg-white text-slate-800 border border-slate-200/90 rounded-tl-xs"
@@ -610,7 +634,9 @@ export default function ChatView({ user, onUnreadCountChange }) {
                             {msg.message}
                           </p>
                         </div>
-                        <div className={`flex items-center gap-1.5 mt-1 px-1 ${isMe ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`flex items-center gap-1.5 mt-1 px-1 ${isMe ? "justify-end" : "justify-start"}`}
+                        >
                           <span className="text-[9px] font-semibold text-slate-400">
                             {new Date(msg.createdAt).toLocaleTimeString([], {
                               hour: "2-digit",

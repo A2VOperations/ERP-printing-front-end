@@ -37,9 +37,12 @@ export default function PaymentsView({ user }) {
       if (search) query.append("search", search);
       if (methodFilter !== "all") query.append("paymentMethod", methodFilter);
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/payments?${query.toString()}`, {
-        headers: getHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/payments?${query.toString()}`,
+        {
+          headers: getHeaders(),
+        },
+      );
       const json = await res.json();
       if (json.success) {
         setPayments(json.data || []);
@@ -87,14 +90,19 @@ export default function PaymentsView({ user }) {
         notes,
       };
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/payments/orders/${selectedOrderId}`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/payments/orders/${selectedOrderId}`,
+        {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        },
+      );
       const json = await res.json();
       if (json.success) {
-        alert(`Payment receipt ${json.data.receiptNumber} recorded successfully!`);
+        alert(
+          `Payment receipt ${json.data.receiptNumber} recorded successfully!`,
+        );
         setShowRecordModal(false);
         fetchPayments();
         fetchOrdersForPayment();
@@ -111,9 +119,12 @@ export default function PaymentsView({ user }) {
   const handleDownloadReceipt = async (paymentId, receiptNum) => {
     try {
       const token = localStorage.getItem("token") || "";
-      const res = await fetch(`${API_BASE_URL}/api/v1/payments/${paymentId}/receipt`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/payments/${paymentId}/receipt`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -127,14 +138,18 @@ export default function PaymentsView({ user }) {
 
   const getStatusBadge = (status) => {
     const map = {
-      CONFIRMED: "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold",
-      PENDING_VERIFICATION: "bg-amber-100 text-amber-800 border-amber-300 animate-pulse",
+      CONFIRMED:
+        "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold",
+      PENDING_VERIFICATION:
+        "bg-amber-100 text-amber-800 border-amber-300 animate-pulse",
       BOUNCED: "bg-rose-100 text-rose-800 border-rose-300",
       REVERSED: "bg-gray-100 text-gray-700 border-gray-300 line-through",
       REFUNDED: "bg-purple-100 text-purple-800 border-purple-300",
     };
     return (
-      <span className={`px-2.5 py-1 text-xs rounded-full border ${map[status] || "bg-gray-100 text-gray-700"}`}>
+      <span
+        className={`px-2.5 py-1 text-xs rounded-full border ${map[status] || "bg-gray-100 text-gray-700"}`}
+      >
         {status}
       </span>
     );
@@ -145,7 +160,9 @@ export default function PaymentsView({ user }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Payment Ledger</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Payment Ledger
+          </h1>
           <p className="text-sm text-slate-500 mt-1">
             Immutable financial audit trail with instant receipt PDF generation.
           </p>
@@ -154,8 +171,18 @@ export default function PaymentsView({ user }) {
           onClick={() => setShowRecordModal(true)}
           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition-all shadow-sm flex items-center gap-2"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           Record New Payment
         </button>
@@ -172,8 +199,18 @@ export default function PaymentsView({ user }) {
             onKeyDown={(e) => e.key === "Enter" && fetchPayments()}
             className="w-full px-4 py-2 pl-9 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none"
           />
-          <svg className="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="w-4 h-4 text-slate-400 absolute left-3 top-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
         </div>
         <select
@@ -183,7 +220,9 @@ export default function PaymentsView({ user }) {
         >
           <option value="all">All Payment Methods</option>
           <option value="UPI">UPI</option>
-          <option value="BANK_TRANSFER_NEFT_RTGS">Bank Transfer (NEFT/RTGS)</option>
+          <option value="BANK_TRANSFER_NEFT_RTGS">
+            Bank Transfer (NEFT/RTGS)
+          </option>
           <option value="CHEQUE">Cheque</option>
           <option value="CASH">Cash</option>
           <option value="CREDIT_CARD">Credit Card</option>
@@ -209,40 +248,82 @@ export default function PaymentsView({ user }) {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-slate-400">Loading ledger...</td>
+                  <td
+                    colSpan="8"
+                    className="px-6 py-8 text-center text-slate-400"
+                  >
+                    Loading ledger...
+                  </td>
                 </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-slate-400">No payment records found.</td>
+                  <td
+                    colSpan="8"
+                    className="px-6 py-8 text-center text-slate-400"
+                  >
+                    No payment records found.
+                  </td>
                 </tr>
               ) : (
                 payments.map((p) => (
-                  <tr key={p._id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono font-medium text-slate-900">{p.receiptNumber}</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">{p.orderId?.orderNumber || "N/A"}</td>
+                  <tr
+                    key={p._id}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-mono font-medium text-slate-900">
+                      {p.receiptNumber}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
+                      {p.orderId?.orderNumber || "N/A"}
+                    </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{p.customerId?.displayName || "N/A"}</div>
-                      <div className="text-xs text-slate-400">{p.customerId?.phone || ""}</div>
+                      <div className="font-medium text-slate-900">
+                        {p.customerId?.displayName || "N/A"}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {p.customerId?.phone || ""}
+                      </div>
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-900">
-                      ₹{((p.amountPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹
+                      {((p.amountPaise || 0) / 100).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-slate-700">
                       <div>{p.paymentMethod}</div>
-                      {p.transactionReference && <div className="text-[10px] text-slate-400">{p.transactionReference}</div>}
+                      {p.transactionReference && (
+                        <div className="text-[10px] text-slate-400">
+                          {p.transactionReference}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(p.status)}</td>
                     <td className="px-6 py-4 text-xs text-slate-500">
-                      {p.receivedAt ? new Date(p.receivedAt).toLocaleDateString("en-IN") : "N/A"}
+                      {p.receivedAt
+                        ? new Date(p.receivedAt).toLocaleDateString("en-IN")
+                        : "N/A"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDownloadReceipt(p._id, p.receiptNumber)}
+                        onClick={() =>
+                          handleDownloadReceipt(p._id, p.receiptNumber)
+                        }
                         className="p-1.5 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
                         title="Download Receipt PDF"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
                       </button>
                     </td>
@@ -257,15 +338,24 @@ export default function PaymentsView({ user }) {
       {/* Record Payment Modal */}
       {showRecordModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+          <div className="bg-white rounded-md max-w-lg w-full p-6 space-y-5 shadow-2xl">
             <div className="flex justify-between items-center border-b pb-4">
-              <h2 className="text-xl font-bold text-slate-900">Record Payment</h2>
-              <button onClick={() => setShowRecordModal(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg">×</button>
+              <h2 className="text-xl font-bold text-slate-900">
+                Record Payment
+              </h2>
+              <button
+                onClick={() => setShowRecordModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-lg"
+              >
+                ×
+              </button>
             </div>
 
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Select Order with Balance *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Select Order with Balance *
+                </label>
                 <select
                   value={selectedOrderId}
                   onChange={(e) => {
@@ -273,7 +363,9 @@ export default function PaymentsView({ user }) {
                     setSelectedOrderId(id);
                     const selected = orders.find((o) => o._id === id);
                     if (selected && selected.balancePaise !== undefined) {
-                      setAmount(((selected.balancePaise || 0) / 100).toFixed(2));
+                      setAmount(
+                        ((selected.balancePaise || 0) / 100).toFixed(2),
+                      );
                     }
                   }}
                   required
@@ -282,7 +374,8 @@ export default function PaymentsView({ user }) {
                   <option value="">-- Choose Order --</option>
                   {orders.map((o) => (
                     <option key={o._id} value={o._id}>
-                      {o.orderNumber} - {o.customerSnapshot?.displayName} (Due: ₹{((o.balancePaise || 0) / 100).toFixed(2)})
+                      {o.orderNumber} - {o.customerSnapshot?.displayName} (Due:
+                      ₹{((o.balancePaise || 0) / 100).toFixed(2)})
                     </option>
                   ))}
                 </select>
@@ -290,7 +383,9 @@ export default function PaymentsView({ user }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Amount (₹) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Amount (₹) *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -302,7 +397,9 @@ export default function PaymentsView({ user }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Type</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Payment Type
+                  </label>
                   <select
                     value={paymentType}
                     onChange={(e) => setPaymentType(e.target.value)}
@@ -318,21 +415,27 @@ export default function PaymentsView({ user }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Payment Method</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Payment Method
+                  </label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none"
                   >
                     <option value="UPI">UPI</option>
-                    <option value="BANK_TRANSFER_NEFT_RTGS">Bank Transfer (NEFT/RTGS)</option>
+                    <option value="BANK_TRANSFER_NEFT_RTGS">
+                      Bank Transfer (NEFT/RTGS)
+                    </option>
                     <option value="CHEQUE">Cheque</option>
                     <option value="CASH">Cash</option>
                     <option value="CREDIT_CARD">Credit Card</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Transaction Ref / Cheque #</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Transaction Ref / Cheque #
+                  </label>
                   <input
                     type="text"
                     value={transactionReference}

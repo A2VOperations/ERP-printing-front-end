@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   History,
   Search,
@@ -17,7 +17,7 @@ import {
   X,
   Shield,
   FileText,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function AuditLogsPage() {
   const router = useRouter();
@@ -29,9 +29,9 @@ export default function AuditLogsPage() {
   const [totalRecords, setTotalRecords] = useState(0);
 
   // Filters
-  const [moduleFilter, setModuleFilter] = useState('');
-  const [actionFilter, setActionFilter] = useState('');
-  const [userEmailSearch, setUserEmailSearch] = useState('');
+  const [moduleFilter, setModuleFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
+  const [userEmailSearch, setUserEmailSearch] = useState("");
 
   // Selected Log Drawer
   const [selectedLog, setSelectedLog] = useState(null);
@@ -41,11 +41,11 @@ export default function AuditLogsPage() {
       setLoading(true);
       const queryParams = new URLSearchParams({
         page: targetPage.toString(),
-        limit: '20',
+        limit: "20",
       });
-      if (moduleFilter) queryParams.set('collectionName', moduleFilter);
-      if (actionFilter) queryParams.set('action', actionFilter);
-      if (userEmailSearch) queryParams.set('actorEmail', userEmailSearch);
+      if (moduleFilter) queryParams.set("collectionName", moduleFilter);
+      if (actionFilter) queryParams.set("action", actionFilter);
+      if (userEmailSearch) queryParams.set("actorEmail", userEmailSearch);
 
       const res = await api.get(`/audit-logs?${queryParams.toString()}`);
       if (res && res.data) {
@@ -57,18 +57,18 @@ export default function AuditLogsPage() {
         }
       }
     } catch (err) {
-      if (err?.message?.includes('403')) {
+      if (err?.message?.includes("403")) {
         setIsAuthorized(false);
       }
-      console.error('Failed to fetch audit logs:', err);
+      console.error("Failed to fetch audit logs:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const role = (localStorage.getItem('userRole') || '').toLowerCase();
-    if (!role.includes('admin') && role !== 'ceo_admin') {
+    const role = (localStorage.getItem("userRole") || "").toLowerCase();
+    if (!role.includes("admin") && role !== "ceo_admin") {
       setIsAuthorized(false);
     }
     fetchAuditLogs(1);
@@ -89,9 +89,12 @@ export default function AuditLogsPage() {
             <div className="w-16 h-16 rounded-3xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
               <AlertTriangle className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-black text-slate-900">403 — Access Denied</h2>
+            <h2 className="text-xl font-black text-slate-900">
+              403 — Access Denied
+            </h2>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Enterprise audit log inspection is restricted to System Administrators.
+              Enterprise audit log inspection is restricted to System
+              Administrators.
             </p>
           </div>
         </main>
@@ -115,7 +118,8 @@ export default function AuditLogsPage() {
                 System Audit & Security Logs
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                Immutable record of administrative modifications, discount approvals, status transitions, and user actions
+                Immutable record of administrative modifications, discount
+                approvals, status transitions, and user actions
               </p>
             </div>
 
@@ -126,14 +130,19 @@ export default function AuditLogsPage() {
                 className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xs"
                 title="Refresh"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                />
               </button>
             </div>
           </div>
 
           {/* Filters Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <form onSubmit={handleSearchSubmit} className="relative flex-1 md:max-w-md">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="relative flex-1 md:max-w-md"
+            >
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -196,32 +205,43 @@ export default function AuditLogsPage() {
                 <tbody className="divide-y divide-slate-100 font-medium">
                   {logs.length > 0 ? (
                     logs.map((item) => (
-                      <tr key={item._id} className="hover:bg-slate-50 transition-colors">
+                      <tr
+                        key={item._id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
                         <td className="py-3.5 text-slate-500 font-mono text-[11px]">
-                          {new Date(item.timestamp || Date.now()).toLocaleString()}
+                          {new Date(
+                            item.timestamp || Date.now(),
+                          ).toLocaleString()}
                         </td>
-                        <td className="py-3.5 font-bold text-slate-900">{item.actorEmail || 'System'}</td>
+                        <td className="py-3.5 font-bold text-slate-900">
+                          {item.actorEmail || "System"}
+                        </td>
                         <td className="py-3.5">
                           <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">
-                            {item.actorRole || 'ADMIN'}
+                            {item.actorRole || "ADMIN"}
                           </span>
                         </td>
                         <td className="py-3.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            item.action === 'CREATE'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : item.action === 'DELETE'
-                              ? 'bg-rose-50 text-rose-700 border-rose-200'
-                              : item.action === 'OVERRIDE'
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-blue-50 text-blue-700 border-blue-200'
-                          }`}>
-                            {item.action || 'UPDATE'}
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              item.action === "CREATE"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : item.action === "DELETE"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : item.action === "OVERRIDE"
+                                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                            }`}
+                          >
+                            {item.action || "UPDATE"}
                           </span>
                         </td>
-                        <td className="py-3.5 font-semibold text-slate-800">{item.collectionName || 'RESOURCE'}</td>
+                        <td className="py-3.5 font-semibold text-slate-800">
+                          {item.collectionName || "RESOURCE"}
+                        </td>
                         <td className="py-3.5 font-mono text-[11px] text-slate-500">
-                          {item.documentId ? item.documentId.slice(-8) : '—'}
+                          {item.documentId ? item.documentId.slice(-8) : "—"}
                         </td>
                         <td className="py-3.5 text-right">
                           <button
@@ -236,7 +256,10 @@ export default function AuditLogsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-slate-400 text-xs"
+                      >
                         No audit events match the selected criteria.
                       </td>
                     </tr>
@@ -248,7 +271,9 @@ export default function AuditLogsPage() {
             {/* Pagination Controls */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
               <span className="text-slate-500">
-                Showing page <strong className="text-slate-900">{page}</strong> of <strong className="text-slate-900">{totalPages}</strong> ({totalRecords} records)
+                Showing page <strong className="text-slate-900">{page}</strong>{" "}
+                of <strong className="text-slate-900">{totalPages}</strong> (
+                {totalRecords} records)
               </span>
 
               <div className="flex items-center gap-2">
@@ -278,8 +303,12 @@ export default function AuditLogsPage() {
           <div className="bg-white w-full max-w-xl h-full p-6 space-y-6 shadow-2xl overflow-y-auto animate-slide-left">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Audit Record</span>
-                <h3 className="text-base font-bold text-slate-900">Event #{selectedLog._id.slice(-8)}</h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Audit Record
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Event #{selectedLog._id.slice(-8)}
+                </h3>
               </div>
               <button
                 onClick={() => setSelectedLog(null)}
@@ -290,33 +319,47 @@ export default function AuditLogsPage() {
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-md bg-slate-50 border border-slate-100">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Actor</span>
-                  <span className="font-bold text-slate-900">{selectedLog.actorEmail || 'System'}</span>
+                  <span className="font-bold text-slate-900">
+                    {selectedLog.actorEmail || "System"}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Role</span>
-                  <span className="font-bold text-slate-900">{selectedLog.actorRole || 'ADMIN'}</span>
+                  <span className="font-bold text-slate-900">
+                    {selectedLog.actorRole || "ADMIN"}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Action</span>
-                  <span className="font-bold text-blue-600">{selectedLog.action}</span>
+                  <span className="font-bold text-blue-600">
+                    {selectedLog.action}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Module</span>
-                  <span className="font-bold text-slate-900">{selectedLog.collectionName}</span>
+                  <span className="font-bold text-slate-900">
+                    {selectedLog.collectionName}
+                  </span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-slate-400 block mb-0.5">Target Document ID</span>
-                  <span className="font-mono text-slate-800">{selectedLog.documentId}</span>
+                  <span className="text-slate-400 block mb-0.5">
+                    Target Document ID
+                  </span>
+                  <span className="font-mono text-slate-800">
+                    {selectedLog.documentId}
+                  </span>
                 </div>
               </div>
 
               {/* State Metadata Diff */}
               <div className="space-y-2">
-                <h4 className="font-bold text-slate-900">Modified State Metadata</h4>
-                <div className="p-4 rounded-2xl bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-96">
+                <h4 className="font-bold text-slate-900">
+                  Modified State Metadata
+                </h4>
+                <div className="p-4 rounded-md bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto max-h-96">
                   <pre>{JSON.stringify(selectedLog.diff || {}, null, 2)}</pre>
                 </div>
               </div>

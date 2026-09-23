@@ -301,7 +301,7 @@ export default function DashboardOverview({
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       {/* Current User Active Session Header Bar */}
-      <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-full bg-sky-600 text-white flex items-center justify-center font-bold text-2xl shadow-md shadow-sky-600/20 shrink-0">
             {(user?.name || user?.email || "U").substring(0, 1).toUpperCase()}
@@ -325,7 +325,7 @@ export default function DashboardOverview({
       </div>
       {/* Financial Overview Banner Cards (Matching Leads Section) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#013564] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-[#013564] p-5 rounded-md shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-white block">
               TOTAL PAID AMOUNT
@@ -342,7 +342,7 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        <div className="bg-[#013564] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-[#013564] p-5 rounded-md shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-white block">
               TOTAL PENDING BALANCE
@@ -359,7 +359,7 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        <div className="bg-[#013564] p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-[#013564] p-5 rounded-md shadow-sm flex items-center justify-between">
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-white block">
               TOTAL DEAL PIPELINE
@@ -544,7 +544,7 @@ export default function DashboardOverview({
       {/* Middle Row (Analytics Chart + Interactive To-Do + Earnings) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Analytics Box: Prospect Engagement Trends (World-Class UI) */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col justify-between h-90 relative overflow-hidden group">
+        <div className="bg-white border border-slate-200/80 rounded-md p-6 shadow-sm flex flex-col justify-between h-90 relative overflow-hidden group">
           {/* Top Header & Report Switcher */}
           <div>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
@@ -725,7 +725,7 @@ export default function DashboardOverview({
         </div>
 
         {/* Total Earnings Trendline Graph (Dynamic Backend Data) */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col justify-between h-90 relative overflow-hidden group">
+        <div className="bg-white border border-slate-200/80 rounded-md p-6 shadow-sm flex flex-col justify-between h-90 relative overflow-hidden group">
           <div>
             <div className="flex justify-between items-center mb-1">
               <h3 className="font-extrabold text-slate-800 text-sm">
@@ -843,7 +843,7 @@ export default function DashboardOverview({
 
       {/* Incoming Leads (Action Required) Section */}
       {incomingLeads.length > 0 && (
-        <div className="bg-linear-to-r from-blue-500/10 via-blue-50/50 to-sky-50/60 border border-blue-200/90 rounded-2xl p-6 shadow-sm">
+        <div className="bg-linear-to-r from-blue-500/10 via-blue-50/50 to-sky-50/60 border border-blue-200/90 rounded-md p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-blue-900 text-white rounded-xl shadow-md shadow-blue-500/20 shrink-0">

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   CreditCard,
   CheckCircle2,
@@ -19,14 +19,14 @@ import {
   Printer,
   X,
   MessageCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
 const formatDate = (dateVal) => {
-  if (!dateVal) return '-';
+  if (!dateVal) return "-";
   try {
-    return new Date(dateVal).toLocaleDateString('en-IN');
+    return new Date(dateVal).toLocaleDateString("en-IN");
   } catch (e) {
-    return '-';
+    return "-";
   }
 };
 
@@ -35,11 +35,12 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [receiptPayment, setReceiptPayment] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      const stored =
+        typeof window !== "undefined" ? localStorage.getItem("user") : null;
       return stored ? JSON.parse(stored) : null;
     } catch (e) {
       return null;
@@ -47,16 +48,17 @@ export default function PaymentsPage() {
   });
   const [currentTenant, setCurrentTenant] = useState(() => {
     try {
-      if (typeof window === 'undefined') return null;
-      const u = JSON.parse(localStorage.getItem('user') || '{}');
-      return u?.tenant || JSON.parse(localStorage.getItem('tenant') || 'null');
+      if (typeof window === "undefined") return null;
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      return u?.tenant || JSON.parse(localStorage.getItem("tenant") || "null");
     } catch (e) {
       return null;
     }
   });
 
   useEffect(() => {
-    api.get('/auth/me')
+    api
+      .get("/auth/me")
       .then((res) => {
         if (res?.data?.user) setCurrentUser(res.data.user);
         else if (res?.data) setCurrentUser(res.data);
@@ -64,7 +66,8 @@ export default function PaymentsPage() {
       })
       .catch(() => {});
 
-    api.get('/tenants/current', { silent: true })
+    api
+      .get("/tenants/current", { silent: true })
       .then((res) => {
         if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
         else if (res?.data) setCurrentTenant(res.data);
@@ -72,21 +75,31 @@ export default function PaymentsPage() {
       .catch(() => {});
   }, []);
 
-  const roleRaw = currentUser?.roleSlug || currentUser?.role?.slug || currentUser?.role?.name || currentUser?.role || '';
-  const userRole = (typeof roleRaw === 'string' ? roleRaw : (roleRaw?.slug || roleRaw?.name || '')).toUpperCase();
-  const isSalesOnly = userRole === 'SALES' || userRole === 'SALES_REP' || userRole === 'DESIGNER';
+  const roleRaw =
+    currentUser?.roleSlug ||
+    currentUser?.role?.slug ||
+    currentUser?.role?.name ||
+    currentUser?.role ||
+    "";
+  const userRole = (
+    typeof roleRaw === "string" ? roleRaw : roleRaw?.slug || roleRaw?.name || ""
+  ).toUpperCase();
+  const isSalesOnly =
+    userRole === "SALES" || userRole === "SALES_REP" || userRole === "DESIGNER";
   const canVerifyPayment = !isSalesOnly;
 
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get('/payments?limit=100');
+      const res = await api.get("/payments?limit=100");
       if (res && res.data) {
-        const list = Array.isArray(res.data) ? res.data : (res.data.records || []);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data.records || [];
         setPayments(list);
       }
     } catch (err) {
-      console.error('Failed to load payments:', err);
+      console.error("Failed to load payments:", err);
     } finally {
       setLoading(false);
     }
@@ -97,27 +110,32 @@ export default function PaymentsPage() {
   }, [loadPayments]);
 
   const handleVerifyPayment = async (paymentId) => {
-    if (!confirm('Confirm and verify this payment? The amount will be marked CONFIRMED and credited.')) return;
+    if (
+      !confirm(
+        "Confirm and verify this payment? The amount will be marked CONFIRMED and credited.",
+      )
+    )
+      return;
     try {
       setActionLoading(true);
       await api.post(`/payments/${paymentId}/verify`);
       await loadPayments();
     } catch (err) {
-      alert(err.message || 'Failed to verify payment');
+      alert(err.message || "Failed to verify payment");
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleRejectPayment = async (paymentId) => {
-    const reason = prompt('Please enter rejection / bounce reason:');
+    const reason = prompt("Please enter rejection / bounce reason:");
     if (!reason) return;
     try {
       setActionLoading(true);
       await api.post(`/payments/${paymentId}/bounce`, { reason });
       await loadPayments();
     } catch (err) {
-      alert(err.message || 'Failed to reject payment');
+      alert(err.message || "Failed to reject payment");
     } finally {
       setActionLoading(false);
     }
@@ -137,51 +155,98 @@ export default function PaymentsPage() {
   });
 
   const totalCollectedPaise = payments
-    .filter((p) => p.status === 'CONFIRMED')
-    .reduce((sum, p) => sum + (p.amountPaise || (p.amount ? p.amount * 100 : 0)), 0);
+    .filter((p) => p.status === "CONFIRMED")
+    .reduce(
+      (sum, p) => sum + (p.amountPaise || (p.amount ? p.amount * 100 : 0)),
+      0,
+    );
 
   const totalPendingPaise = payments
-    .filter((p) => p.status === 'PENDING_VERIFICATION')
-    .reduce((sum, p) => sum + (p.amountPaise || (p.amount ? p.amount * 100 : 0)), 0);
+    .filter((p) => p.status === "PENDING_VERIFICATION")
+    .reduce(
+      (sum, p) => sum + (p.amountPaise || (p.amount ? p.amount * 100 : 0)),
+      0,
+    );
 
   // Resolved Receipt Values for Preview Modal
-  const tenantName = currentTenant?.name || 'A2V PRINTING SOLUTIONS';
-  const tenantTagline = currentTenant?.branding?.tagline || 'Commercial Printing & Packaging Solutions';
-  const tenantPhone = currentTenant?.phone || '+91 98765 43210';
-  const tenantEmail = currentTenant?.email || 'contact@a2vprinting.com';
-  const tenantGstin = currentTenant?.gstin || '27AAAAA0000A1Z5';
+  const tenantName = currentTenant?.name || "A2V PRINTING SOLUTIONS";
+  const tenantTagline =
+    currentTenant?.branding?.tagline ||
+    "Commercial Printing & Packaging Solutions";
+  const tenantPhone = currentTenant?.phone || "+91 98765 43210";
+  const tenantEmail = currentTenant?.email || "contact@a2vprinting.com";
+  const tenantGstin = currentTenant?.gstin || "27AAAAA0000A1Z5";
 
-  const rCust = receiptPayment?.customerId || receiptPayment?.orderId?.customerSnapshot || {};
-  const rClientName = rCust.displayName || rCust.name || rCust.companyName || receiptPayment?.customerName || (receiptPayment?.leadId?.businessName || receiptPayment?.leadId?.contactName) || 'Valued Customer';
-  const rClientCompany = rCust.companyName && rCust.companyName !== rClientName ? rCust.companyName : '';
-  const rClientContact = rCust.contactPerson || (!rClientCompany ? rClientName : '');
-  const rClientPhone = rCust.phone || receiptPayment?.phone || receiptPayment?.leadId?.phone || 'N/A';
-  const rClientEmail = rCust.email || 'N/A';
-  const rClientGstin = rCust.gstin || 'Unregistered';
+  const rCust =
+    receiptPayment?.customerId ||
+    receiptPayment?.orderId?.customerSnapshot ||
+    {};
+  const rClientName =
+    rCust.displayName ||
+    rCust.name ||
+    rCust.companyName ||
+    receiptPayment?.customerName ||
+    receiptPayment?.leadId?.businessName ||
+    receiptPayment?.leadId?.contactName ||
+    "Valued Customer";
+  const rClientCompany =
+    rCust.companyName && rCust.companyName !== rClientName
+      ? rCust.companyName
+      : "";
+  const rClientContact =
+    rCust.contactPerson || (!rClientCompany ? rClientName : "");
+  const rClientPhone =
+    rCust.phone ||
+    receiptPayment?.phone ||
+    receiptPayment?.leadId?.phone ||
+    "N/A";
+  const rClientEmail = rCust.email || "N/A";
+  const rClientGstin = rCust.gstin || "Unregistered";
 
-  const rAmountRupees = receiptPayment?.amountPaise !== undefined
-    ? Math.abs(receiptPayment.amountPaise) / 100
-    : Number(receiptPayment?.amount || 0);
+  const rAmountRupees =
+    receiptPayment?.amountPaise !== undefined
+      ? Math.abs(receiptPayment.amountPaise) / 100
+      : Number(receiptPayment?.amount || 0);
 
   const rOrder = receiptPayment?.orderId || {};
-  const rOrderTotalRupees = rOrder.grandTotalPaise !== undefined
-    ? rOrder.grandTotalPaise / 100
-    : (receiptPayment?.quotationId?.grandTotalPaise ? receiptPayment.quotationId.grandTotalPaise / 100 : rAmountRupees);
-  const rTotalPaidRupees = rOrder.totalPaidPaise !== undefined
-    ? rOrder.totalPaidPaise / 100
-    : (receiptPayment?.status === 'CONFIRMED' ? rAmountRupees : 0);
-  const rBalanceRupees = rOrder.balancePaise !== undefined
-    ? rOrder.balancePaise / 100
-    : Math.max(0, rOrderTotalRupees - rTotalPaidRupees);
+  const rOrderTotalRupees =
+    rOrder.grandTotalPaise !== undefined
+      ? rOrder.grandTotalPaise / 100
+      : receiptPayment?.quotationId?.grandTotalPaise
+        ? receiptPayment.quotationId.grandTotalPaise / 100
+        : rAmountRupees;
+  const rTotalPaidRupees =
+    rOrder.totalPaidPaise !== undefined
+      ? rOrder.totalPaidPaise / 100
+      : receiptPayment?.status === "CONFIRMED"
+        ? rAmountRupees
+        : 0;
+  const rBalanceRupees =
+    rOrder.balancePaise !== undefined
+      ? rOrder.balancePaise / 100
+      : Math.max(0, rOrderTotalRupees - rTotalPaidRupees);
 
-  const rCollector = receiptPayment?.collectedById?.name || 'Authorized Finance Officer';
-  const rVerifier = receiptPayment?.verifiedById?.name || (receiptPayment?.status === 'CONFIRMED' ? 'System Accounts Officer' : null);
-  const rReceiptNum = receiptPayment?.receiptNumber || receiptPayment?.paymentNumber || 'N/A';
-  const rOrderNum = rOrder.orderNumber || receiptPayment?.orderNumber || (receiptPayment?.leadId ? `Lead: ${receiptPayment.leadId?.leadNumber || ''}` : 'Commercial Settlement');
+  const rCollector =
+    receiptPayment?.collectedById?.name || "Authorized Finance Officer";
+  const rVerifier =
+    receiptPayment?.verifiedById?.name ||
+    (receiptPayment?.status === "CONFIRMED" ? "System Accounts Officer" : null);
+  const rReceiptNum =
+    receiptPayment?.receiptNumber || receiptPayment?.paymentNumber || "N/A";
+  const rOrderNum =
+    rOrder.orderNumber ||
+    receiptPayment?.orderNumber ||
+    (receiptPayment?.leadId
+      ? `Lead: ${receiptPayment.leadId?.leadNumber || ""}`
+      : "Commercial Settlement");
 
-  let rRefStr = receiptPayment?.paymentMethod ? receiptPayment.paymentMethod.replace(/_/g, ' ') : 'UPI';
-  if (receiptPayment?.transactionReference) rRefStr += ` (Ref: ${receiptPayment.transactionReference})`;
-  if (receiptPayment?.chequeNumber) rRefStr += ` [Cheque: ${receiptPayment.chequeNumber}]`;
+  let rRefStr = receiptPayment?.paymentMethod
+    ? receiptPayment.paymentMethod.replace(/_/g, " ")
+    : "UPI";
+  if (receiptPayment?.transactionReference)
+    rRefStr += ` (Ref: ${receiptPayment.transactionReference})`;
+  if (receiptPayment?.chequeNumber)
+    rRefStr += ` [Cheque: ${receiptPayment.chequeNumber}]`;
   if (receiptPayment?.bankName) rRefStr += ` - ${receiptPayment.bankName}`;
 
   return (
@@ -199,13 +264,16 @@ export default function PaymentsPage() {
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
                   Payments &amp; Collections
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Phase 3 Transactions</span>
+                <span className="text-xs text-slate-400 font-medium">
+                  Phase 3 Transactions
+                </span>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
                 Payment Transactions
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                View verified customer payments, transaction receipts, and collection records.
+                View verified customer payments, transaction receipts, and
+                collection records.
               </p>
             </div>
 
@@ -214,40 +282,62 @@ export default function PaymentsPage() {
               disabled={loading}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all self-start sm:self-auto"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
+              />
               Refresh
             </button>
           </div>
 
           {/* KPI Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-              <span className="text-xs font-semibold text-emerald-700 block">Verified &amp; Cleared Total</span>
+            <div className="bg-white p-5 rounded-md border border-slate-200/90 shadow-xs">
+              <span className="text-xs font-semibold text-emerald-700 block">
+                Verified &amp; Cleared Total
+              </span>
               <div className="text-2xl font-black text-slate-900 mt-1 font-mono">
-                ₹{(totalCollectedPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹
+                {(totalCollectedPaise / 100).toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Credited to accounts</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                Credited to accounts
+              </span>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-amber-200/90 shadow-xs">
-              <span className="text-xs font-semibold text-amber-700 block">Pending Verification Total</span>
+            <div className="bg-white p-5 rounded-md border border-amber-200/90 shadow-xs">
+              <span className="text-xs font-semibold text-amber-700 block">
+                Pending Verification Total
+              </span>
               <div className="text-2xl font-black text-amber-900 mt-1 font-mono">
-                ₹{(totalPendingPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹
+                {(totalPendingPaise / 100).toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Awaiting Manager/Admin action</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                Awaiting Manager/Admin action
+              </span>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
-              <span className="text-xs font-semibold text-slate-500 block">Total Transactions</span>
+            <div className="bg-white p-5 rounded-md border border-slate-200/90 shadow-xs">
+              <span className="text-xs font-semibold text-slate-500 block">
+                Total Transactions
+              </span>
               <div className="text-2xl font-black text-slate-900 mt-1 font-mono">
                 {payments.length}
               </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Recorded in immutable ledger</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">
+                Recorded in immutable ledger
+              </span>
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex items-center justify-between gap-4">
+          <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -261,7 +351,7 @@ export default function PaymentsPage() {
           </div>
 
           {/* Payments Table */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-md border border-slate-200/90 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -279,42 +369,63 @@ export default function PaymentsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                      <td
+                        colSpan={8}
+                        className="py-12 text-center text-slate-400 text-xs"
+                      >
                         <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-blue-600" />
                         Loading payments list...
                       </td>
                     </tr>
                   ) : filteredPayments.length > 0 ? (
                     filteredPayments.map((p, idx) => {
-                      const amountRupees = p.amountPaise ? p.amountPaise / 100 : (p.amount || 0);
-                      const receiptNum = p.receiptNumber || p.paymentNumber || `REC-2026-${100 + idx}`;
-                      const isPending = p.status === 'PENDING_VERIFICATION';
-                      const isConfirmed = p.status === 'CONFIRMED';
+                      const amountRupees = p.amountPaise
+                        ? p.amountPaise / 100
+                        : p.amount || 0;
+                      const receiptNum =
+                        p.receiptNumber ||
+                        p.paymentNumber ||
+                        `REC-2026-${100 + idx}`;
+                      const isPending = p.status === "PENDING_VERIFICATION";
+                      const isConfirmed = p.status === "CONFIRMED";
 
                       return (
                         <tr
                           key={p._id || idx}
                           onClick={() => setReceiptPayment(p)}
-                          className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${isPending ? 'bg-amber-50/20' : ''}`}
+                          className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${isPending ? "bg-amber-50/20" : ""}`}
                         >
                           <td className="py-3 px-4 font-mono font-bold text-slate-900">
                             {receiptNum}
                           </td>
 
                           <td className="py-3 px-4 font-semibold text-slate-800">
-                            {p.customerId?.displayName || p.customerId?.name || p.customerName || (p.leadId?.businessName || p.leadId?.contactName) || 'Direct Client'}
+                            {p.customerId?.displayName ||
+                              p.customerId?.name ||
+                              p.customerName ||
+                              p.leadId?.businessName ||
+                              p.leadId?.contactName ||
+                              "Direct Client"}
                           </td>
 
                           <td className="py-3 px-4 font-mono text-slate-600 font-semibold">
-                            {p.orderId?.orderNumber || p.orderNumber || (p.leadId ? `Lead: ${p.leadId?.leadNumber || p.leadId?._id?.slice(-6) || ''}` : '-')}
+                            {p.orderId?.orderNumber ||
+                              p.orderNumber ||
+                              (p.leadId
+                                ? `Lead: ${p.leadId?.leadNumber || p.leadId?._id?.slice(-6) || ""}`
+                                : "-")}
                           </td>
 
                           <td className="py-3 px-4 font-bold text-slate-700">
-                            {p.paymentMethod?.replace(/_/g, ' ') || 'UPI'}
+                            {p.paymentMethod?.replace(/_/g, " ") || "UPI"}
                           </td>
 
                           <td className="py-3 px-4 font-black font-mono text-slate-900">
-                            ₹{amountRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ₹
+                            {amountRupees.toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
                           </td>
 
                           <td className="py-3 px-4 font-mono text-slate-500">
@@ -325,18 +436,25 @@ export default function PaymentsPage() {
                             <span
                               className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                                 isConfirmed
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                   : isPending
-                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                                    ? "bg-amber-100 text-amber-800 border-amber-300"
+                                    : "bg-rose-50 text-rose-700 border-rose-200"
                               }`}
                             >
-                              {isConfirmed ? 'Verified' : isPending ? 'Pending' : 'Rejected'}
+                              {isConfirmed
+                                ? "Verified"
+                                : isPending
+                                  ? "Pending"
+                                  : "Rejected"}
                             </span>
                           </td>
 
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <div
+                              className="flex items-center justify-end gap-1.5"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {/* Manager / Admin verification actions */}
                               {isPending && canVerifyPayment && (
                                 <>
@@ -369,10 +487,24 @@ export default function PaymentsPage() {
                               {/* WhatsApp Contact Action */}
                               <button
                                 onClick={() => {
-                                  const cId = p.customerId?._id || p.customerId || p.leadId?._id || '';
-                                  const phone = p.customerId?.phone || p.leadId?.phone || p.leadId?.contactPhone || '';
-                                  const amountStr = (p.amountPaise ? (p.amountPaise / 100).toFixed(2) : p.amount || '').toString();
-                                  router.push(`/dashboard/whatsapp?customerId=${cId}&phone=${phone}&amount=${amountStr}&template=payment_reminder`);
+                                  const cId =
+                                    p.customerId?._id ||
+                                    p.customerId ||
+                                    p.leadId?._id ||
+                                    "";
+                                  const phone =
+                                    p.customerId?.phone ||
+                                    p.leadId?.phone ||
+                                    p.leadId?.contactPhone ||
+                                    "";
+                                  const amountStr = (
+                                    p.amountPaise
+                                      ? (p.amountPaise / 100).toFixed(2)
+                                      : p.amount || ""
+                                  ).toString();
+                                  router.push(
+                                    `/dashboard/whatsapp?customerId=${cId}&phone=${phone}&amount=${amountStr}&template=payment_reminder`,
+                                  );
                                 }}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-[11px] border border-emerald-200 transition-all shadow-2xs cursor-pointer"
                                 title="Send WhatsApp Receipt / Follow-up"
@@ -397,10 +529,13 @@ export default function PaymentsPage() {
                                     try {
                                       await api.downloadPdf(
                                         `/payments/${p._id}/receipt`,
-                                        `Receipt-${receiptNum}.pdf`
+                                        `Receipt-${receiptNum}.pdf`,
                                       );
                                     } catch (err) {
-                                      alert(err.message || 'Failed to download Receipt PDF');
+                                      alert(
+                                        err.message ||
+                                          "Failed to download Receipt PDF",
+                                      );
                                     }
                                   }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-[11px] border border-emerald-200 transition-all shadow-2xs"
@@ -417,7 +552,10 @@ export default function PaymentsPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                      <td
+                        colSpan={8}
+                        className="py-12 text-center text-slate-400 text-xs"
+                      >
                         No payment transactions recorded.
                       </td>
                     </tr>
@@ -450,10 +588,10 @@ export default function PaymentsPage() {
                     try {
                       await api.downloadPdf(
                         `/payments/${receiptPayment._id}/receipt`,
-                        `Receipt-${rReceiptNum}.pdf`
+                        `Receipt-${rReceiptNum}.pdf`,
                       );
                     } catch (err) {
-                      alert(err.message || 'Failed to download receipt PDF');
+                      alert(err.message || "Failed to download receipt PDF");
                     }
                   }}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all"
@@ -482,10 +620,14 @@ export default function PaymentsPage() {
             {/* Document Body (WYSIWYG Mirror of PDF) */}
             <div className="p-6 md:p-8 space-y-6 text-xs text-slate-700 bg-white max-h-[80vh] overflow-y-auto">
               {/* Branded Header Banner */}
-              <div className="rounded-2xl p-5 md:p-6 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <h2 className="text-xl md:text-2xl font-black tracking-tight">{tenantName}</h2>
-                  <p className="text-sky-100 text-xs mt-1 font-medium">{tenantTagline}</p>
+                  <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                    {tenantName}
+                  </h2>
+                  <p className="text-sky-100 text-xs mt-1 font-medium">
+                    {tenantTagline}
+                  </p>
                 </div>
 
                 <div className="text-left md:text-right bg-white/10 backdrop-blur-xs border border-white/20 px-4 py-2.5 rounded-xl space-y-0.5">
@@ -496,12 +638,20 @@ export default function PaymentsPage() {
                     Receipt No: {rReceiptNum}
                   </div>
                   <div className="text-[11px] text-sky-100">
-                    Date Issued: {formatDate(receiptPayment.receivedAt || receiptPayment.createdAt)}
+                    Date Issued:{" "}
+                    {formatDate(
+                      receiptPayment.receivedAt || receiptPayment.createdAt,
+                    )}
                   </div>
                   <div className="text-[11px]">
-                    Status:{' '}
-                    <span className={`font-bold ${receiptPayment.status === 'CONFIRMED' ? 'text-emerald-300' : 'text-amber-300'}`}>
-                      {receiptPayment.status === 'CONFIRMED' ? 'VERIFIED & CREDITED' : (receiptPayment.status?.replace(/_/g, ' ') || 'PENDING VERIFICATION')}
+                    Status:{" "}
+                    <span
+                      className={`font-bold ${receiptPayment.status === "CONFIRMED" ? "text-emerald-300" : "text-amber-300"}`}
+                    >
+                      {receiptPayment.status === "CONFIRMED"
+                        ? "VERIFIED & CREDITED"
+                        : receiptPayment.status?.replace(/_/g, " ") ||
+                          "PENDING VERIFICATION"}
                     </span>
                   </div>
                 </div>
@@ -510,39 +660,74 @@ export default function PaymentsPage() {
               {/* Two-Column Seller & Client Particulars */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2 border-b border-slate-200">
                 {/* Issued By (Left) */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200/80 space-y-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                     ISSUED BY:
                   </span>
-                  <strong className="text-slate-900 text-sm block font-bold">{tenantName}</strong>
-                  <div className="text-slate-600 text-xs">Phone: <span className="font-medium text-slate-800">{tenantPhone}</span></div>
-                  <div className="text-slate-600 text-xs">Email: <span className="font-medium text-slate-800">{tenantEmail}</span></div>
-                  <div className="text-slate-600 text-xs">GSTIN: <span className="font-mono font-semibold text-slate-800">{tenantGstin}</span></div>
+                  <strong className="text-slate-900 text-sm block font-bold">
+                    {tenantName}
+                  </strong>
+                  <div className="text-slate-600 text-xs">
+                    Phone:{" "}
+                    <span className="font-medium text-slate-800">
+                      {tenantPhone}
+                    </span>
+                  </div>
+                  <div className="text-slate-600 text-xs">
+                    Email:{" "}
+                    <span className="font-medium text-slate-800">
+                      {tenantEmail}
+                    </span>
+                  </div>
+                  <div className="text-slate-600 text-xs">
+                    GSTIN:{" "}
+                    <span className="font-mono font-semibold text-slate-800">
+                      {tenantGstin}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Received From (Right) */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200/80 space-y-1">
                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                     RECEIVED FROM:
                   </span>
-                  <strong className="text-slate-900 text-sm block font-bold">{rClientName}</strong>
+                  <strong className="text-slate-900 text-sm block font-bold">
+                    {rClientName}
+                  </strong>
                   {(rClientCompany || rClientContact) && (
                     <div className="text-slate-600 text-xs">
-                      {rClientCompany ? `Company: ${rClientCompany}` : `Contact: ${rClientContact}`}
+                      {rClientCompany
+                        ? `Company: ${rClientCompany}`
+                        : `Contact: ${rClientContact}`}
                     </div>
                   )}
                   <div className="text-slate-600 text-xs">
-                    Phone: <span className="font-medium text-slate-800">{rClientPhone}</span>
-                    {rClientEmail && rClientEmail !== 'N/A' && (
-                      <span> | Email: <span className="font-medium text-slate-800">{rClientEmail}</span></span>
+                    Phone:{" "}
+                    <span className="font-medium text-slate-800">
+                      {rClientPhone}
+                    </span>
+                    {rClientEmail && rClientEmail !== "N/A" && (
+                      <span>
+                        {" "}
+                        | Email:{" "}
+                        <span className="font-medium text-slate-800">
+                          {rClientEmail}
+                        </span>
+                      </span>
                     )}
                   </div>
-                  <div className="text-slate-600 text-xs">GSTIN: <span className="font-mono font-semibold text-slate-800">{rClientGstin}</span></div>
+                  <div className="text-slate-600 text-xs">
+                    GSTIN:{" "}
+                    <span className="font-mono font-semibold text-slate-800">
+                      {rClientGstin}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Payment Details Table */}
-              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+              <div className="border border-slate-200 rounded-md overflow-hidden shadow-2xs">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
@@ -555,16 +740,22 @@ export default function PaymentsPage() {
                   </thead>
                   <tbody>
                     <tr className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3.5 px-3 text-center text-slate-400 font-mono font-medium">1</td>
+                      <td className="py-3.5 px-3 text-center text-slate-400 font-mono font-medium">
+                        1
+                      </td>
                       <td className="py-3.5 px-4">
-                        <strong className="text-slate-900 block font-bold text-xs">Payment for Order {rOrderNum}</strong>
+                        <strong className="text-slate-900 block font-bold text-xs">
+                          Payment for Order {rOrderNum}
+                        </strong>
                         {receiptPayment.paymentType && (
                           <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md inline-block mt-1 font-medium border border-blue-100">
                             Type: {receiptPayment.paymentType}
                           </span>
                         )}
                         {receiptPayment.notes && (
-                          <span className="text-[11px] text-slate-500 block mt-1">{receiptPayment.notes}</span>
+                          <span className="text-[11px] text-slate-500 block mt-1">
+                            {receiptPayment.notes}
+                          </span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 font-medium text-slate-800">
@@ -573,16 +764,22 @@ export default function PaymentsPage() {
                       <td className="py-3.5 px-3 text-center">
                         <span
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            receiptPayment.status === 'CONFIRMED'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-100 text-amber-800 border-amber-300'
+                            receiptPayment.status === "CONFIRMED"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-100 text-amber-800 border-amber-300"
                           }`}
                         >
-                          {receiptPayment.status === 'CONFIRMED' ? '✓ Confirmed' : '⏳ Pending'}
+                          {receiptPayment.status === "CONFIRMED"
+                            ? "✓ Confirmed"
+                            : "⏳ Pending"}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-black text-slate-900 text-sm">
-                        ₹{rAmountRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₹
+                        {rAmountRupees.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </td>
                     </tr>
                   </tbody>
@@ -591,21 +788,37 @@ export default function PaymentsPage() {
 
               {/* Order Balance & Totals Summary Box */}
               <div className="flex justify-end pt-2">
-                <div className="w-full sm:w-80 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2 font-mono">
+                <div className="w-full sm:w-80 p-4 rounded-md bg-slate-50 border border-slate-200/90 space-y-2 font-mono">
                   <div className="flex justify-between text-slate-600 text-xs">
                     <span>Order Total Value:</span>
-                    <span>₹{rOrderTotalRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>
+                      ₹
+                      {rOrderTotalRupees.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
                   <div className="flex justify-between text-slate-600 text-xs">
                     <span>Total Verified Paid:</span>
                     <span className="font-semibold text-emerald-700">
-                      ₹{rTotalPaidRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ₹
+                      {rTotalPaidRupees.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-slate-900 font-extrabold text-xs pt-2 border-t border-slate-200">
                     <span>Remaining Balance:</span>
-                    <span className={`text-sm font-black ${rBalanceRupees > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
-                      ₹{rBalanceRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span
+                      className={`text-sm font-black ${rBalanceRupees > 0 ? "text-rose-700" : "text-emerald-700"}`}
+                    >
+                      ₹
+                      {rBalanceRupees.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -617,20 +830,28 @@ export default function PaymentsPage() {
                   <strong className="text-slate-700 font-semibold block uppercase tracking-wider text-[10px]">
                     Audit Particulars
                   </strong>
-                  <div>Recorded By: <strong className="text-slate-800">{rCollector}</strong></div>
                   <div>
-                    Verification:{' '}
+                    Recorded By:{" "}
+                    <strong className="text-slate-800">{rCollector}</strong>
+                  </div>
+                  <div>
+                    Verification:{" "}
                     <strong className="text-slate-800">
-                      {rVerifier ? `${rVerifier} (on ${formatDate(receiptPayment.verifiedAt)})` : 'Awaiting Manager / Admin verification'}
+                      {rVerifier
+                        ? `${rVerifier} (on ${formatDate(receiptPayment.verifiedAt)})`
+                        : "Awaiting Manager / Admin verification"}
                     </strong>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-2 italic">
-                    This is an authentic computer generated electronic receipt. No physical signature required.
+                    This is an authentic computer generated electronic receipt.
+                    No physical signature required.
                   </p>
                 </div>
 
-                <div className="text-right p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-[11px] font-bold text-slate-800 block">For {tenantName}</span>
+                <div className="text-right p-3.5 rounded-md bg-slate-50 border border-slate-200/80">
+                  <span className="text-[11px] font-bold text-slate-800 block">
+                    For {tenantName}
+                  </span>
                   <span className="text-[10px] text-slate-400 block mt-6 uppercase tracking-wider font-semibold">
                     Authorized Commercial Accounts Signatory
                   </span>

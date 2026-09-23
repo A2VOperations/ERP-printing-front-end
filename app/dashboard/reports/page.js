@@ -200,7 +200,9 @@ export default function ReportsDashboard() {
         setOrders(res?.data || null);
       }
       if (activeTab === "financials" && !userRole.includes("designer")) {
-        const res = await apiClient.get(`/api/v1/reports/payments-receivables?${q}`);
+        const res = await apiClient.get(
+          `/api/v1/reports/payments-receivables?${q}`,
+        );
         setFinancials(res?.data || null);
       }
       if (activeTab === "customers" && !userRole.includes("designer")) {
@@ -211,7 +213,11 @@ export default function ReportsDashboard() {
         const res = await apiClient.get(`/api/v1/reports/design?${q}`);
         setDesign(res?.data || null);
       }
-      if (activeTab === "production" && !userRole.includes("sales") && !userRole.includes("designer")) {
+      if (
+        activeTab === "production" &&
+        !userRole.includes("sales") &&
+        !userRole.includes("designer")
+      ) {
         const res = await apiClient.get(`/api/v1/reports/production?${q}`);
         setProduction(res?.data || null);
       }
@@ -270,7 +276,9 @@ export default function ReportsDashboard() {
   const fetchSavedViews = useCallback(async () => {
     const currentKey = tabToReportKey[activeTab] || activeTab;
     try {
-      const res = await apiClient.get(`/api/v1/reports/saved-views?reportKey=${currentKey}`);
+      const res = await apiClient.get(
+        `/api/v1/reports/saved-views?reportKey=${currentKey}`,
+      );
       const views = res?.data || [];
       setSavedViews(views);
 
@@ -278,8 +286,10 @@ export default function ReportsDashboard() {
       if (defaultView && !selectedViewId) {
         setSelectedViewId(defaultView._id);
         if (defaultView.period) setPeriod(defaultView.period);
-        if (defaultView.startDate) setCustomStart(defaultView.startDate.split("T")[0]);
-        if (defaultView.endDate) setCustomEnd(defaultView.endDate.split("T")[0]);
+        if (defaultView.startDate)
+          setCustomStart(defaultView.startDate.split("T")[0]);
+        if (defaultView.endDate)
+          setCustomEnd(defaultView.endDate.split("T")[0]);
       }
     } catch (err) {
       console.warn("Failed to load saved views:", err.message);
@@ -316,8 +326,14 @@ export default function ReportsDashboard() {
         name: newViewName.trim(),
         reportKey: currentKey,
         period,
-        startDate: period === "custom" && customStart ? new Date(customStart).toISOString() : null,
-        endDate: period === "custom" && customEnd ? new Date(customEnd).toISOString() : null,
+        startDate:
+          period === "custom" && customStart
+            ? new Date(customStart).toISOString()
+            : null,
+        endDate:
+          period === "custom" && customEnd
+            ? new Date(customEnd).toISOString()
+            : null,
         isDefault: newViewIsDefault,
       };
       const res = await apiClient.post("/api/v1/reports/saved-views", payload);
@@ -328,7 +344,10 @@ export default function ReportsDashboard() {
       if (res?.data?._id) {
         setSelectedViewId(res.data._id);
       }
-      setExportNotice({ type: "success", message: "Report view saved successfully!" });
+      setExportNotice({
+        type: "success",
+        message: "Report view saved successfully!",
+      });
       setTimeout(() => setExportNotice(null), 4000);
     } catch (err) {
       console.error("Failed to save view:", err);
@@ -339,9 +358,15 @@ export default function ReportsDashboard() {
   const handleSetDefaultView = async () => {
     if (!selectedViewId) return;
     try {
-      await apiClient.post(`/api/v1/reports/saved-views/${selectedViewId}/set-default`, {});
+      await apiClient.post(
+        `/api/v1/reports/saved-views/${selectedViewId}/set-default`,
+        {},
+      );
       await fetchSavedViews();
-      setExportNotice({ type: "success", message: "Saved view marked as default!" });
+      setExportNotice({
+        type: "success",
+        message: "Saved view marked as default!",
+      });
       setTimeout(() => setExportNotice(null), 4000);
     } catch (err) {
       alert(err.message || "Failed to set default view");
@@ -369,13 +394,25 @@ export default function ReportsDashboard() {
       };
       if (editViewUpdateFilters) {
         payload.period = period;
-        payload.startDate = period === "custom" && customStart ? new Date(customStart).toISOString() : null;
-        payload.endDate = period === "custom" && customEnd ? new Date(customEnd).toISOString() : null;
+        payload.startDate =
+          period === "custom" && customStart
+            ? new Date(customStart).toISOString()
+            : null;
+        payload.endDate =
+          period === "custom" && customEnd
+            ? new Date(customEnd).toISOString()
+            : null;
       }
-      await apiClient.put(`/api/v1/reports/saved-views/${selectedViewId}`, payload);
+      await apiClient.put(
+        `/api/v1/reports/saved-views/${selectedViewId}`,
+        payload,
+      );
       setIsEditViewModalOpen(false);
       await fetchSavedViews();
-      setExportNotice({ type: "success", message: "Saved view updated successfully!" });
+      setExportNotice({
+        type: "success",
+        message: "Saved view updated successfully!",
+      });
       setTimeout(() => setExportNotice(null), 4000);
     } catch (err) {
       console.error("Failed to update saved view:", err);
@@ -385,7 +422,8 @@ export default function ReportsDashboard() {
 
   const handleDeleteView = async () => {
     if (!selectedViewId) return;
-    if (!window.confirm("Are you sure you want to delete this saved view?")) return;
+    if (!window.confirm("Are you sure you want to delete this saved view?"))
+      return;
     try {
       await apiClient.delete(`/api/v1/reports/saved-views/${selectedViewId}`);
       setSelectedViewId("");
@@ -451,11 +489,15 @@ export default function ReportsDashboard() {
       format: s.format || "csv",
       recurrence: s.recurrence,
       timeOfDay: s.timeOfDay || "09:00",
-      dayOfWeek: s.dayOfWeek !== null && s.dayOfWeek !== undefined ? s.dayOfWeek : 1,
-      dayOfMonth: s.dayOfMonth !== null && s.dayOfMonth !== undefined ? s.dayOfMonth : 1,
+      dayOfWeek:
+        s.dayOfWeek !== null && s.dayOfWeek !== undefined ? s.dayOfWeek : 1,
+      dayOfMonth:
+        s.dayOfMonth !== null && s.dayOfMonth !== undefined ? s.dayOfMonth : 1,
       deliveryMode: s.deliveryMode || "SELF",
       includeOwner: s.includeOwner !== false,
-      recipientUserIds: (s.recipientUserIds || []).map((id) => (id?._id ? String(id._id) : String(id))),
+      recipientUserIds: (s.recipientUserIds || []).map((id) =>
+        id?._id ? String(id._id) : String(id),
+      ),
     });
     fetchEligibleRecipients();
     setIsScheduleModalOpen(true);
@@ -487,11 +529,20 @@ export default function ReportsDashboard() {
 
     try {
       if (scheduleForm.id) {
-        await apiClient.put(`/api/v1/reports/schedules/${scheduleForm.id}`, payload);
-        setExportNotice({ type: "success", message: "Report schedule updated successfully!" });
+        await apiClient.put(
+          `/api/v1/reports/schedules/${scheduleForm.id}`,
+          payload,
+        );
+        setExportNotice({
+          type: "success",
+          message: "Report schedule updated successfully!",
+        });
       } else {
         await apiClient.post("/api/v1/reports/schedules", payload);
-        setExportNotice({ type: "success", message: "Automated report schedule created!" });
+        setExportNotice({
+          type: "success",
+          message: "Automated report schedule created!",
+        });
       }
       setIsScheduleModalOpen(false);
       await fetchSchedules();
@@ -526,7 +577,12 @@ export default function ReportsDashboard() {
   };
 
   const handleDeleteSchedule = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this scheduled report? Historical run logs will be preserved.")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this scheduled report? Historical run logs will be preserved.",
+      )
+    )
+      return;
     try {
       await apiClient.delete(`/api/v1/reports/schedules/${id}`);
       await fetchSchedules();
@@ -542,7 +598,9 @@ export default function ReportsDashboard() {
     setIsRunHistoryOpen(true);
     setScheduleRunsLoading(true);
     try {
-      const res = await apiClient.get(`/api/v1/reports/schedules/${schedule._id}/runs`);
+      const res = await apiClient.get(
+        `/api/v1/reports/schedules/${schedule._id}/runs`,
+      );
       setScheduleRuns(res?.data || []);
     } catch (err) {
       console.warn("Failed to load schedule runs:", err.message);
@@ -558,7 +616,9 @@ export default function ReportsDashboard() {
     setIsDeliveriesModalOpen(true);
     setRunDeliveriesLoading(true);
     try {
-      const res = await apiClient.get(`/api/v1/reports/schedules/${selectedSchedule._id}/runs/${run._id}/deliveries`);
+      const res = await apiClient.get(
+        `/api/v1/reports/schedules/${selectedSchedule._id}/runs/${run._id}/deliveries`,
+      );
       setRunDeliveries(res?.data || []);
     } catch (err) {
       console.warn("Failed to load run deliveries:", err.message);
@@ -579,8 +639,14 @@ export default function ReportsDashboard() {
         reportKey: currentKey,
         format,
         period,
-        startDate: period === "custom" && customStart ? new Date(customStart).toISOString() : null,
-        endDate: period === "custom" && customEnd ? new Date(customEnd).toISOString() : null,
+        startDate:
+          period === "custom" && customStart
+            ? new Date(customStart).toISOString()
+            : null,
+        endDate:
+          period === "custom" && customEnd
+            ? new Date(customEnd).toISOString()
+            : null,
       };
 
       const res = await fetch(`${API_BASE_URL}/api/v1/reports/export`, {
@@ -594,14 +660,21 @@ export default function ReportsDashboard() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || errData?.message || `Export failed with HTTP ${res.status}`);
+        throw new Error(
+          errData?.error?.message ||
+            errData?.message ||
+            `Export failed with HTTP ${res.status}`,
+        );
       }
 
       const blob = await res.blob();
       const contentDisposition = res.headers.get("content-disposition");
       let filename = `${currentKey}_${period}.${format}`;
       if (contentDisposition && contentDisposition.includes("filename=")) {
-        filename = contentDisposition.split("filename=")[1].replace(/"/g, "").trim();
+        filename = contentDisposition
+          .split("filename=")[1]
+          .replace(/"/g, "")
+          .trim();
       }
 
       const url = window.URL.createObjectURL(blob);
@@ -613,11 +686,17 @@ export default function ReportsDashboard() {
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      setExportNotice({ type: "success", message: `Exported ${filename} successfully!` });
+      setExportNotice({
+        type: "success",
+        message: `Exported ${filename} successfully!`,
+      });
       setTimeout(() => setExportNotice(null), 5000);
     } catch (err) {
       console.error("Export failed:", err);
-      setExportNotice({ type: "error", message: err.message || "Export failed" });
+      setExportNotice({
+        type: "error",
+        message: err.message || "Export failed",
+      });
     } finally {
       setExportLoading(null);
     }
@@ -642,7 +721,8 @@ export default function ReportsDashboard() {
                 Enterprise Performance Dashboard
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time, tenant-isolated operational metrics derived directly from CRM and ERP ledgers.
+                Real-time, tenant-isolated operational metrics derived directly
+                from CRM and ERP ledgers.
               </p>
             </div>
 
@@ -675,16 +755,20 @@ export default function ReportsDashboard() {
                 className="p-2 rounded-xl bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-xs transition disabled:opacity-50"
                 title="Refresh Data"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                />
               </button>
             </div>
           </div>
 
           {/* Custom Date Range Picker Popover */}
           {isCustomOpen && (
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-lg flex flex-wrap items-center gap-3 text-xs">
+            <div className="p-4 rounded-md bg-white border border-slate-200 shadow-lg flex flex-wrap items-center gap-3 text-xs">
               <Calendar className="w-4 h-4 text-blue-600" />
-              <span className="font-semibold text-slate-800">Select Date Range:</span>
+              <span className="font-semibold text-slate-800">
+                Select Date Range:
+              </span>
               <div className="flex items-center gap-2">
                 <label className="text-slate-500 font-medium">Start:</label>
                 <input
@@ -739,7 +823,7 @@ export default function ReportsDashboard() {
             {/* KPI 1: Sales / Orders Value */}
             <Link
               href="/dashboard/orders"
-              className="group p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-blue-500/50 hover:shadow-sm transition"
+              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-blue-500/50 hover:shadow-sm transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -767,7 +851,7 @@ export default function ReportsDashboard() {
             {/* KPI 2: Received Payments */}
             <Link
               href="/dashboard/payments"
-              className="group p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-emerald-500/50 hover:shadow-sm transition"
+              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-emerald-500/50 hover:shadow-sm transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -795,7 +879,7 @@ export default function ReportsDashboard() {
             {/* KPI 3: Outstanding Receivables */}
             <Link
               href="/dashboard/receivables"
-              className="group p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-amber-500/50 hover:shadow-sm transition"
+              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-amber-500/50 hover:shadow-sm transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -810,7 +894,9 @@ export default function ReportsDashboard() {
                   {loading ? (
                     <div className="h-7 w-28 bg-slate-100 animate-pulse rounded-lg" />
                   ) : (
-                    formatPaise(kpis?.financials?.outstandingReceivablesPaise || 0)
+                    formatPaise(
+                      kpis?.financials?.outstandingReceivablesPaise || 0,
+                    )
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
@@ -823,7 +909,7 @@ export default function ReportsDashboard() {
             {/* KPI 4: Active Workload / Pipeline */}
             <Link
               href="/dashboard/leads"
-              className="group p-5 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-purple-500/50 hover:shadow-sm transition"
+              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-purple-500/50 hover:shadow-sm transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -842,7 +928,10 @@ export default function ReportsDashboard() {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
-                  <span>{kpis?.leads?.wonLeads || 0} Won of {kpis?.leads?.totalLeads || 0} Leads</span>
+                  <span>
+                    {kpis?.leads?.wonLeads || 0} Won of{" "}
+                    {kpis?.leads?.totalLeads || 0} Leads
+                  </span>
                   <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-purple-600 transition" />
                 </p>
               </div>
@@ -861,7 +950,9 @@ export default function ReportsDashboard() {
                   <Palette className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-500 truncate">Designs Active</div>
+                  <div className="text-xs font-bold text-slate-500 truncate">
+                    Designs Active
+                  </div>
                   <div className="text-sm font-black text-slate-900">
                     {kpis?.design?.inProgressDesigns || 0} In-Progress
                   </div>
@@ -870,7 +961,9 @@ export default function ReportsDashboard() {
             ) : (
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 opacity-60">
                 <Palette className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 font-medium">Design Restricted</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  Design Restricted
+                </span>
               </div>
             )}
 
@@ -884,7 +977,9 @@ export default function ReportsDashboard() {
                   <Layers className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-500 truncate">In Production</div>
+                  <div className="text-xs font-bold text-slate-500 truncate">
+                    In Production
+                  </div>
                   <div className="text-sm font-black text-slate-900">
                     {kpis?.production?.inProduction || 0} Active Jobs
                   </div>
@@ -893,7 +988,9 @@ export default function ReportsDashboard() {
             ) : (
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3 opacity-60">
                 <Layers className="w-4 h-4 text-slate-400" />
-                <span className="text-xs text-slate-500 font-medium">Production Restricted</span>
+                <span className="text-xs text-slate-500 font-medium">
+                  Production Restricted
+                </span>
               </div>
             )}
 
@@ -906,7 +1003,9 @@ export default function ReportsDashboard() {
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-500 truncate">Deliveries Pending</div>
+                <div className="text-xs font-bold text-slate-500 truncate">
+                  Deliveries Pending
+                </div>
                 <div className="text-sm font-black text-slate-900">
                   {kpis?.deliveries?.pendingDeliveries || 0} Dispatches
                 </div>
@@ -922,7 +1021,9 @@ export default function ReportsDashboard() {
                 <Clock className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-500 truncate">Overdue Follow-ups</div>
+                <div className="text-xs font-bold text-slate-500 truncate">
+                  Overdue Follow-ups
+                </div>
                 <div className="text-sm font-black text-rose-600">
                   {kpis?.followups?.overdueFollowups || 0} Action Needed
                 </div>
@@ -933,14 +1034,55 @@ export default function ReportsDashboard() {
           {/* 3. NAVIGATION TABS */}
           <div className="flex border-b border-slate-200 overflow-x-auto gap-2 text-xs font-bold">
             {[
-              { id: "kpis", label: "Executive Summary", icon: Activity, hidden: userRole.includes("designer") },
-              { id: "pipeline", label: "Sales Pipeline", icon: Users, hidden: userRole.includes("designer") },
-              { id: "financials", label: "Financials & Ageing", icon: DollarSign, hidden: userRole.includes("designer") },
-              { id: "orders", label: "Orders & Fulfillment", icon: ShoppingBag, hidden: userRole.includes("designer") },
-              { id: "design", label: "Design Studio", icon: Palette, hidden: userRole.includes("sales") },
-              { id: "production", label: "Outsourced Production", icon: Layers, hidden: userRole.includes("sales") || userRole.includes("designer") },
-              { id: "delivery", label: "Logistics & Delivery", icon: MapPin, hidden: userRole.includes("designer") },
-              { id: "followups", label: "Follow-up Attention", icon: Clock, hidden: userRole.includes("designer") },
+              {
+                id: "kpis",
+                label: "Executive Summary",
+                icon: Activity,
+                hidden: userRole.includes("designer"),
+              },
+              {
+                id: "pipeline",
+                label: "Sales Pipeline",
+                icon: Users,
+                hidden: userRole.includes("designer"),
+              },
+              {
+                id: "financials",
+                label: "Financials & Ageing",
+                icon: DollarSign,
+                hidden: userRole.includes("designer"),
+              },
+              {
+                id: "orders",
+                label: "Orders & Fulfillment",
+                icon: ShoppingBag,
+                hidden: userRole.includes("designer"),
+              },
+              {
+                id: "design",
+                label: "Design Studio",
+                icon: Palette,
+                hidden: userRole.includes("sales"),
+              },
+              {
+                id: "production",
+                label: "Outsourced Production",
+                icon: Layers,
+                hidden:
+                  userRole.includes("sales") || userRole.includes("designer"),
+              },
+              {
+                id: "delivery",
+                label: "Logistics & Delivery",
+                icon: MapPin,
+                hidden: userRole.includes("designer"),
+              },
+              {
+                id: "followups",
+                label: "Follow-up Attention",
+                icon: Clock,
+                hidden: userRole.includes("designer"),
+              },
             ]
               .filter((t) => !t.hidden)
               .map((tab) => {
@@ -964,7 +1106,7 @@ export default function ReportsDashboard() {
           </div>
 
           {/* Phase 7B-1: Action & View Toolbar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-md border border-slate-200 shadow-xs">
             {/* Left: Saved Views Controls */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold pl-1">
@@ -1051,7 +1193,10 @@ export default function ReportsDashboard() {
                 title="View and manage my automated report schedules"
               >
                 <History className="w-3.5 h-3.5 text-slate-500" />
-                <span>My Schedules{schedules.length > 0 ? ` (${schedules.length})` : ""}</span>
+                <span>
+                  My Schedules
+                  {schedules.length > 0 ? ` (${schedules.length})` : ""}
+                </span>
               </button>
 
               <button
@@ -1060,8 +1205,12 @@ export default function ReportsDashboard() {
                 onClick={() => handleExport("csv")}
                 className="flex-1 sm:flex-initial px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
               >
-                <Download className={`w-3.5 h-3.5 ${exportLoading === 'csv' ? 'animate-bounce text-blue-600' : 'text-slate-600'}`} />
-                <span>{exportLoading === 'csv' ? 'Exporting CSV...' : 'Export CSV'}</span>
+                <Download
+                  className={`w-3.5 h-3.5 ${exportLoading === "csv" ? "animate-bounce text-blue-600" : "text-slate-600"}`}
+                />
+                <span>
+                  {exportLoading === "csv" ? "Exporting CSV..." : "Export CSV"}
+                </span>
               </button>
 
               <button
@@ -1070,8 +1219,14 @@ export default function ReportsDashboard() {
                 onClick={() => handleExport("xlsx")}
                 className="flex-1 sm:flex-initial px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
               >
-                <FileSpreadsheet className={`w-3.5 h-3.5 ${exportLoading === 'xlsx' ? 'animate-bounce text-emerald-600' : 'text-emerald-600'}`} />
-                <span>{exportLoading === 'xlsx' ? 'Exporting XLSX...' : 'Export Excel'}</span>
+                <FileSpreadsheet
+                  className={`w-3.5 h-3.5 ${exportLoading === "xlsx" ? "animate-bounce text-emerald-600" : "text-emerald-600"}`}
+                />
+                <span>
+                  {exportLoading === "xlsx"
+                    ? "Exporting XLSX..."
+                    : "Export Excel"}
+                </span>
               </button>
 
               <button
@@ -1080,8 +1235,12 @@ export default function ReportsDashboard() {
                 onClick={() => handleExport("pdf")}
                 className="flex-1 sm:flex-initial px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
               >
-                <FileText className={`w-3.5 h-3.5 ${exportLoading === 'pdf' ? 'animate-bounce text-rose-600' : 'text-rose-600'}`} />
-                <span>{exportLoading === 'pdf' ? 'Exporting PDF...' : 'Export PDF'}</span>
+                <FileText
+                  className={`w-3.5 h-3.5 ${exportLoading === "pdf" ? "animate-bounce text-rose-600" : "text-rose-600"}`}
+                />
+                <span>
+                  {exportLoading === "pdf" ? "Exporting PDF..." : "Export PDF"}
+                </span>
               </button>
             </div>
           </div>
@@ -1115,7 +1274,7 @@ export default function ReportsDashboard() {
           {/* Save View Modal Dialog */}
           {isSaveViewModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Bookmark className="w-4 h-4 text-blue-600" />
@@ -1145,8 +1304,18 @@ export default function ReportsDashboard() {
                   </div>
 
                   <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-1">
-                    <div><span className="font-semibold text-slate-700">Report:</span> {tabToReportKey[activeTab] || activeTab}</div>
-                    <div><span className="font-semibold text-slate-700">Period:</span> {period}</div>
+                    <div>
+                      <span className="font-semibold text-slate-700">
+                        Report:
+                      </span>{" "}
+                      {tabToReportKey[activeTab] || activeTab}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-700">
+                        Period:
+                      </span>{" "}
+                      {period}
+                    </div>
                   </div>
 
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
@@ -1182,7 +1351,7 @@ export default function ReportsDashboard() {
           {/* Edit View Modal Dialog */}
           {isEditViewModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Edit3 className="w-4 h-4 text-blue-600" />
@@ -1214,10 +1383,14 @@ export default function ReportsDashboard() {
                     <input
                       type="checkbox"
                       checked={editViewUpdateFilters}
-                      onChange={(e) => setEditViewUpdateFilters(e.target.checked)}
+                      onChange={(e) =>
+                        setEditViewUpdateFilters(e.target.checked)
+                      }
                       className="rounded text-blue-600 focus:ring-blue-500"
                     />
-                    <span>Update view with current filters & date range ({period})</span>
+                    <span>
+                      Update view with current filters & date range ({period})
+                    </span>
                   </label>
 
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
@@ -1253,11 +1426,15 @@ export default function ReportsDashboard() {
           {/* Phase 7B-2B1: Create / Edit Report Schedule Modal */}
           {isScheduleModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-md w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[90vh] overflow-y-auto">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-md w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-indigo-600" />
-                    <span>{scheduleForm.id ? "Edit Report Schedule" : "Schedule Report Delivery"}</span>
+                    <span>
+                      {scheduleForm.id
+                        ? "Edit Report Schedule"
+                        : "Schedule Report Delivery"}
+                    </span>
                   </h3>
                   <button
                     onClick={() => setIsScheduleModalOpen(false)}
@@ -1277,7 +1454,12 @@ export default function ReportsDashboard() {
                       required
                       maxLength={100}
                       value={scheduleForm.name}
-                      onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setScheduleForm({
+                          ...scheduleForm,
+                          name: e.target.value,
+                        })
+                      }
                       placeholder="e.g. Daily Orders Summary"
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none"
                     />
@@ -1290,7 +1472,12 @@ export default function ReportsDashboard() {
                       </label>
                       <select
                         value={scheduleForm.format}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, format: e.target.value })}
+                        onChange={(e) =>
+                          setScheduleForm({
+                            ...scheduleForm,
+                            format: e.target.value,
+                          })
+                        }
                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none cursor-pointer"
                       >
                         <option value="csv">CSV Spreadsheet</option>
@@ -1305,7 +1492,12 @@ export default function ReportsDashboard() {
                       </label>
                       <select
                         value={scheduleForm.recurrence}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, recurrence: e.target.value })}
+                        onChange={(e) =>
+                          setScheduleForm({
+                            ...scheduleForm,
+                            recurrence: e.target.value,
+                          })
+                        }
                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none cursor-pointer"
                       >
                         <option value="DAILY">Daily</option>
@@ -1324,7 +1516,12 @@ export default function ReportsDashboard() {
                         type="time"
                         required
                         value={scheduleForm.timeOfDay}
-                        onChange={(e) => setScheduleForm({ ...scheduleForm, timeOfDay: e.target.value })}
+                        onChange={(e) =>
+                          setScheduleForm({
+                            ...scheduleForm,
+                            timeOfDay: e.target.value,
+                          })
+                        }
                         className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none"
                       />
                     </div>
@@ -1336,7 +1533,12 @@ export default function ReportsDashboard() {
                         </label>
                         <select
                           value={scheduleForm.dayOfWeek}
-                          onChange={(e) => setScheduleForm({ ...scheduleForm, dayOfWeek: Number(e.target.value) })}
+                          onChange={(e) =>
+                            setScheduleForm({
+                              ...scheduleForm,
+                              dayOfWeek: Number(e.target.value),
+                            })
+                          }
                           className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none cursor-pointer"
                         >
                           <option value={0}>Sunday</option>
@@ -1361,7 +1563,15 @@ export default function ReportsDashboard() {
                           max={28}
                           required
                           value={scheduleForm.dayOfMonth}
-                          onChange={(e) => setScheduleForm({ ...scheduleForm, dayOfMonth: Math.min(28, Math.max(1, Number(e.target.value))) })}
+                          onChange={(e) =>
+                            setScheduleForm({
+                              ...scheduleForm,
+                              dayOfMonth: Math.min(
+                                28,
+                                Math.max(1, Number(e.target.value)),
+                              ),
+                            })
+                          }
                           className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 outline-none"
                         />
                       </div>
@@ -1369,7 +1579,8 @@ export default function ReportsDashboard() {
                   </div>
 
                   {/* Delivery Mode & Recipient Selector */}
-                  {(userRole.includes("admin") || userRole.includes("manager")) ? (
+                  {userRole.includes("admin") ||
+                  userRole.includes("manager") ? (
                     <div className="space-y-3">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1378,7 +1589,12 @@ export default function ReportsDashboard() {
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
-                            onClick={() => setScheduleForm({ ...scheduleForm, deliveryMode: "SELF" })}
+                            onClick={() =>
+                              setScheduleForm({
+                                ...scheduleForm,
+                                deliveryMode: "SELF",
+                              })
+                            }
                             className={`px-3 py-2 rounded-xl text-xs font-bold border transition text-center ${
                               scheduleForm.deliveryMode === "SELF"
                                 ? "bg-indigo-50 border-indigo-500 text-indigo-700 shadow-xs"
@@ -1390,7 +1606,10 @@ export default function ReportsDashboard() {
                           <button
                             type="button"
                             onClick={() => {
-                              setScheduleForm({ ...scheduleForm, deliveryMode: "INTERNAL_TEAM" });
+                              setScheduleForm({
+                                ...scheduleForm,
+                                deliveryMode: "INTERNAL_TEAM",
+                              });
                               fetchEligibleRecipients();
                             }}
                             className={`px-3 py-2 rounded-xl text-xs font-bold border transition text-center ${
@@ -1413,7 +1632,11 @@ export default function ReportsDashboard() {
                             type="text"
                             disabled
                             readOnly
-                            value={userEmail ? `${userEmail} (Account Owner)` : "Your verified account email"}
+                            value={
+                              userEmail
+                                ? `${userEmail} (Account Owner)`
+                                : "Your verified account email"
+                            }
                             className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500 cursor-not-allowed select-none font-medium"
                           />
                           <p className="text-[11px] text-slate-400 mt-1">
@@ -1423,9 +1646,12 @@ export default function ReportsDashboard() {
                       ) : (
                         <div className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-800">Team Recipients</span>
+                            <span className="text-xs font-bold text-slate-800">
+                              Team Recipients
+                            </span>
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                              Selected: {scheduleForm.recipientUserIds.length}/25
+                              Selected: {scheduleForm.recipientUserIds.length}
+                              /25
                             </span>
                           </div>
 
@@ -1433,7 +1659,12 @@ export default function ReportsDashboard() {
                             <input
                               type="checkbox"
                               checked={scheduleForm.includeOwner}
-                              onChange={(e) => setScheduleForm({ ...scheduleForm, includeOwner: e.target.checked })}
+                              onChange={(e) =>
+                                setScheduleForm({
+                                  ...scheduleForm,
+                                  includeOwner: e.target.checked,
+                                })
+                              }
                               className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                             />
                             <span>Include me as recipient (Owner copy)</span>
@@ -1441,13 +1672,18 @@ export default function ReportsDashboard() {
 
                           <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 pt-1">
                             {loadingRecipients ? (
-                              <div className="text-center py-4 text-xs text-slate-400">Loading authorized recipients...</div>
+                              <div className="text-center py-4 text-xs text-slate-400">
+                                Loading authorized recipients...
+                              </div>
                             ) : eligibleRecipients.length === 0 ? (
-                              <div className="text-center py-4 text-xs text-slate-400">No other team members found.</div>
+                              <div className="text-center py-4 text-xs text-slate-400">
+                                No other team members found.
+                              </div>
                             ) : (
                               eligibleRecipients.map((rec) => {
                                 const recId = String(rec.id || rec._id);
-                                const isSelected = scheduleForm.recipientUserIds.includes(recId);
+                                const isSelected =
+                                  scheduleForm.recipientUserIds.includes(recId);
                                 return (
                                   <label
                                     key={recId}
@@ -1465,22 +1701,35 @@ export default function ReportsDashboard() {
                                           if (isSelected) {
                                             setScheduleForm({
                                               ...scheduleForm,
-                                              recipientUserIds: scheduleForm.recipientUserIds.filter((id) => id !== recId),
+                                              recipientUserIds:
+                                                scheduleForm.recipientUserIds.filter(
+                                                  (id) => id !== recId,
+                                                ),
                                             });
                                           } else {
-                                            if (scheduleForm.recipientUserIds.length >= 25) {
-                                              alert("Maximum 25 recipients allowed per schedule.");
+                                            if (
+                                              scheduleForm.recipientUserIds
+                                                .length >= 25
+                                            ) {
+                                              alert(
+                                                "Maximum 25 recipients allowed per schedule.",
+                                              );
                                               return;
                                             }
                                             setScheduleForm({
                                               ...scheduleForm,
-                                              recipientUserIds: [...scheduleForm.recipientUserIds, recId],
+                                              recipientUserIds: [
+                                                ...scheduleForm.recipientUserIds,
+                                                recId,
+                                              ],
                                             });
                                           }
                                         }}
                                         className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                       />
-                                      <span className="font-semibold">{rec.name}</span>
+                                      <span className="font-semibold">
+                                        {rec.name}
+                                      </span>
                                     </div>
                                     <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                                       {rec.role || "SALES"}
@@ -1491,7 +1740,8 @@ export default function ReportsDashboard() {
                             )}
                           </div>
                           <p className="text-[10px] text-slate-500 italic mt-1">
-                            Each recipient dynamically receives data strictly scoped to their own role and permissions.
+                            Each recipient dynamically receives data strictly
+                            scoped to their own role and permissions.
                           </p>
                         </div>
                       )}
@@ -1505,27 +1755,46 @@ export default function ReportsDashboard() {
                         type="text"
                         disabled
                         readOnly
-                        value={userEmail ? `${userEmail} (Account Owner)` : "Your verified account email"}
+                        value={
+                          userEmail
+                            ? `${userEmail} (Account Owner)`
+                            : "Your verified account email"
+                        }
                         className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-500 cursor-not-allowed select-none font-medium"
                       />
                       <p className="text-[11px] text-slate-400 mt-1">
-                        Reports are emailed exclusively to your account. External recipients are disabled.
+                        Reports are emailed exclusively to your account.
+                        External recipients are disabled.
                       </p>
                     </div>
                   )}
 
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Report Key:</span>
-                      <span className="font-bold text-slate-800">{tabToReportKey[activeTab] || activeTab}</span>
+                      <span className="font-semibold text-slate-500">
+                        Report Key:
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        {tabToReportKey[activeTab] || activeTab}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Target Period:</span>
-                      <span className="font-bold text-slate-800">{period === "custom" ? "last_30_days (rolling)" : period}</span>
+                      <span className="font-semibold text-slate-500">
+                        Target Period:
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        {period === "custom"
+                          ? "last_30_days (rolling)"
+                          : period}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-semibold text-slate-500">Timezone:</span>
-                      <span className="font-bold text-slate-800">Asia/Kolkata (IST +05:30)</span>
+                      <span className="font-semibold text-slate-500">
+                        Timezone:
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        Asia/Kolkata (IST +05:30)
+                      </span>
                     </div>
                   </div>
 
@@ -1542,7 +1811,11 @@ export default function ReportsDashboard() {
                       disabled={scheduleSubmitting}
                       className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 text-xs font-bold shadow-xs transition disabled:opacity-50"
                     >
-                      {scheduleSubmitting ? "Saving..." : scheduleForm.id ? "Update Schedule" : "Create Schedule"}
+                      {scheduleSubmitting
+                        ? "Saving..."
+                        : scheduleForm.id
+                          ? "Update Schedule"
+                          : "Create Schedule"}
                     </button>
                   </div>
                 </form>
@@ -1553,7 +1826,7 @@ export default function ReportsDashboard() {
           {/* Phase 7B-2B1: My Schedules Drawer / Modal */}
           {isMySchedulesOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1561,7 +1834,8 @@ export default function ReportsDashboard() {
                       <span>My Scheduled Reports</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Automated exports delivered to {userEmail || "your account email"}
+                      Automated exports delivered to{" "}
+                      {userEmail || "your account email"}
                     </p>
                   </div>
                   <button
@@ -1576,8 +1850,13 @@ export default function ReportsDashboard() {
                   {schedules.length === 0 ? (
                     <div className="text-center py-10 text-slate-400 text-xs">
                       <Mail className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                      <p className="font-semibold text-slate-600">No scheduled reports active.</p>
-                      <p className="mt-1 text-slate-400">Click &ldquo;Schedule Report&rdquo; in the toolbar to set up automated delivery.</p>
+                      <p className="font-semibold text-slate-600">
+                        No scheduled reports active.
+                      </p>
+                      <p className="mt-1 text-slate-400">
+                        Click &ldquo;Schedule Report&rdquo; in the toolbar to
+                        set up automated delivery.
+                      </p>
                     </div>
                   ) : (
                     schedules.map((s) => (
@@ -1587,7 +1866,9 @@ export default function ReportsDashboard() {
                       >
                         <div className="min-w-0 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-xs text-slate-900">{s.name}</span>
+                            <span className="font-bold text-xs text-slate-900">
+                              {s.name}
+                            </span>
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-200 text-slate-700">
                               {s.reportKey}
                             </span>
@@ -1618,15 +1899,21 @@ export default function ReportsDashboard() {
 
                           <div className="text-[11px] text-slate-500 flex items-center gap-3 flex-wrap">
                             <span>
-                              <strong>Recurrence:</strong> {s.recurrence} at {s.timeOfDay} IST
-                              {s.recurrence === "WEEKLY" && ` (Day ${s.dayOfWeek})`}
-                              {s.recurrence === "MONTHLY" && ` (Day ${s.dayOfMonth})`}
+                              <strong>Recurrence:</strong> {s.recurrence} at{" "}
+                              {s.timeOfDay} IST
+                              {s.recurrence === "WEEKLY" &&
+                                ` (Day ${s.dayOfWeek})`}
+                              {s.recurrence === "MONTHLY" &&
+                                ` (Day ${s.dayOfMonth})`}
                             </span>
                             <span>•</span>
                             <span>
                               <strong>Next:</strong>{" "}
                               {s.nextRunAt
-                                ? new Date(s.nextRunAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+                                ? new Date(s.nextRunAt).toLocaleString(
+                                    "en-IN",
+                                    { timeZone: "Asia/Kolkata" },
+                                  )
                                 : "N/A"}
                             </span>
                           </div>
@@ -1711,7 +1998,7 @@ export default function ReportsDashboard() {
           {/* Phase 7B-2B1: Run Execution History Modal */}
           {isRunHistoryOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1732,10 +2019,13 @@ export default function ReportsDashboard() {
 
                 <div className="flex-1 overflow-y-auto pr-1">
                   {scheduleRunsLoading ? (
-                    <div className="text-center py-8 text-xs text-slate-400">Loading execution runs...</div>
+                    <div className="text-center py-8 text-xs text-slate-400">
+                      Loading execution runs...
+                    </div>
                   ) : scheduleRuns.length === 0 ? (
                     <div className="text-center py-8 text-xs text-slate-400">
-                      No execution runs recorded yet. Runs appear after the scheduler executes.
+                      No execution runs recorded yet. Runs appear after the
+                      scheduler executes.
                     </div>
                   ) : (
                     <table className="w-full text-left text-xs border-collapse">
@@ -1754,7 +2044,10 @@ export default function ReportsDashboard() {
                           <tr key={r._id} className="hover:bg-slate-50">
                             <td className="py-2.5">
                               {r.scheduledFor
-                                ? new Date(r.scheduledFor).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+                                ? new Date(r.scheduledFor).toLocaleString(
+                                    "en-IN",
+                                    { timeZone: "Asia/Kolkata" },
+                                  )
                                 : "-"}
                             </td>
                             <td className="py-2.5">
@@ -1763,12 +2056,12 @@ export default function ReportsDashboard() {
                                   r.status === "SUCCESS"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : r.status === "PARTIAL_SUCCESS"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : r.status === "FAILED"
-                                    ? "bg-rose-100 text-rose-700"
-                                    : r.status === "SKIPPED"
-                                    ? "bg-slate-100 text-slate-700"
-                                    : "bg-blue-100 text-blue-700"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : r.status === "FAILED"
+                                        ? "bg-rose-100 text-rose-700"
+                                        : r.status === "SKIPPED"
+                                          ? "bg-slate-100 text-slate-700"
+                                          : "bg-blue-100 text-blue-700"
                                 }`}
                               >
                                 {r.status}
@@ -1776,10 +2069,13 @@ export default function ReportsDashboard() {
                             </td>
                             <td className="py-2.5">{r.rowCount ?? 0}</td>
                             <td className="py-2.5">
-                              {r.attachmentBytes ? `${(r.attachmentBytes / 1024).toFixed(1)} KB` : "-"}
+                              {r.attachmentBytes
+                                ? `${(r.attachmentBytes / 1024).toFixed(1)} KB`
+                                : "-"}
                             </td>
                             <td className="py-2.5 text-slate-500 text-[11px]">
-                              {r.failureReason || (r.status === "SUCCESS" ? "Delivered" : "-")}
+                              {r.failureReason ||
+                                (r.status === "SUCCESS" ? "Delivered" : "-")}
                             </td>
                             <td className="py-2.5 text-right">
                               <button
@@ -1813,7 +2109,7 @@ export default function ReportsDashboard() {
           {/* Phase 7B-2B2: Run Deliveries Inspection Modal */}
           {isDeliveriesModalOpen && (
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
+              <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 animate-in fade-in zoom-in duration-150 max-h-[85vh] flex flex-col">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1821,7 +2117,13 @@ export default function ReportsDashboard() {
                       <span>Per-Recipient Delivery Audit</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Run Scheduled For: {selectedRun?.scheduledFor ? new Date(selectedRun.scheduledFor).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "-"}
+                      Run Scheduled For:{" "}
+                      {selectedRun?.scheduledFor
+                        ? new Date(selectedRun.scheduledFor).toLocaleString(
+                            "en-IN",
+                            { timeZone: "Asia/Kolkata" },
+                          )
+                        : "-"}
                     </p>
                   </div>
                   <button
@@ -1834,7 +2136,9 @@ export default function ReportsDashboard() {
 
                 <div className="flex-1 overflow-y-auto pr-1">
                   {runDeliveriesLoading ? (
-                    <div className="text-center py-8 text-xs text-slate-400">Loading delivery logs...</div>
+                    <div className="text-center py-8 text-xs text-slate-400">
+                      Loading delivery logs...
+                    </div>
                   ) : runDeliveries.length === 0 ? (
                     <div className="text-center py-8 text-xs text-slate-400">
                       No delivery audit records logged for this run.
@@ -1854,7 +2158,9 @@ export default function ReportsDashboard() {
                       <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                         {runDeliveries.map((d) => (
                           <tr key={d._id} className="hover:bg-slate-50">
-                            <td className="py-2.5 font-bold text-slate-900">{d.recipientName}</td>
+                            <td className="py-2.5 font-bold text-slate-900">
+                              {d.recipientName}
+                            </td>
                             <td className="py-2.5">
                               <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                                 {d.recipientRole}
@@ -1866,10 +2172,10 @@ export default function ReportsDashboard() {
                                   d.status === "SUCCESS"
                                     ? "bg-emerald-100 text-emerald-700"
                                     : d.status === "FAILED"
-                                    ? "bg-rose-100 text-rose-700"
-                                    : d.status === "SKIPPED"
-                                    ? "bg-slate-100 text-slate-700"
-                                    : "bg-blue-100 text-blue-700"
+                                      ? "bg-rose-100 text-rose-700"
+                                      : d.status === "SKIPPED"
+                                        ? "bg-slate-100 text-slate-700"
+                                        : "bg-blue-100 text-blue-700"
                                 }`}
                               >
                                 {d.status}
@@ -1877,10 +2183,13 @@ export default function ReportsDashboard() {
                             </td>
                             <td className="py-2.5">{d.rowCount ?? 0}</td>
                             <td className="py-2.5">
-                              {d.attachmentBytes ? `${(d.attachmentBytes / 1024).toFixed(1)} KB` : "-"}
+                              {d.attachmentBytes
+                                ? `${(d.attachmentBytes / 1024).toFixed(1)} KB`
+                                : "-"}
                             </td>
                             <td className="py-2.5 text-slate-500 text-[11px]">
-                              {d.failureReason || (d.status === "SUCCESS" ? "Delivered" : "-")}
+                              {d.failureReason ||
+                                (d.status === "SUCCESS" ? "Delivered" : "-")}
                             </td>
                           </tr>
                         ))}
@@ -1908,54 +2217,73 @@ export default function ReportsDashboard() {
             {activeTab === "kpis" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Sales vs Received Ledger Card */}
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-emerald-600" />
                     <span>Financial Realization Overview</span>
                   </h3>
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <div className="text-[10px] uppercase font-bold text-slate-500">Total Invoiced</div>
+                      <div className="text-[10px] uppercase font-bold text-slate-500">
+                        Total Invoiced
+                      </div>
                       <div className="text-sm font-black text-slate-900 mt-1">
-                        {formatPaise(kpis?.financials?.totalSalesValuePaise || 0)}
+                        {formatPaise(
+                          kpis?.financials?.totalSalesValuePaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/60">
-                      <div className="text-[10px] uppercase font-bold text-emerald-700">Total Received</div>
+                      <div className="text-[10px] uppercase font-bold text-emerald-700">
+                        Total Received
+                      </div>
                       <div className="text-sm font-black text-emerald-700 mt-1">
-                        {formatPaise(kpis?.financials?.receivedPaymentsPaise || 0)}
+                        {formatPaise(
+                          kpis?.financials?.receivedPaymentsPaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/60">
-                      <div className="text-[10px] uppercase font-bold text-amber-700">Outstanding</div>
+                      <div className="text-[10px] uppercase font-bold text-amber-700">
+                        Outstanding
+                      </div>
                       <div className="text-sm font-black text-amber-700 mt-1">
-                        {formatPaise(kpis?.financials?.outstandingReceivablesPaise || 0)}
+                        {formatPaise(
+                          kpis?.financials?.outstandingReceivablesPaise || 0,
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="text-xs text-slate-500 leading-relaxed font-medium">
-                    Calculated strictly in integer paise via append-only payment ledgers. No floating point errors.
+                    Calculated strictly in integer paise via append-only payment
+                    ledgers. No floating point errors.
                   </div>
                 </div>
 
                 {/* Quotations & Orders Funnel */}
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
                     <span>Commercial Conversion Summary</span>
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                      <div className="text-xs text-slate-500 font-medium">Quotations Generated</div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        Quotations Generated
+                      </div>
                       <div className="text-lg font-black text-slate-900 mt-1">
                         {kpis?.quotations?.totalQuotations || 0}
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">
-                        {formatPaise(kpis?.quotations?.quotationValuePaise || 0)}
+                        {formatPaise(
+                          kpis?.quotations?.quotationValuePaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/60">
-                      <div className="text-xs text-emerald-700 font-medium">Accepted Quotations</div>
+                      <div className="text-xs text-emerald-700 font-medium">
+                        Accepted Quotations
+                      </div>
                       <div className="text-lg font-black text-emerald-700 mt-1">
                         {kpis?.quotations?.acceptedQuotations || 0}
                       </div>
@@ -1977,25 +2305,43 @@ export default function ReportsDashboard() {
             {/* B. SALES PIPELINE REPORT */}
             {activeTab === "pipeline" && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Lead Stages & Conversion</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Lead Stages & Conversion
+                  </h3>
                   {pipeline?.stages ? (
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                       {Array.isArray(pipeline.stages)
                         ? pipeline.stages.map((item, idx) => (
-                            <div key={item._id || idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                              <div className="text-[10px] font-bold text-slate-500 truncate">{item._id || "Stage"}</div>
-                              <div className="text-lg font-black text-slate-900 mt-1">{item.count ?? 0}</div>
-                            </div>
-                          ))
-                        : Object.entries(pipeline.stages).map(([stage, count]) => (
-                            <div key={stage} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                              <div className="text-[10px] font-bold text-slate-500 truncate">{stage}</div>
+                            <div
+                              key={item._id || idx}
+                              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center"
+                            >
+                              <div className="text-[10px] font-bold text-slate-500 truncate">
+                                {item._id || "Stage"}
+                              </div>
                               <div className="text-lg font-black text-slate-900 mt-1">
-                                {typeof count === "object" && count !== null ? count.count ?? 0 : count}
+                                {item.count ?? 0}
                               </div>
                             </div>
-                          ))}
+                          ))
+                        : Object.entries(pipeline.stages).map(
+                            ([stage, count]) => (
+                              <div
+                                key={stage}
+                                className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center"
+                              >
+                                <div className="text-[10px] font-bold text-slate-500 truncate">
+                                  {stage}
+                                </div>
+                                <div className="text-lg font-black text-slate-900 mt-1">
+                                  {typeof count === "object" && count !== null
+                                    ? (count.count ?? 0)
+                                    : count}
+                                </div>
+                              </div>
+                            ),
+                          )}
                     </div>
                   ) : (
                     <div className="p-8 text-center text-slate-400">
@@ -2007,25 +2353,44 @@ export default function ReportsDashboard() {
 
                 {/* Lead Sources Breakdown */}
                 {pipeline?.sources && pipeline.sources.length > 0 && (
-                  <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Lead Sources Performance</h3>
+                  <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Lead Sources Performance
+                    </h3>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-xs text-left">
                         <thead className="text-[10px] uppercase font-bold text-slate-500 bg-slate-50 border-b border-slate-200">
                           <tr>
                             <th className="py-2.5 px-4">Source</th>
-                            <th className="py-2.5 px-4 text-center">Total Ingested</th>
-                            <th className="py-2.5 px-4 text-center">Won Leads</th>
-                            <th className="py-2.5 px-4 text-right">Conversion %</th>
+                            <th className="py-2.5 px-4 text-center">
+                              Total Ingested
+                            </th>
+                            <th className="py-2.5 px-4 text-center">
+                              Won Leads
+                            </th>
+                            <th className="py-2.5 px-4 text-right">
+                              Conversion %
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {pipeline.sources.map((src) => (
-                            <tr key={src.source} className="hover:bg-slate-50/70 transition">
-                              <td className="py-2.5 px-4 font-bold text-slate-900">{src.source}</td>
-                              <td className="py-2.5 px-4 text-center text-slate-600">{src.count}</td>
-                              <td className="py-2.5 px-4 text-center text-emerald-600 font-bold">{src.wonCount}</td>
-                              <td className="py-2.5 px-4 text-right font-mono font-bold text-blue-600">{src.conversionRatePercent}%</td>
+                            <tr
+                              key={src.source}
+                              className="hover:bg-slate-50/70 transition"
+                            >
+                              <td className="py-2.5 px-4 font-bold text-slate-900">
+                                {src.source}
+                              </td>
+                              <td className="py-2.5 px-4 text-center text-slate-600">
+                                {src.count}
+                              </td>
+                              <td className="py-2.5 px-4 text-center text-emerald-600 font-bold">
+                                {src.wonCount}
+                              </td>
+                              <td className="py-2.5 px-4 text-right font-mono font-bold text-blue-600">
+                                {src.conversionRatePercent}%
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -2039,31 +2404,49 @@ export default function ReportsDashboard() {
             {/* C. FINANCIALS & RECEIVABLES AGEING */}
             {activeTab === "financials" && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Receivables Ageing Classification</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Receivables Ageing Classification
+                  </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200/60">
-                      <div className="text-[10px] font-bold text-emerald-700 uppercase">0 - 30 Days</div>
+                      <div className="text-[10px] font-bold text-emerald-700 uppercase">
+                        0 - 30 Days
+                      </div>
                       <div className="text-lg font-black text-emerald-800 mt-1">
-                        {formatPaise(financials?.ageingBuckets?.bucket0To30DaysPaise || 0)}
+                        {formatPaise(
+                          financials?.ageingBuckets?.bucket0To30DaysPaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/60">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">31 - 60 Days</div>
+                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                        31 - 60 Days
+                      </div>
                       <div className="text-lg font-black text-blue-800 mt-1">
-                        {formatPaise(financials?.ageingBuckets?.bucket31To60DaysPaise || 0)}
+                        {formatPaise(
+                          financials?.ageingBuckets?.bucket31To60DaysPaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/60">
-                      <div className="text-[10px] font-bold text-amber-700 uppercase">61 - 90 Days</div>
+                      <div className="text-[10px] font-bold text-amber-700 uppercase">
+                        61 - 90 Days
+                      </div>
                       <div className="text-lg font-black text-amber-800 mt-1">
-                        {formatPaise(financials?.ageingBuckets?.bucket61To90DaysPaise || 0)}
+                        {formatPaise(
+                          financials?.ageingBuckets?.bucket61To90DaysPaise || 0,
+                        )}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-rose-50/50 border border-rose-200/60">
-                      <div className="text-[10px] font-bold text-rose-700 uppercase">90+ Days Overdue</div>
+                      <div className="text-[10px] font-bold text-rose-700 uppercase">
+                        90+ Days Overdue
+                      </div>
                       <div className="text-lg font-black text-rose-700 mt-1">
-                        {formatPaise(financials?.ageingBuckets?.bucket90PlusDaysPaise || 0)}
+                        {formatPaise(
+                          financials?.ageingBuckets?.bucket90PlusDaysPaise || 0,
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2071,22 +2454,35 @@ export default function ReportsDashboard() {
 
                 {/* Top Debtors Table */}
                 {financials?.topDebtors && financials.topDebtors.length > 0 && (
-                  <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Highest Outstanding Customers</h3>
+                  <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Highest Outstanding Customers
+                    </h3>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-xs text-left">
                         <thead className="text-[10px] uppercase font-bold text-slate-500 bg-slate-50 border-b border-slate-200">
                           <tr>
                             <th className="py-2.5 px-4">Customer</th>
-                            <th className="py-2.5 px-4 text-center">Unpaid Orders</th>
-                            <th className="py-2.5 px-4 text-right">Balance Due</th>
+                            <th className="py-2.5 px-4 text-center">
+                              Unpaid Orders
+                            </th>
+                            <th className="py-2.5 px-4 text-right">
+                              Balance Due
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {financials.topDebtors.map((debtor, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/70 transition">
-                              <td className="py-2.5 px-4 font-bold text-slate-900">{debtor.customerName}</td>
-                              <td className="py-2.5 px-4 text-center text-slate-600">{debtor.ordersCount}</td>
+                            <tr
+                              key={idx}
+                              className="hover:bg-slate-50/70 transition"
+                            >
+                              <td className="py-2.5 px-4 font-bold text-slate-900">
+                                {debtor.customerName}
+                              </td>
+                              <td className="py-2.5 px-4 text-center text-slate-600">
+                                {debtor.ordersCount}
+                              </td>
                               <td className="py-2.5 px-4 text-right font-black text-amber-600">
                                 {formatPaise(debtor.totalOutstandingPaise)}
                               </td>
@@ -2103,38 +2499,65 @@ export default function ReportsDashboard() {
             {/* D. ORDERS & FULFILLMENT */}
             {activeTab === "orders" && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Orders Lifecycle & Fulfillment</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Orders Lifecycle & Fulfillment
+                  </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                      <div className="text-[10px] font-bold text-slate-500">TOTAL ORDERS</div>
-                      <div className="text-lg font-black text-slate-900 mt-1">{orders?.summary?.totalOrders || 0}</div>
+                      <div className="text-[10px] font-bold text-slate-500">
+                        TOTAL ORDERS
+                      </div>
+                      <div className="text-lg font-black text-slate-900 mt-1">
+                        {orders?.summary?.totalOrders || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                      <div className="text-[10px] font-bold text-blue-700">ACTIVE IN PIPELINE</div>
-                      <div className="text-lg font-black text-blue-800 mt-1">{orders?.summary?.activeOrders || 0}</div>
+                      <div className="text-[10px] font-bold text-blue-700">
+                        ACTIVE IN PIPELINE
+                      </div>
+                      <div className="text-lg font-black text-blue-800 mt-1">
+                        {orders?.summary?.activeOrders || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 text-center">
-                      <div className="text-[10px] font-bold text-emerald-700">COMPLETED</div>
-                      <div className="text-lg font-black text-emerald-700 mt-1">{orders?.summary?.completedOrders || 0}</div>
+                      <div className="text-[10px] font-bold text-emerald-700">
+                        COMPLETED
+                      </div>
+                      <div className="text-lg font-black text-emerald-700 mt-1">
+                        {orders?.summary?.completedOrders || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 text-center">
-                      <div className="text-[10px] font-bold text-amber-700">DELIVERED UNPAID</div>
-                      <div className="text-lg font-black text-amber-700 mt-1">{orders?.summary?.deliveredUnpaidOrders || 0}</div>
+                      <div className="text-[10px] font-bold text-amber-700">
+                        DELIVERED UNPAID
+                      </div>
+                      <div className="text-lg font-black text-amber-700 mt-1">
+                        {orders?.summary?.deliveredUnpaidOrders || 0}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Orders by Status */}
                 {orders?.statusBreakdown && (
-                  <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Order Status Breakdown</h3>
+                  <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Order Status Breakdown
+                    </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                       {Array.isArray(orders.statusBreakdown)
                         ? orders.statusBreakdown.map((item, idx) => (
-                            <div key={item._id || idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                              <div className="text-[10px] font-bold text-slate-500 truncate">{item._id || "Status"}</div>
-                              <div className="text-base font-black text-slate-900 mt-0.5">{item.count ?? 0}</div>
+                            <div
+                              key={item._id || idx}
+                              className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center"
+                            >
+                              <div className="text-[10px] font-bold text-slate-500 truncate">
+                                {item._id || "Status"}
+                              </div>
+                              <div className="text-base font-black text-slate-900 mt-0.5">
+                                {item.count ?? 0}
+                              </div>
                               {item.valuePaise !== undefined && (
                                 <div className="text-[10px] text-slate-400 font-medium mt-0.5">
                                   {formatPaise(item.valuePaise)}
@@ -2142,14 +2565,23 @@ export default function ReportsDashboard() {
                               )}
                             </div>
                           ))
-                        : Object.entries(orders.statusBreakdown).map(([status, count]) => (
-                            <div key={status} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                              <div className="text-[10px] font-bold text-slate-500 truncate">{status}</div>
-                              <div className="text-base font-black text-slate-900 mt-0.5">
-                                {typeof count === "object" && count !== null ? count.count ?? 0 : count}
+                        : Object.entries(orders.statusBreakdown).map(
+                            ([status, count]) => (
+                              <div
+                                key={status}
+                                className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center"
+                              >
+                                <div className="text-[10px] font-bold text-slate-500 truncate">
+                                  {status}
+                                </div>
+                                <div className="text-base font-black text-slate-900 mt-0.5">
+                                  {typeof count === "object" && count !== null
+                                    ? (count.count ?? 0)
+                                    : count}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                     </div>
                   </div>
                 )}
@@ -2159,24 +2591,42 @@ export default function ReportsDashboard() {
             {/* E. QUOTATIONS REPORT */}
             {activeTab === "quotations" && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Quotation Funnel & Conversion</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Quotation Funnel & Conversion
+                  </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div className="text-[10px] font-bold text-slate-500 uppercase">Total Generated</div>
-                      <div className="text-lg font-black text-slate-900 mt-1">{quotations?.summary?.totalQuotations || 0}</div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase">
+                        Total Generated
+                      </div>
+                      <div className="text-lg font-black text-slate-900 mt-1">
+                        {quotations?.summary?.totalQuotations || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">Open / Sent</div>
-                      <div className="text-lg font-black text-blue-800 mt-1">{quotations?.summary?.openQuotations || 0}</div>
+                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                        Open / Sent
+                      </div>
+                      <div className="text-lg font-black text-blue-800 mt-1">
+                        {quotations?.summary?.openQuotations || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200">
-                      <div className="text-[10px] font-bold text-emerald-700 uppercase">Accepted</div>
-                      <div className="text-lg font-black text-emerald-700 mt-1">{quotations?.summary?.acceptedQuotations || 0}</div>
+                      <div className="text-[10px] font-bold text-emerald-700 uppercase">
+                        Accepted
+                      </div>
+                      <div className="text-lg font-black text-emerald-700 mt-1">
+                        {quotations?.summary?.acceptedQuotations || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-200">
-                      <div className="text-[10px] font-bold text-purple-700 uppercase">Conversion Rate</div>
-                      <div className="text-lg font-black text-purple-700 mt-1">{quotations?.summary?.conversionRatePercent || 0}%</div>
+                      <div className="text-[10px] font-bold text-purple-700 uppercase">
+                        Conversion Rate
+                      </div>
+                      <div className="text-lg font-black text-purple-700 mt-1">
+                        {quotations?.summary?.conversionRatePercent || 0}%
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2186,129 +2636,219 @@ export default function ReportsDashboard() {
             {/* F. DESIGN STUDIO OVERVIEW */}
             {activeTab === "design" && !userRole.includes("sales") && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Design Pipeline & Quality Gate</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Design Pipeline & Quality Gate
+                  </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                      <div className="text-[10px] font-bold text-slate-500">ASSIGNED</div>
-                      <div className="text-lg font-black text-slate-900 mt-1">{design?.summary?.assigned || 0}</div>
+                      <div className="text-[10px] font-bold text-slate-500">
+                        ASSIGNED
+                      </div>
+                      <div className="text-lg font-black text-slate-900 mt-1">
+                        {design?.summary?.assigned || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                      <div className="text-[10px] font-bold text-blue-700">IN PROGRESS</div>
-                      <div className="text-lg font-black text-blue-800 mt-1">{design?.summary?.inProgress || 0}</div>
+                      <div className="text-[10px] font-bold text-blue-700">
+                        IN PROGRESS
+                      </div>
+                      <div className="text-lg font-black text-blue-800 mt-1">
+                        {design?.summary?.inProgress || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-200 text-center">
-                      <div className="text-[10px] font-bold text-purple-700">CLIENT REVIEW</div>
-                      <div className="text-lg font-black text-purple-800 mt-1">{design?.summary?.clientReview || 0}</div>
+                      <div className="text-[10px] font-bold text-purple-700">
+                        CLIENT REVIEW
+                      </div>
+                      <div className="text-lg font-black text-purple-800 mt-1">
+                        {design?.summary?.clientReview || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 text-center">
-                      <div className="text-[10px] font-bold text-amber-700">REVISIONS</div>
-                      <div className="text-lg font-black text-amber-700 mt-1">{design?.summary?.revisionRequested || 0}</div>
+                      <div className="text-[10px] font-bold text-amber-700">
+                        REVISIONS
+                      </div>
+                      <div className="text-lg font-black text-amber-700 mt-1">
+                        {design?.summary?.revisionRequested || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 text-center">
-                      <div className="text-[10px] font-bold text-emerald-700">APPROVED</div>
-                      <div className="text-lg font-black text-emerald-700 mt-1">{design?.summary?.approved || 0}</div>
+                      <div className="text-[10px] font-bold text-emerald-700">
+                        APPROVED
+                      </div>
+                      <div className="text-lg font-black text-emerald-700 mt-1">
+                        {design?.summary?.approved || 0}
+                      </div>
                     </div>
                     <div className="p-3.5 rounded-xl bg-cyan-50/50 border border-cyan-200 text-center">
-                      <div className="text-[10px] font-bold text-cyan-700">PROD. LOCKED</div>
-                      <div className="text-lg font-black text-cyan-700 mt-1">{design?.summary?.productionLocked || 0}</div>
+                      <div className="text-[10px] font-bold text-cyan-700">
+                        PROD. LOCKED
+                      </div>
+                      <div className="text-lg font-black text-cyan-700 mt-1">
+                        {design?.summary?.productionLocked || 0}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Designer Performance Breakdown */}
-                {design?.designerBreakdown && design.designerBreakdown.length > 0 && (
-                  <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900">Designer Workload Distribution</h3>
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-xs text-left">
-                        <thead className="text-[10px] uppercase font-bold text-slate-500 bg-slate-50 border-b border-slate-200">
-                          <tr>
-                            <th className="py-2.5 px-4">Designer</th>
-                            <th className="py-2.5 px-4 text-center">Total Projects</th>
-                            <th className="py-2.5 px-4 text-center">Approved</th>
-                            <th className="py-2.5 px-4 text-center">In Client Review</th>
-                            <th className="py-2.5 px-4 text-center">Revisions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {design.designerBreakdown.map((d) => (
-                            <tr key={d._id || "unassigned"} className="hover:bg-slate-50/70 transition">
-                              <td className="py-2.5 px-4 font-bold text-slate-900">{d.designerName}</td>
-                              <td className="py-2.5 px-4 text-center text-slate-600">{d.totalProjects}</td>
-                              <td className="py-2.5 px-4 text-center text-emerald-600 font-bold">{d.approvedProjects}</td>
-                              <td className="py-2.5 px-4 text-center text-purple-600 font-semibold">{d.inReviewProjects}</td>
-                              <td className="py-2.5 px-4 text-center text-amber-600 font-semibold">{d.revisionProjects}</td>
+                {design?.designerBreakdown &&
+                  design.designerBreakdown.length > 0 && (
+                    <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Designer Workload Distribution
+                      </h3>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table className="w-full text-xs text-left">
+                          <thead className="text-[10px] uppercase font-bold text-slate-500 bg-slate-50 border-b border-slate-200">
+                            <tr>
+                              <th className="py-2.5 px-4">Designer</th>
+                              <th className="py-2.5 px-4 text-center">
+                                Total Projects
+                              </th>
+                              <th className="py-2.5 px-4 text-center">
+                                Approved
+                              </th>
+                              <th className="py-2.5 px-4 text-center">
+                                In Client Review
+                              </th>
+                              <th className="py-2.5 px-4 text-center">
+                                Revisions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {design.designerBreakdown.map((d) => (
+                              <tr
+                                key={d._id || "unassigned"}
+                                className="hover:bg-slate-50/70 transition"
+                              >
+                                <td className="py-2.5 px-4 font-bold text-slate-900">
+                                  {d.designerName}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-slate-600">
+                                  {d.totalProjects}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-emerald-600 font-bold">
+                                  {d.approvedProjects}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-purple-600 font-semibold">
+                                  {d.inReviewProjects}
+                                </td>
+                                <td className="py-2.5 px-4 text-center text-amber-600 font-semibold">
+                                  {d.revisionProjects}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
 
             {/* G. OUTSOURCED PRODUCTION OVERVIEW */}
-            {activeTab === "production" && !userRole.includes("sales") && !userRole.includes("designer") && (
-              <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Outsourced Print Production Jobs</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                      <div className="text-[10px] font-bold text-slate-500">READY RELEASE</div>
-                      <div className="text-lg font-black text-slate-900 mt-1">{production?.summary?.readyForRelease || 0}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                      <div className="text-[10px] font-bold text-blue-700">SENT</div>
-                      <div className="text-lg font-black text-blue-800 mt-1">{production?.summary?.sentForProduction || 0}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-cyan-50/50 border border-cyan-200 text-center">
-                      <div className="text-[10px] font-bold text-cyan-700">IN PRODUCTION</div>
-                      <div className="text-lg font-black text-cyan-700 mt-1">{production?.summary?.inProduction || 0}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-200 text-center">
-                      <div className="text-[10px] font-bold text-purple-700">READY DISPATCH</div>
-                      <div className="text-lg font-black text-purple-800 mt-1">{production?.summary?.readyForDispatch || 0}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-sky-50/50 border border-sky-200 text-center">
-                      <div className="text-[10px] font-bold text-sky-700">DISPATCHED</div>
-                      <div className="text-lg font-black text-sky-700 mt-1">{production?.summary?.dispatched || 0}</div>
-                    </div>
-                    <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 text-center">
-                      <div className="text-[10px] font-bold text-emerald-700">DELIVERED</div>
-                      <div className="text-lg font-black text-emerald-700 mt-1">{production?.summary?.delivered || 0}</div>
+            {activeTab === "production" &&
+              !userRole.includes("sales") &&
+              !userRole.includes("designer") && (
+                <div className="space-y-6">
+                  <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Outsourced Print Production Jobs
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                      <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                        <div className="text-[10px] font-bold text-slate-500">
+                          READY RELEASE
+                        </div>
+                        <div className="text-lg font-black text-slate-900 mt-1">
+                          {production?.summary?.readyForRelease || 0}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
+                        <div className="text-[10px] font-bold text-blue-700">
+                          SENT
+                        </div>
+                        <div className="text-lg font-black text-blue-800 mt-1">
+                          {production?.summary?.sentForProduction || 0}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-cyan-50/50 border border-cyan-200 text-center">
+                        <div className="text-[10px] font-bold text-cyan-700">
+                          IN PRODUCTION
+                        </div>
+                        <div className="text-lg font-black text-cyan-700 mt-1">
+                          {production?.summary?.inProduction || 0}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-200 text-center">
+                        <div className="text-[10px] font-bold text-purple-700">
+                          READY DISPATCH
+                        </div>
+                        <div className="text-lg font-black text-purple-800 mt-1">
+                          {production?.summary?.readyForDispatch || 0}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-sky-50/50 border border-sky-200 text-center">
+                        <div className="text-[10px] font-bold text-sky-700">
+                          DISPATCHED
+                        </div>
+                        <div className="text-lg font-black text-sky-700 mt-1">
+                          {production?.summary?.dispatched || 0}
+                        </div>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 text-center">
+                        <div className="text-[10px] font-bold text-emerald-700">
+                          DELIVERED
+                        </div>
+                        <div className="text-lg font-black text-emerald-700 mt-1">
+                          {production?.summary?.delivered || 0}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* H. LOGISTICS & DELIVERY */}
             {activeTab === "delivery" && !userRole.includes("designer") && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-sky-600" />
                     <span>Logistics & Delivery Execution</span>
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="p-4 rounded-xl bg-sky-50/50 border border-sky-200">
-                      <div className="text-[10px] font-bold text-sky-700 uppercase">PENDING DISPATCH</div>
+                      <div className="text-[10px] font-bold text-sky-700 uppercase">
+                        PENDING DISPATCH
+                      </div>
                       <div className="text-2xl font-black text-sky-800 mt-1">
-                        {delivery?.summary?.pendingDeliveries || kpis?.deliveries?.pendingDeliveries || 0}
+                        {delivery?.summary?.pendingDeliveries ||
+                          kpis?.deliveries?.pendingDeliveries ||
+                          0}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200">
-                      <div className="text-[10px] font-bold text-emerald-700 uppercase">DELIVERED</div>
+                      <div className="text-[10px] font-bold text-emerald-700 uppercase">
+                        DELIVERED
+                      </div>
                       <div className="text-2xl font-black text-emerald-700 mt-1">
-                        {delivery?.summary?.completedDeliveries || kpis?.deliveries?.completedDeliveries || 0}
+                        {delivery?.summary?.completedDeliveries ||
+                          kpis?.deliveries?.completedDeliveries ||
+                          0}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-rose-50/50 border border-rose-200">
-                      <div className="text-[10px] font-bold text-rose-700 uppercase">FAILED / RETURNED</div>
+                      <div className="text-[10px] font-bold text-rose-700 uppercase">
+                        FAILED / RETURNED
+                      </div>
                       <div className="text-2xl font-black text-rose-700 mt-1">
-                        {delivery?.summary?.failedDeliveries || kpis?.deliveries?.failedDeliveries || 0}
+                        {delivery?.summary?.failedDeliveries ||
+                          kpis?.deliveries?.failedDeliveries ||
+                          0}
                       </div>
                     </div>
                   </div>
@@ -2319,23 +2859,31 @@ export default function ReportsDashboard() {
             {/* I. FOLLOW-UP ATTENTION */}
             {activeTab === "followups" && (
               <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Pending Follow-up Schedule</h3>
+                <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Pending Follow-up Schedule
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="p-4 rounded-xl bg-rose-50/60 border border-rose-200">
-                      <div className="text-[10px] font-bold text-rose-700 uppercase">OVERDUE (Urgent)</div>
+                      <div className="text-[10px] font-bold text-rose-700 uppercase">
+                        OVERDUE (Urgent)
+                      </div>
                       <div className="text-2xl font-black text-rose-700 mt-1">
                         {followups?.summary?.overdue || 0}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-amber-50/60 border border-amber-200">
-                      <div className="text-[10px] font-bold text-amber-700 uppercase">DUE TODAY</div>
+                      <div className="text-[10px] font-bold text-amber-700 uppercase">
+                        DUE TODAY
+                      </div>
                       <div className="text-2xl font-black text-amber-700 mt-1">
                         {followups?.summary?.dueToday || 0}
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">UPCOMING</div>
+                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                        UPCOMING
+                      </div>
                       <div className="text-2xl font-black text-blue-700 mt-1">
                         {followups?.summary?.upcoming || 0}
                       </div>

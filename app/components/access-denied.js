@@ -34,7 +34,7 @@ export default function AccessDeniedView({ pathname, role, rule }) {
         <div className="flex-1 flex items-center justify-center p-6 md:p-12">
           <div className="max-w-xl w-full bg-white border border-slate-200 shadow-sm rounded-3xl p-8 md:p-10 space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
             {/* Top Shield Icon */}
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shadow-xs">
+            <div className="mx-auto w-16 h-16 rounded-md bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shadow-xs">
               <ShieldAlert className="w-8 h-8" />
             </div>
 
@@ -53,7 +53,7 @@ export default function AccessDeniedView({ pathname, role, rule }) {
             </div>
 
             {/* Diagnostic Details Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-2.5 text-left font-medium">
+            <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-xs space-y-2.5 text-left font-medium">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                 <span className="text-slate-500">Attempted Route:</span>
                 <code className="font-mono text-rose-600 bg-white px-2 py-0.5 rounded border border-slate-200 font-bold">
@@ -76,7 +76,10 @@ export default function AccessDeniedView({ pathname, role, rule }) {
 
             {/* Explanation */}
             <p className="text-xs text-slate-500 leading-relaxed">
-              Direct URL entry to restricted management, administrative, or departmental workspaces is blocked by enterprise role-based access control (RBAC). If you believe you should have access to this resource, please contact your organization administrator.
+              Direct URL entry to restricted management, administrative, or
+              departmental workspaces is blocked by enterprise role-based access
+              control (RBAC). If you believe you should have access to this
+              resource, please contact your organization administrator.
             </p>
 
             {/* Action Buttons */}

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { api } from '@/lib/api';
-import AlertCenterDrawer from './alertCenterDrawer';
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import AlertCenterDrawer from "./alertCenterDrawer";
 import {
   Home,
   Menu,
@@ -37,7 +37,7 @@ import {
   Folder,
   CheckSquare,
   TrendingUp,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
@@ -45,21 +45,21 @@ export default function Navbar() {
 
   // Dynamic user & tenant state
   const [user, setUser] = useState({
-    name: 'User',
-    email: '',
-    role: 'admin',
-    roleDisplay: 'Super Admin',
-    initials: 'US',
+    name: "User",
+    email: "",
+    role: "admin",
+    roleDisplay: "Super Admin",
+    initials: "US",
   });
 
   const [tenant, setTenant] = useState({
-    name: 'A2V Printing Solutions',
-    code: '',
+    name: "A2V Printing Solutions",
+    code: "",
   });
 
   // Modals & Dropdowns State
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -83,23 +83,25 @@ export default function Navbar() {
   // 1. Initial Local State & Server-Verified Identity Sync
   useEffect(() => {
     // Read cached values immediately to eliminate flash of fallback
-    if (typeof window !== 'undefined') {
-      const storedName = localStorage.getItem('userName');
-      const storedRole = (localStorage.getItem('userRole') || 'admin').toLowerCase();
-      const storedTenant = localStorage.getItem('tenantName');
-      const storedEmail = localStorage.getItem('userEmail');
+    if (typeof window !== "undefined") {
+      const storedName = localStorage.getItem("userName");
+      const storedRole = (
+        localStorage.getItem("userRole") || "admin"
+      ).toLowerCase();
+      const storedTenant = localStorage.getItem("tenantName");
+      const storedEmail = localStorage.getItem("userEmail");
 
-      let roleDisplay = 'Super Admin';
-      if (storedRole === 'admin') roleDisplay = 'Super Admin';
-      else if (storedRole === 'manager') roleDisplay = 'Sales Manager';
-      else if (storedRole === 'sales') roleDisplay = 'Sales Executive';
-      else if (storedRole === 'designer') roleDisplay = 'Graphic Designer';
+      let roleDisplay = "Super Admin";
+      if (storedRole === "admin") roleDisplay = "Super Admin";
+      else if (storedRole === "manager") roleDisplay = "Sales Manager";
+      else if (storedRole === "sales") roleDisplay = "Sales Executive";
+      else if (storedRole === "designer") roleDisplay = "Graphic Designer";
       else roleDisplay = storedRole.toUpperCase();
 
-      const initialName = storedName || 'User';
+      const initialName = storedName || "User";
       setUser({
         name: initialName,
-        email: storedEmail || '',
+        email: storedEmail || "",
         role: storedRole,
         roleDisplay,
         initials: initialName.slice(0, 2).toUpperCase(),
@@ -112,7 +114,7 @@ export default function Navbar() {
 
     // Authoritative Server-Verified Check via /auth/me
     api
-      .get('/auth/me')
+      .get("/auth/me")
       .then((res) => {
         if (res?.data) {
           const u = res.data.user || res.data;
@@ -120,21 +122,25 @@ export default function Navbar() {
 
           const fullName =
             u.name ||
-            `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
-            u.email?.split('@')[0] ||
-            'User';
+            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+            u.email?.split("@")[0] ||
+            "User";
 
-          const rawRole = (u.roleSlug || (typeof u.role === 'string' ? u.role : u.role?.name) || 'admin').toLowerCase();
-          let roleTitle = 'Super Admin';
-          if (rawRole === 'admin') roleTitle = 'Super Admin';
-          else if (rawRole === 'manager') roleTitle = 'Sales Manager';
-          else if (rawRole === 'sales') roleTitle = 'Sales Executive';
-          else if (rawRole === 'designer') roleTitle = 'Graphic Designer';
+          const rawRole = (
+            u.roleSlug ||
+            (typeof u.role === "string" ? u.role : u.role?.name) ||
+            "admin"
+          ).toLowerCase();
+          let roleTitle = "Super Admin";
+          if (rawRole === "admin") roleTitle = "Super Admin";
+          else if (rawRole === "manager") roleTitle = "Sales Manager";
+          else if (rawRole === "sales") roleTitle = "Sales Executive";
+          else if (rawRole === "designer") roleTitle = "Graphic Designer";
           else roleTitle = rawRole.toUpperCase();
 
           setUser({
             name: fullName,
-            email: u.email || '',
+            email: u.email || "",
             role: rawRole,
             roleDisplay: roleTitle,
             initials: fullName.slice(0, 2).toUpperCase(),
@@ -143,14 +149,14 @@ export default function Navbar() {
           if (t?.name) {
             setTenant({
               name: t.name,
-              code: t.code || '',
+              code: t.code || "",
             });
-            localStorage.setItem('tenantName', t.name);
+            localStorage.setItem("tenantName", t.name);
           }
 
-          localStorage.setItem('userName', fullName);
-          localStorage.setItem('userRole', rawRole);
-          if (u.email) localStorage.setItem('userEmail', u.email);
+          localStorage.setItem("userName", fullName);
+          localStorage.setItem("userRole", rawRole);
+          if (u.email) localStorage.setItem("userEmail", u.email);
         }
       })
       .catch(() => {
@@ -159,7 +165,7 @@ export default function Navbar() {
 
     // Fetch operational alerts summary for real-time unread badge
     api
-      .get('/alerts/summary')
+      .get("/alerts/summary")
       .then((res) => {
         if (res?.data?.unreadAlerts !== undefined) {
           setUnreadNotificationCount(res.data.unreadAlerts);
@@ -171,7 +177,7 @@ export default function Navbar() {
 
     // Fetch dynamic communication message threads
     api
-      .get('/communications/threads?limit=5', { silent: true })
+      .get("/communications/threads?limit=5", { silent: true })
       .then((res) => {
         const list = res?.data || [];
         if (Array.isArray(list) && list.length > 0) {
@@ -186,11 +192,11 @@ export default function Navbar() {
 
     // Global Keyboard Shortcuts (Ctrl+K / Cmd+K and Escape)
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         setShowSearchModal((prev) => !prev);
       }
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setShowSearchModal(false);
         setShowUserDropdown(false);
         setShowNotifications(false);
@@ -199,17 +205,23 @@ export default function Navbar() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // 2. Click Outside Listeners for Dropdowns
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(e.target)
+      ) {
         setShowUserDropdown(false);
       }
-      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target)
+      ) {
         setShowNotifications(false);
       }
       if (messagesRef.current && !messagesRef.current.contains(e.target)) {
@@ -217,8 +229,8 @@ export default function Navbar() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Auto-close mobile menu on route change
@@ -236,12 +248,14 @@ export default function Navbar() {
     const timer = setTimeout(async () => {
       try {
         setIsSearching(true);
-        const res = await api.get(`/search?q=${encodeURIComponent(searchQuery)}`);
+        const res = await api.get(
+          `/search?q=${encodeURIComponent(searchQuery)}`,
+        );
         if (res?.data) {
           setSearchResults(res.data);
         }
       } catch (err) {
-        console.error('Search failed:', err);
+        console.error("Search failed:", err);
       } finally {
         setIsSearching(false);
       }
@@ -252,47 +266,47 @@ export default function Navbar() {
 
   // Sign out handler
   const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('userEmail');
-      localStorage.removeItem('tenantId');
-      localStorage.removeItem('tenantName');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("tenantId");
+      localStorage.removeItem("tenantName");
     }
-    router.push('/');
+    router.push("/");
   };
 
   // Role pill color styling
   const getRoleBadgeStyle = (role) => {
     switch (role) {
-      case 'admin':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'manager':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'sales':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'designer':
-        return 'bg-pink-100 text-pink-700 border-pink-200';
+      case "admin":
+        return "bg-purple-100 text-purple-700 border-purple-200";
+      case "manager":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "sales":
+        return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      case "designer":
+        return "bg-pink-100 text-pink-700 border-pink-200";
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
 
   // Role avatar badge styling
   const getAvatarBg = (role) => {
     switch (role) {
-      case 'admin':
-        return 'bg-purple-600';
-      case 'manager':
-        return 'bg-blue-600';
-      case 'sales':
-        return 'bg-emerald-600';
-      case 'designer':
-        return 'bg-pink-600';
+      case "admin":
+        return "bg-purple-600";
+      case "manager":
+        return "bg-blue-600";
+      case "sales":
+        return "bg-emerald-600";
+      case "designer":
+        return "bg-pink-600";
       default:
-        return 'bg-teal-600';
+        return "bg-teal-600";
     }
   };
 
@@ -300,58 +314,122 @@ export default function Navbar() {
   const getMobileNavItems = () => {
     const role = user.role.toLowerCase();
     const common = [
-      { name: 'Dashboard', href: '/dashboard', icon: Layers },
-      { name: 'Reports & Analytics', href: '/dashboard/reports', icon: BarChart3 },
+      { name: "Dashboard", href: "/dashboard", icon: Layers },
+      {
+        name: "Reports & Analytics",
+        href: "/dashboard/reports",
+        icon: BarChart3,
+      },
     ];
 
-    if (role === 'admin') {
+    if (role === "admin") {
       return [
         ...common,
-        { name: 'Admin Console', href: '/dashboard/admin', icon: Shield },
-        { name: 'User Management', href: '/dashboard/admin/users', icon: Users },
-        { name: 'Leads & Pipeline', href: '/dashboard/leads', icon: TrendingUp },
-        { name: 'Orders', href: '/dashboard/orders', icon: ShoppingBag },
-        { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
-        { name: 'Production', href: '/dashboard/production', icon: Layers },
-        { name: 'Design Projects', href: '/dashboard/design', icon: Palette },
-        { name: 'Communications', href: '/dashboard/communication', icon: MessageSquare },
-        { name: 'System Settings', href: '/dashboard/admin/settings/company', icon: Settings },
+        { name: "Admin Console", href: "/dashboard/admin", icon: Shield },
+        {
+          name: "User Management",
+          href: "/dashboard/admin/users",
+          icon: Users,
+        },
+        {
+          name: "Leads & Pipeline",
+          href: "/dashboard/leads",
+          icon: TrendingUp,
+        },
+        { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+        { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
+        { name: "Production", href: "/dashboard/production", icon: Layers },
+        { name: "Design Projects", href: "/dashboard/design", icon: Palette },
+        {
+          name: "Communications",
+          href: "/dashboard/communication",
+          icon: MessageSquare,
+        },
+        {
+          name: "System Settings",
+          href: "/dashboard/admin/settings/company",
+          icon: Settings,
+        },
       ];
     }
 
-    if (role === 'manager') {
+    if (role === "manager") {
       return [
         ...common,
-        { name: 'Manager Overview', href: '/dashboard/manager', icon: Shield },
-        { name: 'Team Performance', href: '/dashboard/manager/team', icon: Users },
-        { name: 'Discount Approvals', href: '/dashboard/manager/approvals', icon: CheckSquare },
-        { name: 'Leads Management', href: '/dashboard/leads', icon: TrendingUp },
-        { name: 'Orders', href: '/dashboard/orders', icon: ShoppingBag },
-        { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
-        { name: 'Production Oversight', href: '/dashboard/production', icon: Layers },
-        { name: 'Follow-ups & Calls', href: '/dashboard/followups', icon: PhoneCall },
-        { name: 'Communications', href: '/dashboard/communication', icon: MessageSquare },
+        { name: "Manager Overview", href: "/dashboard/manager", icon: Shield },
+        {
+          name: "Team Performance",
+          href: "/dashboard/manager/team",
+          icon: Users,
+        },
+        {
+          name: "Discount Approvals",
+          href: "/dashboard/manager/approvals",
+          icon: CheckSquare,
+        },
+        {
+          name: "Leads Management",
+          href: "/dashboard/leads",
+          icon: TrendingUp,
+        },
+        { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+        { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
+        {
+          name: "Production Oversight",
+          href: "/dashboard/production",
+          icon: Layers,
+        },
+        {
+          name: "Follow-ups & Calls",
+          href: "/dashboard/followups",
+          icon: PhoneCall,
+        },
+        {
+          name: "Communications",
+          href: "/dashboard/communication",
+          icon: MessageSquare,
+        },
       ];
     }
 
-    if (role === 'designer') {
+    if (role === "designer") {
       return [
-        { name: 'Home', href: '/dashboard/designer', icon: Home },
-        { name: 'Reports & Analytics', href: '/dashboard/reports', icon: BarChart3 },
-        { name: 'My Design Projects', href: '/dashboard/design', icon: Folder },
-        { name: 'Communications', href: '/dashboard/communication', icon: MessageSquare },
+        { name: "Home", href: "/dashboard/designer", icon: Home },
+        {
+          name: "Reports & Analytics",
+          href: "/dashboard/reports",
+          icon: BarChart3,
+        },
+        { name: "My Design Projects", href: "/dashboard/design", icon: Folder },
+        {
+          name: "Communications",
+          href: "/dashboard/communication",
+          icon: MessageSquare,
+        },
       ];
     }
 
     // Default SALES
     return [
       ...common,
-      { name: 'Sales Pipeline', href: '/dashboard/leads', icon: TrendingUp },
-      { name: 'Follow-ups & Calls', href: '/dashboard/followups', icon: PhoneCall },
-      { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
-      { name: 'Orders', href: '/dashboard/orders', icon: ShoppingBag },
-      { name: 'Payments & Receivables', href: '/dashboard/receivables', icon: CreditCard },
-      { name: 'Communications', href: '/dashboard/communication', icon: MessageSquare },
+      { name: "Sales Pipeline", href: "/dashboard/leads", icon: TrendingUp },
+      {
+        name: "Follow-ups & Calls",
+        href: "/dashboard/followups",
+        icon: PhoneCall,
+      },
+      { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
+      { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+      {
+        name: "Payments & Receivables",
+        href: "/dashboard/receivables",
+        icon: CreditCard,
+      },
+      {
+        name: "Communications",
+        href: "/dashboard/communication",
+        icon: MessageSquare,
+      },
     ];
   };
 
@@ -363,7 +441,7 @@ export default function Navbar() {
           <button
             onClick={() => {
               setShowMobileMenu((prev) => !prev);
-              window.dispatchEvent(new CustomEvent('toggle-sidebar'));
+              window.dispatchEvent(new CustomEvent("toggle-sidebar"));
             }}
             className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             title="Toggle Navigation Menu"
@@ -398,7 +476,7 @@ export default function Navbar() {
           <div className="flex items-center gap-1.5 md:gap-2 text-slate-500">
             {/* Calls / Follow-ups Shortcut */}
             <button
-              onClick={() => router.push('/dashboard/followups')}
+              onClick={() => router.push("/dashboard/followups")}
               className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors relative"
               title="Calls & Follow-ups"
             >
@@ -407,7 +485,7 @@ export default function Navbar() {
 
             {/* WhatsApp / Messaging Shortcut */}
             <button
-              onClick={() => router.push('/dashboard/communication')}
+              onClick={() => router.push("/dashboard/communication")}
               className="p-2 rounded-xl hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-colors"
               title="WhatsApp & Omni-Channel Messaging"
             >
@@ -424,7 +502,9 @@ export default function Navbar() {
                   setShowUserDropdown(false);
                 }}
                 className={`p-2 rounded-xl transition-colors relative ${
-                  showAlertCenter ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'
+                  showAlertCenter
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "hover:bg-slate-100 text-slate-600"
                 }`}
                 title="Operational Alerts & Exception Center"
               >
@@ -435,7 +515,6 @@ export default function Navbar() {
               </button>
             </div>
 
-
             {/* Dynamic Messages / Mail Dropdown */}
             <div className="relative" ref={messagesRef}>
               <button
@@ -445,7 +524,9 @@ export default function Navbar() {
                   setShowUserDropdown(false);
                 }}
                 className={`p-2 rounded-xl transition-colors relative ${
-                  showMessages ? 'bg-blue-50 text-blue-600' : 'hover:bg-slate-100 text-slate-600'
+                  showMessages
+                    ? "bg-blue-50 text-blue-600"
+                    : "hover:bg-slate-100 text-slate-600"
                 }`}
                 title="Communications & Messages"
               >
@@ -457,13 +538,15 @@ export default function Navbar() {
 
               {/* Messages Popover */}
               {showMessages && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-up">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-md shadow-xl overflow-hidden z-50 animate-scale-up">
                   <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                    <span className="font-bold text-xs text-slate-800">Messages & Threads</span>
+                    <span className="font-bold text-xs text-slate-800">
+                      Messages & Threads
+                    </span>
                     <button
                       onClick={() => {
                         setShowMessages(false);
-                        router.push('/dashboard/communication');
+                        router.push("/dashboard/communication");
                       }}
                       className="text-[11px] font-semibold text-blue-600 hover:text-blue-700"
                     >
@@ -478,19 +561,21 @@ export default function Navbar() {
                           key={th._id || th.id}
                           onClick={() => {
                             setShowMessages(false);
-                            router.push('/dashboard/communication');
+                            router.push("/dashboard/communication");
                           }}
                           className="p-3 hover:bg-slate-50 flex items-start gap-3 cursor-pointer transition-colors"
                         >
                           <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-bold text-xs">
-                            {th.customerName?.[0] || 'C'}
+                            {th.customerName?.[0] || "C"}
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-xs font-bold text-slate-900 block truncate">
-                              {th.customerName || th.subject || 'Client Thread'}
+                              {th.customerName || th.subject || "Client Thread"}
                             </span>
                             <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                              {th.lastMessage?.text || th.preview || 'Click to view conversation'}
+                              {th.lastMessage?.text ||
+                                th.preview ||
+                                "Click to view conversation"}
                             </p>
                           </div>
                         </div>
@@ -507,7 +592,7 @@ export default function Navbar() {
                     <button
                       onClick={() => {
                         setShowMessages(false);
-                        router.push('/dashboard/communication');
+                        router.push("/dashboard/communication");
                       }}
                       className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1.5 w-full py-1"
                     >
@@ -521,7 +606,7 @@ export default function Navbar() {
 
             {/* Calendar Shortcut */}
             <button
-              onClick={() => router.push('/dashboard/followups')}
+              onClick={() => router.push("/dashboard/followups")}
               className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors hidden sm:inline-flex"
               title="Calendar & Tasks"
             >
@@ -544,7 +629,7 @@ export default function Navbar() {
             >
               <div
                 className={`w-8 h-8 rounded-xl ${getAvatarBg(
-                  user.role
+                  user.role,
                 )} text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0`}
               >
                 {user.initials}
@@ -560,20 +645,20 @@ export default function Navbar() {
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 hidden sm:block ${
-                  showUserDropdown ? 'rotate-180 text-blue-600' : ''
+                  showUserDropdown ? "rotate-180 text-blue-600" : ""
                 }`}
               />
             </button>
 
             {/* User Dropdown Menu */}
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-up">
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-md shadow-xl overflow-hidden z-50 animate-scale-up">
                 {/* User Header */}
                 <div className="p-4 bg-slate-50 border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-xl ${getAvatarBg(
-                        user.role
+                        user.role,
                       )} text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0`}
                     >
                       {user.initials}
@@ -583,11 +668,11 @@ export default function Navbar() {
                         {user.name}
                       </span>
                       <span className="text-[11px] text-slate-400 block truncate">
-                        {user.email || 'Verified User'}
+                        {user.email || "Verified User"}
                       </span>
                       <span
                         className={`inline-block mt-1 px-2 py-0.5 rounded-md border text-[9px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(
-                          user.role
+                          user.role,
                         )}`}
                       >
                         {user.roleDisplay}
@@ -629,7 +714,7 @@ export default function Navbar() {
                     <span>Reports & Analytics</span>
                   </Link>
 
-                  {user.role === 'admin' && (
+                  {user.role === "admin" && (
                     <Link
                       href="/dashboard/admin/settings/company"
                       onClick={() => setShowUserDropdown(false)}
@@ -640,7 +725,7 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {user.role === 'manager' && (
+                  {user.role === "manager" && (
                     <Link
                       href="/dashboard/manager/team"
                       onClick={() => setShowUserDropdown(false)}
@@ -651,7 +736,7 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {user.role === 'designer' && (
+                  {user.role === "designer" && (
                     <Link
                       href="/dashboard/design"
                       onClick={() => setShowUserDropdown(false)}
@@ -712,7 +797,8 @@ export default function Navbar() {
               )}
 
               {searchResults &&
-              (searchResults.customers?.length > 0 || searchResults.leads?.length > 0) ? (
+              (searchResults.customers?.length > 0 ||
+                searchResults.leads?.length > 0) ? (
                 <div className="space-y-4 text-xs">
                   {/* Customers */}
                   {searchResults.customers?.length > 0 && (
@@ -793,14 +879,46 @@ export default function Navbar() {
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-                      { name: 'Leads', href: '/dashboard/leads', icon: TrendingUp },
-                      { name: 'Quotations', href: '/dashboard/quotations', icon: FileText },
-                      { name: 'Orders', href: '/dashboard/orders', icon: ShoppingBag },
-                      { name: 'Production', href: '/dashboard/production', icon: Layers },
-                      { name: 'Design', href: '/dashboard/design', icon: Palette },
-                      { name: 'Follow-ups', href: '/dashboard/followups', icon: PhoneCall },
-                      { name: 'Messages', href: '/dashboard/communication', icon: MessageSquare },
+                      {
+                        name: "Reports",
+                        href: "/dashboard/reports",
+                        icon: BarChart3,
+                      },
+                      {
+                        name: "Leads",
+                        href: "/dashboard/leads",
+                        icon: TrendingUp,
+                      },
+                      {
+                        name: "Quotations",
+                        href: "/dashboard/quotations",
+                        icon: FileText,
+                      },
+                      {
+                        name: "Orders",
+                        href: "/dashboard/orders",
+                        icon: ShoppingBag,
+                      },
+                      {
+                        name: "Production",
+                        href: "/dashboard/production",
+                        icon: Layers,
+                      },
+                      {
+                        name: "Design",
+                        href: "/dashboard/design",
+                        icon: Palette,
+                      },
+                      {
+                        name: "Follow-ups",
+                        href: "/dashboard/followups",
+                        icon: PhoneCall,
+                      },
+                      {
+                        name: "Messages",
+                        href: "/dashboard/communication",
+                        icon: MessageSquare,
+                      },
                     ].map((item) => {
                       const Icon = item.icon;
                       return (
@@ -813,7 +931,9 @@ export default function Navbar() {
                           className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 border border-slate-100 text-slate-700 flex flex-col items-center justify-center gap-1.5 transition-all group"
                         >
                           <Icon className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                          <span className="text-xs font-semibold">{item.name}</span>
+                          <span className="text-xs font-semibold">
+                            {item.name}
+                          </span>
                         </button>
                       );
                     })}
@@ -825,7 +945,11 @@ export default function Navbar() {
             {/* Modal Footer */}
             <div className="p-3 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex justify-between items-center">
               <span>
-                Press <kbd className="px-1.5 py-0.5 rounded bg-white border text-slate-600 font-bold">ESC</kbd> to close
+                Press{" "}
+                <kbd className="px-1.5 py-0.5 rounded bg-white border text-slate-600 font-bold">
+                  ESC
+                </kbd>{" "}
+                to close
               </span>
               <span>Search scoped authoritatively by tenant & role</span>
             </div>
@@ -854,7 +978,9 @@ export default function Navbar() {
                     <span className="text-xs font-bold text-white block leading-tight">
                       {tenant.name}
                     </span>
-                    <span className="text-[10px] text-blue-400 font-semibold">CRM & ERP</span>
+                    <span className="text-[10px] text-blue-400 font-semibold">
+                      CRM & ERP
+                    </span>
                   </div>
                 </div>
                 <button
@@ -880,8 +1006,8 @@ export default function Navbar() {
                       onClick={() => setShowMobileMenu(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                          : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -898,7 +1024,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`w-8 h-8 rounded-lg ${getAvatarBg(
-                      user.role
+                      user.role,
                     )} text-white font-bold text-xs flex items-center justify-center shrink-0`}
                   >
                     {user.initials}

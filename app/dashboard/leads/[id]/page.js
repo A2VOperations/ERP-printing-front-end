@@ -302,13 +302,9 @@ export default function LeadDetailPage() {
 
   // Only genuine designers in the designer dropdown
   const designersList = teamMembers.filter((u) => {
-    const r = (
-      u.roleSlug ||
-      u.role?.slug ||
-      u.role?.name ||
-      u.role ||
-      ""
-    ).toLowerCase().trim();
+    const r = (u.roleSlug || u.role?.slug || u.role?.name || u.role || "")
+      .toLowerCase()
+      .trim();
     if (
       r.includes("admin") ||
       r === "manager" ||
@@ -316,19 +312,16 @@ export default function LeadDetailPage() {
       r === "customer" ||
       r === "operator" ||
       r === "delivery"
-    ) return false;
+    )
+      return false;
     return r.includes("design");
   });
 
   // Only genuine sales reps in the reassign dropdown
   const salesPersonsList = teamMembers.filter((u) => {
-    const r = (
-      u.roleSlug ||
-      u.role?.slug ||
-      u.role?.name ||
-      u.role ||
-      ""
-    ).toLowerCase().trim();
+    const r = (u.roleSlug || u.role?.slug || u.role?.name || u.role || "")
+      .toLowerCase()
+      .trim();
     if (
       r.includes("admin") ||
       r === "manager" ||
@@ -336,7 +329,8 @@ export default function LeadDetailPage() {
       r === "customer" ||
       r === "operator" ||
       r === "delivery"
-    ) return false;
+    )
+      return false;
     return r === "sales" || r === "employee";
   });
 
@@ -417,8 +411,6 @@ export default function LeadDetailPage() {
           : flwRes.value.data?.records || flwRes.value.data?.data || [];
         setFollowups(list);
       }
-
-
 
       if (qRes.status === "fulfilled" && qRes.value?.data) {
         const allQuotes = Array.isArray(qRes.value.data)
@@ -923,11 +915,15 @@ export default function LeadDetailPage() {
       priority: order.priority || "HIGH",
       briefAttachments: [...existingAttachments],
       width: item.width !== undefined && item.width !== null ? item.width : "",
-      height: item.height !== undefined && item.height !== null ? item.height : "",
+      height:
+        item.height !== undefined && item.height !== null ? item.height : "",
       dimensionUnit: item.dimensionUnit || "inch",
       quantity: item.quantity || 1,
       material: item.paperType || item.material || "",
-      gsm: item.paperGsm !== undefined && item.paperGsm !== null ? String(item.paperGsm) : (item.gsm || ""),
+      gsm:
+        item.paperGsm !== undefined && item.paperGsm !== null
+          ? String(item.paperGsm)
+          : item.gsm || "",
       printSides: item.printSides || "SINGLE",
       finishing: Array.isArray(item.finishing) ? [...item.finishing] : [],
     });
@@ -951,7 +947,8 @@ export default function LeadDetailPage() {
         priority: handoffForm.priority,
         briefAttachments: handoffForm.briefAttachments || [],
         width: handoffForm.width !== "" ? Number(handoffForm.width) : undefined,
-        height: handoffForm.height !== "" ? Number(handoffForm.height) : undefined,
+        height:
+          handoffForm.height !== "" ? Number(handoffForm.height) : undefined,
         dimensionUnit: handoffForm.dimensionUnit || "inch",
         quantity: handoffForm.quantity ? Number(handoffForm.quantity) : 1,
         material: handoffForm.material || "",
@@ -1163,7 +1160,7 @@ export default function LeadDetailPage() {
         <main className="flex-1 flex flex-col min-w-0">
           <Navbar />
           <div className="p-8 max-w-lg mx-auto w-full text-center space-y-4 my-auto">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-md bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900">
@@ -1292,7 +1289,7 @@ export default function LeadDetailPage() {
               </Link>
 
               <Link
-                href={`/dashboard/whatsapp?customerId=${lead.customerId || lead._id}&leadId=${leadId}&phone=${lead.phone || ''}`}
+                href={`/dashboard/whatsapp?customerId=${lead.customerId || lead._id}&leadId=${leadId}&phone=${lead.phone || ""}`}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                 title="Open WhatsApp Communication"
               >
@@ -1390,7 +1387,7 @@ export default function LeadDetailPage() {
 
           {/* Reopen Alert Banner (Shown if lead was previously closed/won) */}
           {isClosedLead && (
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="p-4 rounded-md bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2.5">
                 <RotateCcw className="w-4 h-4 text-amber-600 shrink-0" />
                 <div>
@@ -1417,11 +1414,11 @@ export default function LeadDetailPage() {
           )}
 
           {/* Lead Hero Profile Card */}
-          <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/90 shadow-xs">
+          <div className="bg-white rounded-md p-5 md:p-6 border border-slate-200/90 shadow-xs">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Left Profile Info */}
               <div className="flex items-start gap-4">
-                <div className="w-13 h-13 rounded-2xl bg-indigo-50 text-indigo-700 font-black text-lg flex items-center justify-center shrink-0 border border-indigo-100">
+                <div className="w-13 h-13 rounded-md bg-indigo-50 text-indigo-700 font-black text-lg flex items-center justify-center shrink-0 border border-indigo-100">
                   {leadInitials}
                 </div>
 
@@ -1683,7 +1680,7 @@ export default function LeadDetailPage() {
               {/* Row 1: 4 Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {/* Card 1: Lead Information */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Lead Information
@@ -1742,7 +1739,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Card 2: Last Interaction Summary */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Last Interaction Summary
@@ -1812,7 +1809,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Card 3: Quick Actions Grid */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Quick Actions
@@ -1850,17 +1847,15 @@ export default function LeadDetailPage() {
                         });
                         setShowCreateOrderModal(true);
                       }}
-                      className="p-3 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                      className="p-3 rounded-md bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <ShoppingBag className="w-4 h-4" />
                       Create Order
                     </button>
 
-
-
                     <Link
                       href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
-                      className="p-3 rounded-2xl bg-cyan-50/80 hover:bg-cyan-100 text-cyan-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                      className="p-3 rounded-md bg-cyan-50/80 hover:bg-cyan-100 text-cyan-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <FileText className="w-4 h-4" />
                       Quotation
@@ -1882,7 +1877,7 @@ export default function LeadDetailPage() {
                         });
                         setShowPaymentModal(true);
                       }}
-                      className="p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                      className="p-3 rounded-md bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <CreditCard className="w-4 h-4" />
                       Advance Pay
@@ -1897,7 +1892,7 @@ export default function LeadDetailPage() {
                         });
                         setShowFollowupModal(true);
                       }}
-                      className="p-3 rounded-2xl bg-amber-50/80 hover:bg-amber-100 text-amber-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                      className="p-3 rounded-md bg-amber-50/80 hover:bg-amber-100 text-amber-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <Calendar className="w-4 h-4" />
                       Follow-up
@@ -1906,7 +1901,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Card 4: Lead Status & Reopen Option */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3.5">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3.5">
                   <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Stage &amp; Governance
@@ -1977,7 +1972,7 @@ export default function LeadDetailPage() {
               {/* Row 2: 3 Cards (Commercial Orders, Client Quotations, Payments) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                 {/* Card 1: Commercial Orders */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Commercial Orders ({orders.length})
@@ -2097,7 +2092,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Card 2: Client Quotations */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Client Quotations ({quotations.length})
@@ -2209,7 +2204,7 @@ export default function LeadDetailPage() {
                 </div>
 
                 {/* Card 3: Payments & Advances with In-Place Verify */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <h3 className="font-bold text-slate-900 text-xs">
                       Advance &amp; Payments ({payments.length})
@@ -2323,7 +2318,7 @@ export default function LeadDetailPage() {
 
           {/* ORDERS & DESIGNER HANDOFF TAB */}
           {(activeTab === "Orders" || activeTab.startsWith("Orders")) && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6 text-xs">
+            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-6 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
@@ -2374,7 +2369,7 @@ export default function LeadDetailPage() {
 
               {/* Order KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80">
+                <div className="p-4 rounded-md bg-indigo-50/70 border border-indigo-200/80">
                   <span className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block">
                     Total Orders
                   </span>
@@ -2386,7 +2381,7 @@ export default function LeadDetailPage() {
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                <div className="p-4 rounded-md bg-emerald-50/70 border border-emerald-200/80">
                   <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                     Total Order Value
                   </span>
@@ -2408,7 +2403,7 @@ export default function LeadDetailPage() {
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                <div className="p-4 rounded-md bg-amber-50/70 border border-amber-200/80">
                   <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
                     Outstanding Balance
                   </span>
@@ -2448,7 +2443,7 @@ export default function LeadDetailPage() {
                     return (
                       <div
                         key={o._id}
-                        className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4 hover:border-indigo-300 transition-all"
+                        className="bg-white rounded-md p-5 border border-slate-200/90 shadow-xs space-y-4 hover:border-indigo-300 transition-all"
                       >
                         {/* Order Header Row */}
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-100">
@@ -2522,7 +2517,7 @@ export default function LeadDetailPage() {
                         {/* Order Items & Designer Handoff Box */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Left: Items Summary */}
-                          <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/70 space-y-2">
+                          <div className="p-3.5 rounded-md bg-slate-50/80 border border-slate-200/70 space-y-2">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                               Order Items &amp; Requirements
                             </span>
@@ -2563,7 +2558,7 @@ export default function LeadDetailPage() {
                           </div>
 
                           {/* Right: Designer Handoff Card */}
-                          <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-2.5">
+                          <div className="p-3.5 rounded-md bg-indigo-50/50 border border-indigo-100 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
                                 <Palette className="w-3.5 h-3.5 text-indigo-600" />
@@ -2746,7 +2741,7 @@ export default function LeadDetailPage() {
                   })
                 ) : (
                   <div className="text-center py-16 space-y-3">
-                    <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-xs">
+                    <div className="w-14 h-14 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-xs">
                       <ShoppingBag className="w-7 h-7" />
                     </div>
                     <div>
@@ -2802,7 +2797,7 @@ export default function LeadDetailPage() {
           {/* QUOTATIONS TAB */}
           {(activeTab === "Quotations" ||
             activeTab.startsWith("Quotations")) && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
+            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">
@@ -2833,7 +2828,7 @@ export default function LeadDetailPage() {
                     return (
                       <div
                         key={q._id}
-                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        className="p-4 rounded-md bg-slate-50 border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4"
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -3035,7 +3030,7 @@ export default function LeadDetailPage() {
                   })
                 ) : (
                   <div className="text-center py-12 space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                       <FileText className="w-6 h-6" />
                     </div>
                     <p className="text-slate-500 text-xs">
@@ -3056,7 +3051,7 @@ export default function LeadDetailPage() {
 
           {/* FOLLOW-UPS TAB */}
           {activeTab === "Follow-ups" && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
+            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">
@@ -3082,7 +3077,7 @@ export default function LeadDetailPage() {
                     return (
                       <div
                         key={f._id}
-                        className={`p-4 rounded-2xl border transition-all ${
+                        className={`p-4 rounded-md border transition-all ${
                           isCompleted
                             ? "bg-slate-50/70 border-slate-200"
                             : "bg-white border-amber-200 shadow-xs ring-1 ring-amber-400/20"
@@ -3179,7 +3174,7 @@ export default function LeadDetailPage() {
 
           {/* PAYMENTS & ADVANCE TAB */}
           {(activeTab === "Payments" || activeTab.startsWith("Payments")) && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6 text-xs">
+            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-6 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
@@ -3218,7 +3213,7 @@ export default function LeadDetailPage() {
 
               {/* Financial Metrics Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                <div className="p-4 rounded-md bg-emerald-50/70 border border-emerald-200/80">
                   <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
                     Verified &amp; Credited
                   </span>
@@ -3239,7 +3234,7 @@ export default function LeadDetailPage() {
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                <div className="p-4 rounded-md bg-amber-50/70 border border-amber-200/80">
                   <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
                     Pending Verification
                   </span>
@@ -3260,7 +3255,7 @@ export default function LeadDetailPage() {
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
                     Total Recorded
                   </span>
@@ -3294,7 +3289,7 @@ export default function LeadDetailPage() {
                     return (
                       <div
                         key={p._id}
-                        className={`p-4 rounded-2xl border transition-all ${
+                        className={`p-4 rounded-md border transition-all ${
                           isPending
                             ? "bg-amber-50/30 border-amber-200/90 ring-1 ring-amber-400/20"
                             : isConfirmed
@@ -3453,7 +3448,7 @@ export default function LeadDetailPage() {
                   })
                 ) : (
                   <div className="text-center py-12 space-y-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                       <CreditCard className="w-6 h-6" />
                     </div>
                     <div>
@@ -3497,9 +3492,9 @@ export default function LeadDetailPage() {
             activeTab.startsWith("Notes")) && (
             <div className="space-y-6 text-xs animate-fade-in">
               {/* Header with Quick Stats & Category Filters */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-white rounded-md p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                  <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
                     <Pin className="w-5 h-5" />
                   </div>
                   <div>
@@ -3566,7 +3561,7 @@ export default function LeadDetailPage() {
               </div>
 
               {/* Add Note Studio Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+              <div className="bg-white rounded-md p-5 border border-slate-200 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
                     <Edit className="w-4 h-4 text-blue-600" />
@@ -3696,7 +3691,7 @@ export default function LeadDetailPage() {
                       .map((pNote, idx) => (
                         <div
                           key={pNote._id || idx}
-                          className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/90 shadow-xs space-y-2 relative"
+                          className="p-4 rounded-md bg-amber-50/80 border border-amber-200/90 shadow-xs space-y-2 relative"
                         >
                           <div className="flex items-center justify-between">
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-200/80 text-amber-900 uppercase tracking-wider">
@@ -3745,7 +3740,7 @@ export default function LeadDetailPage() {
               )}
 
               {/* TIMELINE FEED OF ALL NOTES */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+              <div className="bg-white rounded-md p-5 border border-slate-200 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h4 className="font-bold text-slate-900 text-xs">
                     All Remarks &amp; Notes History ({notes.length})
@@ -3784,7 +3779,7 @@ export default function LeadDetailPage() {
                         return (
                           <div
                             key={note._id || idx}
-                            className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
+                            className={`p-4 rounded-md border transition-all space-y-2.5 ${
                               note.isPinned
                                 ? "bg-amber-50/50 border-amber-200"
                                 : "bg-slate-50/70 hover:bg-slate-50 border-slate-200/80"
@@ -3854,7 +3849,7 @@ export default function LeadDetailPage() {
                       })
                   ) : (
                     <div className="text-center py-12 space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                      <div className="w-12 h-12 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
                         <Pin className="w-6 h-6" />
                       </div>
                       <div>
@@ -3877,9 +3872,9 @@ export default function LeadDetailPage() {
           {activeTab === "Documents" && (
             <div className="space-y-6 text-xs animate-fade-in">
               {/* Header Banner with Upload Button & Categories */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-white rounded-md p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                  <div className="w-10 h-10 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
                     <Upload className="w-5 h-5" />
                   </div>
                   <div>
@@ -4016,7 +4011,7 @@ export default function LeadDetailPage() {
                           return (
                             <div
                               key={doc._id || idx}
-                              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                              className="bg-white rounded-md border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
                             >
                               {/* Preview Area */}
                               <div className="relative bg-slate-100 h-40 flex items-center justify-center overflow-hidden">
@@ -4112,8 +4107,8 @@ export default function LeadDetailPage() {
                         })}
                     </div>
                   ) : (
-                    <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                    <div className="bg-white rounded-md p-8 border border-slate-200 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
                         <Upload className="w-6 h-6" />
                       </div>
                       <div>
@@ -4161,7 +4156,7 @@ export default function LeadDetailPage() {
                     {quotations.map((q) => (
                       <div
                         key={q._id}
-                        className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2.5"
+                        className="bg-white p-4 rounded-md border border-slate-200 shadow-xs space-y-2.5"
                       >
                         <div className="flex justify-between items-center">
                           <span className="font-mono font-bold text-slate-900 text-xs">
@@ -4200,7 +4195,7 @@ export default function LeadDetailPage() {
                       .map((p) => (
                         <div
                           key={p._id}
-                          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2.5"
+                          className="bg-white p-4 rounded-md border border-slate-200 shadow-xs space-y-2.5"
                         >
                           <div className="flex justify-between items-center">
                             <span className="font-mono font-bold text-slate-900 text-xs">
@@ -4242,7 +4237,7 @@ export default function LeadDetailPage() {
 
           {/* ACTIVITY TIMELINE TAB */}
           {activeTab === "Activity Timeline" && (
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
+            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-sm">
                   Activity History &amp; Audit Trail
@@ -4260,7 +4255,7 @@ export default function LeadDetailPage() {
                   activities.map((a) => (
                     <div
                       key={a._id}
-                      className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-3"
+                      className="p-3.5 rounded-md bg-slate-50 border border-slate-100 flex items-start justify-between gap-3"
                     >
                       <div>
                         <div className="flex items-center gap-2">
@@ -4422,7 +4417,7 @@ export default function LeadDetailPage() {
               </div>
 
               {/* PRODUCT & TECHNICAL SPECIFICATIONS (STEP 12 HANDOFF) */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-blue-600" />
@@ -4655,7 +4650,7 @@ export default function LeadDetailPage() {
               </div>
 
               {/* Designer Assignment & Brief */}
-              <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3">
+              <div className="p-4 rounded-md bg-indigo-50/70 border border-indigo-100 space-y-3">
                 <div className="flex items-center gap-1.5 text-indigo-950 font-bold text-xs">
                   <Palette className="w-4 h-4 text-indigo-600" />
                   Designer Handoff &amp; Project Brief
@@ -4850,7 +4845,7 @@ export default function LeadDetailPage() {
               className="space-y-4 text-xs"
             >
               {/* PRODUCT & TECHNICAL SPECIFICATIONS (DESIGNER HANDOFF) */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-blue-600" />
@@ -5083,7 +5078,7 @@ export default function LeadDetailPage() {
               </div>
 
               {/* DESIGNER HANDOFF & PROJECT BRIEF */}
-              <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3">
+              <div className="p-4 rounded-md bg-indigo-50/70 border border-indigo-100 space-y-3">
                 <div className="flex items-center gap-1.5 text-indigo-950 font-bold text-xs">
                   <Palette className="w-4 h-4 text-indigo-600" />
                   Designer Handoff &amp; Project Brief
@@ -5725,7 +5720,7 @@ export default function LeadDetailPage() {
               </div>
 
               {completeForm.nextAction === "SCHEDULE_FOLLOWUP" && (
-                <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3">
+                <div className="p-3.5 rounded-md bg-indigo-50/70 border border-indigo-100 space-y-3">
                   <span className="text-[11px] font-bold text-indigo-900 block">
                     Next Follow-up Scheduling
                   </span>
@@ -6215,7 +6210,7 @@ export default function LeadDetailPage() {
                 <label className="text-slate-700 font-bold block mb-1.5">
                   Select File or Photo <span className="text-rose-500">*</span>
                 </label>
-                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-4 text-center bg-slate-50/70 transition-all">
+                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-md p-4 text-center bg-slate-50/70 transition-all">
                   <input
                     type="file"
                     id="clientDocFileInput"
@@ -6383,7 +6378,7 @@ export default function LeadDetailPage() {
             </div>
 
             <form onSubmit={handleReassignLead} className="space-y-3.5 text-xs">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="p-3 bg-slate-50 rounded-md border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-semibold uppercase block">
                   Lead
                 </span>
@@ -6465,7 +6460,7 @@ export default function LeadDetailPage() {
             <img
               src={selectedImagePreview}
               alt="Client Asset Preview"
-              className="max-h-[82vh] max-w-full rounded-2xl shadow-2xl object-contain border border-white/20"
+              className="max-h-[82vh] max-w-full rounded-md shadow-2xl object-contain border border-white/20"
             />
             <div className="flex items-center gap-4 mt-3">
               <a

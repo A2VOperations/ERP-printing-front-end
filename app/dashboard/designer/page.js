@@ -57,10 +57,10 @@ export default function DesignerDashboardPage() {
         const rawProjects = Array.isArray(d)
           ? d
           : Array.isArray(d.data)
-          ? d.data
-          : Array.isArray(d.projects)
-          ? d.projects
-          : d.data?.projects || d.records || [];
+            ? d.data
+            : Array.isArray(d.projects)
+              ? d.projects
+              : d.data?.projects || d.records || [];
         setDesignProjects(rawProjects);
       }
       if (ordersRes.status === "fulfilled" && ordersRes.value) {
@@ -68,10 +68,10 @@ export default function DesignerDashboardPage() {
         const rawOrders = Array.isArray(o)
           ? o
           : Array.isArray(o.data)
-          ? o.data
-          : Array.isArray(o.data?.items)
-          ? o.data.items
-          : o.orders || [];
+            ? o.data
+            : Array.isArray(o.data?.items)
+              ? o.data.items
+              : o.orders || [];
         setOrders(rawOrders);
       }
     } catch (err) {
@@ -88,34 +88,76 @@ export default function DesignerDashboardPage() {
   // Live Aggregate metric calculations
   const totalProjects = designProjects.length;
   const newAssignmentsCount = useMemo(
-    () => designProjects.filter((d) => d.status === "ASSIGNED" || d.status === "BRIEFING").length,
+    () =>
+      designProjects.filter(
+        (d) => d.status === "ASSIGNED" || d.status === "BRIEFING",
+      ).length,
     [designProjects],
   );
   const inDesignCount = useMemo(
-    () => designProjects.filter((d) => d.status === "IN_PROGRESS" || d.status === "IN_DESIGN").length,
+    () =>
+      designProjects.filter(
+        (d) => d.status === "IN_PROGRESS" || d.status === "IN_DESIGN",
+      ).length,
     [designProjects],
   );
   const clientReviewCount = useMemo(
-    () => designProjects.filter((d) => (d.status === "CLIENT_REVIEW" || d.status === "IN_REVIEW") && d.approvalStatus !== "APPROVED" && d.status !== "APPROVED" && d.status !== "PRODUCTION_LOCKED").length,
+    () =>
+      designProjects.filter(
+        (d) =>
+          (d.status === "CLIENT_REVIEW" || d.status === "IN_REVIEW") &&
+          d.approvalStatus !== "APPROVED" &&
+          d.status !== "APPROVED" &&
+          d.status !== "PRODUCTION_LOCKED",
+      ).length,
     [designProjects],
   );
   const revisionCount = useMemo(
-    () => designProjects.filter((d) => d.status === "REVISION_REQUESTED").length,
+    () =>
+      designProjects.filter((d) => d.status === "REVISION_REQUESTED").length,
     [designProjects],
   );
   const approvedCount = useMemo(
-    () => designProjects.filter((d) => d.status === "APPROVED" || d.approvalStatus === "APPROVED").length,
+    () =>
+      designProjects.filter(
+        (d) => d.status === "APPROVED" || d.approvalStatus === "APPROVED",
+      ).length,
     [designProjects],
   );
   const productionLockedCount = useMemo(
-    () => designProjects.filter((d) => d.status === "PRODUCTION_LOCKED" || d.status === "LOCKED" || d.productionLocked).length,
+    () =>
+      designProjects.filter(
+        (d) =>
+          d.status === "PRODUCTION_LOCKED" ||
+          d.status === "LOCKED" ||
+          d.productionLocked,
+      ).length,
     [designProjects],
   );
 
-  const { overdueCount, dueTodayCount, dueThisWeekCount, dueNextWeekCount, overdueHighPriority, todayHighPriority } = useMemo(() => {
+  const {
+    overdueCount,
+    dueTodayCount,
+    dueThisWeekCount,
+    dueNextWeekCount,
+    overdueHighPriority,
+    todayHighPriority,
+  } = useMemo(() => {
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const endOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
     const dayOfWeek = startOfToday.getDay();
     const daysUntilEndOfWeek = 7 - (dayOfWeek === 0 ? 7 : dayOfWeek);
     const endOfWeek = new Date(startOfToday);
@@ -133,7 +175,12 @@ export default function DesignerDashboardPage() {
     let tdHigh = 0;
 
     designProjects.forEach((p) => {
-      if (p.status === "PRODUCTION_LOCKED" || p.status === "APPROVED" || p.approvalStatus === "APPROVED") return;
+      if (
+        p.status === "PRODUCTION_LOCKED" ||
+        p.status === "APPROVED" ||
+        p.approvalStatus === "APPROVED"
+      )
+        return;
       const isHigh = p.priority === "HIGH" || p.priority === "URGENT";
 
       if (p.dueDate) {
@@ -163,27 +210,51 @@ export default function DesignerDashboardPage() {
   }, [designProjects]);
 
   const completedCount = useMemo(
-    () => designProjects.filter((d) => d.status === "APPROVED" || d.approvalStatus === "APPROVED" || d.status === "PRODUCTION_LOCKED").length,
+    () =>
+      designProjects.filter(
+        (d) =>
+          d.status === "APPROVED" ||
+          d.approvalStatus === "APPROVED" ||
+          d.status === "PRODUCTION_LOCKED",
+      ).length,
     [designProjects],
   );
 
   const onTimePercent = useMemo(
-    () => (totalProjects > 0 ? Math.round((completedCount / totalProjects) * 100) : 100),
+    () =>
+      totalProjects > 0
+        ? Math.round((completedCount / totalProjects) * 100)
+        : 100,
     [totalProjects, completedCount],
   );
 
   const clientReviewList = useMemo(
-    () => designProjects.filter((d) => (d.status === "CLIENT_REVIEW" || d.status === "IN_REVIEW") && d.approvalStatus !== "APPROVED" && d.status !== "APPROVED" && d.status !== "PRODUCTION_LOCKED").slice(0, 6),
+    () =>
+      designProjects
+        .filter(
+          (d) =>
+            (d.status === "CLIENT_REVIEW" || d.status === "IN_REVIEW") &&
+            d.approvalStatus !== "APPROVED" &&
+            d.status !== "APPROVED" &&
+            d.status !== "PRODUCTION_LOCKED",
+        )
+        .slice(0, 6),
     [designProjects],
   );
 
   const recentRevisionsList = useMemo(
-    () => designProjects.filter((d) => d.status === "REVISION_REQUESTED").slice(0, 6),
+    () =>
+      designProjects
+        .filter((d) => d.status === "REVISION_REQUESTED")
+        .slice(0, 6),
     [designProjects],
   );
 
   const recentlyUpdatedList = useMemo(
-    () => [...designProjects].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)).slice(0, 6),
+    () =>
+      [...designProjects]
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
+        .slice(0, 6),
     [designProjects],
   );
 
@@ -201,7 +272,12 @@ export default function DesignerDashboardPage() {
 
   const getCustName = (p) => {
     if (p.customerId) {
-      return p.customerId.businessName || p.customerId.contactPersonName || p.customerId.displayName || "Client";
+      return (
+        p.customerId.businessName ||
+        p.customerId.contactPersonName ||
+        p.customerId.displayName ||
+        "Client"
+      );
     }
     return p.title?.split("-")[0]?.trim() || "Client";
   };
@@ -254,7 +330,7 @@ export default function DesignerDashboardPage() {
           {/* ROW 1: 7 Compact KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
             {/* 1. New Assignments */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -270,7 +346,9 @@ export default function DesignerDashboardPage() {
               </div>
               <div className="mt-2 pt-1.5 border-t border-slate-100">
                 <span className="text-[9px] font-semibold text-emerald-600 block">
-                  {newAssignmentsCount > 0 ? `${newAssignmentsCount} awaiting work` : 'Up to date'}
+                  {newAssignmentsCount > 0
+                    ? `${newAssignmentsCount} awaiting work`
+                    : "Up to date"}
                 </span>
                 <Link
                   href="/dashboard/design?filter=NEW"
@@ -282,7 +360,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 2. Due Today */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -310,7 +388,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 3. Overdue */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -338,7 +416,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 4. Client Review */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -366,7 +444,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 5. Revision Requested */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -382,7 +460,9 @@ export default function DesignerDashboardPage() {
               </div>
               <div className="mt-2 pt-1.5 border-t border-slate-100">
                 <span className="text-[9px] font-semibold text-slate-500 block">
-                  {revisionCount > 0 ? `${revisionCount} pending changes` : 'No revisions'}
+                  {revisionCount > 0
+                    ? `${revisionCount} pending changes`
+                    : "No revisions"}
                 </span>
                 <Link
                   href="/dashboard/design?filter=REVISION"
@@ -393,10 +473,8 @@ export default function DesignerDashboardPage() {
               </div>
             </div>
 
-
-
             {/* 7. Production Locked */}
-            <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="bg-white rounded-md p-3.5 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-500 block">
@@ -427,7 +505,7 @@ export default function DesignerDashboardPage() {
           {/* ROW 2: My Design Queue | Today's Activities | Deadline Overview */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
             {/* 1. My Design Queue (4 Cols) */}
-            <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-4 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   My Design Queue
@@ -481,8 +559,6 @@ export default function DesignerDashboardPage() {
                     <strong className="text-slate-900">{revisionCount}</strong>
                   </div>
 
-
-
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -505,7 +581,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 2. Today's Activities (4 Cols) */}
-            <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-4 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Today&apos;s Activities &amp; Updates
@@ -525,7 +601,10 @@ export default function DesignerDashboardPage() {
                   </div>
                 ) : (
                   recentlyUpdatedList.slice(0, 5).map((p) => (
-                    <div key={p._id} className="flex items-start justify-between gap-2">
+                    <div
+                      key={p._id}
+                      className="flex items-start justify-between gap-2"
+                    >
                       <span className="text-[10px] text-slate-400 font-mono shrink-0 mt-0.5">
                         {formatTimeAgo(p.updatedAt)}
                       </span>
@@ -534,10 +613,13 @@ export default function DesignerDashboardPage() {
                           href="/dashboard/design"
                           className="text-slate-900 text-[11px] font-bold block truncate hover:text-blue-600"
                         >
-                          {p.projectNumber || 'DSN'}: {p.title}
+                          {p.projectNumber || "DSN"}: {p.title}
                         </Link>
                         <span className="text-[10px] text-slate-500 block truncate">
-                          {getCustName(p)} • {p.currentVersionNumber ? `V${p.currentVersionNumber}` : 'Initial'}
+                          {getCustName(p)} •{" "}
+                          {p.currentVersionNumber
+                            ? `V${p.currentVersionNumber}`
+                            : "Initial"}
                         </span>
                       </div>
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 shrink-0">
@@ -550,7 +632,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 3. Deadline Overview (4 Cols) */}
-            <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-4 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Deadline Overview
@@ -616,7 +698,8 @@ export default function DesignerDashboardPage() {
               </div>
 
               <div className="pt-2 border-t border-slate-100 text-center text-[10px] text-slate-500 font-semibold">
-                {completedCount} / {totalProjects} projects completed or production locked
+                {completedCount} / {totalProjects} projects completed or
+                production locked
               </div>
             </div>
           </div>
@@ -624,7 +707,7 @@ export default function DesignerDashboardPage() {
           {/* ROW 3: Attention Queue | Client Reviews | Quick Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
             {/* 1. Attention Queue (4 Cols) */}
-            <div className="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-4 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Attention Queue
@@ -710,8 +793,6 @@ export default function DesignerDashboardPage() {
                   </div>
                 </div>
 
-
-
                 {/* 5. Production Ready */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/50 border border-emerald-100">
                   <div className="flex items-center gap-2">
@@ -741,7 +822,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 2. Client Reviews (5 Cols) */}
-            <div className="lg:col-span-5 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-5 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Client Reviews
@@ -768,7 +849,10 @@ export default function DesignerDashboardPage() {
                   <tbody className="divide-y divide-slate-100 text-[11px]">
                     {clientReviewList.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
+                        <td
+                          colSpan={5}
+                          className="py-6 text-center text-slate-400 text-xs"
+                        >
                           No projects currently in client review.
                         </td>
                       </tr>
@@ -776,13 +860,17 @@ export default function DesignerDashboardPage() {
                       clientReviewList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
                           <td className="py-2 font-bold font-mono text-blue-600">
-                            <Link href="/dashboard/design">{p.projectNumber || 'DSN'}</Link>
+                            <Link href="/dashboard/design">
+                              {p.projectNumber || "DSN"}
+                            </Link>
                           </td>
                           <td className="py-2 text-slate-900 font-medium truncate max-w-[120px]">
                             {getCustName(p)}
                           </td>
                           <td className="py-2 text-slate-600 font-mono">
-                            {p.currentVersionNumber ? `V${p.currentVersionNumber}` : 'V1'}
+                            {p.currentVersionNumber
+                              ? `V${p.currentVersionNumber}`
+                              : "V1"}
                           </td>
                           <td className="py-2">
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
@@ -801,7 +889,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* 3. Quick Actions (3 Cols) */}
-            <div className="lg:col-span-3 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="lg:col-span-3 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between space-y-3">
               <div className="pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Quick Actions
@@ -853,8 +941,6 @@ export default function DesignerDashboardPage() {
                   </span>
                 </Link>
 
-
-
                 {/* 6. Production Ready */}
                 <Link
                   href="/dashboard/design?filter=PRODUCTION_READY"
@@ -872,7 +958,7 @@ export default function DesignerDashboardPage() {
           {/* ROW 4: Recently Updated Projects | Recent Revisions */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             {/* Recently Updated Projects (6 Cols) */}
-            <div className="lg:col-span-6 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+            <div className="lg:col-span-6 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Recently Updated Projects
@@ -900,7 +986,10 @@ export default function DesignerDashboardPage() {
                   <tbody className="divide-y divide-slate-100 text-[11px]">
                     {recentlyUpdatedList.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-6 text-center text-slate-400 text-xs">
+                        <td
+                          colSpan={6}
+                          className="py-6 text-center text-slate-400 text-xs"
+                        >
                           No design projects found.
                         </td>
                       </tr>
@@ -908,29 +997,35 @@ export default function DesignerDashboardPage() {
                       recentlyUpdatedList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
                           <td className="py-2.5 font-bold font-mono text-blue-600">
-                            <Link href="/dashboard/design">{p.projectNumber || 'DSN'}</Link>
+                            <Link href="/dashboard/design">
+                              {p.projectNumber || "DSN"}
+                            </Link>
                           </td>
                           <td className="py-2.5 text-slate-800 font-medium truncate max-w-[120px]">
                             {getCustName(p)}
                           </td>
                           <td className="py-2.5 text-slate-500 font-mono">
-                            {p.orderId?.orderNumber || '—'}
+                            {p.orderId?.orderNumber || "—"}
                           </td>
                           <td className="py-2.5 text-slate-600 font-mono">
-                            {p.currentVersionNumber ? `V${p.currentVersionNumber}` : 'V1'}
+                            {p.currentVersionNumber
+                              ? `V${p.currentVersionNumber}`
+                              : "V1"}
                           </td>
                           <td className="py-2.5">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                              p.status === 'PRODUCTION_LOCKED'
-                                ? 'bg-teal-50 text-teal-700 border border-teal-200'
-                                : p.status === 'APPROVED'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : p.status === 'CLIENT_REVIEW'
-                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                : p.status === 'REVISION_REQUESTED'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-blue-50 text-blue-700 border border-blue-200'
-                            }`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                p.status === "PRODUCTION_LOCKED"
+                                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                                  : p.status === "APPROVED"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : p.status === "CLIENT_REVIEW"
+                                      ? "bg-purple-50 text-purple-700 border border-purple-200"
+                                      : p.status === "REVISION_REQUESTED"
+                                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                              }`}
+                            >
                               {p.status}
                             </span>
                           </td>
@@ -946,7 +1041,7 @@ export default function DesignerDashboardPage() {
             </div>
 
             {/* Recent Revisions (6 Cols) */}
-            <div className="lg:col-span-6 bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+            <div className="lg:col-span-6 bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="font-bold text-slate-900 text-xs">
                   Recent Revisions
@@ -974,7 +1069,10 @@ export default function DesignerDashboardPage() {
                   <tbody className="divide-y divide-slate-100 text-[11px]">
                     {recentRevisionsList.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-6 text-center text-slate-400 text-xs">
+                        <td
+                          colSpan={6}
+                          className="py-6 text-center text-slate-400 text-xs"
+                        >
                           No revisions currently requested.
                         </td>
                       </tr>
@@ -982,13 +1080,17 @@ export default function DesignerDashboardPage() {
                       recentRevisionsList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
                           <td className="py-2.5 font-bold font-mono text-blue-600">
-                            <Link href="/dashboard/design">{p.projectNumber || 'DSN'}</Link>
+                            <Link href="/dashboard/design">
+                              {p.projectNumber || "DSN"}
+                            </Link>
                           </td>
                           <td className="py-2.5 text-slate-800 font-medium truncate max-w-[120px]">
                             {getCustName(p)}
                           </td>
                           <td className="py-2.5 text-slate-600 font-mono">
-                            {p.currentVersionNumber ? `V${p.currentVersionNumber}` : 'V1'}
+                            {p.currentVersionNumber
+                              ? `V${p.currentVersionNumber}`
+                              : "V1"}
                           </td>
                           <td className="py-2.5">
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">

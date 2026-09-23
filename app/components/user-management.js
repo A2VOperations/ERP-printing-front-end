@@ -50,7 +50,8 @@ export default function UserManagement({ user: currentUser }) {
       }
     } catch (err) {
       console.error(err);
-      if (showLoading) setError("Could not connect to the backend server to retrieve users.");
+      if (showLoading)
+        setError("Could not connect to the backend server to retrieve users.");
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -249,7 +250,7 @@ export default function UserManagement({ user: currentUser }) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in relative">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-5 rounded-md shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">
             User Authorization & Management
@@ -343,7 +344,7 @@ export default function UserManagement({ user: currentUser }) {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
         {/* Search Bar */}
         <div className="relative w-full sm:max-w-md">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -390,7 +391,7 @@ export default function UserManagement({ user: currentUser }) {
       </div>
 
       {/* Users Table Card */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden min-h-50 flex flex-col justify-center">
+      <div className="bg-white border border-slate-200/80 rounded-md shadow-sm overflow-hidden min-h-50 flex flex-col justify-center">
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-12">
             <svg
@@ -551,7 +552,9 @@ export default function UserManagement({ user: currentUser }) {
                                   : "bg-purple-50 text-purple-600 border border-purple-100"
                           }`}
                         >
-                          {currentRole === "designer" ? "Graphic Designer" : (currentRole || "employee")}
+                          {currentRole === "designer"
+                            ? "Graphic Designer"
+                            : currentRole || "employee"}
                         </span>
                       </td>
 
@@ -678,7 +681,7 @@ export default function UserManagement({ user: currentUser }) {
       {/* Admin Create User Modal */}
       {isAddUserModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-9999 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-slide-up">
+          <div className="bg-white rounded-md shadow-2xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-slide-up">
             <div className="bg-slate-50 border-b border-slate-100 px-6 py-4.5 flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">

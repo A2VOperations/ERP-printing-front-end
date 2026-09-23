@@ -323,10 +323,14 @@ export default function ReportsView({ user: currentUser }) {
   const userActivenessList = useMemo(() => {
     return allUserOptions
       .filter((usr) => {
-        const role = String(usr.role || usr.roleSlug || '').toLowerCase();
-        const name = String(usr.name || '').toLowerCase();
-        const email = String(usr.email || '').toLowerCase();
-        return !role.includes('admin') && !name.includes('admin') && !email.includes('admin');
+        const role = String(usr.role || usr.roleSlug || "").toLowerCase();
+        const name = String(usr.name || "").toLowerCase();
+        const email = String(usr.email || "").toLowerCase();
+        return (
+          !role.includes("admin") &&
+          !name.includes("admin") &&
+          !email.includes("admin")
+        );
       })
       .map((usr) => {
         // Leads added by user in selected month
@@ -598,7 +602,7 @@ export default function ReportsView({ user: currentUser }) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-12">
       {/* Top Header Card */}
-      <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 p-6 rounded-md shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-sky-50 text-sky-600 rounded-xl border border-sky-100">
@@ -702,7 +706,7 @@ export default function ReportsView({ user: currentUser }) {
         <div className="flex flex-col gap-6 animate-fade-in">
           {/* Design KPI Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Design Projects
@@ -727,7 +731,7 @@ export default function ReportsView({ user: currentUser }) {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Steps Approved
@@ -752,7 +756,7 @@ export default function ReportsView({ user: currentUser }) {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Work Submissions
@@ -777,7 +781,7 @@ export default function ReportsView({ user: currentUser }) {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Approval Rate
@@ -804,7 +808,7 @@ export default function ReportsView({ user: currentUser }) {
           </div>
 
           {/* Design Projects Breakdown Table */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs p-6">
+          <div className="bg-white border border-slate-200/80 rounded-md shadow-xs p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                 <span>🎨 Graphic Design Projects & Step Progress</span>
@@ -916,7 +920,7 @@ export default function ReportsView({ user: currentUser }) {
           {/* KPI Summary Overview Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Leads Added */}
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between hover:border-sky-300/80 transition-all">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between hover:border-sky-300/80 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Leads Added
@@ -943,7 +947,7 @@ export default function ReportsView({ user: currentUser }) {
             </div>
 
             {/* Card 2: Follow-ups Completed */}
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between hover:border-purple-300/80 transition-all">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between hover:border-purple-300/80 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Follow-ups Done
@@ -971,7 +975,7 @@ export default function ReportsView({ user: currentUser }) {
             </div>
 
             {/* Card 3: Total Day Activities */}
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between hover:border-blue-300/80 transition-all">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between hover:border-blue-300/80 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Total Month Activity
@@ -997,7 +1001,7 @@ export default function ReportsView({ user: currentUser }) {
             </div>
 
             {/* Card 4: Daily Average Rate */}
-            <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-xs flex flex-col justify-between hover:border-sky-300/80 transition-all">
+            <div className="bg-white border border-slate-200/80 p-5 rounded-md shadow-xs flex flex-col justify-between hover:border-sky-300/80 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Daily Avg Rate
@@ -1075,7 +1079,7 @@ export default function ReportsView({ user: currentUser }) {
           {activeTab === "leadHandlingReport" && (
             <div className="flex flex-col gap-6">
               {/* User Lead Handling Breakdown Table */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+              <div className="bg-white border border-slate-200/80 rounded-md shadow-xs overflow-hidden">
                 <div className="p-5 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -1218,7 +1222,7 @@ export default function ReportsView({ user: currentUser }) {
           {activeTab === "dayReport" && (
             <div className="flex flex-col gap-6">
               {/* Daily Calendar Matrix */}
-              <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-xs">
+              <div className="bg-white border border-slate-200/80 p-6 rounded-md shadow-xs">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
@@ -1334,7 +1338,7 @@ export default function ReportsView({ user: currentUser }) {
               </div>
 
               {/* Daily Activity Summary Table */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+              <div className="bg-white border border-slate-200/80 rounded-md shadow-xs overflow-hidden">
                 <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
@@ -1428,7 +1432,7 @@ export default function ReportsView({ user: currentUser }) {
           {activeTab === "userLeaderboard" && isAdmin && (
             <div className="flex flex-col gap-6">
               {/* Filter Bar */}
-              <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-white border border-slate-200/80 p-4 rounded-md shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
@@ -1446,7 +1450,7 @@ export default function ReportsView({ user: currentUser }) {
               </div>
 
               {/* User Performance Table */}
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+              <div className="bg-white border border-slate-200/80 rounded-md shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
@@ -1560,7 +1564,7 @@ export default function ReportsView({ user: currentUser }) {
 
           {/* NON-ADMIN FALLBACK FOR LEADERBOARD */}
           {activeTab === "userLeaderboard" && !isAdmin && (
-            <div className="bg-blue-50/80 border border-blue-200 p-8 rounded-2xl text-center flex flex-col items-center gap-3">
+            <div className="bg-blue-50/80 border border-blue-200 p-8 rounded-md text-center flex flex-col items-center gap-3">
               <AlertCircle className="w-8 h-8 text-blue-600" />
               <h3 className="text-base font-bold text-slate-900">
                 Administrator Authorization Required
@@ -1580,7 +1584,7 @@ export default function ReportsView({ user: currentUser }) {
         isClient &&
         createPortal(
           <div className="fixed inset-0 z-99999 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 md:p-6 animate-fade-in font-sans">
-            <div className="bg-white w-full h-full md:max-w-6xl md:h-[92vh] md:rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            <div className="bg-white w-full h-full md:max-w-6xl md:h-[92vh] md:rounded-md shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
               {/* Modal Header */}
               <div className="bg-white px-6 py-4 border-b border-slate-200/80 flex items-center justify-between shadow-2xs shrink-0">
                 <div className="flex items-center gap-3">
@@ -1778,7 +1782,7 @@ export default function ReportsView({ user: currentUser }) {
         isClient &&
         createPortal(
           <div className="fixed inset-0 z-99999 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 md:p-6 animate-fade-in font-sans">
-            <div className="bg-white w-full max-w-4xl h-full md:h-[85vh] md:rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            <div className="bg-white w-full max-w-4xl h-full md:h-[85vh] md:rounded-md shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
               {/* Modal Header */}
               <div className="bg-slate-900 text-white px-6 py-4.5 flex items-center justify-between shadow-2xs shrink-0">
                 <div className="flex items-center gap-3">

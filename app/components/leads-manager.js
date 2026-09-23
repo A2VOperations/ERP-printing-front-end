@@ -1825,7 +1825,7 @@ export default function LeadsManager({
   return (
     <div className="flex flex-col gap-6 animate-fade-in relative">
       {/* Top Header & Overview Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 sm:p-5 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 sm:p-5 rounded-md shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-sky-600 text-white rounded-full shadow-md shadow-sky-600/20 shrink-0">
             <User className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -1875,7 +1875,7 @@ export default function LeadsManager({
       </div>
 
       {/* Filter, Search & View Controls Bar */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 sm:p-4 bg-white border border-slate-200/80 rounded-md shadow-sm">
         {/* Left Search Bar */}
         <div className="relative flex-1 min-w-0 w-full">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
@@ -2037,7 +2037,7 @@ export default function LeadsManager({
 
       {/* Expandable Advanced Filter Panel */}
       {isFilterPanelOpen && (
-        <div className="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4 animate-fade-in">
+        <div className="bg-slate-50/90 border border-slate-200/80 rounded-md p-5 shadow-xs flex flex-col gap-4 animate-fade-in">
           <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-sky-600" />
@@ -2204,7 +2204,7 @@ export default function LeadsManager({
       {/* Main Content Area: Recycle Bin View vs Normal Table/Grid Views */}
       {quickFilterTab === "recycled" && isAdmin ? (
         <div className="bg-white border border-rose-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6">
-          <div className="bg-linear-to-r from-slate-900 to-rose-950 text-white p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-md border border-slate-800">
+          <div className="bg-linear-to-r from-slate-900 to-rose-950 text-white p-5 rounded-md flex flex-wrap items-center justify-between gap-4 shadow-md border border-slate-800">
             <div className="flex items-center gap-3.5">
               <div className="p-3 bg-rose-500/20 text-rose-300 rounded-xl border border-rose-500/30">
                 <Trash2 className="w-6 h-6" />
@@ -2235,8 +2235,8 @@ export default function LeadsManager({
           </div>
 
           {recycledLeads.length === 0 ? (
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-12 text-center flex flex-col items-center gap-3 shadow-2xs">
-              <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-md p-12 text-center flex flex-col items-center gap-3 shadow-2xs">
+              <div className="p-4 bg-emerald-50 text-emerald-600 rounded-md">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <h4 className="text-base font-bold text-slate-900">
@@ -2248,7 +2248,7 @@ export default function LeadsManager({
               </p>
             </div>
           ) : (
-            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+            <div className="bg-white border border-slate-200/80 rounded-md shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
@@ -2323,7 +2323,7 @@ export default function LeadsManager({
           )}
         </div>
       ) : viewMode === "table" ? (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-md shadow-sm overflow-hidden">
           <div className="overflow-x-auto max-w-full">
             <table className="w-full text-left border-collapse min-w-max">
               <thead>
@@ -2553,7 +2553,7 @@ export default function LeadsManager({
               return (
                 <div
                   key={lead.id}
-                  className={`border ${cardStyle.border} ${cardStyle.cardBg} ${cardStyle.glow} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 group relative overflow-hidden`}
+                  className={`border ${cardStyle.border} ${cardStyle.cardBg} ${cardStyle.glow} rounded-md p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 group relative overflow-hidden`}
                 >
                   <div
                     className={`absolute top-0 left-0 right-0 h-1.5 ${cardStyle.topBar}`}
@@ -2582,7 +2582,9 @@ export default function LeadsManager({
                           {lead.businessName && (
                             <p className="text-xs text-slate-500 font-semibold flex items-center gap-1 mt-0.5 truncate">
                               <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span className="truncate">{lead.businessName}</span>
+                              <span className="truncate">
+                                {lead.businessName}
+                              </span>
                             </p>
                           )}
                         </div>
@@ -2784,7 +2786,7 @@ export default function LeadsManager({
               );
             })
           ) : (
-            <div className="col-span-full py-12 text-center bg-white border border-slate-200/80 rounded-2xl flex flex-col items-center justify-center gap-2">
+            <div className="col-span-full py-12 text-center bg-white border border-slate-200/80 rounded-md flex flex-col items-center justify-center gap-2">
               <Search className="w-8 h-8 text-slate-300 stroke-1" />
               <span className="font-bold text-slate-600">
                 No matching leads found
@@ -2806,7 +2808,7 @@ export default function LeadsManager({
               {/* Premium Gradient Header */}
               <div className="bg-linear-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-4 sm:p-6 flex items-start justify-between border-b border-slate-800 shadow-md">
                 <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-tr from-sky-600 to-blue-500 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-lg shadow-sky-500/25 border border-sky-400/30 shrink-0">
+                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-md bg-linear-to-tr from-sky-600 to-blue-500 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-lg shadow-sky-500/25 border border-sky-400/30 shrink-0">
                     {(quickViewLead.name || "L").substring(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -2816,7 +2818,9 @@ export default function LeadsManager({
                     {quickViewLead.businessName ? (
                       <p className="text-xs text-sky-300/90 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
                         <Building2 className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                        <span className="truncate">{quickViewLead.businessName}</span>
+                        <span className="truncate">
+                          {quickViewLead.businessName}
+                        </span>
                       </p>
                     ) : (
                       <p className="text-[11px] text-slate-400 font-medium mt-0.5">
@@ -2837,7 +2841,7 @@ export default function LeadsManager({
               {/* Drawer Body Scroll Content */}
               <div className="p-4 sm:p-6 overflow-y-auto flex flex-col gap-4 sm:gap-5 text-xs text-slate-700 flex-1">
                 {/* Status & Campaign Pill Card */}
-                <div className="flex items-center justify-between bg-slate-50/90 p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="flex items-center justify-between bg-slate-50/90 p-3.5 rounded-md border border-slate-200/80 shadow-2xs">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider">
                       Status:
@@ -2859,7 +2863,7 @@ export default function LeadsManager({
                   <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                     Financial Breakdown
                   </h4>
-                  <div className="bg-linear-to-br from-slate-900 to-slate-950 text-white p-4 rounded-2xl border border-slate-800 shadow-xl flex flex-col gap-3.5">
+                  <div className="bg-linear-to-br from-slate-900 to-slate-950 text-white p-4 rounded-md border border-slate-800 shadow-xl flex flex-col gap-3.5">
                     <div className="grid grid-cols-3 gap-2 sm:gap-2.5 text-center">
                       <div className="bg-white/5 border border-white/10 p-2 sm:p-2.5 rounded-xl">
                         <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">
@@ -2930,7 +2934,7 @@ export default function LeadsManager({
                   <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                     Contact Details
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50/80 p-4 rounded-md border border-slate-200/80 shadow-2xs">
                     <div>
                       <span className="text-[10px] text-slate-400 font-bold uppercase block tracking-wider">
                         Phone Number
@@ -3022,7 +3026,7 @@ export default function LeadsManager({
                     <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                       Call Remarks
                     </h4>
-                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-2xl flex flex-col gap-2.5 shadow-2xs">
+                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-md flex flex-col gap-2.5 shadow-2xs">
                       {quickViewLead.remark && (
                         <div>
                           <span className="text-[10px] text-blue-800 font-bold uppercase block tracking-wider">
@@ -3116,7 +3120,7 @@ export default function LeadsManager({
                           {images.map((img, idx) => (
                             <div
                               key={img._id || img.public_id || idx}
-                              className="relative h-24 sm:h-28 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group cursor-pointer shadow-2xs hover:shadow-md transition-all"
+                              className="relative h-24 sm:h-28 rounded-md overflow-hidden bg-slate-100 border border-slate-200 group cursor-pointer shadow-2xs hover:shadow-md transition-all"
                             >
                               <img
                                 src={img.url}
@@ -3157,7 +3161,7 @@ export default function LeadsManager({
                           ))}
                         </div>
                       ) : (
-                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center text-slate-400 font-medium text-xs flex flex-col items-center gap-1">
+                        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-md text-center text-slate-400 font-medium text-xs flex flex-col items-center gap-1">
                           <ImageIcon className="w-5 h-5 text-slate-300" />
                           <span>No images attached yet.</span>
                         </div>
@@ -3321,7 +3325,7 @@ export default function LeadsManager({
                             >
                               <div className="absolute -left-5.25 top-1.5 w-3 h-3 rounded-full bg-white border-2 border-indigo-500 group-hover:scale-125 transition-transform" />
 
-                              <div className="bg-slate-50/90 hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-xs transition-all shadow-2xs">
+                              <div className="bg-slate-50/90 hover:bg-slate-50 border border-slate-200/80 rounded-md p-3 text-xs transition-all shadow-2xs">
                                 <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
                                   <span
                                     className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md border inline-flex items-center gap-1 ${badgeBg}`}
@@ -3425,7 +3429,7 @@ export default function LeadsManager({
                   e.preventDefault();
                 }
               }}
-              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-3xl overflow-hidden animate-slide-up flex flex-col max-h-[94vh] sm:max-h-[85vh]"
+              className="bg-white rounded-md shadow-2xl border border-slate-200/80 w-full max-w-3xl overflow-hidden animate-slide-up flex flex-col max-h-[94vh] sm:max-h-[85vh]"
             >
               {/* Modal Header */}
               <div className="bg-slate-50 border-b border-slate-100 px-4 sm:px-6 py-3.5 sm:py-4 flex justify-between items-center">
@@ -3437,7 +3441,9 @@ export default function LeadsManager({
                         ? "Create Lead Profile"
                         : "Edit Lead Profile"}
                     </span>
-                    <span className="text-slate-300 font-normal hidden sm:inline">•</span>
+                    <span className="text-slate-300 font-normal hidden sm:inline">
+                      •
+                    </span>
                     <span className="text-sky-700 font-extrabold text-[11px] sm:text-xs bg-sky-100/80 px-2 sm:px-2.5 py-0.5 rounded-lg border border-sky-200 inline-flex items-center gap-1 shadow-2xs">
                       {[
                         { id: "general", label: "General Info" },
@@ -4078,7 +4084,7 @@ export default function LeadsManager({
                           {pendingFiles.map((item, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-col bg-slate-50 border border-slate-200 p-3 rounded-2xl relative group"
+                              className="flex flex-col bg-slate-50 border border-slate-200 p-3 rounded-md relative group"
                             >
                               {item.previewUrl ? (
                                 <div className="w-full h-28 rounded-xl bg-slate-200 overflow-hidden mb-2 relative">
@@ -4112,15 +4118,15 @@ export default function LeadsManager({
                           ))}
                         </div>
                       ) : (
-                        <div className="py-10 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2">
+                        <div className="py-10 text-center bg-slate-50 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center gap-2">
                           <UploadCloud className="w-8 h-8 text-slate-300 stroke-1" />
                           <span className="text-xs font-bold text-slate-600">
                             No Images or Files Selected
                           </span>
                           <p className="text-[11px] text-slate-400 font-medium px-6 max-w-sm">
-                            Click &quot;Upload / Select Images&quot; above to select
-                            photos or documents to attach while creating this
-                            lead.
+                            Click &quot;Upload / Select Images&quot; above to
+                            select photos or documents to attach while creating
+                            this lead.
                           </p>
                         </div>
                       )
@@ -4139,7 +4145,7 @@ export default function LeadsManager({
                           return (
                             <div
                               key={doc._id || doc.public_id || idx}
-                              className="flex flex-col bg-slate-50 border border-slate-200 p-3 rounded-2xl transition-all group overflow-hidden relative"
+                              className="flex flex-col bg-slate-50 border border-slate-200 p-3 rounded-md transition-all group overflow-hidden relative"
                             >
                               {isImg ? (
                                 <div className="w-full h-28 rounded-xl bg-slate-200 overflow-hidden mb-2 relative group/img">
@@ -4214,7 +4220,7 @@ export default function LeadsManager({
                         })}
                       </div>
                     ) : (
-                      <div className="py-10 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2">
+                      <div className="py-10 text-center bg-slate-50 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center gap-2">
                         <Paperclip className="w-8 h-8 text-slate-300 stroke-1" />
                         <span className="text-xs font-bold text-slate-600">
                           No Documents or Images Attached
@@ -4309,15 +4315,15 @@ export default function LeadsManager({
                         ))}
                       </div>
                     ) : (
-                      <div className="py-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-2">
+                      <div className="py-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center gap-2">
                         <Layers className="w-6 h-6 text-slate-400 stroke-1" />
                         <span className="text-xs font-bold text-slate-600">
                           No Custom Fields Configured
                         </span>
                         <p className="text-[11px] text-slate-400 font-medium px-6 max-w-sm">
                           Extend your lead forms with fields like GSTIN,
-                          Industry, or Alternate Email by clicking &quot;Add Custom
-                          Field&quot;.
+                          Industry, or Alternate Email by clicking &quot;Add
+                          Custom Field&quot;.
                         </p>
                       </div>
                     )}
@@ -4411,7 +4417,7 @@ export default function LeadsManager({
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-9999 flex items-center justify-center p-4 animate-fade-in">
             <form
               onSubmit={handleSaveColumnSubmit}
-              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-scale-up"
+              className="bg-white rounded-md shadow-2xl border border-slate-200/80 w-full max-w-md overflow-hidden animate-scale-up"
             >
               <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex justify-between items-center">
                 <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
@@ -4562,7 +4568,7 @@ export default function LeadsManager({
               <img
                 src={imageModal.images[imageModal.currentIndex]?.url}
                 alt="Lead Preview"
-                className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl border border-slate-800 animate-scale-up"
+                className="max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl border border-slate-800 animate-scale-up"
               />
 
               {imageModal.images.length > 1 && (
@@ -4611,7 +4617,7 @@ export default function LeadsManager({
 
       {/* Floating Bulk Actions Bar */}
       {selectedLeadIds.length > 0 && (
-        <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] sm:w-auto max-w-lg bg-slate-900/95 backdrop-blur-md text-white px-4 sm:px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-4 animate-in slide-in-from-bottom-5 duration-200">
+        <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] sm:w-auto max-w-lg bg-slate-900/95 backdrop-blur-md text-white px-4 sm:px-5 py-3 rounded-md shadow-2xl border border-slate-700/80 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-4 animate-in slide-in-from-bottom-5 duration-200">
           <div className="text-xs font-extrabold flex items-center gap-2">
             <span className="w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-[11px] shrink-0">
               {selectedLeadIds.length}
@@ -4651,7 +4657,7 @@ export default function LeadsManager({
               {/* Modal Header */}
               <div className="p-4 sm:p-6 bg-linear-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 sm:p-2.5 bg-white/20 backdrop-blur-md rounded-2xl shrink-0">
+                  <div className="p-2 sm:p-2.5 bg-white/20 backdrop-blur-md rounded-md shrink-0">
                     <Send className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -4677,7 +4683,7 @@ export default function LeadsManager({
               <div className="p-4 sm:p-6 space-y-4 text-xs font-semibold text-slate-700">
                 {/* Selected Lead Summary */}
                 {forwardModal.leadsToForward.length === 1 && (
-                  <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-3.5 flex items-center justify-between flex-wrap gap-2">
+                  <div className="bg-indigo-50/60 border border-indigo-100 rounded-md p-3.5 flex items-center justify-between flex-wrap gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-indigo-950 text-sm truncate">
                         {forwardModal.leadsToForward[0].name}
@@ -4825,7 +4831,7 @@ export default function LeadsManager({
               {/* Modal Header */}
               <div className="p-4 sm:p-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 sm:p-2.5 bg-white/20 backdrop-blur-md rounded-2xl shrink-0">
+                  <div className="p-2 sm:p-2.5 bg-white/20 backdrop-blur-md rounded-md shrink-0">
                     <Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -4849,7 +4855,7 @@ export default function LeadsManager({
               {/* Modal Body */}
               <div className="p-4 sm:p-6 space-y-4 text-xs font-semibold text-slate-700">
                 {/* Client Info Banner */}
-                <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3.5 flex items-center justify-between flex-wrap gap-2">
+                <div className="bg-blue-50/60 border border-blue-100 rounded-md p-3.5 flex items-center justify-between flex-wrap gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-slate-900 text-sm truncate">
                       {scheduleFollowUpModal.lead?.name}
@@ -4944,7 +4950,7 @@ export default function LeadsManager({
       {/* Floating Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-99999 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold flex items-center gap-2.5 animate-bounce-in max-w-sm sm:max-w-md ${
+          className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-99999 px-4 py-3 rounded-md shadow-2xl border text-xs font-bold flex items-center gap-2.5 animate-bounce-in max-w-sm sm:max-w-md ${
             toast.type === "error"
               ? "bg-rose-900 text-white border-rose-700"
               : "bg-slate-900 text-white border-slate-700"

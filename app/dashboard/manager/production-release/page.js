@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   Lock,
   Mail,
@@ -31,13 +31,13 @@ import {
   X,
   FileText,
   Inbox,
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ProductionReleaseCenterPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [copiedHash, setCopiedHash] = useState(null);
 
   // Modals
@@ -46,37 +46,45 @@ export default function ProductionReleaseCenterPage() {
 
   // Email Composer Form State
   const [emailForm, setEmailForm] = useState({
-    to: '',
-    cc: '',
-    subject: '',
-    message: '',
+    to: "",
+    cc: "",
+    subject: "",
+    message: "",
     includeSpecs: true,
     includeDownloadLink: true,
     includeSha256: true,
   });
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailSuccessToast, setEmailSuccessToast] = useState('');
+  const [emailSuccessToast, setEmailSuccessToast] = useState("");
 
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
-      setErrorMsg('');
-      const res = await api.get('/design-projects/production-locked');
+      setErrorMsg("");
+      const res = await api.get("/design-projects/production-locked");
       if (res && res.data) {
-        const list = Array.isArray(res.data) ? res.data : (res.data.projects || []);
+        const list = Array.isArray(res.data)
+          ? res.data
+          : res.data.projects || [];
         setProjects(list);
       }
     } catch (err) {
-      console.error('Failed to load production locked projects:', err);
+      console.error("Failed to load production locked projects:", err);
       // Fallback query by status
       try {
-        const fallback = await api.get('/design-projects?status=PRODUCTION_LOCKED&limit=100');
+        const fallback = await api.get(
+          "/design-projects?status=PRODUCTION_LOCKED&limit=100",
+        );
         if (fallback && fallback.data) {
-          const list = Array.isArray(fallback.data) ? fallback.data : (fallback.data.projects || []);
+          const list = Array.isArray(fallback.data)
+            ? fallback.data
+            : fallback.data.projects || [];
           setProjects(list);
         }
       } catch (fallbackErr) {
-        setErrorMsg(err.message || 'Failed to fetch production locked projects');
+        setErrorMsg(
+          err.message || "Failed to fetch production locked projects",
+        );
       }
     } finally {
       setLoading(false);
@@ -89,13 +97,13 @@ export default function ProductionReleaseCenterPage() {
 
   // Open Email Composer
   const handleOpenEmailModal = (proj) => {
-    const custEmail = proj.customerId?.email || '';
+    const custEmail = proj.customerId?.email || "";
     const defaultSubject = `[PRODUCTION RELEASE] Approved Artwork & Specs - ${proj.title || proj.projectNumber}`;
     const defaultNote = `Dear Production / Print Team,\n\nPlease find attached the final client-approved artwork and technical specifications for Job #${proj.projectNumber}. All dimensions, substrate media, and finishing requirements are detailed below. Please proceed with production printing.`;
 
     setEmailForm({
-      to: custEmail || '',
-      cc: '',
+      to: custEmail || "",
+      cc: "",
       subject: defaultSubject,
       message: defaultNote,
       includeSpecs: true,
@@ -109,29 +117,39 @@ export default function ProductionReleaseCenterPage() {
   const handleSendEmail = async (e) => {
     e.preventDefault();
     if (!emailForm.to.trim()) {
-      alert('Recipient email address is required.');
+      alert("Recipient email address is required.");
       return;
     }
     if (!emailModalProject) return;
 
     try {
       setSendingEmail(true);
-      const res = await api.post(`/design-projects/${emailModalProject._id}/send-production-email`, emailForm);
+      const res = await api.post(
+        `/design-projects/${emailModalProject._id}/send-production-email`,
+        emailForm,
+      );
       if (res && (res.success || res.email)) {
-        const isReal = res.dispatchResult?.mode === 'SMTP' || res.dispatchResult?.mode === 'RESEND_HTTPS' || res.dispatchResult?.mode === 'BREVO_HTTPS';
+        const isReal =
+          res.dispatchResult?.mode === "SMTP" ||
+          res.dispatchResult?.mode === "RESEND_HTTPS" ||
+          res.dispatchResult?.mode === "BREVO_HTTPS";
         if (isReal) {
-          setEmailSuccessToast(`Real email successfully dispatched to ${emailForm.to.trim()}!`);
+          setEmailSuccessToast(
+            `Real email successfully dispatched to ${emailForm.to.trim()}!`,
+          );
         } else {
-          setEmailSuccessToast(`Email recorded in Simulated mode for ${emailForm.to.trim()}. Note: Configure RESEND_API_KEY or SMTP credentials in backend to dispatch live emails.`);
+          setEmailSuccessToast(
+            `Email recorded in Simulated mode for ${emailForm.to.trim()}. Note: Configure RESEND_API_KEY or SMTP credentials in backend to dispatch live emails.`,
+          );
         }
         setEmailModalProject(null);
-        setTimeout(() => setEmailSuccessToast(''), 9000);
+        setTimeout(() => setEmailSuccessToast(""), 9000);
         loadProjects();
       } else {
-        alert(res?.error || 'Failed to dispatch email');
+        alert(res?.error || "Failed to dispatch email");
       }
     } catch (err) {
-      alert(err.message || 'Error occurred while dispatching email');
+      alert(err.message || "Error occurred while dispatching email");
     } finally {
       setSendingEmail(false);
     }
@@ -152,17 +170,19 @@ export default function ProductionReleaseCenterPage() {
     const q = searchQuery.toLowerCase();
     return projects.filter(
       (p) =>
-        (p.title || '').toLowerCase().includes(q) ||
-        (p.projectNumber || '').toLowerCase().includes(q) ||
-        (p.customerId?.businessName || '').toLowerCase().includes(q) ||
-        (p.customerId?.displayName || '').toLowerCase().includes(q) ||
-        (p.orderId?.orderNumber || '').toLowerCase().includes(q)
+        (p.title || "").toLowerCase().includes(q) ||
+        (p.projectNumber || "").toLowerCase().includes(q) ||
+        (p.customerId?.businessName || "").toLowerCase().includes(q) ||
+        (p.customerId?.displayName || "").toLowerCase().includes(q) ||
+        (p.orderId?.orderNumber || "").toLowerCase().includes(q),
     );
   }, [projects, searchQuery]);
 
   // Aggregate Metrics
   const totalLocked = projects.length;
-  const dispatchedCount = projects.filter((p) => p.dispatchedEmails && p.dispatchedEmails.length > 0).length;
+  const dispatchedCount = projects.filter(
+    (p) => p.dispatchedEmails && p.dispatchedEmails.length > 0,
+  ).length;
   const pendingDispatch = totalLocked - dispatchedCount;
 
   return (
@@ -174,7 +194,7 @@ export default function ProductionReleaseCenterPage() {
 
         <main className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
           {/* Header Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 md:p-8 shadow-2xs">
+          <div className="relative overflow-hidden rounded-md bg-white border border-slate-200 p-6 md:p-8 shadow-2xs">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide">
@@ -185,7 +205,9 @@ export default function ProductionReleaseCenterPage() {
                   Production Released Artworks &amp; Dispatch Center
                 </h1>
                 <p className="text-sm text-slate-500 max-w-2xl">
-                  Inspect final client-approved designs and dispatch high-resolution master artwork files with full technical specifications directly to print vendors or machine floor.
+                  Inspect final client-approved designs and dispatch
+                  high-resolution master artwork files with full technical
+                  specifications directly to print vendors or machine floor.
                 </p>
               </div>
 
@@ -195,7 +217,9 @@ export default function ProductionReleaseCenterPage() {
                   disabled={loading}
                   className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition-all flex items-center gap-2 shadow-2xs cursor-pointer"
                 >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                  />
                   Refresh
                 </button>
                 <Link
@@ -212,8 +236,12 @@ export default function ProductionReleaseCenterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-6">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-slate-500 font-medium">Production Locked Artworks</div>
-                  <div className="text-2xl font-black text-slate-900 font-mono">{totalLocked}</div>
+                  <div className="text-xs text-slate-500 font-medium">
+                    Production Locked Artworks
+                  </div>
+                  <div className="text-2xl font-black text-slate-900 font-mono">
+                    {totalLocked}
+                  </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600">
                   <Lock className="w-5 h-5" />
@@ -222,8 +250,12 @@ export default function ProductionReleaseCenterPage() {
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-slate-500 font-medium">Emails Dispatched</div>
-                  <div className="text-2xl font-black text-emerald-600 font-mono">{dispatchedCount}</div>
+                  <div className="text-xs text-slate-500 font-medium">
+                    Emails Dispatched
+                  </div>
+                  <div className="text-2xl font-black text-emerald-600 font-mono">
+                    {dispatchedCount}
+                  </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
                   <Mail className="w-5 h-5" />
@@ -232,8 +264,12 @@ export default function ProductionReleaseCenterPage() {
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-slate-500 font-medium">Pending Mail Release</div>
-                  <div className="text-2xl font-black text-amber-600 font-mono">{pendingDispatch}</div>
+                  <div className="text-xs text-slate-500 font-medium">
+                    Pending Mail Release
+                  </div>
+                  <div className="text-2xl font-black text-amber-600 font-mono">
+                    {pendingDispatch}
+                  </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
                   <Send className="w-5 h-5" />
@@ -250,7 +286,7 @@ export default function ProductionReleaseCenterPage() {
                 {emailSuccessToast}
               </div>
               <button
-                onClick={() => setEmailSuccessToast('')}
+                onClick={() => setEmailSuccessToast("")}
                 className="text-emerald-600 hover:text-emerald-800 text-xs font-bold cursor-pointer"
               >
                 ✕
@@ -271,7 +307,11 @@ export default function ProductionReleaseCenterPage() {
               />
             </div>
             <div className="text-xs text-slate-500">
-              Showing <span className="font-bold text-slate-900">{filtered.length}</span> locked production designs
+              Showing{" "}
+              <span className="font-bold text-slate-900">
+                {filtered.length}
+              </span>{" "}
+              locked production designs
             </div>
           </div>
 
@@ -279,23 +319,35 @@ export default function ProductionReleaseCenterPage() {
           {loading ? (
             <div className="p-16 text-center space-y-3">
               <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
-              <p className="text-sm text-slate-500">Loading production released artworks...</p>
+              <p className="text-sm text-slate-500">
+                Loading production released artworks...
+              </p>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-16 text-center rounded-2xl bg-white border border-slate-200 space-y-3 shadow-2xs">
+            <div className="p-16 text-center rounded-md bg-white border border-slate-200 space-y-3 shadow-2xs">
               <Inbox className="w-12 h-12 text-slate-400 mx-auto" />
-              <h3 className="text-base font-bold text-slate-800">No Production Locked Designs Found</h3>
+              <h3 className="text-base font-bold text-slate-800">
+                No Production Locked Designs Found
+              </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Once a designer locks and releases an approved artwork to press, it will automatically appear here for review and email dispatch.
+                Once a designer locks and releases an approved artwork to press,
+                it will automatically appear here for review and email dispatch.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {filtered.map((proj) => {
                 const currentVer = proj.currentVersionId;
-                const proofUrl = currentVer?.proofAssetId?.fileUrl || proj.briefAttachments?.[0]?.fileUrl || '';
-                const printReadyUrl = currentVer?.printReadyAssetId?.fileUrl || proofUrl;
-                const sha = currentVer?.printReadyAssetId?.sha256 || currentVer?.sha256 || 'SHA256_LOCKED_SECURE';
+                const proofUrl =
+                  currentVer?.proofAssetId?.fileUrl ||
+                  proj.briefAttachments?.[0]?.fileUrl ||
+                  "";
+                const printReadyUrl =
+                  currentVer?.printReadyAssetId?.fileUrl || proofUrl;
+                const sha =
+                  currentVer?.printReadyAssetId?.sha256 ||
+                  currentVer?.sha256 ||
+                  "SHA256_LOCKED_SECURE";
                 const brief = proj.brief || {};
                 const order = proj.orderId;
                 const orderItem = order?.items?.[0];
@@ -304,7 +356,7 @@ export default function ProductionReleaseCenterPage() {
                 return (
                   <div
                     key={proj._id}
-                    className="rounded-2xl bg-white border border-slate-200 hover:border-slate-300 transition-all p-5 space-y-4 shadow-2xs flex flex-col justify-between"
+                    className="rounded-md bg-white border border-slate-200 hover:border-slate-300 transition-all p-5 space-y-4 shadow-2xs flex flex-col justify-between"
                   >
                     <div>
                       {/* Top Header */}
@@ -312,7 +364,7 @@ export default function ProductionReleaseCenterPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs font-bold text-blue-600">
-                              {proj.projectNumber || 'DES-PROJECT'}
+                              {proj.projectNumber || "DES-PROJECT"}
                             </span>
                             {order?.orderNumber && (
                               <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold border border-slate-200">
@@ -324,10 +376,14 @@ export default function ProductionReleaseCenterPage() {
                               LOCKED (V{proj.currentVersionNumber || 1})
                             </span>
                           </div>
-                          <h3 className="text-base font-bold text-slate-900 mt-1 line-clamp-1">{proj.title}</h3>
+                          <h3 className="text-base font-bold text-slate-900 mt-1 line-clamp-1">
+                            {proj.title}
+                          </h3>
                           <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                             <Building className="w-3.5 h-3.5 text-slate-400" />
-                            {proj.customerId?.businessName || proj.customerId?.displayName || 'Direct Client'}
+                            {proj.customerId?.businessName ||
+                              proj.customerId?.displayName ||
+                              "Direct Client"}
                           </div>
                         </div>
 
@@ -337,7 +393,9 @@ export default function ProductionReleaseCenterPage() {
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             CLIENT APPROVED
                           </span>
-                          <div className="text-[10px] text-slate-500 mt-1 font-mono">{brief.colorMode || 'CMYK'} • {brief.dpi || 100} DPI</div>
+                          <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                            {brief.colorMode || "CMYK"} • {brief.dpi || 100} DPI
+                          </div>
                         </div>
                       </div>
 
@@ -370,16 +428,26 @@ export default function ProductionReleaseCenterPage() {
                           <div className="flex justify-between py-1 border-b border-slate-100">
                             <span className="text-slate-500">Dimensions:</span>
                             <span className="text-slate-900 font-bold font-mono">
-                              {brief.productDimensions?.width && brief.productDimensions?.height
-                                ? `${brief.productDimensions.width} × ${brief.productDimensions.height} ${brief.productDimensions.unit || 'in'}`
-                                : (orderItem?.width && orderItem?.height ? `${orderItem.width} × ${orderItem.height} ${orderItem.dimensionUnit || 'in'}` : 'As specified')}
+                              {brief.productDimensions?.width &&
+                              brief.productDimensions?.height
+                                ? `${brief.productDimensions.width} × ${brief.productDimensions.height} ${brief.productDimensions.unit || "in"}`
+                                : orderItem?.width && orderItem?.height
+                                  ? `${orderItem.width} × ${orderItem.height} ${orderItem.dimensionUnit || "in"}`
+                                  : "As specified"}
                             </span>
                           </div>
 
                           <div className="flex justify-between py-1 border-b border-slate-100">
-                            <span className="text-slate-500">Substrate &amp; GSM:</span>
+                            <span className="text-slate-500">
+                              Substrate &amp; GSM:
+                            </span>
                             <span className="text-slate-800 font-semibold">
-                              {brief.material || orderItem?.paperType || 'Standard Flex'} {brief.gsm || orderItem?.paperGsm ? `(${brief.gsm || orderItem?.paperGsm} GSM)` : ''}
+                              {brief.material ||
+                                orderItem?.paperType ||
+                                "Standard Flex"}{" "}
+                              {brief.gsm || orderItem?.paperGsm
+                                ? `(${brief.gsm || orderItem?.paperGsm} GSM)`
+                                : ""}
                             </span>
                           </div>
 
@@ -393,8 +461,16 @@ export default function ProductionReleaseCenterPage() {
                           <div className="flex justify-between py-1">
                             <span className="text-slate-500">Finishing:</span>
                             <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
-                              {(brief.finishing?.length ? brief.finishing : orderItem?.finishing?.length ? orderItem.finishing : ['Standard']).map((f, i) => (
-                                <span key={i} className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-700 font-medium border border-slate-200">
+                              {(brief.finishing?.length
+                                ? brief.finishing
+                                : orderItem?.finishing?.length
+                                  ? orderItem.finishing
+                                  : ["Standard"]
+                              ).map((f, i) => (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-700 font-medium border border-slate-200"
+                                >
                                   {f}
                                 </span>
                               ))}
@@ -415,8 +491,12 @@ export default function ProductionReleaseCenterPage() {
                           onClick={(e) => handleCopySha(sha, e)}
                           className="px-2 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-semibold shrink-0 flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          {copiedHash === sha ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                          {copiedHash === sha ? 'Copied' : 'Copy'}
+                          {copiedHash === sha ? (
+                            <Check className="w-3 h-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                          {copiedHash === sha ? "Copied" : "Copy"}
                         </button>
                       </div>
 
@@ -425,9 +505,16 @@ export default function ProductionReleaseCenterPage() {
                         {emailHistory.length > 0 ? (
                           <div className="flex items-center gap-1.5 text-emerald-700 font-medium text-[11px]">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Dispatched to <strong>{emailHistory[0].to}</strong> ({new Date(emailHistory[0].sentAt).toLocaleDateString()})
+                            Dispatched to <strong>{emailHistory[0].to}</strong>{" "}
+                            (
+                            {new Date(
+                              emailHistory[0].sentAt,
+                            ).toLocaleDateString()}
+                            )
                             {emailHistory.length > 1 && (
-                              <span className="text-slate-500 font-normal">+{emailHistory.length - 1} more</span>
+                              <span className="text-slate-500 font-normal">
+                                +{emailHistory.length - 1} more
+                              </span>
                             )}
                           </div>
                         ) : (
@@ -468,7 +555,7 @@ export default function ProductionReleaseCenterPage() {
       {/* MODAL 1: VIEW FINAL DESIGN PREVIEW & AUDIT */}
       {previewProject && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl flex flex-col text-slate-800">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl flex flex-col text-slate-800">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
               <div className="flex items-center gap-2.5">
@@ -476,7 +563,9 @@ export default function ProductionReleaseCenterPage() {
                   <Lock className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Final Production Locked Artwork</h3>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Final Production Locked Artwork
+                  </h3>
                   <div className="text-xs text-slate-500 font-mono">
                     {previewProject.projectNumber} • {previewProject.title}
                   </div>
@@ -494,14 +583,20 @@ export default function ProductionReleaseCenterPage() {
             <div className="p-6 space-y-6">
               {/* Visual Preview */}
               <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 flex flex-col items-center justify-center min-h-[320px]">
-                {previewProject.currentVersionId?.proofAssetId?.fileUrl || previewProject.briefAttachments?.[0]?.fileUrl ? (
+                {previewProject.currentVersionId?.proofAssetId?.fileUrl ||
+                previewProject.briefAttachments?.[0]?.fileUrl ? (
                   <img
-                    src={previewProject.currentVersionId?.proofAssetId?.fileUrl || previewProject.briefAttachments?.[0]?.fileUrl}
+                    src={
+                      previewProject.currentVersionId?.proofAssetId?.fileUrl ||
+                      previewProject.briefAttachments?.[0]?.fileUrl
+                    }
                     alt="Final Approved Artwork"
                     className="max-h-[480px] w-auto object-contain rounded-lg shadow-sm"
                   />
                 ) : (
-                  <div className="text-center text-slate-500">No artwork visual available</div>
+                  <div className="text-center text-slate-500">
+                    No artwork visual available
+                  </div>
                 )}
               </div>
 
@@ -513,14 +608,20 @@ export default function ProductionReleaseCenterPage() {
                     100% Client Approved &amp; Production Locked
                   </div>
                   <div className="text-xs text-slate-600 font-mono mt-0.5 break-all">
-                    SHA-256: {previewProject.currentVersionId?.printReadyAssetId?.sha256 || previewProject.currentVersionId?.sha256 || 'IMMUTABLE_HASH_PASS'}
+                    SHA-256:{" "}
+                    {previewProject.currentVersionId?.printReadyAssetId
+                      ?.sha256 ||
+                      previewProject.currentVersionId?.sha256 ||
+                      "IMMUTABLE_HASH_PASS"}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   {previewProject.currentVersionId?.proofAssetId?.fileUrl && (
                     <a
-                      href={previewProject.currentVersionId.proofAssetId.fileUrl}
+                      href={
+                        previewProject.currentVersionId.proofAssetId.fileUrl
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
@@ -529,9 +630,13 @@ export default function ProductionReleaseCenterPage() {
                       Download Proof
                     </a>
                   )}
-                  {previewProject.currentVersionId?.printReadyAssetId?.fileUrl && (
+                  {previewProject.currentVersionId?.printReadyAssetId
+                    ?.fileUrl && (
                     <a
-                      href={previewProject.currentVersionId.printReadyAssetId.fileUrl}
+                      href={
+                        previewProject.currentVersionId.printReadyAssetId
+                          .fileUrl
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
@@ -547,15 +652,23 @@ export default function ProductionReleaseCenterPage() {
               <div>
                 <h4 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                   <Mail className="w-4 h-4 text-slate-500" />
-                  Dispatched Production Emails ({previewProject.dispatchedEmails?.length || 0})
+                  Dispatched Production Emails (
+                  {previewProject.dispatchedEmails?.length || 0})
                 </h4>
                 {previewProject.dispatchedEmails?.length ? (
                   <div className="space-y-2">
                     {previewProject.dispatchedEmails.map((em, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between"
+                      >
                         <div>
-                          <div className="font-bold text-slate-900">{em.to}</div>
-                          <div className="text-slate-500 text-[11px]">{em.subject}</div>
+                          <div className="font-bold text-slate-900">
+                            {em.to}
+                          </div>
+                          <div className="text-slate-500 text-[11px]">
+                            {em.subject}
+                          </div>
                         </div>
                         <div className="text-right">
                           <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
@@ -569,7 +682,10 @@ export default function ProductionReleaseCenterPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-500 italic">No production emails have been dispatched for this artwork yet.</p>
+                  <p className="text-xs text-slate-500 italic">
+                    No production emails have been dispatched for this artwork
+                    yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -601,7 +717,7 @@ export default function ProductionReleaseCenterPage() {
       {/* MODAL 2: SEND PRODUCTION EMAIL COMPOSER */}
       {emailModalProject && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl flex flex-col text-slate-800">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl flex flex-col text-slate-800">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur z-10">
               <div className="flex items-center gap-2.5">
@@ -609,9 +725,12 @@ export default function ProductionReleaseCenterPage() {
                   <Mail className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Send Production Artwork &amp; Specs</h3>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Send Production Artwork &amp; Specs
+                  </h3>
                   <div className="text-xs text-slate-500">
-                    Dispatch to printing vendor, machine floor, or client for {emailModalProject.projectNumber}
+                    Dispatch to printing vendor, machine floor, or client for{" "}
+                    {emailModalProject.projectNumber}
                   </div>
                 </div>
               </div>
@@ -627,12 +746,19 @@ export default function ProductionReleaseCenterPage() {
             <form onSubmit={handleSendEmail} className="p-6 space-y-4">
               {/* Quick Recipient Presets */}
               <div>
-                <label className="text-xs text-slate-500 font-semibold block mb-1.5">Quick Presets:</label>
+                <label className="text-xs text-slate-500 font-semibold block mb-1.5">
+                  Quick Presets:
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {emailModalProject.customerId?.email && (
                     <button
                       type="button"
-                      onClick={() => setEmailForm({ ...emailForm, to: emailModalProject.customerId.email })}
+                      onClick={() =>
+                        setEmailForm({
+                          ...emailForm,
+                          to: emailModalProject.customerId.email,
+                        })
+                      }
                       className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                     >
                       <User className="w-3 h-3 text-blue-600" />
@@ -641,7 +767,12 @@ export default function ProductionReleaseCenterPage() {
                   )}
                   <button
                     type="button"
-                    onClick={() => setEmailForm({ ...emailForm, to: 'press-floor@pressprinting.com' })}
+                    onClick={() =>
+                      setEmailForm({
+                        ...emailForm,
+                        to: "press-floor@pressprinting.com",
+                      })
+                    }
                     className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Printer className="w-3 h-3 text-cyan-600" />
@@ -649,7 +780,12 @@ export default function ProductionReleaseCenterPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEmailForm({ ...emailForm, to: 'vendor-printing@vendor.com' })}
+                    onClick={() =>
+                      setEmailForm({
+                        ...emailForm,
+                        to: "vendor-printing@vendor.com",
+                      })
+                    }
                     className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     <Building className="w-3 h-3 text-purple-600" />
@@ -668,7 +804,9 @@ export default function ProductionReleaseCenterPage() {
                   required
                   placeholder="e.g. vendor@printpress.com, client@example.com"
                   value={emailForm.to}
-                  onChange={(e) => setEmailForm({ ...emailForm, to: e.target.value })}
+                  onChange={(e) =>
+                    setEmailForm({ ...emailForm, to: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-mono"
                 />
               </div>
@@ -682,7 +820,9 @@ export default function ProductionReleaseCenterPage() {
                   type="text"
                   placeholder="e.g. production-lead@crmprinting.com"
                   value={emailForm.cc}
-                  onChange={(e) => setEmailForm({ ...emailForm, cc: e.target.value })}
+                  onChange={(e) =>
+                    setEmailForm({ ...emailForm, cc: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-mono"
                 />
               </div>
@@ -696,7 +836,9 @@ export default function ProductionReleaseCenterPage() {
                   type="text"
                   required
                   value={emailForm.subject}
-                  onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                  onChange={(e) =>
+                    setEmailForm({ ...emailForm, subject: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-semibold"
                 />
               </div>
@@ -709,7 +851,9 @@ export default function ProductionReleaseCenterPage() {
                 <textarea
                   rows={4}
                   value={emailForm.message}
-                  onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+                  onChange={(e) =>
+                    setEmailForm({ ...emailForm, message: e.target.value })
+                  }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
                   placeholder="Add any specific instructions, rush delivery deadlines, or cutting guidelines..."
                 />
@@ -721,30 +865,52 @@ export default function ProductionReleaseCenterPage() {
                   <input
                     type="checkbox"
                     checked={emailForm.includeSpecs}
-                    onChange={(e) => setEmailForm({ ...emailForm, includeSpecs: e.target.checked })}
+                    onChange={(e) =>
+                      setEmailForm({
+                        ...emailForm,
+                        includeSpecs: e.target.checked,
+                      })
+                    }
                     className="rounded border-slate-300 text-blue-600 focus:ring-0"
                   />
-                  <span>Attach 7-Point Technical Specifications (Dimensions, GSM, Substrate, Finishing)</span>
+                  <span>
+                    Attach 7-Point Technical Specifications (Dimensions, GSM,
+                    Substrate, Finishing)
+                  </span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
                   <input
                     type="checkbox"
                     checked={emailForm.includeDownloadLink}
-                    onChange={(e) => setEmailForm({ ...emailForm, includeDownloadLink: e.target.checked })}
+                    onChange={(e) =>
+                      setEmailForm({
+                        ...emailForm,
+                        includeDownloadLink: e.target.checked,
+                      })
+                    }
                     className="rounded border-slate-300 text-blue-600 focus:ring-0"
                   />
-                  <span>Include Direct Download Link for Master Print-Ready Artwork</span>
+                  <span>
+                    Include Direct Download Link for Master Print-Ready Artwork
+                  </span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
                   <input
                     type="checkbox"
                     checked={emailForm.includeSha256}
-                    onChange={(e) => setEmailForm({ ...emailForm, includeSha256: e.target.checked })}
+                    onChange={(e) =>
+                      setEmailForm({
+                        ...emailForm,
+                        includeSha256: e.target.checked,
+                      })
+                    }
                     className="rounded border-slate-300 text-blue-600 focus:ring-0"
                   />
-                  <span>Include Cryptographic SHA-256 Checksum Fingerprint</span>
+                  <span>
+                    Include Cryptographic SHA-256 Checksum Fingerprint
+                  </span>
                 </label>
               </div>
 
@@ -782,4 +948,3 @@ export default function ProductionReleaseCenterPage() {
     </div>
   );
 }
-

@@ -203,8 +203,7 @@ export default function OrdersBillingPage() {
         .includes(searchQuery.toLowerCase());
 
     const ds = (
-      o.designStatus ||
-      (o.assignedDesignerId ? "IN_DESIGN" : "PENDING_DESIGN")
+      o.designStatus || (o.assignedDesignerId ? "IN_DESIGN" : "PENDING_DESIGN")
     ).toUpperCase();
 
     const matchesDesignStatus =
@@ -270,7 +269,8 @@ export default function OrdersBillingPage() {
           {/* Specific Design Status Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
-              <Palette className="w-3.5 h-3.5 text-indigo-600" /> Specific Design Status:
+              <Palette className="w-3.5 h-3.5 text-indigo-600" /> Specific
+              Design Status:
             </span>
             {[
               { id: "ALL", label: "All Orders" },
@@ -303,7 +303,7 @@ export default function OrdersBillingPage() {
               Loading Orders...
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="h-64 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 gap-2 bg-white shadow-xs">
+            <div className="h-64 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center text-slate-400 gap-2 bg-white shadow-xs">
               <ShoppingBag className="w-8 h-8 text-slate-300" />
               <p className="text-sm font-semibold text-slate-600">
                 No orders found
@@ -321,7 +321,7 @@ export default function OrdersBillingPage() {
                 return (
                   <div
                     key={ord._id}
-                    className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-md transition-all space-y-4"
+                    className="p-5 rounded-md bg-white border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-md transition-all space-y-4"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
@@ -346,15 +346,21 @@ export default function OrdersBillingPage() {
                     <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px]">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <Palette className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                        <span className="text-slate-500 font-medium">Designer:</span>
+                        <span className="text-slate-500 font-medium">
+                          Designer:
+                        </span>
                         <strong className="text-slate-800 font-bold truncate">
-                          {ord.assignedDesignerId?.name || (typeof ord.assignedDesignerId === 'string' ? 'Assigned' : 'Not Assigned')}
+                          {ord.assignedDesignerId?.name ||
+                            (typeof ord.assignedDesignerId === "string"
+                              ? "Assigned"
+                              : "Not Assigned")}
                         </strong>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span
                           className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wider ${
-                            ord.designStatus === "DESIGN_APPROVED" || ord.designStatus === "COMPLETED"
+                            ord.designStatus === "DESIGN_APPROVED" ||
+                            ord.designStatus === "COMPLETED"
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                               : ord.designStatus === "IN_DESIGN"
                                 ? "bg-blue-100 text-blue-800 border border-blue-200"
@@ -365,7 +371,10 @@ export default function OrdersBillingPage() {
                                     : "bg-amber-100 text-amber-800 border border-amber-200"
                           }`}
                         >
-                          {ord.designStatus?.replace(/_/g, " ") || (ord.assignedDesignerId ? "IN DESIGN" : "PENDING DESIGN")}
+                          {ord.designStatus?.replace(/_/g, " ") ||
+                            (ord.assignedDesignerId
+                              ? "IN DESIGN"
+                              : "PENDING DESIGN")}
                         </span>
                         <button
                           type="button"
@@ -396,7 +405,8 @@ export default function OrdersBillingPage() {
                     <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500 font-medium flex items-center gap-1">
-                          <Layers className="w-3.5 h-3.5 text-blue-600" /> Specs:
+                          <Layers className="w-3.5 h-3.5 text-blue-600" />{" "}
+                          Specs:
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-slate-800">
@@ -478,10 +488,16 @@ export default function OrdersBillingPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const cId = ord.customerId?._id || ord.customerId || '';
-                          const phone = ord.customerId?.phone || ord.customerSnapshot?.phone || '';
-                          const orderNo = ord.orderNumber || '';
-                          router.push(`/dashboard/whatsapp?customerId=${cId}&phone=${phone}&orderNo=${orderNo}&template=order_update`);
+                          const cId =
+                            ord.customerId?._id || ord.customerId || "";
+                          const phone =
+                            ord.customerId?.phone ||
+                            ord.customerSnapshot?.phone ||
+                            "";
+                          const orderNo = ord.orderNumber || "";
+                          router.push(
+                            `/dashboard/whatsapp?customerId=${cId}&phone=${phone}&orderNo=${orderNo}&template=order_update`,
+                          );
                         }}
                         className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-colors cursor-pointer"
                         title="Contact Customer via WhatsApp"
@@ -537,9 +553,7 @@ export default function OrdersBillingPage() {
                         onClick={() => {
                           setSelectedOrder(ord);
                           setPaymentAmountRupees(
-                            balanceRupees > 0
-                              ? balanceRupees.toFixed(2)
-                              : "0",
+                            balanceRupees > 0 ? balanceRupees.toFixed(2) : "0",
                           );
                           setShowPaymentModal(true);
                         }}
@@ -560,7 +574,7 @@ export default function OrdersBillingPage() {
       {/* Record Payment Modal */}
       {showPaymentModal && selectedOrder && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-blue-600" />
@@ -579,28 +593,48 @@ export default function OrdersBillingPage() {
             {/* Order Payment Summary */}
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-slate-500 font-medium">Order Number:</span>
+                <span className="text-slate-500 font-medium">
+                  Order Number:
+                </span>
                 <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                   {selectedOrder.orderNumber}
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 text-center">
                 <div className="bg-white p-2 rounded-lg border border-slate-100">
-                  <span className="text-[10px] text-slate-400 font-medium block">Total</span>
+                  <span className="text-[10px] text-slate-400 font-medium block">
+                    Total
+                  </span>
                   <strong className="text-slate-800 font-bold text-xs">
-                    ₹{((selectedOrder.grandTotalPaise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹
+                    {(
+                      (selectedOrder.grandTotalPaise || 0) / 100
+                    ).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </strong>
                 </div>
                 <div className="bg-white p-2 rounded-lg border border-slate-100">
-                  <span className="text-[10px] text-emerald-600 font-medium block">Paid</span>
+                  <span className="text-[10px] text-emerald-600 font-medium block">
+                    Paid
+                  </span>
                   <strong className="text-emerald-700 font-bold text-xs">
-                    ₹{(((selectedOrder.grandTotalPaise || 0) - (selectedOrder.balancePaise || 0)) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹
+                    {(
+                      ((selectedOrder.grandTotalPaise || 0) -
+                        (selectedOrder.balancePaise || 0)) /
+                      100
+                    ).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </strong>
                 </div>
                 <div className="bg-blue-50/80 p-2 rounded-lg border border-blue-200/60">
-                  <span className="text-[10px] text-blue-700 font-medium block">Balance Due</span>
+                  <span className="text-[10px] text-blue-700 font-medium block">
+                    Balance Due
+                  </span>
                   <strong className="text-blue-800 font-black text-xs">
-                    ₹{((selectedOrder.balancePaise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹
+                    {((selectedOrder.balancePaise || 0) / 100).toLocaleString(
+                      "en-IN",
+                      { minimumFractionDigits: 2 },
+                    )}
                   </strong>
                 </div>
               </div>
@@ -620,7 +654,8 @@ export default function OrdersBillingPage() {
                     }}
                     className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline"
                   >
-                    Set Full Balance (₹{((selectedOrder.balancePaise || 0) / 100).toFixed(2)})
+                    Set Full Balance (₹
+                    {((selectedOrder.balancePaise || 0) / 100).toFixed(2)})
                   </button>
                 </div>
                 <input
@@ -687,7 +722,7 @@ export default function OrdersBillingPage() {
       {/* Edit Specifications Modal (Salesperson Designer Handoff) */}
       {showSpecsModal && editingOrder && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-md w-full max-w-xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2 text-blue-600">
                 <Layers className="w-5 h-5" />
@@ -1009,10 +1044,11 @@ export default function OrdersBillingPage() {
                 </div>
               </div>
 
-               <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2">
                 {isSalesRole && (
                   <span className="text-[11px] text-slate-500 font-medium italic">
-                    Sales View-Only: Technical specifications are managed by design &amp; pre-press.
+                    Sales View-Only: Technical specifications are managed by
+                    design &amp; pre-press.
                   </span>
                 )}
                 <div className="flex items-center gap-3 ml-auto">
@@ -1077,7 +1113,9 @@ export default function OrdersBillingPage() {
             {loadingDesignDetails ? (
               <div className="py-12 flex flex-col items-center justify-center gap-2 text-xs text-slate-500">
                 <RefreshCw className="w-6 h-6 text-indigo-600 animate-spin" />
-                <span>Fetching live design project details &amp; proofs...</span>
+                <span>
+                  Fetching live design project details &amp; proofs...
+                </span>
               </div>
             ) : (
               <>
@@ -1170,7 +1208,7 @@ export default function OrdersBillingPage() {
 
                   return (
                     <div
-                      className={`p-4 rounded-2xl border ${currentInfo.bg} space-y-1`}
+                      className={`p-4 rounded-md border ${currentInfo.bg} space-y-1`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
@@ -1188,7 +1226,7 @@ export default function OrdersBillingPage() {
                 })()}
 
                 {/* Quick Customer Contact Section */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-blue-600" /> Customer
@@ -1226,18 +1264,20 @@ export default function OrdersBillingPage() {
                           selectedDesignOrder.customerId?.email ||
                           selectedDesignOrder.customerSnapshot?.email;
 
-                          <div className="flex flex-wrap sm:justify-end gap-2">
-                            {phone && (
-                              <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-mono text-xs flex items-center gap-1.5 border border-slate-200">
-                                <Phone className="w-3.5 h-3.5 text-slate-400" /> {phone}
-                              </span>
-                            )}
-                            {email && (
-                              <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs flex items-center gap-1.5 border border-slate-200">
-                                <Mail className="w-3.5 h-3.5 text-slate-400" /> {email}
-                              </span>
-                            )}
-                          </div>
+                        <div className="flex flex-wrap sm:justify-end gap-2">
+                          {phone && (
+                            <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-mono text-xs flex items-center gap-1.5 border border-slate-200">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />{" "}
+                              {phone}
+                            </span>
+                          )}
+                          {email && (
+                            <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs flex items-center gap-1.5 border border-slate-200">
+                              <Mail className="w-3.5 h-3.5 text-slate-400" />{" "}
+                              {email}
+                            </span>
+                          )}
+                        </div>;
                       })()}
                     </div>
                   </div>
@@ -1245,7 +1285,7 @@ export default function OrdersBillingPage() {
 
                 {/* Assigned Designer & Proof Deadline */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-1 shadow-2xs">
+                  <div className="p-3.5 rounded-md bg-white border border-slate-200 space-y-1 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       Assigned Designer Studio
                     </span>
@@ -1263,7 +1303,7 @@ export default function OrdersBillingPage() {
                     )}
                   </div>
 
-                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-1 shadow-2xs">
+                  <div className="p-3.5 rounded-md bg-white border border-slate-200 space-y-1 shadow-2xs">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       Target Proof Deadline
                     </span>
@@ -1295,7 +1335,7 @@ export default function OrdersBillingPage() {
                 {/* Proofing Link & Latest Version */}
                 {designProjectDetails?.versions &&
                 designProjectDetails.versions.length > 0 ? (
-                  <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-3">
+                  <div className="p-4 rounded-md bg-purple-50/70 border border-purple-200 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Eye className="w-4 h-4 text-purple-600" />
@@ -1311,8 +1351,8 @@ export default function OrdersBillingPage() {
 
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                       <p className="text-[11px] text-purple-800">
-                        Share the live proof link with your customer to view design
-                        on desktop or mobile.
+                        Share the live proof link with your customer to view
+                        design on desktop or mobile.
                       </p>
                       <Link
                         href={`/dashboard/design?orderId=${selectedDesignOrder._id}`}
@@ -1328,11 +1368,11 @@ export default function OrdersBillingPage() {
                 {/* Client Revisions List (if any) */}
                 {designProjectDetails?.revisions &&
                 designProjectDetails.revisions.length > 0 ? (
-                  <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2">
+                  <div className="p-4 rounded-md bg-rose-50/70 border border-rose-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <RefreshCw className="w-3.5 h-3.5 text-rose-600" /> Client
-                        Revision History (
+                        <RefreshCw className="w-3.5 h-3.5 text-rose-600" />{" "}
+                        Client Revision History (
                         {designProjectDetails.revisions.length})
                       </span>
                       <span className="text-[10px] text-rose-700 font-semibold">
@@ -1365,7 +1405,7 @@ export default function OrdersBillingPage() {
                 ) : null}
 
                 {/* Technical Brief Specs Snapshot */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-2 text-xs">
                   <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
                     Technical Specifications &amp; Notes
                   </span>

@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Sidebar from '@/app/components/sidebar';
-import Navbar from '@/app/components/navbar';
-import { api } from '@/lib/api';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  Suspense,
+} from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Sidebar from "@/app/components/sidebar";
+import Navbar from "@/app/components/navbar";
+import { api } from "@/lib/api";
 import {
   normalizeWhatsAppNumber,
   isValidWhatsAppNumber,
@@ -13,7 +19,7 @@ import {
   openWhatsAppChat,
   MESSAGE_TEMPLATES,
   generateTemplateMessage,
-} from '@/lib/whatsappUtils';
+} from "@/lib/whatsappUtils";
 import {
   MessageCircle,
   Search,
@@ -31,25 +37,25 @@ import {
   Send,
   X,
   Plus,
-} from 'lucide-react';
+} from "lucide-react";
 
 function WhatsAppCommunicationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   // URL Query Parameters
-  const customerIdParam = searchParams.get('customerId') || '';
-  const leadIdParam = searchParams.get('leadId') || '';
-  const initialPhoneParam = searchParams.get('phone') || '';
-  const initialQuoteNo = searchParams.get('quoteNo') || '';
-  const initialOrderNo = searchParams.get('orderNo') || '';
-  const initialTemplate = searchParams.get('template') || 'quotation_followup';
+  const customerIdParam = searchParams.get("customerId") || "";
+  const leadIdParam = searchParams.get("leadId") || "";
+  const initialPhoneParam = searchParams.get("phone") || "";
+  const initialQuoteNo = searchParams.get("quoteNo") || "";
+  const initialOrderNo = searchParams.get("orderNo") || "";
+  const initialTemplate = searchParams.get("template") || "quotation_followup";
 
   // Current logged in user info
   const [currentUser, setCurrentUser] = useState(null);
 
   // Search & Customers List
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [allContacts, setAllContacts] = useState([]);
@@ -61,31 +67,31 @@ function WhatsAppCommunicationContent() {
 
   // Message Composer State
   const [selectedTemplate, setSelectedTemplate] = useState(initialTemplate);
-  const [messageContent, setMessageContent] = useState('');
+  const [messageContent, setMessageContent] = useState("");
   const [quoteNo, setQuoteNo] = useState(initialQuoteNo);
   const [orderNo, setOrderNo] = useState(initialOrderNo);
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
 
   // UI Feedback States
   const [copiedNumber, setCopiedNumber] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState(false);
-  const [validationError, setValidationError] = useState('');
-  const [lastOpenedUrl, setLastOpenedUrl] = useState('');
+  const [validationError, setValidationError] = useState("");
+  const [lastOpenedUrl, setLastOpenedUrl] = useState("");
   const [popupBlocked, setPopupBlocked] = useState(false);
   const [chatOpenedSuccess, setChatOpenedSuccess] = useState(false);
 
   // CRM Conversation Note State
-  const [noteType, setNoteType] = useState('WhatsApp');
-  const [conversationNote, setConversationNote] = useState('');
-  const [nextFollowupDate, setNextFollowupDate] = useState('');
+  const [noteType, setNoteType] = useState("WhatsApp");
+  const [conversationNote, setConversationNote] = useState("");
+  const [nextFollowupDate, setNextFollowupDate] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [noteSavedSuccess, setNoteSavedSuccess] = useState(false);
 
   // 1. Load current logged-in user details
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem('user');
+        const stored = localStorage.getItem("user");
         if (stored) {
           setCurrentUser(JSON.parse(stored));
         }
@@ -100,43 +106,44 @@ function WhatsAppCommunicationContent() {
       try {
         setLoadingInitial(true);
         const [leadsRes, customersRes] = await Promise.allSettled([
-          api.get('/leads?limit=50', { silent: true }),
-          api.get('/customers?limit=50', { silent: true }),
+          api.get("/leads?limit=50", { silent: true }),
+          api.get("/customers?limit=50", { silent: true }),
         ]);
 
         const combined = [];
 
-        if (leadsRes.status === 'fulfilled' && leadsRes.value?.data) {
+        if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
           const lList = Array.isArray(leadsRes.value.data)
             ? leadsRes.value.data
             : leadsRes.value.data.leads || [];
           lList.forEach((l) => {
             combined.push({
               _id: l._id,
-              type: 'lead',
-              name: l.contactName || l.businessName || 'Lead Contact',
-              company: l.companyName || l.businessName || '',
-              phone: l.phone || l.contactPhone || '',
-              whatsappNumber: l.phone || l.contactPhone || '',
-              status: l.status || 'NEW',
+              type: "lead",
+              name: l.contactName || l.businessName || "Lead Contact",
+              company: l.companyName || l.businessName || "",
+              phone: l.phone || l.contactPhone || "",
+              whatsappNumber: l.phone || l.contactPhone || "",
+              status: l.status || "NEW",
               leadId: l._id,
             });
           });
         }
 
-        if (customersRes.status === 'fulfilled' && customersRes.value?.data) {
+        if (customersRes.status === "fulfilled" && customersRes.value?.data) {
           const cList = Array.isArray(customersRes.value.data)
             ? customersRes.value.data
             : customersRes.value.data.customers || [];
           cList.forEach((c) => {
             combined.push({
               _id: c._id,
-              type: 'customer',
-              name: c.displayName || c.name || c.contactPersonName || 'Customer',
-              company: c.companyName || '',
-              phone: c.phone || c.phoneNormalized || '',
-              whatsappNumber: c.phone || c.phoneNormalized || '',
-              status: c.status || 'ACTIVE',
+              type: "customer",
+              name:
+                c.displayName || c.name || c.contactPersonName || "Customer",
+              company: c.companyName || "",
+              phone: c.phone || c.phoneNormalized || "",
+              whatsappNumber: c.phone || c.phoneNormalized || "",
+              status: c.status || "ACTIVE",
               customerId: c._id,
             });
           });
@@ -166,10 +173,15 @@ function WhatsAppCommunicationContent() {
       if (!targetId) return;
 
       // Check if already in cached list
-      const matched = allContacts.find((c) => c._id === targetId || c.customerId === targetId || c.leadId === targetId);
+      const matched = allContacts.find(
+        (c) =>
+          c._id === targetId ||
+          c.customerId === targetId ||
+          c.leadId === targetId,
+      );
       if (matched && isMounted) {
         setSelectedCustomer(matched);
-        setManualPhone(matched.phone || '');
+        setManualPhone(matched.phone || "");
         return;
       }
 
@@ -181,29 +193,37 @@ function WhatsAppCommunicationContent() {
           if (lead && isMounted) {
             const item = {
               _id: lead._id,
-              type: 'lead',
-              name: lead.contactName || lead.businessName || 'Lead Contact',
-              company: lead.companyName || lead.businessName || '',
+              type: "lead",
+              name: lead.contactName || lead.businessName || "Lead Contact",
+              company: lead.companyName || lead.businessName || "",
               phone: lead.phone || lead.contactPhone || initialPhoneParam,
-              whatsappNumber: lead.phone || lead.contactPhone || initialPhoneParam,
-              status: lead.status || 'NEW',
+              whatsappNumber:
+                lead.phone || lead.contactPhone || initialPhoneParam,
+              status: lead.status || "NEW",
               leadId: lead._id,
             };
             setSelectedCustomer(item);
             setManualPhone(item.phone);
           }
         } else if (customerIdParam) {
-          const res = await api.get(`/customers/${customerIdParam}`, { silent: true });
+          const res = await api.get(`/customers/${customerIdParam}`, {
+            silent: true,
+          });
           const cust = res?.data;
           if (cust && isMounted) {
             const item = {
               _id: cust._id,
-              type: 'customer',
-              name: cust.displayName || cust.name || cust.contactPersonName || 'Customer',
-              company: cust.companyName || '',
+              type: "customer",
+              name:
+                cust.displayName ||
+                cust.name ||
+                cust.contactPersonName ||
+                "Customer",
+              company: cust.companyName || "",
               phone: cust.phone || cust.phoneNormalized || initialPhoneParam,
-              whatsappNumber: cust.phone || cust.phoneNormalized || initialPhoneParam,
-              status: cust.status || 'ACTIVE',
+              whatsappNumber:
+                cust.phone || cust.phoneNormalized || initialPhoneParam,
+              status: cust.status || "ACTIVE",
               customerId: cust._id,
             };
             setSelectedCustomer(item);
@@ -215,9 +235,9 @@ function WhatsAppCommunicationContent() {
         if (initialPhoneParam && isMounted) {
           setSelectedCustomer({
             _id: targetId,
-            type: 'customer',
-            name: 'Customer',
-            company: '',
+            type: "customer",
+            name: "Customer",
+            company: "",
             phone: initialPhoneParam,
             whatsappNumber: initialPhoneParam,
           });
@@ -235,9 +255,9 @@ function WhatsAppCommunicationContent() {
   // 4. Update message content when template or customer details change
   const refreshMessageFromTemplate = useCallback(
     (tplId, customCustomer = selectedCustomer) => {
-      const repName = currentUser?.name || currentUser?.fullName || 'Ravinder';
-      const custName = customCustomer?.name || 'Valued Client';
-      const compName = customCustomer?.company || '';
+      const repName = currentUser?.name || currentUser?.fullName || "Ravinder";
+      const custName = customCustomer?.name || "Valued Client";
+      const compName = customCustomer?.company || "";
 
       const generated = generateTemplateMessage(tplId, {
         customerName: custName,
@@ -251,12 +271,12 @@ function WhatsAppCommunicationContent() {
 
       setMessageContent(generated);
     },
-    [selectedCustomer, currentUser, quoteNo, orderNo, amount, messageContent]
+    [selectedCustomer, currentUser, quoteNo, orderNo, amount, messageContent],
   );
 
   // Trigger template update when template, customer, quote, or order changes
   useEffect(() => {
-    if (selectedTemplate !== 'custom') {
+    if (selectedTemplate !== "custom") {
       refreshMessageFromTemplate(selectedTemplate);
     }
   }, [selectedTemplate, selectedCustomer?.name, quoteNo, orderNo, amount]);
@@ -272,7 +292,7 @@ function WhatsAppCommunicationContent() {
       (c) =>
         (c.name && c.name.toLowerCase().includes(q)) ||
         (c.company && c.company.toLowerCase().includes(q)) ||
-        (c.phone && c.phone.includes(q))
+        (c.phone && c.phone.includes(q)),
     );
     setSearchResults(filtered);
   }, [searchQuery, allContacts]);
@@ -280,17 +300,17 @@ function WhatsAppCommunicationContent() {
   // Handle selecting a customer from search
   const handleSelectCustomer = (item) => {
     setSelectedCustomer(item);
-    setManualPhone(item.phone || '');
-    setSearchQuery('');
+    setManualPhone(item.phone || "");
+    setSearchQuery("");
     setSearchResults([]);
-    setValidationError('');
+    setValidationError("");
     setChatOpenedSuccess(false);
     refreshMessageFromTemplate(selectedTemplate, item);
   };
 
   // Determine active phone number
   const activePhoneNumber = useMemo(() => {
-    return manualPhone || selectedCustomer?.phone || '';
+    return manualPhone || selectedCustomer?.phone || "";
   }, [manualPhone, selectedCustomer]);
 
   // Normalized phone
@@ -300,17 +320,19 @@ function WhatsAppCommunicationContent() {
 
   // Primary Action: Open WhatsApp Chat
   const handleOpenWhatsAppChat = () => {
-    setValidationError('');
+    setValidationError("");
     setPopupBlocked(false);
 
     if (!activePhoneNumber.trim()) {
-      setValidationError('Please select a customer or enter a valid phone number.');
+      setValidationError(
+        "Please select a customer or enter a valid phone number.",
+      );
       return;
     }
 
     if (!cleanNormalizedPhone || cleanNormalizedPhone.length < 10) {
       setValidationError(
-        `Invalid phone number "${activePhoneNumber}". Please provide a 10-digit number or international number with country code.`
+        `Invalid phone number "${activePhoneNumber}". Please provide a 10-digit number or international number with country code.`,
       );
       return;
     }
@@ -345,43 +367,46 @@ function WhatsAppCommunicationContent() {
   const handleSaveConversationNote = async (e) => {
     e.preventDefault();
     if (!conversationNote.trim()) {
-      alert('Please enter a conversation note before saving.');
+      alert("Please enter a conversation note before saving.");
       return;
     }
 
     setSavingNote(true);
     try {
-      const custName = selectedCustomer?.name || 'Customer';
+      const custName = selectedCustomer?.name || "Customer";
       const custPhone = cleanNormalizedPhone || activePhoneNumber;
       const targetLeadId = selectedCustomer?.leadId || selectedCustomer?._id;
 
       // 1. If lead is linked, save note to lead's remarks
-      if (selectedCustomer?.type === 'lead' && targetLeadId) {
+      if (selectedCustomer?.type === "lead" && targetLeadId) {
         await api.post(`/leads/${targetLeadId}/notes`, {
           content: `[${noteType}] ${conversationNote.trim()}`,
-          category: 'COMMUNICATION',
+          category: "COMMUNICATION",
           isPinned: false,
         });
       }
 
       // 2. If next follow-up date is provided, create a scheduled follow-up
       if (nextFollowupDate) {
-        await api.post('/followups', {
+        await api.post("/followups", {
           title: `${noteType} Follow-up with ${custName}`,
           scheduledAt: new Date(nextFollowupDate).toISOString(),
-          type: noteType.toUpperCase() === 'WHATSAPP' ? 'WHATSAPP' : 'CALL',
-          priority: 'MEDIUM',
+          type: noteType.toUpperCase() === "WHATSAPP" ? "WHATSAPP" : "CALL",
+          priority: "MEDIUM",
           notes: conversationNote.trim(),
-          leadId: selectedCustomer?.type === 'lead' ? targetLeadId : undefined,
-          customerId: selectedCustomer?.type === 'customer' ? selectedCustomer?._id : undefined,
+          leadId: selectedCustomer?.type === "lead" ? targetLeadId : undefined,
+          customerId:
+            selectedCustomer?.type === "customer"
+              ? selectedCustomer?._id
+              : undefined,
         });
       }
 
       setNoteSavedSuccess(true);
-      setConversationNote('');
+      setConversationNote("");
       setTimeout(() => setNoteSavedSuccess(false), 4000);
     } catch (err) {
-      alert(err.message || 'Failed to save conversation note to CRM');
+      alert(err.message || "Failed to save conversation note to CRM");
     } finally {
       setSavingNote(false);
     }
@@ -396,7 +421,7 @@ function WhatsAppCommunicationContent() {
 
         <div className="p-4 md:p-8 space-y-6 max-w-6xl mx-auto w-full">
           {/* PAGE HEADER */}
-          <div className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white p-5 md:p-6 rounded-md border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -407,14 +432,17 @@ function WhatsAppCommunicationContent() {
                 </h1>
               </div>
               <p className="text-xs text-slate-500 font-normal">
-                Communicate with customers through your existing WhatsApp account.
+                Communicate with customers through your existing WhatsApp
+                account.
               </p>
             </div>
 
             {/* STATUS INDICATOR (Ready — no fake "Connected") */}
             <div className="flex items-center gap-2 self-start sm:self-center px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              <span className="text-xs font-semibold text-slate-700">● Ready</span>
+              <span className="text-xs font-semibold text-slate-700">
+                ● Ready
+              </span>
             </div>
           </div>
 
@@ -423,7 +451,7 @@ function WhatsAppCommunicationContent() {
             {/* LEFT COLUMN: Customer Selection & Information (5 Cols) */}
             <div className="lg:col-span-5 space-y-5">
               {/* Search Customer Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
+              <div className="bg-white rounded-md p-5 border border-slate-200/90 shadow-xs space-y-4">
                 <div>
                   <label className="text-xs font-bold text-slate-800 block mb-1.5">
                     Search Customer
@@ -440,7 +468,7 @@ function WhatsAppCommunicationContent() {
                     {searchQuery && (
                       <button
                         type="button"
-                        onClick={() => setSearchQuery('')}
+                        onClick={() => setSearchQuery("")}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -460,11 +488,15 @@ function WhatsAppCommunicationContent() {
                         className="w-full p-2.5 text-left hover:bg-blue-50/60 transition flex items-center justify-between text-xs cursor-pointer"
                       >
                         <div className="min-w-0 pr-2">
-                          <p className="font-bold text-slate-800 truncate">{item.name}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{item.company || 'Direct Contact'}</p>
+                          <p className="font-bold text-slate-800 truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-[11px] text-slate-400 truncate">
+                            {item.company || "Direct Contact"}
+                          </p>
                         </div>
                         <span className="font-mono text-[11px] text-slate-600 shrink-0 font-medium">
-                          {item.phone || 'No Phone'}
+                          {item.phone || "No Phone"}
                         </span>
                       </button>
                     ))}
@@ -479,7 +511,9 @@ function WhatsAppCommunicationContent() {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                           Selected Customer
                         </span>
-                        <h3 className="font-bold text-slate-900 text-sm">{selectedCustomer.name}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm">
+                          {selectedCustomer.name}
+                        </h3>
                         {selectedCustomer.company && (
                           <p className="text-xs text-slate-600 flex items-center gap-1 font-medium">
                             <Building2 className="w-3 h-3 text-slate-400" />
@@ -492,7 +526,7 @@ function WhatsAppCommunicationContent() {
                         type="button"
                         onClick={() => {
                           setSelectedCustomer(null);
-                          setManualPhone('');
+                          setManualPhone("");
                         }}
                         className="text-[11px] text-slate-400 hover:text-slate-700 font-semibold"
                         title="Clear customer selection"
@@ -507,7 +541,7 @@ function WhatsAppCommunicationContent() {
                           Phone Number
                         </span>
                         <p className="font-mono text-slate-800 font-semibold mt-0.5">
-                          {selectedCustomer.phone || 'Not recorded'}
+                          {selectedCustomer.phone || "Not recorded"}
                         </p>
                       </div>
 
@@ -516,7 +550,9 @@ function WhatsAppCommunicationContent() {
                           WhatsApp Number
                         </span>
                         <p className="font-mono text-slate-900 font-bold mt-0.5 text-sm">
-                          {formatPhoneForDisplay(cleanNormalizedPhone || selectedCustomer.phone) || '—'}
+                          {formatPhoneForDisplay(
+                            cleanNormalizedPhone || selectedCustomer.phone,
+                          ) || "—"}
                         </p>
                       </div>
                     </div>
@@ -528,8 +564,12 @@ function WhatsAppCommunicationContent() {
                         disabled={!cleanNormalizedPhone}
                         className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
-                        {copiedNumber ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedNumber ? 'Copied' : 'Copy Number'}</span>
+                        {copiedNumber ? (
+                          <Check className="w-3 h-3 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                        <span>{copiedNumber ? "Copied" : "Copy Number"}</span>
                       </button>
                     </div>
                   </div>
@@ -552,7 +592,7 @@ function WhatsAppCommunicationContent() {
               </div>
 
               {/* Context Details (Quote / Order Ref) */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-3">
+              <div className="bg-white rounded-md p-5 border border-slate-200/90 shadow-xs space-y-3">
                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                   ERP Reference Tags (Optional)
                 </h3>
@@ -588,7 +628,7 @@ function WhatsAppCommunicationContent() {
             {/* RIGHT COLUMN: Message Composer & Main Action & Notes (7 Cols) */}
             <div className="lg:col-span-7 space-y-5">
               {/* MESSAGE COMPOSER */}
-              <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/90 shadow-xs space-y-4">
+              <div className="bg-white rounded-md p-5 md:p-6 border border-slate-200/90 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
                     Message Template
@@ -615,15 +655,21 @@ function WhatsAppCommunicationContent() {
                 {/* Editable Message Content Area */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5 text-xs">
-                    <span className="font-semibold text-slate-700">Message Content</span>
+                    <span className="font-semibold text-slate-700">
+                      Message Content
+                    </span>
                     <button
                       type="button"
                       onClick={handleCopyMessage}
                       disabled={!messageContent}
                       className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 font-medium cursor-pointer disabled:opacity-50"
                     >
-                      {copiedMessage ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                      <span>{copiedMessage ? 'Copied' : 'Copy Message'}</span>
+                      {copiedMessage ? (
+                        <Check className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
+                      <span>{copiedMessage ? "Copied" : "Copy Message"}</span>
                     </button>
                   </div>
 
@@ -632,15 +678,17 @@ function WhatsAppCommunicationContent() {
                     value={messageContent}
                     onChange={(e) => {
                       setMessageContent(e.target.value);
-                      if (selectedTemplate !== 'custom') {
-                        setSelectedTemplate('custom');
+                      if (selectedTemplate !== "custom") {
+                        setSelectedTemplate("custom");
                       }
                     }}
                     placeholder="Write your customer message here..."
                     className="w-full p-3.5 text-xs bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-sans"
                   />
                   <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                    <span>You can edit the message before opening WhatsApp.</span>
+                    <span>
+                      You can edit the message before opening WhatsApp.
+                    </span>
                     <span>{messageContent.length} characters</span>
                   </div>
                 </div>
@@ -656,7 +704,9 @@ function WhatsAppCommunicationContent() {
                 {/* Popup Blocked Warning & Direct Link Fallback */}
                 {popupBlocked && lastOpenedUrl && (
                   <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
-                    <p className="font-bold">Your browser blocked the popup tab.</p>
+                    <p className="font-bold">
+                      Your browser blocked the popup tab.
+                    </p>
                     <a
                       href={lastOpenedUrl}
                       target="_blank"
@@ -673,7 +723,10 @@ function WhatsAppCommunicationContent() {
                 {chatOpenedSuccess && (
                   <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>WhatsApp chat opened in a new tab. Send your message and record conversation notes below.</span>
+                    <span>
+                      WhatsApp chat opened in a new tab. Send your message and
+                      record conversation notes below.
+                    </span>
                   </div>
                 )}
 
@@ -688,19 +741,27 @@ function WhatsAppCommunicationContent() {
                     <span>Open WhatsApp Chat</span>
                   </button>
                   <p className="text-[11px] text-slate-400 text-center mt-2 font-medium">
-                    Opens standard WhatsApp Web/App via <span className="font-mono text-slate-500">https://wa.me/</span> link in a new tab.
+                    Opens standard WhatsApp Web/App via{" "}
+                    <span className="font-mono text-slate-500">
+                      https://wa.me/
+                    </span>{" "}
+                    link in a new tab.
                   </p>
                 </div>
               </div>
 
               {/* CRM CONVERSATION NOTES SECTION */}
-              <form onSubmit={handleSaveConversationNote} className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/90 shadow-xs space-y-4">
+              <form
+                onSubmit={handleSaveConversationNote}
+                className="bg-white rounded-md p-5 md:p-6 border border-slate-200/90 shadow-xs space-y-4"
+              >
                 <div>
                   <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     Add Conversation Note
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Record summary of communication into the CRM lead/customer history.
+                    Record summary of communication into the CRM lead/customer
+                    history.
                   </p>
                 </div>
 
@@ -761,7 +822,7 @@ function WhatsAppCommunicationContent() {
                     disabled={savingNote || !conversationNote.trim()}
                     className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-40 cursor-pointer"
                   >
-                    {savingNote ? 'Saving...' : 'Save Conversation'}
+                    {savingNote ? "Saving..." : "Save Conversation"}
                   </button>
                 </div>
               </form>
