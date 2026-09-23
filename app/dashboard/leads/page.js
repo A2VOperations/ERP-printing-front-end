@@ -17,20 +17,9 @@ import {
   Filter,
   MoreVertical,
   ChevronDown,
-  TrendingUp,
   Clock,
-  Building2,
   User,
-  AlertCircle,
-  X,
-  RefreshCw,
-  Trophy,
-  Target,
   Sparkles,
-  ArrowRight,
-  Eye,
-  Edit,
-  Trash2,
   Lock,
   UserCheck,
   MessageCircle,
@@ -183,19 +172,24 @@ export default function LeadsDashboardPage() {
       ["LOST", "NOT_INTERESTED"].includes(l.status),
     ).length;
 
+    const getLeadVal = (l) =>
+      Number(l.expectedValue) ||
+      Number(l.estimatedBudget) ||
+      Number(l.estimatedValue) ||
+      Number(l.legacyFinancials?.totalAmount) ||
+      0;
+
     const hotLeads = leads.filter(
       (l) => l.priority === "URGENT" || l.priority === "HIGH",
     );
-    const highTicketLeads = leads.filter(
-      (l) => (l.expectedValue || l.estimatedBudget || 0) >= 20000,
-    );
+    const highTicketLeads = leads.filter((l) => getLeadVal(l) >= 20000);
 
     const totalExpectedVal = leads.reduce(
-      (sum, l) => sum + (l.expectedValue || l.estimatedBudget || 0),
+      (sum, l) => sum + getLeadVal(l),
       0,
     );
     const highTicketTotalVal = highTicketLeads.reduce(
-      (sum, l) => sum + (l.expectedValue || l.estimatedBudget || 0),
+      (sum, l) => sum + getLeadVal(l),
       0,
     );
 
@@ -355,7 +349,12 @@ export default function LeadsDashboardPage() {
 
   // Lead scoring helper for visual badge
   const getLeadScore = (lead) => {
-    const val = lead.expectedValue || lead.estimatedBudget || 0;
+    const val =
+      Number(lead?.expectedValue) ||
+      Number(lead?.estimatedBudget) ||
+      Number(lead?.estimatedValue) ||
+      Number(lead?.legacyFinancials?.totalAmount) ||
+      0;
     if (lead.priority === "URGENT" || val >= 50000)
       return {
         score: 95,
@@ -394,9 +393,15 @@ export default function LeadsDashboardPage() {
 
   // Lead tag badge helper
   const getLeadTag = (lead) => {
+    const val =
+      Number(lead?.expectedValue) ||
+      Number(lead?.estimatedBudget) ||
+      Number(lead?.estimatedValue) ||
+      Number(lead?.legacyFinancials?.totalAmount) ||
+      0;
     if (lead.priority === "URGENT")
       return { label: "HOT LEAD", icon: Flame, color: "text-rose-600" };
-    if ((lead.expectedValue || lead.estimatedBudget || 0) >= 30000)
+    if (val >= 30000)
       return { label: "HIGH TICKET", icon: Star, color: "text-purple-600" };
     if (["INTERESTED", "FOLLOW_UP"].includes(lead.status))
       return { label: "IN COOKING", icon: CookingPot, color: "text-amber-600" };
@@ -788,7 +793,11 @@ export default function LeadsDashboardPage() {
                     const TagIcon = tagInfo.icon;
                     const scoreInfo = getLeadScore(lead);
                     const expVal =
-                      lead.expectedValue || lead.estimatedBudget || 0;
+                      Number(lead.expectedValue) ||
+                      Number(lead.estimatedBudget) ||
+                      Number(lead.estimatedValue) ||
+                      Number(lead.legacyFinancials?.totalAmount) ||
+                      0;
 
                     const nextFollowupItem = followups.find(
                       (f) =>

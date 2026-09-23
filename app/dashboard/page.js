@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
@@ -46,6 +46,7 @@ export default function DashboardPage() {
   // Live Data States
   const [leads, setLeads] = useState([]);
   const [followups, setFollowups] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -84,6 +85,7 @@ export default function DashboardPage() {
         usersRes,
         meRes,
         leadStatsRes,
+        activitiesRes,
       ] = await Promise.allSettled([
         api.get("/leads?limit=10"),
         api.get("/followups?limit=10"),
@@ -93,6 +95,7 @@ export default function DashboardPage() {
         api.get("/users"),
         api.get("/auth/me"),
         api.get("/leads/stats"),
+        api.get("/activities?limit=10"),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
@@ -103,6 +106,9 @@ export default function DashboardPage() {
       }
       if (followupsRes.status === "fulfilled" && followupsRes.value?.data) {
         setFollowups(followupsRes.value.data);
+      }
+      if (activitiesRes.status === "fulfilled" && activitiesRes.value?.data) {
+        setActivities(activitiesRes.value.data);
       }
       if (ordersRes.status === "fulfilled" && ordersRes.value?.data) {
         setOrders(ordersRes.value.data);
@@ -173,6 +179,10 @@ export default function DashboardPage() {
       setCreatingLead(true);
       const payload = {
         ...newLead,
+        contactName: newLead.name,
+        businessName: newLead.companyName,
+        expectedValue: Number(newLead.estimatedValue) || 0,
+        estimatedBudget: Number(newLead.estimatedValue) || 0,
         assignedToId: isManagerOrAdmin
           ? newLead.assignedToId || undefined
           : currentUser?._id || currentUser?.id || undefined,
@@ -320,6 +330,133 @@ export default function DashboardPage() {
   const pendingFollowupsCount = followups.filter(
     (f) => f.status === "PENDING",
   ).length;
+
+  const displayActivities = useMemo(() => {
+    const list = [];
+
+    // 1. Live activity events from database
+    if (activities && activities.length > 0) {
+      activities.forEach((act) => {
+        const time = act.occurredAt || act.createdAt;
+        let icon = Activity;
+        let iconBg = "bg-blue-50 text-blue-600";
+        let badgeColor = "bg-blue-50 text-blue-700 border-blue-200";
+        let link = "/dashboard/followups";
+
+        if (act.entityType === "PAYMENT" || act.eventType?.includes("PAYMENT")) {
+          icon = CreditCard;
+          iconBg = "bg-teal-50 text-teal-600";
+          badgeColor = "bg-teal-50 text-teal-700 border-teal-200";
+          link = "/dashboard/payments";
+        } else if (act.entityType === "ORDER" || act.eventType?.includes("ORDER")) {
+          icon = ShoppingBag;
+          iconBg = "bg-indigo-50 text-indigo-600";
+          badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200";
+          link = "/dashboard/orders";
+        } else if (act.entityType === "QUOTATION" || act.eventType?.includes("QUOTATION")) {
+          icon = FileText;
+          iconBg = "bg-purple-50 text-purple-600";
+          badgeColor = "bg-purple-50 text-purple-700 border-purple-200";
+          link = "/dashboard/quotations";
+        } else if (act.entityType === "LEAD" || act.eventType?.includes("LEAD")) {
+          icon = Users;
+          iconBg = "bg-blue-50 text-blue-600";
+          badgeColor = "bg-blue-50 text-blue-700 border-blue-200";
+          link = act.entityId ? `/dashboard/leads/${act.entityId}` : "/dashboard/leads";
+        }
+
+        let title = act.eventType
+          ? act.eventType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+          : "Activity Logged";
+
+        if (act.eventType === "LEAD_CREATED") title = "New Lead Created";
+        else if (act.eventType === "STATUS_CHANGED") title = "Status Updated";
+        else if (act.eventType === "QUOTATION_CREATED") title = "Quotation Drafted";
+        else if (act.eventType === "QUOTATION_SENT") title = "Quotation Dispatched";
+        else if (act.eventType === "QUOTATION_ACCEPTED") title = "Quotation Accepted";
+        else if (act.eventType === "ORDER_CREATED_FROM_QUOTATION" || act.eventType === "ORDER_CREATED") title = "Order Confirmed";
+        else if (act.eventType === "PAYMENT_RECORDED") title = "Payment Received";
+
+        list.push({
+          id: act._id || Math.random().toString(),
+          timestamp: new Date(time).getTime(),
+          timeStr: time
+            ? new Date(time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : "Today",
+          icon,
+          iconBg,
+          title,
+          description: act.summary || act.description || "Activity recorded in system",
+          badge: act.entityType || "SYSTEM",
+          badgeColor,
+          link,
+        });
+      });
+    }
+
+    // 2. Also incorporate any scheduled follow-ups
+    if (followups && followups.length > 0) {
+      followups.forEach((f) => {
+        const time = f.scheduledAt || f.updatedAt || f.createdAt;
+        const isDone = f.status === "COMPLETED";
+        list.push({
+          id: `flw-${f._id}`,
+          timestamp: new Date(time).getTime(),
+          timeStr: time
+            ? new Date(time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : "Today",
+          icon: f.type === "WHATSAPP" ? MessageSquare : PhoneCall,
+          iconBg: isDone ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600",
+          title: f.title || (isDone ? "Follow-up Done" : "Call Follow-up"),
+          description: f.notes || "Client follow-up scheduled",
+          badge: f.status || "PENDING",
+          badgeColor: isDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200",
+          link: "/dashboard/followups",
+        });
+      });
+    }
+
+    // 3. Fallback: synthesize from orders and leads if no ActivityEvents or followups
+    if (list.length === 0) {
+      orders.forEach((o) => {
+        const time = o.orderDate || o.createdAt;
+        list.push({
+          id: `ord-${o._id}`,
+          timestamp: new Date(time).getTime(),
+          timeStr: time
+            ? new Date(time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : "Today",
+          icon: ShoppingBag,
+          iconBg: "bg-indigo-50 text-indigo-600",
+          title: `Order ${o.orderNumber || "Confirmed"}`,
+          description: `${o.customerSnapshot?.companyName || o.customerSnapshot?.displayName || "Customer"} • ₹${((o.grandTotalPaise || 0) / 100).toLocaleString("en-IN")}`,
+          badge: "ORDER",
+          badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+          link: "/dashboard/orders",
+        });
+      });
+
+      leads.forEach((l) => {
+        const time = l.createdAt;
+        list.push({
+          id: `ld-${l._id}`,
+          timestamp: new Date(time).getTime(),
+          timeStr: time
+            ? new Date(time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : "Today",
+          icon: Users,
+          iconBg: "bg-blue-50 text-blue-600",
+          title: `Lead Added (${l.status || "NEW"})`,
+          description: `${l.contactName || "Lead"} ${l.businessName ? `• ${l.businessName}` : ""}`,
+          badge: "LEAD",
+          badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+          link: `/dashboard/leads/${l._id}`,
+        });
+      });
+    }
+
+    return list.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+  }, [activities, followups, orders, leads]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -662,54 +799,47 @@ export default function DashboardPage() {
             {/* Column 2: Today's Activities (4 Cols) */}
             <div className="lg:col-span-4 bg-white rounded-md p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-bold text-slate-900">
-                  Today&apos;s Activities
-                </h3>
+                <div className="flex items-center justify-between pb-1">
+                  <h3 className="text-xs font-bold text-slate-900">
+                    Today&apos;s Activities
+                  </h3>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    Live Feed
+                  </span>
+                </div>
 
                 <div className="space-y-3 pt-2 text-xs">
-                  {followups.length > 0 ? (
-                    followups.slice(0, 5).map((f) => {
-                      const timeStr = f.scheduledAt
-                        ? new Date(f.scheduledAt).toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "Today";
-                      const isDone = f.status === "COMPLETED";
-
+                  {displayActivities.length > 0 ? (
+                    displayActivities.map((act) => {
+                      const IconComp = act.icon;
                       return (
                         <div
-                          key={f._id}
-                          className="flex items-center justify-between gap-2"
+                          key={act.id}
+                          onClick={() => act.link && router.push(act.link)}
+                          className="flex items-center justify-between gap-2 p-1.5 -mx-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="text-[10px] text-slate-400 w-14 shrink-0 font-medium">
-                              {timeStr}
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="text-[10px] text-slate-400 w-14 shrink-0 font-medium font-mono">
+                              {act.timeStr}
                             </span>
-                            <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                              {f.type === "WHATSAPP" ? (
-                                <MessageSquare className="w-3 h-3" />
-                              ) : (
-                                <PhoneCall className="w-3 h-3" />
-                              )}
+                            <div
+                              className={`w-6 h-6 rounded-full ${act.iconBg} flex items-center justify-center shrink-0`}
+                            >
+                              <IconComp className="w-3 h-3" />
                             </div>
-                            <div className="truncate">
+                            <div className="min-w-0 flex-1">
                               <p className="font-bold text-slate-900 text-xs truncate">
-                                {f.title || "Client Follow-up"}
+                                {act.title}
                               </p>
                               <p className="text-[10px] text-slate-400 truncate">
-                                {f.notes || "Requirement Discussion"}
+                                {act.description}
                               </p>
                             </div>
                           </div>
                           <span
-                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                              isDone
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${act.badgeColor}`}
                           >
-                            {f.status}
+                            {act.badge}
                           </span>
                         </div>
                       );
@@ -720,7 +850,7 @@ export default function DashboardPage() {
                         <Calendar className="w-6 h-6 stroke-[1.5]" />
                       </div>
                       <p className="text-slate-400 text-xs font-medium">
-                        No follow-up activities scheduled yet.
+                        No activities recorded yet today.
                       </p>
                     </div>
                   )}
@@ -871,7 +1001,17 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 font-bold text-slate-900">
                             ₹
-                            {(lead.estimatedValue || 0).toLocaleString("en-IN")}
+                            {(
+                              Number(lead.expectedValue) ||
+                              Number(lead.estimatedBudget) ||
+                              Number(lead.estimatedValue) ||
+                              ((orders.find(
+                                (o) =>
+                                  (o.leadId?._id || o.leadId) === lead._id,
+                              )?.grandTotalPaise || 0) / 100) ||
+                              Number(lead.legacyFinancials?.totalAmount) ||
+                              0
+                            ).toLocaleString("en-IN")}
                           </td>
                           <td className="py-3 text-right">
                             <div className="flex items-center justify-end">
