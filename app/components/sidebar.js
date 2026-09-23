@@ -349,17 +349,6 @@ export default function Sidebar() {
           title: "DESIGN & PRODUCTION",
           items: [
             { name: "Design Status", href: "/dashboard/design", icon: Palette },
-            {
-              name: "Production Tracking",
-              href: "/dashboard/production",
-              icon: Layers,
-              exact: true,
-            },
-            {
-              name: "Dispatch & Delivery",
-              href: "/dashboard/production/delivery",
-              icon: MapPin,
-            },
           ],
         },
         {

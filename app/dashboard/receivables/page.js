@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/app/components/sidebar';
 import Navbar from '@/app/components/navbar';
 import { api } from '@/lib/api';
@@ -16,6 +17,7 @@ import {
   TrendingDown,
   Building,
   User,
+  MessageCircle,
 } from 'lucide-react';
 
 const AGEING_BUCKETS = [
@@ -28,6 +30,7 @@ const AGEING_BUCKETS = [
 ];
 
 export default function ReceivablesPage() {
+  const router = useRouter();
   const [receivables, setReceivables] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +46,9 @@ export default function ReceivablesPage() {
       ]);
 
       if (listRes.status === 'fulfilled' && listRes.value?.data) {
-        const raw = Array.isArray(listRes.value.data) ? listRes.value.data : (listRes.value.data?.records || []);
+        const raw = Array.isArray(listRes.value.data)
+          ? listRes.value.data
+          : (listRes.value.data?.records || []);
         setReceivables(raw);
       }
 
@@ -63,19 +68,70 @@ export default function ReceivablesPage() {
 
   // Filter receivables by ageing bucket and search query
   const filteredReceivables = receivables.filter((r) => {
-    const matchesBucket = activeBucket === 'ALL' || r.ageingBucket === activeBucket || r.bucket === activeBucket;
+    const matchesBucket =
+      activeBucket === 'ALL' || r.ageingBucket === activeBucket || r.bucket === activeBucket;
     const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      r.customerName?.toLowerCase().includes(q) ||
-      r.orderNumber?.toLowerCase().includes(q) ||
-      r.salespersonName?.toLowerCase().includes(q);
+    if (!q) return matchesBucket;
 
+    const customer = (
+      r.customerSnapshot?.displayName ||
+      r.customerSnapshot?.companyName ||
+      r.customerId?.displayName ||
+      r.customerId?.companyName ||
+      r.customerId?.name ||
+      r.customerName ||
+      ''
+    ).toLowerCase();
+
+    const orderNo = (r.orderNumber || '').toLowerCase();
+
+    const salesperson = (
+      r.assignedSalesId?.name ||
+      r.assignedSalesId?.email ||
+      r.salespersonId?.name ||
+      r.salespersonName ||
+      ''
+    ).toLowerCase();
+
+    const matchesSearch = customer.includes(q) || orderNo.includes(q) || salesperson.includes(q);
     return matchesBucket && matchesSearch;
   });
 
-  const totalOutstandingPaise = summary?.totalOutstandingPaise || receivables.reduce((sum, r) => sum + (r.balanceAmountPaise || (r.balanceAmount ? r.balanceAmount * 100 : 0)), 0);
-  const overduePaise = summary?.overduePaise || 0;
+  const totalOutstandingPaise =
+    summary?.totalOutstandingPaise !== undefined
+      ? summary.totalOutstandingPaise
+      : receivables.reduce((sum, r) => sum + (r.balancePaise || 0), 0);
+
+  const overduePaise = summary
+    ? (summary.overdue1To7Paise || 0) +
+      (summary.overdue8To30Paise || 0) +
+      (summary.overdue30PlusPaise || 0) +
+      (summary.dueTodayPaise || 0)
+    : receivables
+        .filter((r) => r.ageingBucket && r.ageingBucket !== 'UPCOMING')
+        .reduce((sum, r) => sum + (r.balancePaise || 0), 0);
+
+  const getBucketBadgeStyle = (b) => {
+    const bucket = b || 'UPCOMING';
+    if (bucket.includes('OVERDUE_30') || bucket.includes('OVERDUE_8')) {
+      return 'bg-rose-50 text-rose-700 border border-rose-200 font-bold';
+    }
+    if (bucket.includes('OVERDUE') || bucket === 'DUE_TODAY') {
+      return 'bg-amber-50 text-amber-700 border border-amber-200 font-bold';
+    }
+    return 'bg-blue-50 text-blue-700 border border-blue-200 font-semibold';
+  };
+
+  const formatBucketLabel = (b) => {
+    const map = {
+      UPCOMING: 'Upcoming',
+      DUE_TODAY: 'Due Today',
+      OVERDUE_1_7: '1–7 Days Overdue',
+      OVERDUE_8_30: '8–30 Days Overdue',
+      OVERDUE_30_PLUS: '30+ Days Overdue',
+    };
+    return map[b] || (b ? b.replace(/_/g, ' ') : 'Upcoming');
+  };
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -92,7 +148,7 @@ export default function ReceivablesPage() {
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wide">
                   Financial Oversight
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Phase 3 Credit &amp; Receivables</span>
+                <span className="text-xs text-slate-400 font-medium">Credit &amp; Receivables</span>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
                 Outstanding Receivables &amp; Ageing
@@ -105,9 +161,11 @@ export default function ReceivablesPage() {
             <button
               onClick={loadReceivables}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all self-start sm:self-auto"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all self-start sm:self-auto cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-600' : 'text-slate-500'}`} />
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-600' : 'text-slate-500'}`}
+              />
               Refresh
             </button>
           </div>
@@ -117,7 +175,7 @@ export default function ReceivablesPage() {
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
               <span className="text-xs font-semibold text-slate-500">Total Outstanding Balance</span>
               <div className="text-2xl font-black text-slate-900">
-                ₹{(totalOutstandingPaise / 100).toLocaleString('en-IN')}
+                ₹{(totalOutstandingPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <span className="text-[10px] text-slate-400">Total unpaid order balances</span>
             </div>
@@ -125,15 +183,15 @@ export default function ReceivablesPage() {
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
               <span className="text-xs font-semibold text-slate-500">Total Overdue Amount</span>
               <div className="text-2xl font-black text-rose-600">
-                ₹{(overduePaise / 100).toLocaleString('en-IN')}
+                ₹{(overduePaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <span className="text-[10px] text-rose-500 font-semibold">Exceeded promised payment terms</span>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
-              <span className="text-xs font-semibold text-slate-500">Active Receivable Accounts</span>
+              <span className="text-xs font-semibold text-slate-500">Active Receivable Orders</span>
               <div className="text-2xl font-black text-slate-900">{receivables.length}</div>
-              <span className="text-[10px] text-slate-400">Customers with outstanding dues</span>
+              <span className="text-[10px] text-slate-400">Orders with pending collections</span>
             </div>
           </div>
 
@@ -144,7 +202,7 @@ export default function ReceivablesPage() {
                 <button
                   key={b.id}
                   onClick={() => setActiveBucket(b.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                     activeBucket === b.id
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-100'
@@ -163,7 +221,7 @@ export default function ReceivablesPage() {
                 placeholder="Search by customer name, order number, or salesperson..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               />
             </div>
           </div>
@@ -193,16 +251,85 @@ export default function ReceivablesPage() {
                     </tr>
                   ) : filteredReceivables.length > 0 ? (
                     filteredReceivables.map((rec, idx) => {
-                      const custName = rec.customerId?.name || rec.customerName || 'Direct Client';
-                      const ordNum = rec.orderId?.orderNumber || rec.orderNumber || `ORD-2026-${100 + idx}`;
-                      const repName = rec.salespersonId?.name || rec.salespersonName || 'Sales Representative';
-                      const balanceRupees = rec.balanceAmountPaise ? rec.balanceAmountPaise / 100 : (rec.balanceAmount || 12500);
+                      // Correct data parsing from populated Order model
+                      const custName =
+                        rec.customerSnapshot?.displayName ||
+                        rec.customerSnapshot?.companyName ||
+                        rec.customerId?.displayName ||
+                        rec.customerId?.companyName ||
+                        rec.customerId?.name ||
+                        rec.customerName ||
+                        'Customer';
+
+                      const custCompany =
+                        rec.customerSnapshot?.companyName ||
+                        rec.customerId?.companyName ||
+                        '';
+
+                      const custPhone =
+                        rec.customerSnapshot?.phone ||
+                        rec.customerId?.phone ||
+                        '';
+
+                      const ordNum = rec.orderNumber || rec.orderId?.orderNumber || '—';
+
+                      const repName =
+                        rec.assignedSalesId?.name ||
+                        rec.assignedSalesId?.email ||
+                        rec.salespersonId?.name ||
+                        rec.salespersonName ||
+                        'Unassigned';
+
+                      const balanceRupees =
+                        typeof rec.balancePaise === 'number'
+                          ? rec.balancePaise / 100
+                          : typeof rec.balanceAmountPaise === 'number'
+                          ? rec.balanceAmountPaise / 100
+                          : typeof rec.balanceAmount === 'number'
+                          ? rec.balanceAmount
+                          : 0;
+
                       const bucket = rec.ageingBucket || rec.bucket || 'UPCOMING';
+
+                      const rawDueDate =
+                        rec.paymentDueDate ||
+                        rec.promisedDeliveryDate ||
+                        rec.orderDate ||
+                        rec.createdAt;
+
+                      const dueDateFormatted = rawDueDate
+                        ? new Date(rawDueDate).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '—';
+
+                      const isPartiallyPaid =
+                        rec.paymentStatus === 'PARTIALLY_PAID' ||
+                        (rec.totalPaidPaise > 0 && rec.balancePaise > 0);
+
+                      const statusLabel = isPartiallyPaid
+                        ? 'Partially Paid'
+                        : rec.paymentStatus === 'PAID'
+                        ? 'Paid'
+                        : 'Payment Pending';
+
+                      const statusBadge = isPartiallyPaid
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : rec.paymentStatus === 'PAID'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200';
+
+                      const targetCustomerId = rec.customerId?._id || rec.customerId || '';
 
                       return (
                         <tr key={rec._id || idx} className="hover:bg-slate-50/60 transition-colors">
                           <td className="py-3 px-4">
-                            <strong className="text-slate-900 block">{custName}</strong>
+                            <strong className="text-slate-900 block font-semibold">{custName}</strong>
+                            {custCompany && custCompany !== custName && (
+                              <span className="text-[10px] text-slate-400 block">{custCompany}</span>
+                            )}
                           </td>
 
                           <td className="py-3 px-4 font-mono text-slate-700 font-bold">
@@ -213,32 +340,45 @@ export default function ReceivablesPage() {
                             {repName}
                           </td>
 
-                          <td className="py-3 px-4 font-black text-slate-900">
-                            ₹{balanceRupees.toLocaleString('en-IN')}
+                          <td className="py-3 px-4 font-black text-slate-900 font-mono">
+                            ₹{balanceRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
 
                           <td className="py-3 px-4 font-mono text-slate-500">
-                            {rec.dueDate ? new Date(rec.dueDate).toLocaleDateString() : '30 May 2026'}
+                            {dueDateFormatted}
                           </td>
 
                           <td className="py-3 px-4">
                             <span
-                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                bucket.includes('OVERDUE_30') || bucket.includes('OVERDUE_8')
-                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                  : bucket.includes('OVERDUE')
-                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                  : 'bg-blue-50 text-blue-700 border border-blue-200'
-                              }`}
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] ${getBucketBadgeStyle(
+                                bucket
+                              )}`}
                             >
-                              {bucket.replace(/_/g, ' ')}
+                              {formatBucketLabel(bucket)}
                             </span>
                           </td>
 
                           <td className="py-3 px-4 text-right">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                              Payment Pending
-                            </span>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusBadge}`}>
+                                {statusLabel}
+                              </span>
+
+                              {custPhone && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    router.push(
+                                      `/dashboard/whatsapp?customerId=${targetCustomerId}&phone=${custPhone}&orderNo=${ordNum}&amount=${balanceRupees}&template=payment_reminder`
+                                    );
+                                  }}
+                                  className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer"
+                                  title="Follow up balance on WhatsApp"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

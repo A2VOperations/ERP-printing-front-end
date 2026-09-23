@@ -83,6 +83,9 @@ export default function Home() {
 
         setSuccess(`Logged in successfully as ${userObj.name}!`);
         localStorage.setItem('user', JSON.stringify(userObj));
+        if (tenantInfo) {
+          localStorage.setItem('tenant', JSON.stringify(tenantInfo));
+        }
         if (data.session?.access_token) {
           localStorage.setItem('token', data.session.access_token);
         }

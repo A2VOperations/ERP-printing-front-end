@@ -45,17 +45,35 @@ export default function CompanySettingsPage() {
   const fetchCompanySettings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/settings');
-      if (res && res.data) {
-        setSettings({
-          ...settings,
-          ...res.data,
-          address: {
-            ...settings.address,
-            ...(res.data.address || {}),
-          },
-        });
+      const [settingsRes, tenantRes] = await Promise.allSettled([
+        api.get('/settings'),
+        api.get('/tenants/current'),
+      ]);
+
+      let merged = { ...settings };
+
+      if (tenantRes.status === 'fulfilled' && tenantRes.value?.data?.tenant) {
+        const t = tenantRes.value.data.tenant;
+        if (t.name) merged.companyName = t.name;
+        if (t.gstin) merged.gstin = t.gstin;
+        if (t.phone) merged.phone = t.phone;
+        if (t.email) merged.email = t.email;
       }
+
+      if (settingsRes.status === 'fulfilled' && settingsRes.value?.data) {
+        const s = settingsRes.value.data;
+        merged = {
+          ...merged,
+          ...s,
+          gstin: s.gstin || merged.gstin,
+          address: {
+            ...merged.address,
+            ...(s.address || {}),
+          },
+        };
+      }
+
+      setSettings(merged);
     } catch (err) {
       if (err?.message?.includes('403')) {
         setIsAuthorized(false);
@@ -79,19 +97,49 @@ export default function CompanySettingsPage() {
     try {
       setSaving(true);
       setSuccessMsg('');
-      await api.patch('/settings', {
-        companyName: settings.companyName,
-        legalEntityName: settings.legalEntityName,
-        gstin: settings.gstin,
-        pan: settings.pan,
-        phone: settings.phone,
-        email: settings.email,
-        website: settings.website,
+      const cleanGstin = (settings.gstin || '').trim().toUpperCase();
+      const cleanEmail = (settings.email || '').trim();
+
+      const payload = {
+        companyName: settings.companyName.trim(),
+        legalEntityName: (settings.legalEntityName || '').trim(),
+        gstin: cleanGstin,
+        pan: (settings.pan || '').trim().toUpperCase(),
+        phone: (settings.phone || '').trim(),
+        email: cleanEmail || '',
+        website: (settings.website || '').trim(),
         currency: settings.currency,
         timezone: settings.timezone,
         address: settings.address,
-      });
-      setSuccessMsg('Company settings successfully updated and persisted to database.');
+      };
+
+      // 1. Update Settings collection
+      await api.patch('/settings', payload);
+
+      // 2. Also directly update Tenant document so /tenants/current and PDFs update immediately
+      try {
+        const tenantPayload = {
+          name: payload.companyName,
+          gstin: cleanGstin,
+        };
+        if (cleanEmail) tenantPayload.email = cleanEmail;
+        if (payload.phone) tenantPayload.phone = payload.phone;
+        await api.patch('/tenants/current', tenantPayload);
+      } catch (tErr) {
+        console.warn('Tenant sync notice:', tErr.message);
+      }
+
+      // 3. Update localStorage user snapshot
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        if (u.tenant) {
+          u.tenant.gstin = cleanGstin;
+          u.tenant.name = payload.companyName;
+          localStorage.setItem('user', JSON.stringify(u));
+        }
+      } catch (lsErr) {}
+
+      setSuccessMsg('Company settings & GSTIN successfully updated and synced across all invoices and quotes.');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err) {
       alert(err.message || 'Failed to save settings');

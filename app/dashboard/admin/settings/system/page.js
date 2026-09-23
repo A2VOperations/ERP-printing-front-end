@@ -47,9 +47,14 @@ export default function SystemSettingsPage() {
       setLoading(true);
       const res = await api.get('/settings');
       if (res && res.data) {
+        const br = res.data.businessRules || {};
         setSystemRules((prev) => ({
           ...prev,
-          ...(res.data.businessRules || {}),
+          ...br,
+          defaultGstPercent: res.data.defaultTaxRate !== undefined ? Number(res.data.defaultTaxRate) : (br.defaultGstPercent ?? prev.defaultGstPercent ?? 18),
+          mandatoryAdvancePercent: res.data.defaultAdvancePercent !== undefined ? Number(res.data.defaultAdvancePercent) : (br.mandatoryAdvancePercent ?? prev.mandatoryAdvancePercent ?? 50),
+          maxSalesDiscountPercent: res.data.salesDiscountThresholdPercent !== undefined ? Number(res.data.salesDiscountThresholdPercent) : (br.maxSalesDiscountPercent ?? prev.maxSalesDiscountPercent ?? 5),
+          managerApprovalThresholdPercent: res.data.managerDiscountThresholdPercent !== undefined ? Number(res.data.managerDiscountThresholdPercent) : (br.managerApprovalThresholdPercent ?? prev.managerApprovalThresholdPercent ?? 15),
         }));
       }
     } catch (err) {
@@ -78,6 +83,10 @@ export default function SystemSettingsPage() {
 
       await api.patch('/settings', {
         businessRules: systemRules,
+        defaultTaxRate: Number(systemRules.defaultGstPercent) || 18,
+        defaultAdvancePercent: Number(systemRules.mandatoryAdvancePercent) || 50,
+        salesDiscountThresholdPercent: Number(systemRules.maxSalesDiscountPercent) || 5,
+        managerDiscountThresholdPercent: Number(systemRules.managerApprovalThresholdPercent) || 15,
       });
 
       setSuccessMsg('System business rules successfully updated across Phase 1–4 engines.');

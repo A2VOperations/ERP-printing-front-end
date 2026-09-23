@@ -69,8 +69,9 @@ function QuotationsContent() {
   });
   const [currentTenant, setCurrentTenant] = useState(() => {
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
-      return stored ? JSON.parse(stored) : null;
+      if (typeof window === 'undefined') return null;
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      return u?.tenant || JSON.parse(localStorage.getItem('tenant') || 'null');
     } catch (e) {
       return null;
     }
@@ -82,6 +83,13 @@ function QuotationsContent() {
         if (res?.data?.user) setCurrentUser(res.data.user);
         else if (res?.data) setCurrentUser(res.data);
         if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
+      })
+      .catch(() => {});
+
+    api.get('/tenants/current', { silent: true })
+      .then((res) => {
+        if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
+        else if (res?.data) setCurrentTenant(res.data);
       })
       .catch(() => {});
   }, []);
@@ -97,7 +105,7 @@ function QuotationsContent() {
     customerName: '',
     phone: '',
     items: [
-      { title: 'Flex Banner 440 GSM', description: 'Outdoor Frontlit 10x4 ft', quantity: 1, rate: 1500, discountPercent: 0 },
+      { title: 'Flex Banner 440 GSM', description: 'Outdoor Frontlit 10x4 ft', quantity: 1, rate: 1500, discountPercent: 0, taxRatePercent: 18 },
     ],
     discountPercent: 0,
     validityDays: 15,
@@ -159,7 +167,7 @@ function QuotationsContent() {
       ...newQuote,
       items: [
         ...newQuote.items,
-        { title: 'Visiting Cards Matte 350 GSM', description: 'Standard 3.5x2 in, Double Sided', quantity: 1000, rate: 1.5, discountPercent: 0 },
+        { title: 'Visiting Cards Matte 350 GSM', description: 'Standard 3.5x2 in, Double Sided', quantity: 1000, rate: 1.5, discountPercent: 0, taxRatePercent: 18 },
       ],
     });
   };
@@ -185,6 +193,7 @@ function QuotationsContent() {
           quantity: Number(item.quantity) || 1,
           unitRatePaise: Math.round((Number(item.rate) || 0) * 100),
           discountPercent: Number(item.discountPercent || newQuote.discountPercent || 0),
+          taxRatePercent: Number(item.taxRatePercent !== undefined ? item.taxRatePercent : 18),
         })),
         validityDays: Number(newQuote.validityDays) || 15,
         notes: newQuote.notes,
@@ -223,9 +232,10 @@ function QuotationsContent() {
       quantity: item.quantity || 1,
       rate: item.unitRatePaise ? item.unitRatePaise / 100 : (item.rate || 0),
       discountPercent: item.discountPercent || 0,
+      taxRatePercent: item.taxRatePercent !== undefined ? Number(item.taxRatePercent) : 18,
     }));
 
-    setEditItems(items.length > 0 ? items : [{ title: 'Print Item', description: '', quantity: 1, rate: 100, discountPercent: 0 }]);
+    setEditItems(items.length > 0 ? items : [{ title: 'Print Item', description: '', quantity: 1, rate: 100, discountPercent: 0, taxRatePercent: 18 }]);
     setEditDiscountPercent(quote.overallDiscountPercent || 0);
     setEditValidityDays(15);
     setEditNotes(quote.notes || 'Standard turn-around 24-48 hours upon artwork approval.');
@@ -236,7 +246,7 @@ function QuotationsContent() {
   const handleAddEditItem = () => {
     setEditItems([
       ...editItems,
-      { title: 'Brochures A4 Trifold', description: '170 GSM Gloss, 4+4 Color', quantity: 500, rate: 12, discountPercent: 0 },
+      { title: 'Brochures A4 Trifold', description: '170 GSM Gloss, 4+4 Color', quantity: 500, rate: 12, discountPercent: 0, taxRatePercent: 18 },
     ]);
   };
 
@@ -257,6 +267,7 @@ function QuotationsContent() {
           quantity: Number(item.quantity) || 1,
           unitRatePaise: Math.round((Number(item.rate) || 0) * 100),
           discountPercent: Number(item.discountPercent || 0),
+          taxRatePercent: Number(item.taxRatePercent !== undefined ? item.taxRatePercent : 18),
         })),
         validityDays: Number(editValidityDays) || 15,
         notes: editNotes,
@@ -365,12 +376,39 @@ function QuotationsContent() {
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate live edit totals
+  // Calculate live edit totals with dynamic per-item GST
   const editSubtotal = editItems.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.rate) || 0), 0);
-  const editDiscountAmount = (editSubtotal * (Number(editDiscountPercent) || 0)) / 100;
-  const editTaxable = editSubtotal - editDiscountAmount;
-  const editGst = editTaxable * 0.18;
+  const editDiscountAmount = editItems.reduce((sum, item) => {
+    const gross = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
+    const disc = Number(item.discountPercent !== undefined ? item.discountPercent : editDiscountPercent || 0);
+    return sum + (gross * disc) / 100;
+  }, 0);
+  const editTaxable = Math.max(0, editSubtotal - editDiscountAmount);
+  const editGst = editItems.reduce((sum, item) => {
+    const gross = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
+    const disc = Number(item.discountPercent !== undefined ? item.discountPercent : editDiscountPercent || 0);
+    const taxable = Math.max(0, gross - (gross * disc) / 100);
+    const taxRate = Number(item.taxRatePercent !== undefined ? item.taxRatePercent : 18);
+    return sum + (taxable * taxRate) / 100;
+  }, 0);
   const editGrandTotal = editTaxable + editGst;
+
+  // Calculate live builder totals with dynamic per-item GST
+  const builderSubtotal = newQuote.items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.rate) || 0), 0);
+  const builderDiscountAmount = newQuote.items.reduce((sum, item) => {
+    const gross = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
+    const disc = Number(item.discountPercent !== undefined ? item.discountPercent : newQuote.discountPercent || 0);
+    return sum + (gross * disc) / 100;
+  }, 0);
+  const builderTaxable = Math.max(0, builderSubtotal - builderDiscountAmount);
+  const builderGst = newQuote.items.reduce((sum, item) => {
+    const gross = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
+    const disc = Number(item.discountPercent !== undefined ? item.discountPercent : newQuote.discountPercent || 0);
+    const taxable = Math.max(0, gross - (gross * disc) / 100);
+    const taxRate = Number(item.taxRatePercent !== undefined ? item.taxRatePercent : 18);
+    return sum + (taxable * taxRate) / 100;
+  }, 0);
+  const builderGrandTotal = builderTaxable + builderGst;
 
   // Selected Quote Resolved Values
   const tenantName = currentTenant?.name || 'A2V PRINTING SOLUTIONS';
@@ -1001,21 +1039,21 @@ function QuotationsContent() {
 
                           {cgstVal > 0 && (
                             <div className="flex justify-between text-slate-500 text-xs">
-                              <span>CGST (9%):</span>
+                              <span>CGST:</span>
                               <span>₹{cgstVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
 
                           {sgstVal > 0 && (
                             <div className="flex justify-between text-slate-500 text-xs">
-                              <span>SGST (9%):</span>
+                              <span>SGST:</span>
                               <span>₹{sgstVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
 
                           {igstVal > 0 && (
                             <div className="flex justify-between text-slate-500 text-xs">
-                              <span>IGST (18%):</span>
+                              <span>IGST:</span>
                               <span>₹{igstVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
@@ -1203,6 +1241,25 @@ function QuotationsContent() {
                             ✓ Direct Approved (≤5%)
                           </span>
                         )}
+
+                        <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
+                          <span className="text-[10px] text-slate-500 font-semibold">GST:</span>
+                          <select
+                            value={item.taxRatePercent !== undefined ? item.taxRatePercent : 18}
+                            onChange={(e) => {
+                              const copy = [...newQuote.items];
+                              copy[idx].taxRatePercent = Number(e.target.value);
+                              setNewQuote({ ...newQuote, items: copy });
+                            }}
+                            className="px-2 py-1 rounded bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800"
+                          >
+                            <option value={0}>0% (Exempt)</option>
+                            <option value={5}>5%</option>
+                            <option value={12}>12%</option>
+                            <option value={18}>18% (Standard)</option>
+                            <option value={28}>28%</option>
+                          </select>
+                        </div>
                       </div>
 
                       {newQuote.items.length > 1 && (
@@ -1239,6 +1296,32 @@ function QuotationsContent() {
                     onChange={(e) => setNewQuote({ ...newQuote, notes: e.target.value })}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
                   />
+                </div>
+              </div>
+
+              {/* Live Quotation Financials Breakdown */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div className="flex flex-wrap items-center gap-5">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Subtotal</span>
+                    <span className="font-bold text-slate-700 font-mono">₹{builderSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Discount</span>
+                    <span className="font-bold text-amber-600 font-mono">-₹{builderDiscountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Taxable</span>
+                    <span className="font-bold text-slate-800 font-mono">₹{builderTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">GST Total</span>
+                    <span className="font-bold text-blue-600 font-mono">+₹{builderGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-400 block text-[10px] font-semibold uppercase">Grand Total (Incl. GST)</span>
+                  <span className="font-black text-base text-blue-700 font-mono">₹{builderGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
@@ -1389,6 +1472,25 @@ function QuotationsContent() {
                             ✓ Direct Approved (≤5%)
                           </span>
                         )}
+
+                        <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
+                          <span className="text-[10px] text-slate-500 font-semibold">GST:</span>
+                          <select
+                            value={item.taxRatePercent !== undefined ? item.taxRatePercent : 18}
+                            onChange={(e) => {
+                              const copy = [...editItems];
+                              copy[idx].taxRatePercent = Number(e.target.value);
+                              setEditItems(copy);
+                            }}
+                            className="px-2 py-1 rounded bg-white border border-slate-200 text-xs font-mono font-bold text-slate-800"
+                          >
+                            <option value={0}>0% (Exempt)</option>
+                            <option value={5}>5%</option>
+                            <option value={12}>12%</option>
+                            <option value={18}>18% (Standard)</option>
+                            <option value={28}>28%</option>
+                          </select>
+                        </div>
                       </div>
 
                       {editItems.length > 1 && (
@@ -1403,6 +1505,32 @@ function QuotationsContent() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Live Edit Financials Breakdown */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+                <div className="flex flex-wrap items-center gap-5">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Subtotal</span>
+                    <span className="font-bold text-slate-700 font-mono">₹{editSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Discount</span>
+                    <span className="font-bold text-amber-600 font-mono">-₹{editDiscountAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">Taxable</span>
+                    <span className="font-bold text-slate-800 font-mono">₹{editTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] font-semibold uppercase">GST Total</span>
+                    <span className="font-bold text-blue-600 font-mono">+₹{editGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-400 block text-[10px] font-semibold uppercase">Grand Total (Incl. GST)</span>
+                  <span className="font-black text-base text-blue-700 font-mono">₹{editGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">

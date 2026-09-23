@@ -47,8 +47,9 @@ export default function PaymentsPage() {
   });
   const [currentTenant, setCurrentTenant] = useState(() => {
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
-      return stored ? JSON.parse(stored) : null;
+      if (typeof window === 'undefined') return null;
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      return u?.tenant || JSON.parse(localStorage.getItem('tenant') || 'null');
     } catch (e) {
       return null;
     }
@@ -60,6 +61,13 @@ export default function PaymentsPage() {
         if (res?.data?.user) setCurrentUser(res.data.user);
         else if (res?.data) setCurrentUser(res.data);
         if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
+      })
+      .catch(() => {});
+
+    api.get('/tenants/current', { silent: true })
+      .then((res) => {
+        if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
+        else if (res?.data) setCurrentTenant(res.data);
       })
       .catch(() => {});
   }, []);
@@ -323,7 +331,7 @@ export default function PaymentsPage() {
                                   : 'bg-rose-50 text-rose-700 border-rose-200'
                               }`}
                             >
-                              {isConfirmed ? '✓ Verified' : isPending ? '⏳ Pending Verification' : '✕ Rejected'}
+                              {isConfirmed ? 'Verified' : isPending ? 'Pending' : 'Rejected'}
                             </span>
                           </td>
 
