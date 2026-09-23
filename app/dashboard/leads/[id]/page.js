@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   CreditCard,
   MessageSquare,
+  MessageCircle,
   PhoneCall,
   Plus,
   Edit,
@@ -1288,6 +1289,15 @@ export default function LeadDetailPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
               >
                 ← Back to Leads
+              </Link>
+
+              <Link
+                href={`/dashboard/whatsapp?customerId=${lead.customerId || lead._id}&leadId=${leadId}&phone=${lead.phone || ''}`}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                title="Open WhatsApp Communication"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                WhatsApp
               </Link>
 
               <Link

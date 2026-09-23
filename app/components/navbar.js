@@ -170,7 +170,7 @@ export default function Navbar() {
 
     // Fetch dynamic communication message threads
     api
-      .get('/communications/threads?limit=5')
+      .get('/communications/threads?limit=5', { silent: true })
       .then((res) => {
         const list = res?.data || [];
         if (Array.isArray(list) && list.length > 0) {

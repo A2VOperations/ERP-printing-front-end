@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { apiClient } from "../../../lib/apiClient";
 
 export default function CustomerListView({ user }) {
@@ -276,18 +277,31 @@ export default function CustomerListView({ user }) {
                       {c.assignedSalesId?.name || "Unassigned"}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/dashboard/customers/${c._id}`);
-                        }}
-                        className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-600 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5"
-                      >
-                        <span>View Profile</span>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/whatsapp?customerId=${c._id}`);
+                          }}
+                          className="px-2.5 py-1.5 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-600 rounded-lg text-xs font-medium transition inline-flex items-center gap-1 cursor-pointer"
+                          title="Open WhatsApp Communication"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/dashboard/customers/${c._id}`);
+                          }}
+                          className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-600 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>View Profile</span>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

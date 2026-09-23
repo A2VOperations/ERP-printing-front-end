@@ -33,6 +33,7 @@ import {
   Trash2,
   Lock,
   UserCheck,
+  MessageCircle,
 } from 'lucide-react';
 
 const TABS = [
@@ -681,11 +682,23 @@ export default function LeadsDashboardPage() {
                               )}
 
                               <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/dashboard/whatsapp?customerId=${lead.customerId || lead._id}&leadId=${lead._id}&phone=${lead.phone || ''}`);
+                                }}
+                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-1 rounded-md transition-colors cursor-pointer"
+                                title="Open WhatsApp Chat"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
                                 onClick={() => {
                                   setSelectedLead(lead);
                                   setShowFollowupModal(true);
                                 }}
-                                className="text-slate-400 hover:text-slate-700 p-0.5"
+                                className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
                               >
                                 <MoreVertical className="w-3.5 h-3.5" />
                               </button>

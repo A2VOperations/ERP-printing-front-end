@@ -29,6 +29,7 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -143,6 +144,16 @@ export default function Sidebar() {
           ],
         },
         {
+          title: "WHATSAPP",
+          items: [
+            {
+              name: "WhatsApp Web",
+              href: "/dashboard/whatsapp",
+              icon: MessageCircle,
+            },
+          ],
+        },
+        {
           title: "OTHER",
           items: [
             { name: "Documents", href: "/dashboard/documents", icon: Folder },
@@ -192,6 +203,16 @@ export default function Sidebar() {
               name: "Receivables",
               href: "/dashboard/receivables",
               icon: DollarSign,
+            },
+          ],
+        },
+        {
+          title: "WHATSAPP",
+          items: [
+            {
+              name: "WhatsApp Web",
+              href: "/dashboard/whatsapp",
+              icon: MessageCircle,
             },
           ],
         },
@@ -315,6 +336,16 @@ export default function Sidebar() {
           ],
         },
         {
+          title: "WHATSAPP",
+          items: [
+            {
+              name: "WhatsApp Web",
+              href: "/dashboard/whatsapp",
+              icon: MessageCircle,
+            },
+          ],
+        },
+        {
           title: "DESIGN & PRODUCTION",
           items: [
             { name: "Design Status", href: "/dashboard/design", icon: Palette },
@@ -395,6 +426,16 @@ export default function Sidebar() {
           },
           { name: "Documents", href: "/dashboard/documents", icon: Folder },
           { name: "Leaderboard", href: "/dashboard/leaderboard", icon: Award },
+        ],
+      },
+      {
+        title: "WHATSAPP",
+        items: [
+          {
+            name: "WhatsApp Web",
+            href: "/dashboard/whatsapp",
+            icon: MessageCircle,
+          },
         ],
       },
       {

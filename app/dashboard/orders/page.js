@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
@@ -21,12 +22,14 @@ import {
   Phone,
   Mail,
   MessageSquare,
+  MessageCircle,
   ArrowUpRight,
   X,
   CheckCircle2,
 } from "lucide-react";
 
 export default function OrdersBillingPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("admin");
@@ -472,6 +475,21 @@ export default function OrdersBillingPage() {
 
                     {/* Action Buttons */}
                     <div className="pt-1 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cId = ord.customerId?._id || ord.customerId || '';
+                          const phone = ord.customerId?.phone || ord.customerSnapshot?.phone || '';
+                          const orderNo = ord.orderNumber || '';
+                          router.push(`/dashboard/whatsapp?customerId=${cId}&phone=${phone}&orderNo=${orderNo}&template=order_update`);
+                        }}
+                        className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-colors cursor-pointer"
+                        title="Contact Customer via WhatsApp"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        WhatsApp
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleOpenSpecsModal(ord)}

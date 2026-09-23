@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { apiClient } from "../../../lib/apiClient";
 
 export default function Customer360View({ customerId, user }) {
@@ -228,6 +229,14 @@ export default function Customer360View({ customerId, user }) {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push(`/dashboard/whatsapp?customerId=${customer._id}`)}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
+              title="Open WhatsApp Communication"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>WhatsApp</span>
+            </button>
             <button
               onClick={() => router.push(`/dashboard/communication`)}
               className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-sm font-medium rounded-xl border border-indigo-500/30 transition flex items-center gap-2"

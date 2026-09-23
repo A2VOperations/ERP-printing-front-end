@@ -34,6 +34,7 @@ import {
   Check,
   X,
   Share2,
+  MessageCircle,
 } from 'lucide-react';
 
 const formatDate = (dateVal) => {
@@ -602,6 +603,20 @@ function QuotationsContent() {
                       </button>
 
                       <button
+                        onClick={() => {
+                          const cId = selectedQuote.customerId || selectedQuote.customerSnapshot?._id || selectedQuote.leadId || '';
+                          const phone = selectedQuote.customerSnapshot?.phone || selectedQuote.customerPhone || '';
+                          const quoteNo = selectedQuote.quotationNumber || '';
+                          router.push(`/dashboard/whatsapp?customerId=${cId}&phone=${phone}&quoteNo=${quoteNo}&template=quotation_followup`);
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                        title="Follow up / Share via WhatsApp"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        WhatsApp
+                      </button>
+
+                      <button
                         onClick={async () => {
                           try {
                             await api.downloadPdf(
@@ -612,7 +627,7 @@ function QuotationsContent() {
                             alert(err.message || 'Failed to download PDF');
                           }
                         }}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all"
                       >
                         <Download className="w-3.5 h-3.5" />
                         Download PDF

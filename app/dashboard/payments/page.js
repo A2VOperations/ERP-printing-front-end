@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/app/components/sidebar';
 import Navbar from '@/app/components/navbar';
 import { api } from '@/lib/api';
@@ -17,6 +18,7 @@ import {
   Download,
   Printer,
   X,
+  MessageCircle,
 } from 'lucide-react';
 
 const formatDate = (dateVal) => {
@@ -29,6 +31,7 @@ const formatDate = (dateVal) => {
 };
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -354,6 +357,21 @@ export default function PaymentsPage() {
                                   Awaiting Verification
                                 </span>
                               )}
+
+                              {/* WhatsApp Contact Action */}
+                              <button
+                                onClick={() => {
+                                  const cId = p.customerId?._id || p.customerId || p.leadId?._id || '';
+                                  const phone = p.customerId?.phone || p.leadId?.phone || p.leadId?.contactPhone || '';
+                                  const amountStr = (p.amountPaise ? (p.amountPaise / 100).toFixed(2) : p.amount || '').toString();
+                                  router.push(`/dashboard/whatsapp?customerId=${cId}&phone=${phone}&amount=${amountStr}&template=payment_reminder`);
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-[11px] border border-emerald-200 transition-all shadow-2xs cursor-pointer"
+                                title="Send WhatsApp Receipt / Follow-up"
+                              >
+                                <MessageCircle className="w-3 h-3 text-emerald-600" />
+                                WhatsApp
+                              </button>
 
                               {/* Preview & Download Buttons */}
                               <button
