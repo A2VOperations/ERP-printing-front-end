@@ -496,24 +496,21 @@ export default function Sidebar() {
           </button>
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden animate-fade-in">
-              <span className="font-black tracking-wider text-sm text-white block truncate">
+              <span className="font-medium text-2xl text-white block truncate">
                 A2V PRINTS
-              </span>
-              <span className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase block truncate">
-                Enterprise CRM
               </span>
             </div>
           )}
         </div>
 
         {/* Dynamic Navigation Sections */}
-        <div className="flex-1 px-3 py-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+        <div className="flex-1 py-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
           {navSections.map((section) => (
             <div key={section.title} className="space-y-1">
               {collapsed ? (
                 <div className="h-px bg-slate-800/80 my-2 mx-1" />
               ) : (
-                <span className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1.5 truncate">
+                <span className="px-3 text-[12px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5 truncate">
                   {section.title}
                 </span>
               )}
@@ -550,7 +547,7 @@ export default function Sidebar() {
                         setCurrentFilter("");
                       }
                     }}
-                    className={`relative group flex items-center rounded-xl text-xs font-semibold transition-all duration-150 ${
+                    className={`relative group flex items-center text-xs font-semibold transition-all duration-150 ${
                       collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
                     } ${
                       isActive
@@ -559,14 +556,14 @@ export default function Sidebar() {
                     }`}
                   >
                     <Icon
-                      className={`w-4 h-4 shrink-0 ${
+                      className={`w-6 h-6 shrink-0 ${
                         isActive
                           ? "text-white"
                           : "text-slate-400 group-hover:text-slate-200"
                       }`}
                     />
                     {!collapsed && (
-                      <span className="truncate">{item.name}</span>
+                      <span className="truncate text-sm">{item.name}</span>
                     )}
 
                     {/* Floating Tooltip in Collapsed Mode */}
