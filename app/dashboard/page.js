@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import { DashboardSkeleton } from "@/app/components/ui/skeleton";
 
 import {
   TrendingUp,
@@ -466,7 +467,11 @@ export default function DashboardPage() {
         <Navbar />
 
         <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
-          {/* Top Greeting Header */}
+          {loading ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              {/* Top Greeting Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
@@ -1169,6 +1174,8 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+            </>
+          )}
 
           {/* Footer Copyright */}
           <div className="pt-4 text-center text-slate-400 text-xs font-medium">

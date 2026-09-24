@@ -1,5 +1,6 @@
 import "./globals.css";
 import ClientAuthInit from "./components/client-auth-init";
+import GlobalProgressBar from "./components/ui/global-progress-bar";
 
 export const metadata = {
   title: "Advance Printing CRM & ERP",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
+        <GlobalProgressBar />
         <ClientAuthInit />
         {children}
       </body>

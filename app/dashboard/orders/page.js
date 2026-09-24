@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import { CardGridSkeleton } from "@/app/components/ui/skeleton";
 
 import {
   ShoppingBag,
@@ -298,10 +299,7 @@ export default function OrdersBillingPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-sm text-slate-500">
-              <RefreshCw className="w-5 h-5 animate-spin mr-2 text-blue-600" />
-              Loading Orders...
-            </div>
+            <CardGridSkeleton count={6} />
           ) : filteredOrders.length === 0 ? (
             <div className="h-64 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center text-slate-400 gap-2 bg-white shadow-xs">
               <ShoppingBag className="w-8 h-8 text-slate-300" />

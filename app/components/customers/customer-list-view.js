@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { apiClient } from "../../../lib/apiClient";
+import { TableSkeleton } from "@/app/components/ui/skeleton";
 
 export default function CustomerListView({ user }) {
   const router = useRouter();
@@ -271,14 +272,9 @@ export default function CustomerListView({ user }) {
       </div>
 
       {/* Customer Directory Table */}
-      <div className="bg-zinc-900/60 border border-zinc-800 rounded-md overflow-hidden backdrop-blur-xl shadow-xl">
+      <div>
         {loading ? (
-          <div className="py-20 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-3"></div>
-            <p className="text-zinc-400 text-sm">
-              Loading customer directory...
-            </p>
-          </div>
+          <TableSkeleton rows={7} columns={7} />
         ) : error ? (
           <div className="py-16 text-center text-rose-400 text-sm">
             <p className="font-semibold mb-1">Failed to load customers</p>

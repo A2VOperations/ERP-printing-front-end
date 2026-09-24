@@ -23,6 +23,9 @@ import {
   Lock,
   UserCheck,
   MessageCircle,
+  FileText,
+  AlertCircle,
+  TrendingUp,
   Loader2,
 } from "lucide-react";
 
@@ -59,7 +62,6 @@ export default function LeadsDashboardPage() {
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [creatingLead, setCreatingLead] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showFollowupModal, setShowFollowupModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -391,23 +393,42 @@ export default function LeadsDashboardPage() {
     };
   };
 
-  // Lead tag badge helper
+  // Lead status badge helper
   const getLeadTag = (lead) => {
-    const val =
-      Number(lead?.expectedValue) ||
-      Number(lead?.estimatedBudget) ||
-      Number(lead?.estimatedValue) ||
-      Number(lead?.legacyFinancials?.totalAmount) ||
-      0;
-    if (lead.priority === "URGENT")
-      return { label: "HOT LEAD", icon: Flame, color: "text-rose-600" };
-    if (val >= 30000)
-      return { label: "HIGH TICKET", icon: Star, color: "text-purple-600" };
-    if (["INTERESTED", "FOLLOW_UP"].includes(lead.status))
-      return { label: "IN COOKING", icon: CookingPot, color: "text-amber-600" };
-    if (lead.priority === "HIGH")
-      return { label: "WARM LEAD", icon: Flame, color: "text-amber-500" };
-    return { label: "NEW LEAD", icon: Sparkles, color: "text-blue-600" };
+    const rawStatus = (lead?.status || "NEW").toUpperCase().replace(/\s+/g, "_");
+
+    switch (rawStatus) {
+      case "NEW":
+        return { label: "NEW LEAD", icon: Sparkles, color: "text-blue-600" };
+      case "CONTACTED":
+        return { label: "CONTACTED", icon: MessageCircle, color: "text-indigo-600" };
+      case "INTERESTED":
+        return { label: "INTERESTED", icon: Flame, color: "text-amber-600" };
+      case "FOLLOW_UP":
+      case "FOLLOWUP":
+        return { label: "FOLLOW UP", icon: Clock, color: "text-purple-600" };
+      case "QUOTATION_SENT":
+      case "PROPOSAL_SENT":
+      case "QUOTATION":
+        return { label: "QUOTATION SENT", icon: FileText, color: "text-sky-600" };
+      case "NEGOTIATION":
+        return { label: "NEGOTIATION", icon: TrendingUp, color: "text-orange-600" };
+      case "WON":
+      case "CONVERTED":
+        return { label: "WON", icon: CheckCircle2, color: "text-emerald-600" };
+      case "LOST":
+        return { label: "LOST", icon: AlertCircle, color: "text-rose-600" };
+      case "NOT_INTERESTED":
+        return { label: "NOT INTERESTED", icon: AlertCircle, color: "text-slate-500" };
+      case "ON_HOLD":
+        return { label: "ON HOLD", icon: Clock, color: "text-slate-600" };
+      default:
+        return {
+          label: (lead?.status || "NEW LEAD").replace(/_/g, " ").toUpperCase(),
+          icon: Sparkles,
+          color: "text-blue-600",
+        };
+    }
   };
 
   // Filtered leads by tab and search
