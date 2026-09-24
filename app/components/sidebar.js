@@ -32,6 +32,7 @@ import {
   ChevronRight,
   MessageCircle,
 } from "lucide-react";
+import Image from "next/image";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -483,9 +484,15 @@ export default function Sidebar() {
                 return next;
               });
             }}
-            className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white text-sm shadow-md shadow-blue-500/20 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+            className=" flex items-center justify-center font-black  text-white shrink-0 cursor-pointer hover:scale-105 transition-transform"
           >
-            A2V
+            <Image
+              src="/logo/A2V  Groups Logo.png"
+              alt="logo"
+              width={60}
+              height={60}
+              className="shrink-0"
+            />
           </button>
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden animate-fade-in">
@@ -544,9 +551,7 @@ export default function Sidebar() {
                       }
                     }}
                     className={`relative group flex items-center rounded-xl text-xs font-semibold transition-all duration-150 ${
-                      collapsed
-                        ? "justify-center p-2.5"
-                        : "gap-3 px-3 py-2"
+                      collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
                     } ${
                       isActive
                         ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
@@ -555,7 +560,9 @@ export default function Sidebar() {
                   >
                     <Icon
                       className={`w-4 h-4 shrink-0 ${
-                        isActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                        isActive
+                          ? "text-white"
+                          : "text-slate-400 group-hover:text-slate-200"
                       }`}
                     />
                     {!collapsed && (
@@ -605,4 +612,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-
