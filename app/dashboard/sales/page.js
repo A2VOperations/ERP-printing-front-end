@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
@@ -176,6 +177,7 @@ function formatActivityTime(timestamp) {
 export default function SalesDashboardPage() {
   const router = useRouter();
   const [userName, setUserName] = useState("");
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(null);
   const [timeframe, setTimeframe] = useState("This Month");
   const [loading, setLoading] = useState(true);
 
@@ -218,10 +220,15 @@ export default function SalesDashboardPage() {
       }
 
       try {
-        const meRes = await api.get("/auth/me");
+        const meRes = await api.get("/auth/me", { silent: true });
         if (meRes && meRes.data) {
-          const fetchedName = meRes.data.name || meRes.data.user?.name;
+          const me = meRes.data.user || meRes.data;
+          const fetchedName = me.name;
           if (fetchedName) activeName = fetchedName;
+          if (me.avatarUrl) {
+            setCurrentUserAvatar(me.avatarUrl);
+            localStorage.setItem("userAvatar", me.avatarUrl);
+          }
         }
       } catch (err) {
         // Fallback to local storage name if offline
@@ -345,7 +352,21 @@ export default function SalesDashboardPage() {
   }, [timeframe]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedAvatar = localStorage.getItem("userAvatar");
+      if (storedAvatar) setCurrentUserAvatar(storedAvatar);
+    }
+    const handleAvatarSync = (e) => {
+      const av =
+        e.detail?.avatarUrl || localStorage.getItem("userAvatar") || null;
+      setCurrentUserAvatar(av);
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarSync);
+
     loadSalesData();
+
+    return () =>
+      window.removeEventListener("crm:avatar-updated", handleAvatarSync);
   }, [loadSalesData]);
 
   // Timeframe date bounds
@@ -784,14 +805,27 @@ export default function SalesDashboardPage() {
         <div className="p-5 md:p-7 space-y-5 max-w-[1600px] mx-auto w-full">
           {/* Top Header Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                {greeting}, {userName || "Sales Executive"}! 👋
-              </h1>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Here&apos;s what&apos;s happening with your sales performance in{" "}
-                {timeframe.toLowerCase()}.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-xs shrink-0 bg-blue-600 text-white font-bold text-base flex items-center justify-center">
+                {currentUserAvatar ? (
+                  <img
+                    src={currentUserAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  (userName || "SE").slice(0, 2).toUpperCase()
+                )}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  {greeting}, {userName || "Sales Executive"}! 👋
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Here&apos;s what&apos;s happening with your sales performance in{" "}
+                  {timeframe.toLowerCase()}.
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2.5">
@@ -1290,6 +1324,54 @@ export default function SalesDashboardPage() {
                     const userObj = p.user || p;
                     const uName =
                       userObj.name || p.userName || `Executive ${idx + 1}`;
+                    const uEmail = (
+                      userObj.email ||
+                      p.email ||
+                      ""
+                    )
+                      .toLowerCase()
+                      .trim();
+                    const uId = (userObj._id || userObj.id || "").toString();
+
+                    let avatarDirectory = {};
+                    try {
+                      avatarDirectory = JSON.parse(
+                        localStorage.getItem("crm_user_avatars") || "{}",
+                      );
+                    } catch {}
+
+                    const currentLoggedInName = (
+                      localStorage.getItem("userName") || ""
+                    )
+                      .toLowerCase()
+                      .trim();
+                    const currentLoggedInEmail = (
+                      localStorage.getItem("userEmail") || ""
+                    )
+                      .toLowerCase()
+                      .trim();
+                    const currentLoggedInAvatar =
+                      localStorage.getItem("userAvatar") || null;
+
+                    const isSelf =
+                      (currentLoggedInEmail &&
+                        uEmail &&
+                        currentLoggedInEmail === uEmail) ||
+                      (currentLoggedInName &&
+                        uName.toLowerCase().trim() === currentLoggedInName);
+
+                    const perfAvatar =
+                      userObj.avatarUrl ||
+                      userObj.avatar ||
+                      p.avatarUrl ||
+                      p.avatar ||
+                      (uId && avatarDirectory[uId]) ||
+                      (uEmail && avatarDirectory[uEmail]) ||
+                      (uName &&
+                        avatarDirectory[uName.toLowerCase().trim()]) ||
+                      (isSelf ? currentLoggedInAvatar : null) ||
+                      null;
+
                     const achievedVal =
                       p.achievedPaise !== undefined
                         ? p.achievedPaise / 100
@@ -1305,7 +1387,7 @@ export default function SalesDashboardPage() {
                         key={userObj._id || idx}
                         className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 hover:bg-slate-100/70 border border-slate-100 transition-colors"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
                           <span
                             className={`w-5 h-5 rounded-full flex items-center justify-center font-black text-[9px] shrink-0 ${
                               rank === 1
@@ -1327,7 +1409,7 @@ export default function SalesDashboardPage() {
                           </span>
 
                           <div
-                            className={`w-6 h-6 rounded-lg text-white font-bold flex items-center justify-center text-[9px] shrink-0 shadow-2xs ${
+                            className={`w-7 h-7 rounded-full text-white font-bold flex items-center justify-center text-[10px] shrink-0 shadow-2xs overflow-hidden border border-slate-200 ${
                               rank === 1
                                 ? "bg-gradient-to-br from-amber-500 to-amber-600"
                                 : rank === 2
@@ -1335,7 +1417,15 @@ export default function SalesDashboardPage() {
                                   : "bg-gradient-to-br from-blue-600 to-indigo-600"
                             }`}
                           >
-                            {uName.slice(0, 2).toUpperCase()}
+                            {perfAvatar ? (
+                              <img
+                                src={perfAvatar}
+                                alt={uName}
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              uName.slice(0, 2).toUpperCase()
+                            )}
                           </div>
 
                           <div className="min-w-0">

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -9,26 +10,13 @@ import {
   Award,
   Trophy,
   Medal,
-  Flame,
-  Zap,
-  TrendingUp,
   Users,
   Target,
   Crown,
-  ChevronDown,
-  Filter,
-  Download,
-  PhoneCall,
-  MessageSquare,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Sparkles,
   Search,
   RefreshCw,
   DollarSign,
   ShoppingBag,
-  CheckCircle2,
 } from "lucide-react";
 
 export default function LeaderboardPage() {
@@ -80,10 +68,75 @@ export default function LeaderboardPage() {
           );
         });
 
+        // Build avatar directory from shared local storage and fetched users
+        let avatarDirectory = {};
+        try {
+          avatarDirectory = JSON.parse(
+            localStorage.getItem("crm_user_avatars") || "{}",
+          );
+        } catch {}
+
+        // Fetch users directory silently to resolve avatars for all team members (admin view)
+        try {
+          const usersRes = await api.get("/users?limit=100", { silent: true });
+          const userList = usersRes?.data?.users || usersRes?.data || [];
+          if (Array.isArray(userList)) {
+            userList.forEach((u) => {
+              const av = u.avatarUrl || u.avatar || u.profileImage;
+              if (av) {
+                if (u._id) avatarDirectory[u._id.toString()] = av;
+                if (u.id) avatarDirectory[u.id.toString()] = av;
+                if (u.email) avatarDirectory[u.email.toLowerCase().trim()] = av;
+                if (u.name) avatarDirectory[u.name.toLowerCase().trim()] = av;
+              }
+            });
+            localStorage.setItem(
+              "crm_user_avatars",
+              JSON.stringify(avatarDirectory),
+            );
+          }
+        } catch {}
+
+        const currentLoggedInName = (
+          localStorage.getItem("userName") || ""
+        )
+          .toLowerCase()
+          .trim();
+        const currentLoggedInEmail = (
+          localStorage.getItem("userEmail") || ""
+        )
+          .toLowerCase()
+          .trim();
+        const currentLoggedInAvatar =
+          localStorage.getItem("userAvatar") || null;
+
         setPerformers(
           nonAdmin.map((p, idx) => {
             const userObj = p.user || p;
             const uName = userObj.name || p.userName || `Executive ${idx + 1}`;
+            const uEmail = (userObj.email || p.email || "")
+              .toLowerCase()
+              .trim();
+            const uId = (userObj._id || userObj.id || "").toString();
+
+            const isSelf =
+              (currentLoggedInEmail &&
+                uEmail &&
+                currentLoggedInEmail === uEmail) ||
+              (currentLoggedInName &&
+                uName.toLowerCase().trim() === currentLoggedInName);
+
+            const resolvedAvatar =
+              userObj.avatarUrl ||
+              userObj.avatar ||
+              p.avatarUrl ||
+              p.avatar ||
+              (uId && avatarDirectory[uId]) ||
+              (uEmail && avatarDirectory[uEmail]) ||
+              (uName && avatarDirectory[uName.toLowerCase().trim()]) ||
+              (isSelf ? currentLoggedInAvatar : null) ||
+              null;
+
             const achievedVal =
               p.achievedPaise !== undefined
                 ? p.achievedPaise / 100
@@ -93,6 +146,7 @@ export default function LeaderboardPage() {
               ...p,
               rank: p.rank || idx + 1,
               name: uName,
+              avatarUrl: resolvedAvatar,
               role: userObj.role || p.role || "Sales Representative",
               initials: uName.slice(0, 2).toUpperCase(),
               avatarBg:
@@ -143,6 +197,16 @@ export default function LeaderboardPage() {
   useEffect(() => {
     fetchLeaderboard();
   }, [timeframe]);
+
+  // Real-time synchronization when profile picture is updated
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      fetchLeaderboard();
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarUpdate);
+    return () =>
+      window.removeEventListener("crm:avatar-updated", handleAvatarUpdate);
+  }, []);
 
   const top3 = performers.slice(0, 3);
   const filtered = performers.filter(
@@ -274,10 +338,25 @@ export default function LeaderboardPage() {
                 </span>
                 <Crown className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-base font-extrabold text-slate-900 truncate">
-                {topPerformer ? topPerformer.name : "N/A"}
+              <div className="flex items-center gap-2">
+                {topPerformer?.avatarUrl ? (
+                  <img
+                    src={topPerformer.avatarUrl}
+                    alt={topPerformer.name}
+                    className="w-7 h-7 rounded-full object-cover shrink-0 border border-slate-200"
+                  />
+                ) : (
+                  topPerformer && (
+                    <div className="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                      {topPerformer.initials}
+                    </div>
+                  )
+                )}
+                <div className="text-base font-extrabold text-slate-900 truncate">
+                  {topPerformer ? topPerformer.name : "N/A"}
+                </div>
               </div>
-              <span className="text-[10px] text-amber-600 font-semibold">
+              <span className="text-[10px] text-amber-600 font-semibold block mt-0.5">
                 {topPerformer ? topPerformer.achieved : "₹0"}
               </span>
             </div>
@@ -314,9 +393,17 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-center space-y-1.5">
                     <div
-                      className={`w-16 h-16 rounded-md ${top3[1].avatarBg} text-white font-bold text-xl flex items-center justify-center mx-auto shadow-md`}
+                      className={`w-16 h-16 rounded-2xl ${top3[1].avatarBg} text-white font-bold text-xl flex items-center justify-center mx-auto shadow-md overflow-hidden relative border-2 border-white`}
                     >
-                      {top3[1].initials}
+                      {top3[1].avatarUrl ? (
+                        <img
+                          src={top3[1].avatarUrl}
+                          alt={top3[1].name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        top3[1].initials
+                      )}
                     </div>
                     <h3 className="font-bold text-slate-900 text-base">
                       {top3[1].name}
@@ -360,9 +447,17 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-center space-y-1.5">
                     <div
-                      className={`w-20 h-20 rounded-md ${top3[0].avatarBg} text-white font-black text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-300`}
+                      className={`w-20 h-20 rounded-2xl ${top3[0].avatarBg} text-white font-black text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-300 overflow-hidden relative border-2 border-white`}
                     >
-                      {top3[0].initials}
+                      {top3[0].avatarUrl ? (
+                        <img
+                          src={top3[0].avatarUrl}
+                          alt={top3[0].name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        top3[0].initials
+                      )}
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-lg">
                       {top3[0].name}
@@ -405,9 +500,17 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-center space-y-1.5">
                     <div
-                      className={`w-16 h-16 rounded-md ${top3[2].avatarBg} text-white font-bold text-xl flex items-center justify-center mx-auto shadow-md`}
+                      className={`w-16 h-16 rounded-2xl ${top3[2].avatarBg} text-white font-bold text-xl flex items-center justify-center mx-auto shadow-md overflow-hidden relative border-2 border-white`}
                     >
-                      {top3[2].initials}
+                      {top3[2].avatarUrl ? (
+                        <img
+                          src={top3[2].avatarUrl}
+                          alt={top3[2].name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        top3[2].initials
+                      )}
                     </div>
                     <h3 className="font-bold text-slate-900 text-base">
                       {top3[2].name}
@@ -490,9 +593,17 @@ export default function LeaderboardPage() {
                                 : `#${exec.rank}`}
                         </td>
                         <td className="py-4 font-bold text-slate-900">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center">
-                              {exec.initials}
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
+                              {exec.avatarUrl ? (
+                                <img
+                                  src={exec.avatarUrl}
+                                  alt={exec.name}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                exec.initials
+                              )}
                             </div>
                             <div>
                               <span>{exec.name}</span>

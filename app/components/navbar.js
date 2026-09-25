@@ -1,9 +1,11 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import AlertCenterDrawer from "./alertCenterDrawer";
 import {
   Home,
@@ -22,11 +24,6 @@ import {
   LogOut,
   Settings,
   ChevronDown,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Sparkles,
-  ExternalLink,
   Shield,
   Layers,
   BarChart3,
@@ -37,6 +34,9 @@ import {
   Folder,
   CheckSquare,
   TrendingUp,
+  Camera,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -50,12 +50,18 @@ export default function Navbar() {
     role: "admin",
     roleDisplay: "Super Admin",
     initials: "US",
+    avatarUrl: null,
   });
 
   const [tenant, setTenant] = useState({
     name: "A2V Printing Solutions",
     code: "",
   });
+
+  // Avatar upload & management state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const avatarFileInputRef = useRef(null);
 
   // Modals & Dropdowns State
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -90,6 +96,7 @@ export default function Navbar() {
       ).toLowerCase();
       const storedTenant = localStorage.getItem("tenantName");
       const storedEmail = localStorage.getItem("userEmail");
+      const storedAvatar = localStorage.getItem("userAvatar");
 
       let roleDisplay = "Super Admin";
       if (storedRole === "admin") roleDisplay = "Super Admin";
@@ -105,6 +112,7 @@ export default function Navbar() {
         role: storedRole,
         roleDisplay,
         initials: initialName.slice(0, 2).toUpperCase(),
+        avatarUrl: storedAvatar || null,
       });
 
       if (storedTenant) {
@@ -112,9 +120,22 @@ export default function Navbar() {
       }
     }
 
+    // Check Supabase session metadata for avatar if available
+    if (supabase?.auth) {
+      supabase.auth.getSession().then(({ data }) => {
+        const sbAvatar = data?.session?.user?.user_metadata?.avatar_url;
+        if (sbAvatar) {
+          setUser((prev) => ({ ...prev, avatarUrl: prev.avatarUrl || sbAvatar }));
+          if (typeof window !== "undefined" && !localStorage.getItem("userAvatar")) {
+            localStorage.setItem("userAvatar", sbAvatar);
+          }
+        }
+      }).catch(() => {});
+    }
+
     // Authoritative Server-Verified Check via /auth/me
     api
-      .get("/auth/me")
+      .get("/auth/me", { silent: true })
       .then((res) => {
         if (res?.data) {
           const u = res.data.user || res.data;
@@ -138,12 +159,16 @@ export default function Navbar() {
           else if (rawRole === "designer") roleTitle = "Graphic Designer";
           else roleTitle = rawRole.toUpperCase();
 
+          const currentCachedAvatar = typeof window !== "undefined" ? localStorage.getItem("userAvatar") : null;
+          const effectiveAvatar = u.avatarUrl || u.profileImage || currentCachedAvatar || null;
+
           setUser({
             name: fullName,
             email: u.email || "",
             role: rawRole,
             roleDisplay: roleTitle,
             initials: fullName.slice(0, 2).toUpperCase(),
+            avatarUrl: effectiveAvatar,
           });
 
           if (t?.name) {
@@ -157,6 +182,9 @@ export default function Navbar() {
           localStorage.setItem("userName", fullName);
           localStorage.setItem("userRole", rawRole);
           if (u.email) localStorage.setItem("userEmail", u.email);
+          if (effectiveAvatar) {
+            localStorage.setItem("userAvatar", effectiveAvatar);
+          }
         }
       })
       .catch(() => {
@@ -264,6 +292,152 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Listen for real-time avatar changes across the application
+  useEffect(() => {
+    const handleAvatarSync = (e) => {
+      const newUrl = e.detail?.avatarUrl !== undefined ? e.detail.avatarUrl : null;
+      setUser((prev) => ({ ...prev, avatarUrl: newUrl }));
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarSync);
+    return () => window.removeEventListener("crm:avatar-updated", handleAvatarSync);
+  }, []);
+
+  // Client-side image compression to smooth 256x256 Web JPEG (~20KB)
+  const compressImage = (file, maxDim = 256) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement("img");
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.onerror = () => reject(new Error("Unable to process image."));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error("Unable to read image file."));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload or change profile picture handler
+  const handleAvatarSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input value so selecting the same file again triggers change
+    e.target.value = "";
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please select a valid image file (PNG, JPG, WEBP, GIF).");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setAvatarError("Image file must be under 15MB.");
+      return;
+    }
+
+    setAvatarError("");
+    setIsUploadingAvatar(true);
+
+    try {
+      // 1. Compress image to clean, high-performance web data URL
+      const optimizedDataUrl = await compressImage(file);
+
+      // 2. Immediate instant display & persistence to localStorage
+      setUser((prev) => ({ ...prev, avatarUrl: optimizedDataUrl }));
+      localStorage.setItem("userAvatar", optimizedDataUrl);
+      try {
+        const directory = JSON.parse(localStorage.getItem("crm_user_avatars") || "{}");
+        if (user.email) directory[user.email.toLowerCase().trim()] = optimizedDataUrl;
+        if (user.name) directory[user.name.toLowerCase().trim()] = optimizedDataUrl;
+        localStorage.setItem("crm_user_avatars", JSON.stringify(directory));
+      } catch {}
+      window.dispatchEvent(
+        new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: optimizedDataUrl, user } })
+      );
+
+      // 3. Sync to Supabase user metadata if authenticated
+      if (supabase?.auth) {
+        supabase.auth.updateUser({
+          data: { avatar_url: optimizedDataUrl },
+        }).catch(() => {});
+      }
+
+      // 4. Send to backend /auth/avatar (if backend is running locally or once deployed on Render)
+      try {
+        const formData = new FormData();
+        formData.append("avatar", file);
+        const res = await api.post("/auth/avatar", formData, { silent: true });
+        if (res?.data?.avatarUrl || res?.avatarUrl) {
+          const finalUrl = res?.data?.avatarUrl || res?.avatarUrl;
+          setUser((prev) => ({ ...prev, avatarUrl: finalUrl }));
+          localStorage.setItem("userAvatar", finalUrl);
+        }
+      } catch {
+        // Backend not yet redeployed with /avatar endpoint; preserved safely in localStorage & Supabase
+      }
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      const fallback = localStorage.getItem("userAvatar") || null;
+      setUser((prev) => ({ ...prev, avatarUrl: fallback }));
+      setAvatarError(err.message || "Failed to process photo. Please try again.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Delete profile picture handler
+  const handleDeleteAvatar = async () => {
+    setAvatarError("");
+    setIsUploadingAvatar(true);
+
+    try {
+      // 1. Immediately remove from local state and storage
+      setUser((prev) => ({ ...prev, avatarUrl: null }));
+      localStorage.removeItem("userAvatar");
+      window.dispatchEvent(
+        new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: null } })
+      );
+
+      // 2. Clear from Supabase user metadata
+      if (supabase?.auth) {
+        supabase.auth.updateUser({
+          data: { avatar_url: null },
+        }).catch(() => {});
+      }
+
+      // 3. Notify backend API
+      try {
+        await api.delete("/auth/avatar", { silent: true });
+      } catch {
+        // Suppress if backend endpoint is not yet redeployed
+      }
+    } catch (err) {
+      console.error("Avatar delete failed:", err);
+      setAvatarError(err.message || "Failed to remove photo.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   // Sign out handler
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -272,6 +446,7 @@ export default function Navbar() {
       localStorage.removeItem("userName");
       localStorage.removeItem("userRole");
       localStorage.removeItem("userEmail");
+      localStorage.removeItem("userAvatar");
       localStorage.removeItem("tenantId");
       localStorage.removeItem("tenantName");
     }
@@ -450,46 +625,29 @@ export default function Navbar() {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Dynamic Active Tenant Badge (Hidden on mobile) */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shrink-0">
-            <Building2 className="w-3.5 h-3.5 text-blue-600" />
-            <span className="max-w-[150px] truncate">{tenant.name}</span>
-          </div>
-
           {/* Quick Search Launch Bar */}
           <div
             onClick={() => setShowSearchModal(true)}
             className="relative flex-1 cursor-pointer group"
           >
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-600 transition-colors" />
-            <div className="w-full pl-10 pr-12 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100/70 select-none shadow-2xs transition-all flex items-center">
+            <div className="w-full pl-10 pr-12 py-2 rounded-sm bg-slate-50 border border-slate-200 text-md text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100/70 select-none shadow-2xs transition-all flex items-center">
               Search customers, leads, quotes, orders...
             </div>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-400 border border-slate-200 bg-white shadow-2xs group-hover:text-slate-600 transition-colors">
-              ⌘ K
-            </span>
           </div>
         </div>
 
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
         <div className="flex items-center gap-2 md:gap-4">
           <div className="flex items-center gap-1.5 md:gap-2 text-slate-500">
-            {/* Calls / Follow-ups Shortcut */}
-            <button
-              onClick={() => router.push("/dashboard/followups")}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors relative"
-              title="Calls & Follow-ups"
-            >
-              <PhoneCall className="w-4 h-4" />
-            </button>
 
             {/* WhatsApp / Messaging Shortcut */}
             <button
-              onClick={() => router.push("/dashboard/communication")}
+              onClick={() => router.push("/dashboard/whatsapp")}
               className="p-2 rounded-xl hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-colors"
               title="WhatsApp & Omni-Channel Messaging"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-6 h-6" />
             </button>
 
             {/* Operational Alerts Bell & Exception Center Trigger */}
@@ -508,100 +666,11 @@ export default function Navbar() {
                 }`}
                 title="Operational Alerts & Exception Center"
               >
-                <Bell className="w-4 h-4" />
+                <Bell className="w-6 h-6" />
                 {unreadNotificationCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
                 )}
               </button>
-            </div>
-
-            {/* Dynamic Messages / Mail Dropdown */}
-            <div className="relative" ref={messagesRef}>
-              <button
-                onClick={() => {
-                  setShowMessages((prev) => !prev);
-                  setShowNotifications(false);
-                  setShowUserDropdown(false);
-                }}
-                className={`p-2 rounded-xl transition-colors relative ${
-                  showMessages
-                    ? "bg-blue-50 text-blue-600"
-                    : "hover:bg-slate-100 text-slate-600"
-                }`}
-                title="Communications & Messages"
-              >
-                <Mail className="w-4 h-4" />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white" />
-                )}
-              </button>
-
-              {/* Messages Popover */}
-              {showMessages && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-md shadow-xl overflow-hidden z-50 animate-scale-up">
-                  <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                    <span className="font-bold text-xs text-slate-800">
-                      Messages & Threads
-                    </span>
-                    <button
-                      onClick={() => {
-                        setShowMessages(false);
-                        router.push("/dashboard/communication");
-                      }}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-700"
-                    >
-                      Open Hub
-                    </button>
-                  </div>
-
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
-                    {threads.length > 0 ? (
-                      threads.slice(0, 4).map((th) => (
-                        <div
-                          key={th._id || th.id}
-                          onClick={() => {
-                            setShowMessages(false);
-                            router.push("/dashboard/communication");
-                          }}
-                          className="p-3 hover:bg-slate-50 flex items-start gap-3 cursor-pointer transition-colors"
-                        >
-                          <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 font-bold text-xs">
-                            {th.customerName?.[0] || "C"}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-xs font-bold text-slate-900 block truncate">
-                              {th.customerName || th.subject || "Client Thread"}
-                            </span>
-                            <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                              {th.lastMessage?.text ||
-                                th.preview ||
-                                "Click to view conversation"}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center text-slate-400 text-xs">
-                        <MessageSquare className="w-6 h-6 text-slate-300 mx-auto mb-2" />
-                        No active conversation threads.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
-                    <button
-                      onClick={() => {
-                        setShowMessages(false);
-                        router.push("/dashboard/communication");
-                      }}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1.5 w-full py-1"
-                    >
-                      <span>Go to Communication Center</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Calendar Shortcut */}
@@ -610,7 +679,7 @@ export default function Navbar() {
               className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors hidden sm:inline-flex"
               title="Calendar & Tasks"
             >
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-6 h-6" />
             </button>
           </div>
 
@@ -624,27 +693,35 @@ export default function Navbar() {
                 setShowNotifications(false);
                 setShowMessages(false);
               }}
-              className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition-all focus:outline-none"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 transition-all focus:outline-none"
               aria-expanded={showUserDropdown}
             >
               <div
-                className={`w-8 h-8 rounded-xl ${getAvatarBg(
+                className={`w-10 h-10 rounded-full ${getAvatarBg(
                   user.role,
-                )} text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0`}
+                )} text-white flex items-center justify-center font-bold text-md shadow-xs shrink-0 overflow-hidden border border-slate-200/80 bg-slate-100`}
               >
-                {user.initials}
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  user.initials
+                )}
               </div>
               <div className="hidden md:block text-left">
-                <span className="text-xs font-bold text-slate-900 block leading-tight truncate max-w-[130px]">
+                <span className="text-md font-bold text-slate-900 block leading-tight truncate max-w-32.5">
                   {user.name}
                 </span>
-                <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                <span className="text-sm text-slate-400 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {user.roleDisplay}
                 </span>
               </div>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 hidden sm:block ${
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 hidden sm:block ${
                   showUserDropdown ? "rotate-180 text-blue-600" : ""
                 }`}
               />
@@ -652,22 +729,76 @@ export default function Navbar() {
 
             {/* User Dropdown Menu */}
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-md shadow-xl overflow-hidden z-50 animate-scale-up">
-                {/* User Header */}
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-up">
+                {/* Hidden File Input for Avatar Selection */}
+                <input
+                  type="file"
+                  ref={avatarFileInputRef}
+                  onChange={handleAvatarSelect}
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                />
+
+                {/* User Header with Avatar Management */}
                 <div className="p-4 bg-slate-50 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-xl ${getAvatarBg(
-                        user.role,
-                      )} text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0`}
-                    >
-                      {user.initials}
+                  <div className="flex items-start gap-3">
+                    {/* Avatar with Camera Trigger & Hover Overlay */}
+                    <div className="relative group shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => avatarFileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        title={user.avatarUrl ? "Change profile picture" : "Upload profile picture"}
+                        className={`w-14 h-14 rounded-full ${getAvatarBg(
+                          user.role,
+                        )} text-white font-black text-base flex items-center justify-center shadow-xs overflow-hidden border-2 border-white ring-1 ring-slate-200 relative transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer`}
+                      >
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          user.initials
+                        )}
+
+                        {/* Hover Overlay with Camera Icon */}
+                        <div
+                          className={`absolute inset-0 bg-slate-900/50 rounded-full flex flex-col items-center justify-center text-white transition-opacity ${
+                            isUploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                          }`}
+                        >
+                          {isUploadingAvatar ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Camera className="w-5 h-5 drop-shadow-sm" />
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Small Camera Badge Button */}
+                      <button
+                        type="button"
+                        onClick={() => avatarFileInputRef.current?.click()}
+                        disabled={isUploadingAvatar}
+                        title={user.avatarUrl ? "Change photo" : "Upload photo"}
+                        className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xs border-2 border-white transition-all cursor-pointer"
+                      >
+                        {isUploadingAvatar ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Camera className="w-3 h-3" />
+                        )}
+                      </button>
                     </div>
+
+                    {/* User Info & Quick Action Buttons */}
                     <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-slate-900 block truncate">
+                      <span className="text-md font-bold text-slate-900 block truncate">
                         {user.name}
                       </span>
-                      <span className="text-[11px] text-slate-400 block truncate">
+                      <span className="text-[11px] text-slate-500 block truncate">
                         {user.email || "Verified User"}
                       </span>
                       <span
@@ -677,8 +808,51 @@ export default function Navbar() {
                       >
                         {user.roleDisplay}
                       </span>
+
+                      {/* Profile Photo Quick Actions */}
+                      <div className="mt-2 flex items-center gap-2 pt-1 border-t border-slate-200/60">
+                        <button
+                          type="button"
+                          onClick={() => avatarFileInputRef.current?.click()}
+                          disabled={isUploadingAvatar}
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Camera className="w-3 h-3" />
+                          <span>{user.avatarUrl ? "Change Photo" : "Add Photo"}</span>
+                        </button>
+
+                        {user.avatarUrl && (
+                          <>
+                            <span className="text-slate-300 text-xs">•</span>
+                            <button
+                              type="button"
+                              onClick={handleDeleteAvatar}
+                              disabled={isUploadingAvatar}
+                              className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Delete profile picture"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Delete</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Inline Error Notice */}
+                  {avatarError && (
+                    <div className="mt-2.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] flex items-center justify-between">
+                      <span className="truncate">{avatarError}</span>
+                      <button
+                        type="button"
+                        onClick={() => setAvatarError("")}
+                        className="text-rose-500 hover:text-rose-700 ml-1 font-bold text-sm leading-none"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
 
                   {/* Tenant Workspace Info */}
                   <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
@@ -777,13 +951,13 @@ export default function Navbar() {
                 placeholder="Search customers, leads, phone numbers, quotes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-sm text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent"
+                className="w-full text-md text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent"
               />
               <button
                 onClick={() => setShowSearchModal(false)}
                 className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -869,12 +1043,12 @@ export default function Navbar() {
                   )}
                 </div>
               ) : searchQuery && !isSearching ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
+                <div className="p-8 text-center text-slate-400 text-md">
                   No records found matching &quot;{searchQuery}&quot;.
                 </div>
               ) : (
                 <div className="p-4 space-y-4">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <span className="text-[15px] font-bold text-slate-400 uppercase tracking-wider block">
                     Quick Navigation Shortcuts
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -930,8 +1104,8 @@ export default function Navbar() {
                           }}
                           className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 border border-slate-100 text-slate-700 flex flex-col items-center justify-center gap-1.5 transition-all group"
                         >
-                          <Icon className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                          <span className="text-xs font-semibold">
+                          <Icon className="w-7 h-7 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                          <span className="text-md font-semibold">
                             {item.name}
                           </span>
                         </button>
@@ -940,18 +1114,6 @@ export default function Navbar() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-3 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex justify-between items-center">
-              <span>
-                Press{" "}
-                <kbd className="px-1.5 py-0.5 rounded bg-white border text-slate-600 font-bold">
-                  ESC
-                </kbd>{" "}
-                to close
-              </span>
-              <span>Search scoped authoritatively by tenant & role</span>
             </div>
           </div>
         </div>
@@ -1025,9 +1187,17 @@ export default function Navbar() {
                   <div
                     className={`w-8 h-8 rounded-lg ${getAvatarBg(
                       user.role,
-                    )} text-white font-bold text-xs flex items-center justify-center shrink-0`}
+                    )} text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden`}
                   >
-                    {user.initials}
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user.initials
+                    )}
                   </div>
                   <div className="min-w-0">
                     <span className="text-xs font-bold text-slate-200 block truncate">

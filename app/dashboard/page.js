@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -39,6 +40,7 @@ import {
 export default function DashboardPage() {
   const router = useRouter();
   const [userName, setUserName] = useState("User");
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(null);
   const [timeframe, setTimeframe] = useState("This Month");
   const [loading, setLoading] = useState(true);
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
@@ -141,6 +143,10 @@ export default function DashboardPage() {
       if (meRes.status === "fulfilled" && meRes.value?.data) {
         const me = meRes.value.data.user || meRes.value.data;
         setCurrentUser(me);
+        if (me.avatarUrl) {
+          setCurrentUserAvatar(me.avatarUrl);
+          localStorage.setItem("userAvatar", me.avatarUrl);
+        }
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -157,7 +163,20 @@ export default function DashboardPage() {
     }
     const storedName = localStorage.getItem("userName");
     if (storedName) setUserName(storedName.split(" ")[0] || storedName);
+    const storedAvatar = localStorage.getItem("userAvatar");
+    if (storedAvatar) setCurrentUserAvatar(storedAvatar);
+
+    const handleAvatarSync = (e) => {
+      const av =
+        e.detail?.avatarUrl || localStorage.getItem("userAvatar") || null;
+      setCurrentUserAvatar(av);
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarSync);
+
     loadDashboardData();
+
+    return () =>
+      window.removeEventListener("crm:avatar-updated", handleAvatarSync);
   }, [router]);
 
   const userRole = (
@@ -379,7 +398,7 @@ export default function DashboardPage() {
         else if (act.eventType === "PAYMENT_RECORDED") title = "Payment Received";
 
         list.push({
-          id: act._id || Math.random().toString(),
+          id: act._id || act.id || `act-${time}-${title}`,
           timestamp: new Date(time).getTime(),
           timeStr: time
             ? new Date(time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
@@ -473,13 +492,26 @@ export default function DashboardPage() {
             <>
               {/* Top Greeting Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-                Good Morning, {userName}! 👋
-              </h1>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                Here&apos;s what&apos;s happening with your sales today.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-xs shrink-0 bg-blue-600 text-white font-bold text-base flex items-center justify-center">
+                {currentUserAvatar ? (
+                  <img
+                    src={currentUserAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  (userName || "U").slice(0, 2).toUpperCase()
+                )}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                  Good Morning, {userName}! 👋
+                </h1>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                  Here&apos;s what&apos;s happening with your sales today.
+                </p>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -1075,6 +1107,54 @@ export default function DashboardPage() {
                         perf.userName ||
                         perf.name ||
                         `Executive ${idx + 1}`;
+                      const uEmail = (
+                        userObj.email ||
+                        perf.email ||
+                        ""
+                      )
+                        .toLowerCase()
+                        .trim();
+                      const uName = (name || "").toLowerCase().trim();
+                      const uId = (userObj._id || userObj.id || "").toString();
+
+                      let avatarDirectory = {};
+                      try {
+                        avatarDirectory = JSON.parse(
+                          localStorage.getItem("crm_user_avatars") || "{}",
+                        );
+                      } catch {}
+
+                      const currentLoggedInName = (
+                        localStorage.getItem("userName") || ""
+                      )
+                        .toLowerCase()
+                        .trim();
+                      const currentLoggedInEmail = (
+                        localStorage.getItem("userEmail") || ""
+                      )
+                        .toLowerCase()
+                        .trim();
+                      const currentLoggedInAvatar =
+                        localStorage.getItem("userAvatar") || null;
+
+                      const isSelf =
+                        (currentLoggedInEmail &&
+                          uEmail &&
+                          currentLoggedInEmail === uEmail) ||
+                        (currentLoggedInName &&
+                          uName === currentLoggedInName);
+
+                      const perfAvatar =
+                        userObj.avatarUrl ||
+                        userObj.avatar ||
+                        perf.avatarUrl ||
+                        perf.avatar ||
+                        (uId && avatarDirectory[uId]) ||
+                        (uEmail && avatarDirectory[uEmail]) ||
+                        (uName && avatarDirectory[uName]) ||
+                        (isSelf ? currentLoggedInAvatar : null) ||
+                        null;
+
                       const achievedPaise =
                         perf.achievedPaise !== undefined
                           ? perf.achievedPaise
@@ -1111,8 +1191,16 @@ export default function DashboardPage() {
                                     ? "🥉"
                                     : `#${rank}`}
                             </span>
-                            <div className="w-8 h-8 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                              {(name || "EX").slice(0, 2).toUpperCase()}
+                            <div className="w-8 h-8 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200">
+                              {perfAvatar ? (
+                                <img
+                                  src={perfAvatar}
+                                  alt={name}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                (name || "EX").slice(0, 2).toUpperCase()
+                              )}
                             </div>
                             <div className="min-w-0">
                               <span className="font-bold text-slate-800 text-xs block truncate">
