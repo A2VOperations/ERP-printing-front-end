@@ -491,6 +491,7 @@ export default function Sidebar() {
               alt="logo"
               width={60}
               height={60}
+              style={{ width: "auto", height: "auto" }}
               className="shrink-0"
             />
           </button>

@@ -158,6 +158,7 @@ export default function Home() {
             width={170}
             height={55}
             priority
+            style={{ width: "auto", height: "auto" }}
             className="object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
           />
         </div>

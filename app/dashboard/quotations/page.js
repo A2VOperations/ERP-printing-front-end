@@ -143,6 +143,7 @@ function QuotationsContent() {
 
   useEffect(() => {
     if (leadIdParam || customerNameParam || phoneParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewQuote((prev) => ({
         ...prev,
         leadId: leadIdParam || prev.leadId,
@@ -178,6 +179,7 @@ function QuotationsContent() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchQuotations();
   }, []);
 
@@ -262,6 +264,10 @@ function QuotationsContent() {
   // Open Edit Modal
   const handleOpenEdit = (quote) => {
     if (!quote) return;
+    if (quote.status === "ACCEPTED") {
+      alert("This quotation has already been accepted and converted into an active order. Accepted quotations cannot be revised. If changes are needed, please create a new quotation.");
+      return;
+    }
     setEditingQuote(quote);
     const isEditable =
       quote.status === "DRAFT" || quote.status === "PENDING_DISCOUNT_APPROVAL";
@@ -342,6 +348,14 @@ function QuotationsContent() {
         notes: editNotes,
         termsAndConditions: editTerms,
       };
+
+      if (editingQuote.status === "ACCEPTED") {
+        alert(
+          "This quotation has already been accepted and confirmed into an active order. Accepted quotations cannot be revised.",
+        );
+        setShowEditModal(false);
+        return;
+      }
 
       if (
         editingQuote.status === "DRAFT" ||
@@ -808,16 +822,26 @@ function QuotationsContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEdit(selectedQuote)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-all"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-blue-400" />
-                        {selectedQuote.status === "DRAFT" ||
-                        selectedQuote.status === "PENDING_DISCOUNT_APPROVAL"
-                          ? "Edit Quotation"
-                          : "Revise Version"}
-                      </button>
+                      {selectedQuote.status !== "ACCEPTED" ? (
+                        <button
+                          onClick={() => handleOpenEdit(selectedQuote)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-all"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                          {selectedQuote.status === "DRAFT" ||
+                          selectedQuote.status === "PENDING_DISCOUNT_APPROVAL"
+                            ? "Edit Quotation"
+                            : "Revise Version"}
+                        </button>
+                      ) : (
+                        <span
+                          title="Accepted quotations are converted to orders and locked."
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          Accepted (Order Created)
+                        </span>
+                      )}
 
                       <button
                         onClick={() => {

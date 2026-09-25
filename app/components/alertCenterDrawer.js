@@ -1896,7 +1896,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                     </span>
                     <button
                       type="button"
-                      onClick={() => router.push("/dashboard/settings")}
+                      onClick={() => router.push("/dashboard/admin/settings/company")}
                       className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
                     >
                       Change email
