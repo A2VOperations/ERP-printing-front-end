@@ -171,23 +171,47 @@ export default function LeadsDashboardPage() {
   }, [currentUser]);
 
   const isManagerOrAdmin = useMemo(() => {
-    return ["admin", "super_admin", "manager", "sales_manager"].includes(userRole);
+    return (
+      userRole.includes("admin") ||
+      userRole.includes("manager") ||
+      ["admin", "super_admin", "manager", "sales_manager", "general_manager", "operations_manager"].includes(userRole)
+    );
   }, [userRole]);
+
+  const myUserId = useMemo(() => {
+    return String(currentUser?._id || currentUser?.id || "");
+  }, [currentUser]);
+
+  // Scoped leads: ONLY Admin and Manager can see all the leads.
+  // Everyone else (Sales, etc.) strictly only sees leads assigned to themselves.
+  const scopedLeads = useMemo(() => {
+    if (isManagerOrAdmin) return leads;
+    if (!myUserId) return [];
+    return leads.filter((l) => {
+      const assignedId = String(
+        l.assignedToId?._id ||
+        l.assignedToId?.id ||
+        (typeof l.assignedToId === "string" ? l.assignedToId : "") ||
+        ""
+      );
+      return assignedId === myUserId;
+    });
+  }, [leads, isManagerOrAdmin, myUserId]);
 
   // Lead computation helpers for global pipeline
   const computedMetrics = useMemo(() => {
-    const total = leads.length;
-    const newCount = leads.filter((l) => l.status === "NEW").length;
-    const contactedCount = leads.filter((l) => l.status === "CONTACTED").length;
-    const proposalCount = leads.filter(
+    const total = scopedLeads.length;
+    const newCount = scopedLeads.filter((l) => l.status === "NEW").length;
+    const contactedCount = scopedLeads.filter((l) => l.status === "CONTACTED").length;
+    const proposalCount = scopedLeads.filter(
       (l) => l.status === "QUOTATION_SENT" || l.status === "PROPOSAL_SENT",
     ).length;
-    const negotiationCount = leads.filter((l) => l.status === "NEGOTIATION").length;
-    const inCookingCount = leads.filter((l) =>
+    const negotiationCount = scopedLeads.filter((l) => l.status === "NEGOTIATION").length;
+    const inCookingCount = scopedLeads.filter((l) =>
       ["INTERESTED", "FOLLOW_UP", "IN_DISCUSSION"].includes(l.status),
     ).length;
-    const wonCount = leads.filter((l) => l.status === "WON").length;
-    const lostCount = leads.filter((l) =>
+    const wonCount = scopedLeads.filter((l) => l.status === "WON").length;
+    const lostCount = scopedLeads.filter((l) =>
       ["LOST", "NOT_INTERESTED"].includes(l.status),
     ).length;
 
@@ -198,12 +222,12 @@ export default function LeadsDashboardPage() {
       Number(l.legacyFinancials?.totalAmount) ||
       0;
 
-    const hotLeads = leads.filter(
+    const hotLeads = scopedLeads.filter(
       (l) => l.priority === "URGENT" || l.priority === "HIGH",
     );
-    const highTicketLeads = leads.filter((l) => getLeadVal(l) >= 20000);
+    const highTicketLeads = scopedLeads.filter((l) => getLeadVal(l) >= 20000);
 
-    const totalExpectedVal = leads.reduce((sum, l) => sum + getLeadVal(l), 0);
+    const totalExpectedVal = scopedLeads.reduce((sum, l) => sum + getLeadVal(l), 0);
     const highTicketTotalVal = highTicketLeads.reduce(
       (sum, l) => sum + getLeadVal(l),
       0,
@@ -229,12 +253,12 @@ export default function LeadsDashboardPage() {
       avgPerLead,
       hotLeadsList: hotLeads,
     };
-  }, [leads]);
+  }, [scopedLeads]);
 
   // Dynamic overview metrics based on selected timeframe (for Donut Chart)
   const overviewMetrics = useMemo(() => {
     const now = new Date();
-    const sourceLeads = leads.filter((l) => {
+    const sourceLeads = scopedLeads.filter((l) => {
       if (timeframe === "All Time") return true;
       const dateStr = l.createdAt || l.updatedAt;
       if (!dateStr) return true;
@@ -288,7 +312,7 @@ export default function LeadsDashboardPage() {
         lost: getPct(lostCount),
       },
     };
-  }, [leads, timeframe]);
+  }, [scopedLeads, timeframe]);
 
   // Donut SVG Segments
   const donutSegments = useMemo(() => {
@@ -358,7 +382,7 @@ export default function LeadsDashboardPage() {
     const totalVal = computedMetrics.totalExpectedVal || 1;
     const groups = {};
 
-    leads.forEach((l) => {
+    scopedLeads.forEach((l) => {
       const src = (l.source || "OTHER").toUpperCase();
       const val =
         Number(l.expectedValue) ||
@@ -405,13 +429,13 @@ export default function LeadsDashboardPage() {
               : "bg-emerald-600",
       };
     });
-  }, [leads, computedMetrics.totalExpectedVal]);
+  }, [scopedLeads, computedMetrics.totalExpectedVal]);
 
   // Print Categories in Pipeline
   const categoryTags = useMemo(() => {
     const counts = { "Visiting Cards": 0, "Brochures": 0, "Flex & Menus": 0, "Others": 0 };
 
-    leads.forEach((l) => {
+    scopedLeads.forEach((l) => {
       const req = (l.requirement || "").toLowerCase();
       if (req.includes("visiting") || req.includes("card")) {
         counts["Visiting Cards"] += 1;
@@ -445,7 +469,7 @@ export default function LeadsDashboardPage() {
                 ? "bg-amber-50 text-amber-800 border border-amber-200"
                 : "bg-slate-100 text-slate-700 border border-slate-200",
       }));
-  }, [leads]);
+  }, [scopedLeads]);
 
   // Lead Score & Tag helper
   const getLeadScoreMeta = (lead) => {
@@ -493,7 +517,7 @@ export default function LeadsDashboardPage() {
 
   // Filtered & Sorted Leads
   const filteredLeads = useMemo(() => {
-    let result = leads.filter((l) => {
+    let result = scopedLeads.filter((l) => {
       const matchesTab =
         activeTab === "ALL" ||
         (activeTab === "NEW" && l.status === "NEW") ||
@@ -532,7 +556,7 @@ export default function LeadsDashboardPage() {
     });
 
     return result;
-  }, [leads, activeTab, searchQuery, sortBy]);
+  }, [scopedLeads, activeTab, searchQuery, sortBy]);
 
   // Export Batch to CSV
   const handleExportBatch = () => {
@@ -675,10 +699,10 @@ export default function LeadsDashboardPage() {
 
   // Highest Value Lead ID for the "TOP TICKET" ribbon
   const highestValueLeadId = useMemo(() => {
-    if (leads.length === 0) return null;
+    if (scopedLeads.length === 0) return null;
     let maxVal = -1;
     let maxId = null;
-    leads.forEach((l) => {
+    scopedLeads.forEach((l) => {
       const val = Number(l.expectedValue) || Number(l.estimatedBudget) || 0;
       if (val > maxVal) {
         maxVal = val;
@@ -686,11 +710,11 @@ export default function LeadsDashboardPage() {
       }
     });
     return maxVal >= 4000 ? maxId : null;
-  }, [leads]);
+  }, [scopedLeads]);
 
   // Second Highest or High Priority for "HOT DEAL" ribbon
   const hotDealLeadId = useMemo(() => {
-    const candidates = leads.filter((l) => l._id !== highestValueLeadId);
+    const candidates = scopedLeads.filter((l) => l._id !== highestValueLeadId);
     if (candidates.length === 0) return null;
     // Prefer Pizza Wizza or highest remaining value >= 3000
     const pizzaWizza = candidates.find(
@@ -699,7 +723,7 @@ export default function LeadsDashboardPage() {
         (Number(l.expectedValue) || 0) >= 3000,
     );
     return pizzaWizza ? pizzaWizza._id : null;
-  }, [leads, highestValueLeadId]);
+  }, [scopedLeads, highestValueLeadId]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -966,7 +990,7 @@ export default function LeadsDashboardPage() {
                   <span>
                     Showing{" "}
                     <strong className="text-slate-900 font-bold">
-                      {filteredLeads.length} of {leads.length}{" "}
+                      {filteredLeads.length} of {scopedLeads.length}{" "}
                       {activeTab === "ALL" ? "Total" : activeTab} Leads
                     </strong>{" "}
                     •{" "}
