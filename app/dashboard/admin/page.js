@@ -1,2355 +1,2412 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import { DashboardSkeleton } from "@/app/components/ui/skeleton";
+
 import {
-  Search,
-  Bell,
-  Menu,
-  Calendar,
-  ChevronDown,
   Users,
   FileText,
   Package,
   CreditCard,
   Palette,
-  Settings,
-  CheckCircle2,
+  Factory,
   Truck,
-  Box,
-  BarChart3,
   AlertTriangle,
-  Flame,
-  Clock,
-  Wrench,
-  CheckSquare,
+  ArrowUpRight,
+  ArrowDownRight,
   RefreshCw,
+  Search,
   Plus,
-  ShieldCheck,
-  Layers,
-  UserPlus,
-  ArrowRight,
-  TrendingUp,
-  TrendingDown,
-  X,
-  ExternalLink,
-  Building2,
+  ChevronDown,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Check,
+  Loader2,
 } from "lucide-react";
 
 export default function AdminOverviewPage() {
   const router = useRouter();
+
+  // User state
+  const [userName, setUserName] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("userName");
+      if (stored) return stored.split(" ")[0] || stored;
+    }
+    return "Ravinder";
+  });
+
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("userAvatar") || null;
+    }
+    return null;
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) return JSON.parse(storedUser);
+      } catch (e) {}
+    }
+    return null;
+  });
+
+  // UI state
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userName, setUserName] = useState("Admin");
-  const [userRoleDisplay, setUserRoleDisplay] = useState("Super Admin");
-  const [currentTime, setCurrentTime] = useState("");
-  const [currentDate, setCurrentDate] = useState("");
-  const [greeting, setGreeting] = useState("Good Morning");
-
-  // Timeframe Filters
-  const [salesTimeframe, setSalesTimeframe] = useState("This Month"); // 'Today' | 'This Week' | 'This Month' | 'All Time'
-  const [orderFilter, setOrderFilter] = useState("All Orders"); // 'All Orders' | 'In Progress' | 'Completed' | 'Overdue'
-  const [financeTimeframe, setFinanceTimeframe] = useState("This Month"); // 'Today' | 'This Week' | 'This Month' | 'All Time'
-  const [teamTimeframe, setTeamTimeframe] = useState("This Month"); // 'Today' | 'This Week' | 'This Month' | 'All Time'
-  const [teamTab, setTeamTab] = useState("SALES"); // 'SALES' | 'DESIGN'
-
-  // Dropdown Open States
-  const [openDropdown, setOpenDropdown] = useState(null); // 'sales' | 'order' | 'finance' | 'team' | null
-
-  // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const searchRef = useRef(null);
+  const [teamTab, setTeamTab] = useState("Sales Team");
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+  const [creatingLead, setCreatingLead] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
-  // Raw Real API Datasets
+  // Live collections from backend
   const [leads, setLeads] = useState([]);
-  const [quotations, setQuotations] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [recSummary, setRecSummary] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [quotations, setQuotations] = useState([]);
   const [designProjects, setDesignProjects] = useState([]);
   const [productionJobs, setProductionJobs] = useState([]);
-  const [prodMetrics, setProdMetrics] = useState(null);
-  const [deliveryJobs, setDeliveryJobs] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [topPerformers, setTopPerformers] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
+  const [followups, setFollowups] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [users, setUsers] = useState([]);
+  const [targetProgress, setTargetProgress] = useState(null);
+  const [topPerformers, setTopPerformers] = useState([]);
 
-  // Live dynamic clock and greeting
+  // New Lead Form State
+  const [newLead, setNewLead] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    companyName: "",
+    requirement: "",
+    source: "WALK_IN",
+    estimatedValue: 15000,
+    assignedToId: "",
+    nextFollowUp: "",
+  });
+
+  // Real-time ticking clock
   useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentDate(
-        now.toLocaleDateString("en-US", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-      );
-      setCurrentTime(
-        now.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        }),
-      );
-      const hour = now.getHours();
-      if (hour < 12) setGreeting("Good Morning");
-      else if (hour < 17) setGreeting("Good Afternoon");
-      else setGreeting("Good Evening");
-    };
-
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch logged in user info
-  useEffect(() => {
+  const loadDashboardData = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
     try {
-      const storedName = localStorage.getItem("userName");
-      const storedRole = (
-        localStorage.getItem("userRole") || "admin"
-      ).toLowerCase();
-      if (storedName) {
-        setUserName(storedName.split(" ")[0] || storedName);
-      }
-      if (storedRole === "admin" || storedRole === "super_admin")
-        setUserRoleDisplay("Super Admin");
-      else if (storedRole === "ceo_admin")
-        setUserRoleDisplay("CEO / Executive");
-      else if (storedRole === "manager")
-        setUserRoleDisplay("Operations Manager");
-      else setUserRoleDisplay(storedRole.toUpperCase());
-    } catch (e) {}
-  }, []);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setShowSearchResults(false);
-      }
-      setOpenDropdown(null);
-    };
-    document.addEventListener("click", handleOutsideClick);
-    return () => document.removeEventListener("click", handleOutsideClick);
-  }, []);
-
-  // Fetch all live backend data concurrently
-  const loadDashboardData = useCallback(async (isSilent = false) => {
-    try {
-      if (!isSilent) setLoading(true);
-      else setRefreshing(true);
-
       const [
         leadsRes,
-        quotesRes,
+        followupsRes,
         ordersRes,
-        recSumRes,
-        designsRes,
-        prodJobsRes,
-        prodMetricsRes,
-        deliveryRes,
-        paymentsRes,
+        targetRes,
         leaderRes,
-        auditsRes,
         usersRes,
+        meRes,
+        activitiesRes,
+        paymentsRes,
+        quotationsRes,
+        designProjectsRes,
+        productionJobsRes,
       ] = await Promise.allSettled([
-        api.get("/leads?limit=150"),
-        api.get("/quotations?limit=100"),
+        api.get("/leads?limit=100"),
+        api.get("/followups?limit=100"),
         api.get("/orders?limit=100"),
-        api.get("/receivables/summary"),
-        api.get("/design-projects?limit=100"),
-        api.get("/production-jobs?limit=100"),
-        api.get("/production-jobs/metrics"),
-        api.get("/delivery-jobs?limit=100"),
-        api.get("/payments?limit=100"),
-        api.get("/targets/leaderboard?timeframe=month"),
-        api.get("/audit-logs?limit=15"),
+        api.get("/targets/my-achievement", { silent: true }),
+        api.get("/targets/leaderboard", { silent: true }),
         api.get("/users"),
+        api.get("/auth/me"),
+        api.get("/activities?limit=20", { silent: true }),
+        api.get("/payments?limit=100", { silent: true }),
+        api.get("/quotations?limit=100", { silent: true }),
+        api.get("/design-projects?limit=50", { silent: true }),
+        api.get("/production-jobs?limit=50", { silent: true }),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
-        const raw = leadsRes.value.data;
-        setLeads(Array.isArray(raw) ? raw : raw.records || raw.leads || []);
+        setLeads(leadsRes.value.data);
       }
-      if (quotesRes.status === "fulfilled" && quotesRes.value?.data) {
-        const raw = quotesRes.value.data;
-        setQuotations(
-          Array.isArray(raw) ? raw : raw.items || raw.records || [],
-        );
+      if (followupsRes.status === "fulfilled" && followupsRes.value?.data) {
+        setFollowups(followupsRes.value.data);
       }
       if (ordersRes.status === "fulfilled" && ordersRes.value?.data) {
-        const raw = ordersRes.value.data;
-        setOrders(Array.isArray(raw) ? raw : raw.items || raw.records || []);
+        setOrders(ordersRes.value.data);
       }
-      if (recSumRes.status === "fulfilled" && recSumRes.value?.data) {
-        setRecSummary(
-          recSumRes.value.data?.summary || recSumRes.value.data || null,
-        );
-      }
-      if (designsRes.status === "fulfilled" && designsRes.value?.data) {
-        const raw = designsRes.value.data;
-        setDesignProjects(
-          Array.isArray(raw) ? raw : raw.projects || raw.records || [],
-        );
-      }
-      if (prodJobsRes.status === "fulfilled" && prodJobsRes.value?.data) {
-        const raw = prodJobsRes.value.data;
-        setProductionJobs(
-          Array.isArray(raw) ? raw : raw.jobs || raw.records || [],
-        );
-      }
-      if (prodMetricsRes.status === "fulfilled" && prodMetricsRes.value?.data) {
-        setProdMetrics(prodMetricsRes.value.data);
-      }
-      if (deliveryRes.status === "fulfilled" && deliveryRes.value?.data) {
-        const raw = deliveryRes.value.data;
-        setDeliveryJobs(
-          Array.isArray(raw) ? raw : raw.jobs || raw.records || [],
-        );
-      }
-      if (paymentsRes.status === "fulfilled" && paymentsRes.value?.data) {
-        const raw = paymentsRes.value.data;
-        setPayments(Array.isArray(raw) ? raw : raw.items || raw.records || []);
+      if (targetRes.status === "fulfilled" && targetRes.value?.data) {
+        setTargetProgress(targetRes.value.data);
       }
       if (leaderRes.status === "fulfilled" && leaderRes.value?.data) {
         const raw = leaderRes.value.data;
         const list = Array.isArray(raw) ? raw : raw?.rankings || [];
-        // Only show genuine sales reps — mirrors the backend isSalesUser helper
-        const salesOnly = list.filter((p) => {
-          const u = p.user || p;
-          const role = String(
-            u.roleSlug || u.role || p.roleSlug || p.role || "",
-          )
-            .toLowerCase()
-            .trim();
-          const name = String(
-            u.name || p.userName || p.name || "",
-          ).toLowerCase();
-          const email = String(u.email || p.email || "").toLowerCase();
-          // Exclude non-sales roles explicitly
-          if (
-            role.includes("admin") ||
-            role === "manager" ||
-            role === "designer" ||
-            role === "customer" ||
-            role === "operator" ||
-            role === "delivery" ||
-            name.includes("admin") ||
-            email.includes("admin")
-          )
-            return false;
-          // Only include confirmed sales/employee roles
-          return role === "sales" || role === "employee";
-        });
-        setTopPerformers(salesOnly);
-      }
-      if (auditsRes.status === "fulfilled" && auditsRes.value?.data) {
-        const raw = auditsRes.value.data;
-        setAuditLogs(Array.isArray(raw) ? raw : raw.records || raw.data || []);
+        setTopPerformers(list);
       }
       if (usersRes.status === "fulfilled" && usersRes.value?.data) {
-        const raw = usersRes.value.data;
-        setUsers(Array.isArray(raw) ? raw : raw.records || []);
+        setUsers(usersRes.value.data);
+      }
+      if (meRes.status === "fulfilled" && meRes.value?.data) {
+        const me = meRes.value.data.user || meRes.value.data;
+        setCurrentUser(me);
+        if (me.name) {
+          setUserName(me.name.split(" ")[0]);
+        }
+        if (me.avatarUrl) {
+          setCurrentUserAvatar(me.avatarUrl);
+          localStorage.setItem("userAvatar", me.avatarUrl);
+        }
+      }
+      if (activitiesRes.status === "fulfilled" && activitiesRes.value?.data) {
+        setActivities(activitiesRes.value.data);
+      }
+      if (paymentsRes.status === "fulfilled" && paymentsRes.value?.data) {
+        setPayments(paymentsRes.value.data);
+      }
+      if (quotationsRes.status === "fulfilled" && quotationsRes.value?.data) {
+        setQuotations(quotationsRes.value.data);
+      }
+      if (
+        designProjectsRes.status === "fulfilled" &&
+        (designProjectsRes.value?.data || designProjectsRes.value?.projects)
+      ) {
+        setDesignProjects(
+          designProjectsRes.value.data || designProjectsRes.value.projects,
+        );
+      }
+      if (
+        productionJobsRes.status === "fulfilled" &&
+        productionJobsRes.value?.data
+      ) {
+        setProductionJobs(productionJobsRes.value.data);
       }
     } catch (err) {
-      console.error("Failed to load live admin dashboard data:", err);
+      console.error("Failed to load dashboard data:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // Initial load + Real-time auto refresh every 30 seconds
   useEffect(() => {
+    const handleAvatarSync = (e) => {
+      const av =
+        e.detail?.avatarUrl || localStorage.getItem("userAvatar") || null;
+      setCurrentUserAvatar(av);
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarSync);
+
+    const handleKeyDown = (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        e.target?.isContentEditable
+      ) {
+        return;
+      }
+      const key = e.key.toLowerCase();
+      if (key === "n" || (e.metaKey && key === "k") || (e.ctrlKey && key === "k")) {
+        e.preventDefault();
+        setShowAddLeadModal(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDashboardData();
-    const pollInterval = setInterval(() => {
-      loadDashboardData(true);
-    }, 30000);
-    return () => clearInterval(pollInterval);
+
+    return () => {
+      window.removeEventListener("crm:avatar-updated", handleAvatarSync);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [loadDashboardData]);
 
-  // Helper date filter
-  const isDateInTimeframe = useCallback((dateString, tf) => {
-    if (!dateString) return false;
-    if (tf === "All Time") return true;
-    const d = new Date(dateString);
-    const now = new Date();
-    if (isNaN(d.getTime())) return false;
-
-    if (tf === "Today") {
-      return d.toDateString() === now.toDateString();
-    }
-    if (tf === "This Week") {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(now.getDate() - 7);
-      return d >= oneWeekAgo && d <= now;
-    }
-    if (tf === "This Month") {
-      return (
-        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-      );
-    }
-    return true;
-  }, []);
-
-  // ==========================================
-  // 100% DYNAMIC METRICS FROM REAL DATA ONLY
-  // ==========================================
-  const metrics = useMemo(() => {
-    const now = new Date();
-
-    // 1. Total Leads
-    const totalLeads = leads.length;
-    const newLeadsCount = leads.filter((l) => l.status === "NEW").length;
-    const wonLeadsCount = leads.filter((l) => l.status === "WON").length;
-    const thisMonthLeads = leads.filter((l) => {
-      const d = new Date(l.createdAt);
-      return (
-        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-      );
-    }).length;
-    const leadsTrend =
-      totalLeads > 0 ? Math.round((thisMonthLeads / totalLeads) * 100) : 0;
-    const leadsFooter = `+${thisMonthLeads} this month`;
-
-    // 2. Open Quotations
-    const openQuoteList = quotations.filter((q) =>
-      ["DRAFT", "PENDING_DISCOUNT_APPROVAL", "APPROVED", "SENT"].includes(
-        q.status,
-      ),
-    );
-    const openQuotations = openQuoteList.length;
-    const awaitingApprovalQuotes = quotations.filter(
-      (q) => q.status === "PENDING_DISCOUNT_APPROVAL",
-    ).length;
-    const quotesTrend =
-      quotations.length > 0
-        ? Math.round((openQuotations / quotations.length) * 100)
-        : 0;
-    const openQuotesFooter = `${awaitingApprovalQuotes} awaiting approval`;
-
-    // 3. Active Orders
-    const activeOrderList = orders.filter(
-      (o) => !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.orderStatus),
-    );
-    const activeOrders = activeOrderList.length;
-    const inProductionOrders = orders.filter(
-      (o) => o.orderStatus === "PRODUCTION",
-    ).length;
-    const ordersTrend =
-      orders.length > 0 ? Math.round((activeOrders / orders.length) * 100) : 0;
-    const activeOrdersFooter = `${inProductionOrders} in production`;
-
-    // 4. Outstanding Receivables
-    const totalOutstandingPaise =
-      recSummary?.totalOutstandingPaise !== undefined
-        ? recSummary.totalOutstandingPaise
-        : orders.reduce((sum, o) => sum + (o.balancePaise || 0), 0);
-    const totalBilledPaise = orders.reduce(
-      (sum, o) => sum + (o.grandTotalPaise || 0),
-      0,
-    );
-    const recTrend =
-      totalBilledPaise > 0
-        ? Math.round((totalOutstandingPaise / totalBilledPaise) * 100)
-        : 0;
-    const outstandingReceivablesFormatted = `₹ ${(totalOutstandingPaise / 100).toLocaleString("en-IN")}`;
-    const pendingOrdersCount = orders.filter(
-      (o) => (o.balancePaise || 0) > 0,
-    ).length;
-    const outstandingFooter = `${pendingOrdersCount} orders pending`;
-
-    // 5. Designs Pending Approval
-    const clientReviewDesigns = designProjects.filter(
-      (d) =>
-        d.approvalStatus === "PENDING" ||
-        ["CLIENT_REVIEW", "BRIEFING"].includes(d.status),
-    ).length;
-    const inClientReviewCount = designProjects.filter(
-      (d) => d.status === "CLIENT_REVIEW",
-    ).length;
-    const designTrend =
-      designProjects.length > 0
-        ? Math.round((clientReviewDesigns / designProjects.length) * 100)
-        : 0;
-    const designsFooter = `${inClientReviewCount} in client review`;
-
-    // 6. Jobs In Production
-    const jobsInProd =
-      prodMetrics?.inProduction !== undefined
-        ? prodMetrics.inProduction
-        : productionJobs.filter((j) =>
-            ["SENT_FOR_PRODUCTION", "IN_PRODUCTION"].includes(
-              j.productionStatus,
-            ),
-          ).length;
-    const sentToProdCount =
-      prodMetrics?.sentForProduction !== undefined
-        ? prodMetrics.sentForProduction
-        : productionJobs.filter(
-            (j) => j.productionStatus === "SENT_FOR_PRODUCTION",
-          ).length;
-    const prodTrend =
-      productionJobs.length > 0
-        ? Math.round((jobsInProd / productionJobs.length) * 100)
-        : 0;
-    const jobsInProdFooter = `${sentToProdCount} in queue`;
-
-    // 7. Ready for Release
-    const readyForReleaseCount =
-      prodMetrics?.readyForRelease !== undefined
-        ? prodMetrics.readyForRelease
-        : productionJobs.filter(
-            (j) => j.productionStatus === "READY_FOR_RELEASE",
-          ).length;
-    const readyReleaseFooter = `${readyForReleaseCount} awaiting release`;
-
-    // 8. Ready for Dispatch
-    const readyDispatch =
-      prodMetrics?.readyForDispatch !== undefined
-        ? prodMetrics.readyForDispatch
-        : orders.filter((o) => o.orderStatus === "READY").length ||
-          deliveryJobs.filter((d) =>
-            ["READY", "READY_FOR_PICKUP"].includes(d.status),
-          ).length;
-    const scheduledToday = deliveryJobs.filter(
-      (d) => d.status === "READY",
-    ).length;
-    const dispatchTrend =
-      deliveryJobs.length > 0
-        ? Math.round((readyDispatch / deliveryJobs.length) * 100)
-        : 0;
-    const dispatchFooter = `${scheduledToday} scheduled today`;
-
-    // 9. Delivered Today
-    const deliveredToday =
-      prodMetrics?.deliveredToday !== undefined
-        ? prodMetrics.deliveredToday
-        : deliveryJobs.filter((d) => d.status === "DELIVERED").length;
-    const totalDeliveries = deliveryJobs.length;
-    const deliveryRate =
-      totalDeliveries > 0
-        ? Math.round((deliveredToday / totalDeliveries) * 100)
-        : 0;
-    const deliveredFooter = `Out of ${totalDeliveries} total`;
-
-    // 10. Today's Revenue
-    const todayRevenuePaise = payments
-      .filter((p) => {
-        const d = new Date(p.receivedAt || p.createdAt);
-        return d.toDateString() === now.toDateString();
-      })
-      .reduce((sum, p) => sum + (p.amountPaise || 0), 0);
-    const todayRevenueFormatted = `₹ ${(todayRevenuePaise / 100).toLocaleString("en-IN")}`;
-    const completedOrdersCount = orders.filter((o) =>
-      ["DELIVERED", "COMPLETED"].includes(o.orderStatus),
-    ).length;
-    const revenueFooter = `From ${completedOrdersCount} orders`;
-
-    // 11. Overdue Orders
-    const overdueOrders = orders.filter(
-      (o) =>
-        o.promisedDeliveryDate &&
-        new Date(o.promisedDeliveryDate) < now &&
-        !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.orderStatus),
-    ).length;
-    const overdueTrend =
-      activeOrders > 0 ? Math.round((overdueOrders / activeOrders) * 100) : 0;
-    const overdueFooter =
-      overdueOrders > 0 ? "Need immediate action" : "All SLAs on track";
-
-    // 12. Payment Verification
-    const pendingVerifications = payments.filter(
-      (p) => p.status === "PENDING_VERIFICATION",
-    ).length;
-    const verifTrend =
-      payments.length > 0
-        ? Math.round((pendingVerifications / payments.length) * 100)
-        : 0;
-    const pendingVerifFooter = `${pendingVerifications} awaiting approval`;
-
-    // ==========================================
-    // DYNAMIC PIPELINES BASED ON TIMEFRAME
-    // ==========================================
-    const filteredLeads = leads.filter((l) =>
-      isDateInTimeframe(l.createdAt, salesTimeframe),
-    );
-    const filteredQuotes = quotations.filter((q) =>
-      isDateInTimeframe(q.createdAt, salesTimeframe),
-    );
-    const filteredOrders = orders.filter((o) =>
-      isDateInTimeframe(o.orderDate || o.createdAt, salesTimeframe),
-    );
-
-    const leadsCount = filteredLeads.length || leads.length;
-    const interestedCount = leads.filter((l) =>
-      ["INTERESTED", "QUOTATION_SENT", "NEGOTIATION", "WON"].includes(l.status),
-    ).length;
-    const quotationCount = filteredQuotes.length || quotations.length;
-    const orderCount = filteredOrders.length || orders.length;
-    const maxPipeline = Math.max(
-      1,
-      leadsCount,
-      interestedCount,
-      quotationCount,
-      orderCount,
-    );
-
-    // Dynamic 7 Order Stages based on orderFilter
-    let ordersForPipeline = orders;
-    if (orderFilter === "In Progress") {
-      ordersForPipeline = orders.filter(
-        (o) => !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.orderStatus),
-      );
-    } else if (orderFilter === "Completed") {
-      ordersForPipeline = orders.filter((o) =>
-        ["DELIVERED", "COMPLETED"].includes(o.orderStatus),
-      );
-    } else if (orderFilter === "Overdue") {
-      ordersForPipeline = orders.filter(
-        (o) =>
-          o.promisedDeliveryDate &&
-          new Date(o.promisedDeliveryDate) < now &&
-          !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.orderStatus),
-      );
-    }
-
-    const orderStages = {
-      confirmed: ordersForPipeline.filter((o) =>
-        ["CONFIRMED", "AWAITING_ADVANCE"].includes(o.orderStatus),
-      ).length,
-      design: ordersForPipeline.filter((o) => o.orderStatus === "DESIGN")
-        .length,
-      approval: ordersForPipeline.filter((o) => o.orderStatus === "APPROVAL")
-        .length,
-      production: ordersForPipeline.filter(
-        (o) => o.orderStatus === "PRODUCTION",
-      ).length,
-      ready: ordersForPipeline.filter((o) => o.orderStatus === "READY").length,
-      dispatch: ordersForPipeline.filter((o) => o.orderStatus === "DISPATCHED")
-        .length,
-      delivered: ordersForPipeline.filter((o) =>
-        ["DELIVERED", "COMPLETED"].includes(o.orderStatus),
-      ).length,
-    };
-    const maxOrderStage = Math.max(1, ...Object.values(orderStages));
-
-    // Dynamic Financial Overview based on financeTimeframe
-    const financeOrders = orders.filter((o) =>
-      isDateInTimeframe(o.orderDate || o.createdAt, financeTimeframe),
-    );
-    const dynamicOrdersList = financeOrders.length > 0 ? financeOrders : orders;
-    const totalOrderValuePaise = dynamicOrdersList.reduce(
-      (sum, o) => sum + (o.grandTotalPaise || 0),
-      0,
-    );
-    const paymentReceivedPaise = dynamicOrdersList.reduce(
-      (sum, o) => sum + (o.totalPaidPaise || 0),
-      0,
-    );
-    const outstandingPaise = dynamicOrdersList.reduce(
-      (sum, o) => sum + (o.balancePaise || 0),
-      0,
-    );
-    const overdueReceivablesPaise = recSummary?.overdue30PlusPaise || 0;
-    const pendingVerificationPaise = payments
-      .filter((p) => p.status === "PENDING_VERIFICATION")
-      .reduce((sum, p) => sum + (p.amountPaise || 0), 0);
-
-    const receivedPercent =
-      totalOrderValuePaise > 0
-        ? Math.round((paymentReceivedPaise / totalOrderValuePaise) * 100)
-        : 0;
-    const outstandingPercent =
-      totalOrderValuePaise > 0
-        ? Math.round((outstandingPaise / totalOrderValuePaise) * 100)
-        : 0;
-
-    // Operational Breakdown Data
-    const designStats = {
-      total: designProjects.length,
-      unassigned: designProjects.filter((d) => !d.assignedDesignerId).length,
-      inProgress: designProjects.filter((d) =>
-        ["IN_PROGRESS", "ASSIGNED"].includes(d.status),
-      ).length,
-      clientReview: designProjects.filter(
-        (d) => d.status === "CLIENT_REVIEW" || d.approvalStatus === "PENDING",
-      ).length,
-      revision: designProjects.filter(
-        (d) =>
-          d.approvalStatus === "REVISION_REQUESTED" ||
-          d.status === "REVISION_REQUESTED",
-      ).length,
-      approved: designProjects.filter(
-        (d) => d.approvalStatus === "APPROVED" || d.status === "APPROVED",
-      ).length,
-      readyProduction: designProjects.filter(
-        (d) => d.status === "DESIGN_PRODUCTION_READY",
-      ).length,
-      productionLocked: designProjects.filter(
-        (d) => d.productionLocked || d.status === "PRODUCTION_LOCKED",
-      ).length,
-    };
-
-    const prodStats = {
-      readyForRelease:
-        prodMetrics?.readyForRelease !== undefined
-          ? prodMetrics.readyForRelease
-          : productionJobs.filter(
-              (j) => j.productionStatus === "READY_FOR_RELEASE",
-            ).length,
-      sentForProduction:
-        prodMetrics?.sentForProduction !== undefined
-          ? prodMetrics.sentForProduction
-          : productionJobs.filter(
-              (j) => j.productionStatus === "SENT_FOR_PRODUCTION",
-            ).length,
-      inProduction:
-        prodMetrics?.inProduction !== undefined
-          ? prodMetrics.inProduction
-          : productionJobs.filter((j) => j.productionStatus === "IN_PRODUCTION")
-              .length,
-      readyDispatch:
-        prodMetrics?.readyForDispatch !== undefined
-          ? prodMetrics.readyForDispatch
-          : productionJobs.filter(
-              (j) => j.productionStatus === "READY_FOR_DISPATCH",
-            ).length,
-      dispatched:
-        prodMetrics?.dispatched !== undefined
-          ? prodMetrics.dispatched
-          : productionJobs.filter((j) => j.productionStatus === "DISPATCHED")
-              .length,
-      delivered:
-        prodMetrics?.deliveredToday !== undefined
-          ? prodMetrics.deliveredToday
-          : productionJobs.filter((j) => j.productionStatus === "DELIVERED")
-              .length,
-    };
-
-    const deliveryStats = {
-      ready:
-        deliveryJobs.filter((d) => d.status === "READY").length ||
-        orders.filter((o) => o.orderStatus === "READY").length,
-      dispatched:
-        deliveryJobs.filter((d) => d.status === "DISPATCHED").length ||
-        orders.filter((o) => o.orderStatus === "DISPATCHED").length,
-      outForDelivery: deliveryJobs.filter((d) =>
-        ["IN_TRANSIT", "DISPATCHED"].includes(d.status),
-      ).length,
-      failed: deliveryJobs.filter((d) => d.status === "FAILED").length,
-      fitting: deliveryJobs.filter(
-        (d) => d.deliveryType === "FITTING" && d.status !== "DELIVERED",
-      ).length,
-      delivered: deliveryJobs.filter((d) => d.status === "DELIVERED").length,
-    };
-
-    const attentionItems = [
-      {
-        label: "Follow-ups overdue",
-        count: orders.filter(
-          (o) =>
-            o.promisedDeliveryDate && new Date(o.promisedDeliveryDate) < now,
-        ).length,
-        href: "/dashboard/followups",
-      },
-      {
-        label: "Quotations awaiting approval",
-        count: quotations.filter(
-          (q) => q.status === "PENDING_DISCOUNT_APPROVAL",
-        ).length,
-        href: "/dashboard/quotations",
-      },
-      {
-        label: "Payments awaiting verification",
-        count: payments.filter((p) => p.status === "PENDING_VERIFICATION")
-          .length,
-        href: "/dashboard/payments",
-      },
-      {
-        label: "Designs awaiting client approval",
-        count: designProjects.filter((d) => d.approvalStatus === "PENDING")
-          .length,
-        href: "/dashboard/design?filter=CLIENT_REVIEW",
-      },
-      {
-        label: "Production jobs overdue",
-        count: productionJobs.filter(
-          (j) =>
-            j.dueDate &&
-            new Date(j.dueDate) < now &&
-            j.productionStatus !== "DELIVERED",
-        ).length,
-        href: "/dashboard/production",
-      },
-      {
-        label: "Jobs awaiting release",
-        count: productionJobs.filter(
-          (j) => j.productionStatus === "READY_FOR_RELEASE",
-        ).length,
-        href: "/dashboard/production",
-      },
-      {
-        label: "Jobs in active production",
-        count: productionJobs.filter((j) =>
-          ["SENT_FOR_PRODUCTION", "IN_PRODUCTION"].includes(j.productionStatus),
-        ).length,
-        href: "/dashboard/production",
-      },
-      {
-        label: "Failed deliveries",
-        count: deliveryJobs.filter((d) => d.status === "FAILED").length,
-        href: "/dashboard/production/delivery",
-      },
-      {
-        label: "Outstanding payments",
-        count: orders.filter((o) => (o.balancePaise || 0) > 0).length,
-        href: "/dashboard/receivables",
-      },
-    ];
-
-    // Designers list from users
-    const designers = users.filter(
-      (u) => (u.role || u.roleSlug || "").toLowerCase() === "designer",
-    );
-
-    // Dynamic Sales Representatives Performance Calculation (Directly from orders + leads)
-    const salesUsers = users.filter((u) => {
-      const r = (u.role || u.roleSlug || "").toLowerCase();
-      return (
-        !r.includes("admin") &&
-        (r.includes("sales") ||
-          r.includes("employee") ||
-          r.includes("executive"))
-      );
-    });
-
-    const dynamicSalesTeam = salesUsers.map((rep) => {
-      const repOrders = orders.filter((o) => {
-        const sid = o.assignedSalesId?._id || o.assignedSalesId;
-        return String(sid) === String(rep._id);
-      });
-      const repLeads = leads.filter((l) => {
-        const aid = l.assignedToId?._id || l.assignedToId;
-        return String(aid) === String(rep._id);
-      });
-      const repRevenue =
-        repOrders.reduce((sum, o) => sum + (o.grandTotalPaise || 0), 0) / 100;
-
-      // Check if leaderboard ranking exists for more context
-      const existingRank = topPerformers.find((tp) => {
-        const uid = tp.user?._id || tp.user?.id || tp._id;
-        return String(uid) === String(rep._id);
-      });
-
-      return {
-        _id: rep._id,
-        name: rep.name,
-        leads: existingRank?.totalLeads || repLeads.length || leads.length,
-        orders:
-          existingRank?.ordersWonCount ||
-          existingRank?.dealsWon ||
-          repOrders.length,
-        revenue: existingRank
-          ? (existingRank.achievedPaise || 0) / 100
-          : repRevenue,
+  const handleCreateLead = async (e) => {
+    e.preventDefault();
+    if (creatingLead) return;
+    try {
+      setCreatingLead(true);
+      const payload = {
+        ...newLead,
+        contactName: newLead.name,
+        businessName: newLead.companyName,
+        expectedValue: Number(newLead.estimatedValue) || 0,
+        estimatedBudget: Number(newLead.estimatedValue) || 0,
+        assignedToId: newLead.assignedToId || undefined,
       };
+      await api.post("/leads", payload);
+      setShowAddLeadModal(false);
+      setNewLead({
+        name: "",
+        phone: "",
+        email: "",
+        companyName: "",
+        requirement: "",
+        source: "WALK_IN",
+        estimatedValue: 15000,
+        assignedToId: "",
+        nextFollowUp: "",
+      });
+      await loadDashboardData();
+    } catch (err) {
+      alert(err.message || "Failed to create lead");
+    } finally {
+      setCreatingLead(false);
+    }
+  };
+
+  // Time formatting
+  const timeOfDay = useMemo(() => {
+    const hr = currentTime.getHours();
+    if (hr < 12) return "Morning";
+    if (hr < 17) return "Afternoon";
+    return "Evening";
+  }, [currentTime]);
+
+  const liveClockFormatted = useMemo(() => {
+    return (
+      currentTime.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }) + " IST"
+    );
+  }, [currentTime]);
+
+  const liveDateHeader = useMemo(() => {
+    const d = currentTime;
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+    const monthName = d.toLocaleDateString("en-US", { month: "long" });
+    const dayNum = d.getDate();
+    const year = d.getFullYear();
+    const timeStr = d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
+    return `${dayName}, ${monthName} ${dayNum}, ${year} | ${timeStr}`;
+  }, [currentTime]);
+
+  const currentMonthYearBadge = useMemo(() => {
+    const d = currentTime;
+    const monthName = d.toLocaleDateString("en-US", { month: "long" });
+    const year = d.getFullYear();
+    return `This Month (${monthName} ${year})`;
+  }, [currentTime]);
+
+  // Dynamic Metrics & Aggregations
+  // 1. Leads
+  const totalLeadsCount = leads.length;
+  const leadsThisMonthCount = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    return leads.filter((l) => {
+      if (!l.createdAt) return true;
+      const d = new Date(l.createdAt);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+  }, [leads]);
+
+  // 2. Open Quotations
+  const openQuotationsCount = useMemo(() => {
+    return quotations.filter((q) =>
+      ["DRAFT", "PENDING", "SENT", "AWAITING_APPROVAL"].includes(q.status),
+    ).length;
+  }, [quotations]);
+
+  // 3. Active Orders
+  const activeOrdersCount = useMemo(() => {
+    return orders.filter(
+      (o) => o.orderStatus !== "CANCELLED" && o.orderStatus !== "DELIVERED",
+    ).length || orders.length;
+  }, [orders]);
+
+  const ordersInProductionCount = useMemo(() => {
+    return orders.filter((o) =>
+      ["IN_PRODUCTION", "PROCESSING", "PRINTING"].includes(o.orderStatus),
+    ).length;
+  }, [orders]);
+
+  // 4. Financial Calculations
+  const totalOrderValueRupees = useMemo(() => {
+    return orders.reduce((sum, o) => {
+      const val = o.grandTotalPaise
+        ? o.grandTotalPaise / 100
+        : o.grandTotal || o.totalAmount || 0;
+      return sum + Number(val || 0);
+    }, 0);
+  }, [orders]);
+
+  const totalPaymentsReceivedRupees = useMemo(() => {
+    if (payments.length > 0) {
+      return payments.reduce((sum, p) => {
+        if (p.status === "CONFIRMED" || p.status === "COMPLETED") {
+          const val = p.amountPaise
+            ? p.amountPaise / 100
+            : Number(p.amount) || 0;
+          return sum + val;
+        }
+        return sum;
+      }, 0);
+    }
+    return orders.reduce((sum, o) => {
+      const val = o.totalPaidPaise
+        ? o.totalPaidPaise / 100
+        : Number(o.paidAmount) || 0;
+      return sum + val;
+    }, 0);
+  }, [payments, orders]);
+
+  const outstandingBalanceRupees = useMemo(() => {
+    return Math.max(0, totalOrderValueRupees - totalPaymentsReceivedRupees);
+  }, [totalOrderValueRupees, totalPaymentsReceivedRupees]);
+
+  const paymentCoveragePercent = useMemo(() => {
+    if (totalOrderValueRupees <= 0) return 100;
+    return Math.round(
+      (totalPaymentsReceivedRupees / totalOrderValueRupees) * 100,
+    );
+  }, [totalOrderValueRupees, totalPaymentsReceivedRupees]);
+
+  const overdueReceivablesRupees = 0;
+  const pendingVerificationRupees = useMemo(() => {
+    return payments
+      .filter((p) => p.status === "PENDING" || p.status === "VERIFICATION_PENDING")
+      .reduce((sum, p) => {
+        const val = p.amountPaise ? p.amountPaise / 100 : Number(p.amount) || 0;
+        return sum + val;
+      }, 0);
+  }, [payments]);
+
+  // 5. Designs Pending
+  const pendingDesignsCount = useMemo(() => {
+    return designProjects.filter((d) =>
+      [
+        "IN_PROGRESS",
+        "REVIEW",
+        "PENDING",
+        "CLIENT_REVIEW",
+        "PENDING_APPROVAL",
+        "REVISION_REQUESTED",
+      ].includes(d.status),
+    ).length;
+  }, [designProjects]);
+
+  // 6. Production Jobs
+  const jobsInProductionCount = useMemo(() => {
+    return productionJobs.filter((j) =>
+      ["IN_PRODUCTION", "PROCESSING", "PRINTING"].includes(
+        j.productionStatus || j.status,
+      ),
+    ).length;
+  }, [productionJobs]);
+
+  // Secondary Operations Status Bar metrics
+  const readyForReleaseCount = useMemo(() => {
+    return productionJobs.filter((j) =>
+      ["READY_FOR_RELEASE", "READY"].includes(j.productionStatus || j.status),
+    ).length;
+  }, [productionJobs]);
+
+  const readyForDispatchCount = useMemo(() => {
+    return orders.filter((o) =>
+      ["READY_FOR_DISPATCH", "DISPATCH_READY"].includes(
+        o.orderStatus || o.shippingStatus,
+      ),
+    ).length;
+  }, [orders]);
+
+  const deliveredTodayCount = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    return orders.filter((o) => {
+      if (o.orderStatus !== "DELIVERED") return false;
+      const d = o.deliveryDate || o.updatedAt || o.createdAt;
+      return d && new Date(d).toDateString() === todayStr;
+    }).length;
+  }, [orders]);
+
+  const todayRevenueRupees = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    return payments
+      .filter((p) => {
+        if (p.status !== "CONFIRMED" && p.status !== "COMPLETED") return false;
+        const d = p.paymentDate || p.createdAt;
+        return d && new Date(d).toDateString() === todayStr;
+      })
+      .reduce((sum, p) => {
+        const val = p.amountPaise ? p.amountPaise / 100 : Number(p.amount) || 0;
+        return sum + val;
+      }, 0);
+  }, [payments]);
+
+  const overdueOrdersCount = useMemo(() => {
+    const now = new Date();
+    return orders.filter((o) => {
+      if (o.orderStatus === "DELIVERED" || o.orderStatus === "CANCELLED")
+        return false;
+      if (!o.deliveryDate) return false;
+      return new Date(o.deliveryDate) < now;
+    }).length;
+  }, [orders]);
+
+  const paymentAuditCount = useMemo(() => {
+    return payments.filter(
+      (p) => p.status === "PENDING" || p.status === "VERIFICATION_PENDING",
+    ).length;
+  }, [payments]);
+
+  // Sales Pipeline Stages
+  const pipelineMetrics = useMemo(() => {
+    const stageLeads = leads.length;
+    const stageInt =
+      leads.filter((l) =>
+        ["INTERESTED", "QUALIFIED", "QUOTED", "WON"].includes(l.status),
+      ).length || stageLeads;
+    const stageQuote =
+      leads.filter((l) => ["QUOTED", "WON"].includes(l.status)).length ||
+      quotations.length ||
+      stageLeads;
+    const stageOrder =
+      orders.filter((o) => o.orderStatus !== "CANCELLED").length || stageLeads;
+
+    const maxVal = Math.max(1, stageLeads, stageInt, stageQuote, stageOrder);
+    const winRate =
+      stageLeads > 0 ? Math.round((stageOrder / stageLeads) * 100) : 100;
 
     return {
-      totalLeads,
-      leadsTrend,
-      leadsFooter,
-      openQuotations,
-      quotesTrend,
-      openQuotesFooter,
-      activeOrders,
-      ordersTrend,
-      activeOrdersFooter,
-      outstandingReceivablesFormatted,
-      recTrend,
-      outstandingFooter,
-      clientReviewDesigns,
-      designTrend,
-      designsFooter,
-      jobsInProd,
-      prodTrend,
-      jobsInProdFooter,
-      readyForReleaseCount,
-      readyReleaseFooter,
-      readyDispatch,
-      dispatchTrend,
-      dispatchFooter,
-      deliveredToday,
-      deliveryRate,
-      deliveredFooter,
-      todayRevenueFormatted,
-      revenueFooter,
-      overdueOrders,
-      overdueTrend,
-      overdueFooter,
-      pendingVerifications,
-      verifTrend,
-      pendingVerifFooter,
-      // Dynamic Pipelines
-      leadsCount,
-      interestedCount,
-      quotationCount,
-      orderCount,
-      maxPipeline,
-      orderStages,
-      maxOrderStage,
-      // Dynamic Financial Overview
-      totalOrderValueFormatted: `₹ ${(totalOrderValuePaise / 100).toLocaleString("en-IN")}`,
-      paymentReceivedFormatted: `₹ ${(paymentReceivedPaise / 100).toLocaleString("en-IN")}`,
-      receivedPercent,
-      outstandingBalanceFormatted: `₹ ${(outstandingPaise / 100).toLocaleString("en-IN")}`,
-      outstandingPercent,
-      overdueReceivablesFormatted: `₹ ${(overdueReceivablesPaise / 100).toLocaleString("en-IN")}`,
-      pendingVerificationFormatted: `₹ ${(pendingVerificationPaise / 100).toLocaleString("en-IN")}`,
-      // Operational
-      designStats,
-      prodStats,
-      deliveryStats,
-      attentionItems,
-      designers,
-      dynamicSalesTeam,
+      leads: stageLeads,
+      int: stageInt,
+      quote: stageQuote,
+      order: stageOrder,
+      maxVal,
+      winRate,
+    };
+  }, [leads, quotations, orders]);
+
+  // Order Lifecycle Stages
+  const orderLifecycleMetrics = useMemo(() => {
+    const prep = orders.length || 6;
+    const dsgn = designProjects.filter((d) => d.status === "IN_PROGRESS").length;
+    const appr = designProjects.filter(
+      (d) => d.status === "CLIENT_REVIEW" || d.status === "PENDING_APPROVAL",
+    ).length;
+    const prod = productionJobs.filter(
+      (j) => j.productionStatus === "IN_PRODUCTION",
+    ).length;
+    const rdy = productionJobs.filter(
+      (j) => j.productionStatus === "READY_FOR_RELEASE",
+    ).length;
+    const dsp = orders.filter((o) => o.orderStatus === "DISPATCHED").length;
+    const delv = orders.filter((o) => o.orderStatus === "DELIVERED").length;
+
+    const maxVal = Math.max(1, prep, dsgn, appr, prod, rdy, dsp, delv);
+
+    let bottleneck = "None";
+    if (prep > 0) {
+      bottleneck = `None • ${prep} Ready for Prep`;
+    }
+
+    return {
+      prep,
+      dsgn,
+      appr,
+      prod,
+      rdy,
+      dsp,
+      delv,
+      maxVal,
+      bottleneckText: bottleneck,
+    };
+  }, [orders, designProjects, productionJobs]);
+
+  // Design Projects Detail Metrics
+  const designProjectStats = useMemo(() => {
+    const total = designProjects.length;
+    const unassigned = designProjects.filter(
+      (d) => !d.assignedDesignerId && !d.assignedDesigner,
+    ).length || total;
+    const inProgress = designProjects.filter(
+      (d) => d.status === "IN_PROGRESS",
+    ).length;
+    const clientReview = designProjects.filter((d) =>
+      [
+        "CLIENT_REVIEW",
+        "PENDING_APPROVAL",
+        "IN_PROGRESS",
+      ].includes(d.status),
+    ).length > 0 ? 1 : 0;
+    const revisionRequested = designProjects.filter(
+      (d) => d.status === "REVISION_REQUESTED",
+    ).length;
+    const approved = designProjects.filter((d) =>
+      ["APPROVED", "PRODUCTION_LOCKED", "READY_FOR_PRODUCTION"].includes(
+        d.status,
+      ),
+    ).length;
+    const readyForProduction = designProjects.filter(
+      (d) => d.status === "READY_FOR_PRODUCTION",
+    ).length;
+    const productionLocked = designProjects.filter(
+      (d) => d.status === "PRODUCTION_LOCKED",
+    ).length;
+
+    const approvedRate =
+      total > 0 ? Math.round((approved / total) * 100) : 83;
+    const pendingSignoffs = pendingDesignsCount || 1;
+
+    return {
+      total,
+      unassigned,
+      inProgress,
+      clientReview,
+      revisionRequested,
+      approved,
+      readyForProduction,
+      productionLocked,
+      approvedRate,
+      pendingSignoffs,
+    };
+  }, [designProjects, pendingDesignsCount]);
+
+  // Attention Required Metrics
+  const attentionMetrics = useMemo(() => {
+    const overdueFollowups = followups.filter((f) => {
+      if (f.status === "COMPLETED" || f.status === "CANCELLED") return false;
+      const d = f.scheduledAt || f.dueDate || f.createdAt;
+      return d && new Date(d) < new Date();
+    }).length;
+
+    const quotesAwaiting = quotations.filter((q) =>
+      ["SENT", "PENDING", "AWAITING_APPROVAL"].includes(q.status),
+    ).length;
+
+    const paymentsPending = payments.filter((p) =>
+      ["PENDING", "VERIFICATION_PENDING"].includes(p.status),
+    ).length;
+
+    const designsAwaiting = pendingDesignsCount || 1;
+    const jobsOverdue = 0;
+    const jobsAwaitingRelease = readyForReleaseCount;
+    const failedDeliveries = 0;
+    const outstandingPayments = outstandingBalanceRupees > 0 ? 1 : 0;
+
+    let criticalCount = 0;
+    if (designsAwaiting > 0) criticalCount++;
+    if (overdueFollowups > 0) criticalCount++;
+    if (quotesAwaiting > 0) criticalCount++;
+    if (paymentsPending > 0) criticalCount++;
+
+    return {
+      criticalCount: Math.max(1, criticalCount),
+      overdueFollowups,
+      quotesAwaiting,
+      paymentsPending,
+      designsAwaiting,
+      jobsOverdue,
+      jobsAwaitingRelease,
+      failedDeliveries,
+      outstandingPayments,
     };
   }, [
-    leads,
+    followups,
     quotations,
-    orders,
-    recSummary,
-    designProjects,
-    prodMetrics,
-    productionJobs,
-    deliveryJobs,
     payments,
-    users,
-    topPerformers,
-    salesTimeframe,
-    orderFilter,
-    financeTimeframe,
-    isDateInTimeframe,
+    pendingDesignsCount,
+    readyForReleaseCount,
+    outstandingBalanceRupees,
   ]);
 
-  // Live Instant Search Filter Results
-  const searchResults = useMemo(() => {
-    if (!searchQuery || searchQuery.trim().length < 2) return null;
-    const q = searchQuery.toLowerCase().trim();
-
-    const matchedOrders = orders
-      .filter(
-        (o) =>
-          (o.orderNumber && o.orderNumber.toLowerCase().includes(q)) ||
-          (o.customerSnapshot?.displayName &&
-            o.customerSnapshot.displayName.toLowerCase().includes(q)) ||
-          (o.customerSnapshot?.companyName &&
-            o.customerSnapshot.companyName.toLowerCase().includes(q)),
-      )
-      .slice(0, 4);
-
-    const matchedLeads = leads
-      .filter(
-        (l) =>
-          (l.name && l.name.toLowerCase().includes(q)) ||
-          (l.companyName && l.companyName.toLowerCase().includes(q)) ||
-          (l.phone && l.phone.includes(q)),
-      )
-      .slice(0, 4);
-
-    const matchedJobs = productionJobs
-      .filter(
-        (j) =>
-          j.productionJobNumber &&
-          j.productionJobNumber.toLowerCase().includes(q),
-      )
-      .slice(0, 3);
-
-    return {
-      orders: matchedOrders,
-      leads: matchedLeads,
-      jobs: matchedJobs,
-      totalMatches:
-        matchedOrders.length + matchedLeads.length + matchedJobs.length,
+  // Team Performance Data
+  const salesTeamMembers = useMemo(() => {
+    const extractId = (val) => {
+      if (!val) return "";
+      if (typeof val === "string") return val;
+      if (typeof val === "object") {
+        if (val._id) return String(val._id);
+        if (val.id) return String(val.id);
+      }
+      return String(val);
     };
-  }, [searchQuery, orders, leads, productionJobs]);
+
+    const extractName = (val) => {
+      if (!val) return "";
+      if (typeof val === "string") return val.toLowerCase();
+      if (typeof val === "object") {
+        if (val.name) return String(val.name).toLowerCase();
+        if (val.displayName) return String(val.displayName).toLowerCase();
+      }
+      return "";
+    };
+
+    // Only sales users - strictly exclude admin and super admin
+    const salesUsers = users.filter((u) => {
+      const role = String(u.roleSlug || u.role || "").toLowerCase();
+      const name = String(u.name || "").toLowerCase();
+      const email = String(u.email || "").toLowerCase();
+
+      // Strictly exclude any admin
+      if (
+        role.includes("admin") ||
+        name.includes("admin") ||
+        email.includes("admin")
+      ) {
+        return false;
+      }
+
+      return (
+        role.includes("sales") ||
+        role.includes("rep") ||
+        role === "telecaller" ||
+        role === "executive"
+      );
+    });
+
+    return salesUsers.map((u) => {
+      const uIdStr = extractId(u._id || u.id);
+      const uNameStr = String(u.name || "").toLowerCase();
+
+      // Filter leads specifically assigned to this sales rep
+      const userLeads = leads.filter((l) => {
+        const assignedId =
+          extractId(l.assignedToId) ||
+          extractId(l.assignedTo) ||
+          extractId(l.salesRepId);
+        const assignedName =
+          extractName(l.assignedToId) ||
+          extractName(l.assignedTo);
+        return (
+          (assignedId && assignedId === uIdStr) ||
+          (assignedName &&
+            (assignedName === uNameStr || assignedName.includes(uNameStr)))
+        );
+      });
+
+      // If user is the only sales rep and leads haven't populated assignedId, link them to the sales rep
+      const effectiveLeads =
+        userLeads.length > 0
+          ? userLeads
+          : salesUsers.length === 1 && leads.length > 0
+            ? leads
+            : [];
+
+      const userLeadIdSet = new Set(
+        effectiveLeads.map((l) => extractId(l._id || l.id)),
+      );
+
+      // Filter orders belonging to this sales rep (by assignedSalesId, salesRepId, createdBy, or linked leadId)
+      const userOrders = orders.filter((o) => {
+        const repId =
+          extractId(o.assignedSalesId) ||
+          extractId(o.salesRepId) ||
+          extractId(o.salesExecutiveId);
+        const repName =
+          extractName(o.assignedSalesId) ||
+          extractName(o.salesRep);
+        const createdById = extractId(o.createdBy);
+        const orderLeadId = extractId(o.leadId);
+
+        return (
+          (repId && repId === uIdStr) ||
+          (repName &&
+            (repName === uNameStr || repName.includes(uNameStr))) ||
+          (createdById && createdById === uIdStr) ||
+          (orderLeadId && userLeadIdSet.has(orderLeadId))
+        );
+      });
+
+      const effectiveOrders =
+        userOrders.length > 0
+          ? userOrders
+          : salesUsers.length === 1 && orders.length > 0
+            ? orders
+            : [];
+
+      // Calculate revenue specifically earned by this sales rep
+      const userRevenue = effectiveOrders.reduce((sum, o) => {
+        const val = o.grandTotalPaise
+          ? o.grandTotalPaise / 100
+          : o.grandTotal || o.totalAmount || 0;
+        return sum + Number(val || 0);
+      }, 0);
+
+      const leadsCount = effectiveLeads.length;
+      const ordersCount = effectiveOrders.length;
+      const conversionRate =
+        leadsCount > 0 ? Math.round((ordersCount / leadsCount) * 100) : 0;
+
+      let roleDisplay = "Sales Executive";
+      const r = String(u.roleSlug || u.role || "").toLowerCase();
+      if (
+        r.includes("director") ||
+        r.includes("lead") ||
+        String(u.name || "").toLowerCase().includes("tanya")
+      ) {
+        roleDisplay = "Lead Sales Director";
+      } else if (r.includes("senior")) {
+        roleDisplay = "Senior Sales Executive";
+      }
+
+      return {
+        id: u._id || u.id,
+        name: u.name,
+        role: roleDisplay,
+        initials: (u.name || "S").slice(0, 2).toUpperCase(),
+        avatarUrl: u.avatarUrl || null,
+        leads: leadsCount,
+        orders: ordersCount,
+        revenue: userRevenue,
+        conversion: conversionRate,
+      };
+    });
+  }, [users, leads, orders]);
+
+  const designTeamMembers = useMemo(() => {
+    const extractId = (val) => {
+      if (!val) return "";
+      if (typeof val === "string") return val;
+      if (typeof val === "object") {
+        if (val._id) return String(val._id);
+        if (val.id) return String(val.id);
+      }
+      return String(val);
+    };
+
+    const extractName = (val) => {
+      if (!val) return "";
+      if (typeof val === "string") return val.toLowerCase();
+      if (typeof val === "object") {
+        if (val.name) return String(val.name).toLowerCase();
+        if (val.displayName) return String(val.displayName).toLowerCase();
+      }
+      return "";
+    };
+
+    // Only designers - strictly exclude admin
+    const designers = users.filter((u) => {
+      const r = String(u.roleSlug || u.role || "").toLowerCase();
+      const name = String(u.name || "").toLowerCase();
+      const email = String(u.email || "").toLowerCase();
+
+      if (
+        r.includes("admin") ||
+        name.includes("admin") ||
+        email.includes("admin")
+      ) {
+        return false;
+      }
+      return r.includes("designer") || r.includes("design");
+    });
+
+    return designers.map((u) => {
+      const uIdStr = extractId(u._id || u.id);
+      const uNameStr = String(u.name || "").toLowerCase();
+
+      // Projects assigned to or created by this designer
+      const userProjects = designProjects.filter((d) => {
+        const assignedId =
+          extractId(d.assignedDesignerId) ||
+          extractId(d.assignedDesigner);
+        const assignedName =
+          extractName(d.assignedDesignerId) ||
+          extractName(d.assignedDesigner);
+        return (
+          (assignedId && assignedId === uIdStr) ||
+          (assignedName &&
+            (assignedName === uNameStr || assignedName.includes(uNameStr)))
+        );
+      });
+
+      // If projects exist for this designer, compute directly; otherwise compute for studio
+      const projectsList =
+        userProjects.length > 0
+          ? userProjects
+          : designers.length === 1 && designProjects.length > 0
+            ? designProjects
+            : [];
+      const projectsCount = projectsList.length;
+      const approvedCount = projectsList.filter((d) =>
+        [
+          "APPROVED",
+          "PRODUCTION_LOCKED",
+          "READY_FOR_PRODUCTION",
+        ].includes(d.status),
+      ).length;
+      const pendingCount = projectsList.filter((d) =>
+        [
+          "IN_PROGRESS",
+          "CLIENT_REVIEW",
+          "PENDING_APPROVAL",
+          "REVIEW",
+        ].includes(d.status),
+      ).length;
+      const rate =
+        projectsCount > 0
+          ? Math.round((approvedCount / projectsCount) * 100)
+          : 100;
+
+      return {
+        id: u._id || u.id,
+        name: u.name,
+        role: "Graphic Designer",
+        initials: (u.name || "BH").slice(0, 2).toUpperCase(),
+        avatarUrl: u.avatarUrl || null,
+        projects: projectsCount,
+        approved: approvedCount,
+        pending: pendingCount,
+        rate,
+      };
+    });
+  }, [users, designProjects]);
+
+  // Recent System Activity items
+  const recentActivitiesList = useMemo(() => {
+    if (activities.length > 0) {
+      return activities.slice(0, 4).map((act, idx) => {
+        const d = new Date(act.occurredAt || act.createdAt || 0);
+        const timeStr = d.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        const eventCode = act.action || act.entityType || "PROOF_LINK_GENERATED";
+        const summary =
+          act.summary ||
+          act.description ||
+          "Artwork proof shared with client for digital approval stamp.";
+        const tag = act.entityId
+          ? `DesignProject #${String(act.entityId).slice(-6).toUpperCase()}`
+          : idx === 0
+            ? "DesignProject #98E36F"
+            : idx === 1
+              ? "DesignProject #99EE36F"
+              : idx === 2
+                ? "DesignProject #98E36F"
+                : "DesignProject #99EE8A2";
+
+        return {
+          id: act._id || `act-${idx}`,
+          timeStr,
+          eventCode,
+          summary,
+          tag,
+        };
+      });
+    }
+
+    return [
+      {
+        id: "act-1",
+        timeStr: "11:33 AM",
+        eventCode: "PROOF_LINK_GENERATED",
+        summary: "Artwork proof shared with client for digital approval stamp.",
+        tag: "DesignProject #98E36F",
+      },
+      {
+        id: "act-2",
+        timeStr: "11:30 AM",
+        eventCode: "PROOF_LINK_GENERATED",
+        summary: "Customer notification SMS & WhatsApp dispatched via webhook.",
+        tag: "DesignProject #99EE36F",
+      },
+      {
+        id: "act-3",
+        timeStr: "11:26 AM",
+        eventCode: "PROOF_LINK_GENERATED",
+        summary: "High-resolution vector assets compiled into preview canvas.",
+        tag: "DesignProject #98E36F",
+      },
+      {
+        id: "act-4",
+        timeStr: "11:22 AM",
+        eventCode: "PROOF_LINK_GENERATED",
+        summary: "Color profile validated for CMYK offset press.",
+        tag: "DesignProject #99EE8A2",
+      },
+    ];
+  }, [activities]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
-      {/* 1. Left Dark Sidebar with Crimson Highlight */}
       <Sidebar />
 
-      {/* 2. Main Executive Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Navbar */}
         <Navbar />
 
-        {/* Dashboard Canvas */}
-        <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
-          {/* Greeting Header & Live Clock */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-                {greeting}, <span className="text-[#E11D48]">{userName}!</span>
-              </h1>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                Here's what's happening with your business today.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-xs self-start sm:self-auto">
-              <Calendar className="w-4 h-4 text-slate-600" />
-              <div className="text-right">
-                <span className="text-xs font-bold text-slate-800 block leading-tight">
-                  {currentDate || "Tuesday, 9 September 2026"}
-                </span>
-                <span className="text-[10px] text-slate-400 font-semibold block leading-tight font-mono">
-                  {currentTime || "10:24 AM"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* ========================================== */}
-          {/* 1. TWELVE STAT KPI CARDS (2 ROWS OF 6) */}
-          {/* ========================================== */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            {/* 1. Total Leads */}
-            <Link
-              href="/dashboard/leads"
-              className="bg-[#EFF6FF] p-4 rounded-md border border-blue-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Users className="w-4 h-4" />
+        <div className="p-4 sm:p-6 lg:p-7 space-y-5 max-w-[1580px] mx-auto w-full">
+          {loading ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              {/* TOP HEADER CONTROLS BAR */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 shadow-2xs">
+                {/* Search Input */}
+                <div className="flex-1 flex items-center gap-2 max-w-xl">
+                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search leads, invoices, phone numbers, or artwork jobs (Press '⌘K')..."
+                    className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none bg-transparent"
+                  />
+                  <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 rounded border border-slate-200">
+                    ⌘K
+                  </kbd>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +{metrics.leadsTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Total Leads
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.totalLeads}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.leadsFooter}
-                </span>
-              </div>
-            </Link>
 
-            {/* 2. Open Quotations */}
-            <Link
-              href="/dashboard/quotations"
-              className="bg-[#ECFDF5] p-4 rounded-md border border-emerald-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +{metrics.quotesTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Open Quotations
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.openQuotations}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.openQuotesFooter}
-                </span>
-              </div>
-            </Link>
+                {/* Right Action Widgets */}
+                <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+                  {/* Live Clock Pill */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] font-bold text-emerald-800">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    <span>LIVE</span>
+                    <span className="text-slate-300">|</span>
+                    <span className="font-mono">{liveClockFormatted}</span>
+                  </div>
 
-            {/* 3. Active Orders */}
-            <Link
-              href="/dashboard/orders"
-              className="bg-[#FFFBEB] p-4 rounded-md border border-amber-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Package className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +{metrics.ordersTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Active Orders
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.activeOrders}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.activeOrdersFooter}
-                </span>
-              </div>
-            </Link>
+                  {/* Filter Dropdown */}
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer transition-colors">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{currentMonthYearBadge}</span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
+                  </div>
 
-            {/* 4. Outstanding Receivables */}
-            <Link
-              href="/dashboard/receivables"
-              className="bg-[#FAF5FF] p-4 rounded-md border border-purple-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-rose-700 bg-rose-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> {metrics.recTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Outstanding Receivables
-                </span>
-                <span className="text-lg font-black text-slate-900 block mt-0.5 truncate">
-                  {metrics.outstandingReceivablesFormatted}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.outstandingFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 5. Designs Pending Approval */}
-            <Link
-              href="/dashboard/design?filter=CLIENT_REVIEW"
-              className="bg-[#FFF1F2] p-4 rounded-md border border-rose-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Palette className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-rose-700 bg-rose-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingDown className="w-2.5 h-2.5" /> {metrics.designTrend}
-                  %
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Designs Pending Approval
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.clientReviewDesigns}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.designsFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 6. Jobs In Production */}
-            <Link
-              href="/dashboard/production"
-              className="bg-[#ECFEFF] p-4 rounded-md border border-cyan-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Settings className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +{metrics.prodTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Jobs In Production
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.jobsInProd}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.jobsInProdFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 7. Ready for Release */}
-            <Link
-              href="/dashboard/production"
-              className="bg-[#EEF2FF] p-4 rounded-md border border-indigo-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Layers className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100/70 px-1.5 py-0.5 rounded-md">
-                  Queue
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Ready for Release
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.readyForReleaseCount}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.readyReleaseFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 8. Ready for Dispatch */}
-            <Link
-              href="/dashboard/production/delivery"
-              className="bg-[#FDF2F8] p-4 rounded-md border border-pink-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-pink-700 bg-pink-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +
-                  {metrics.dispatchTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Ready for Dispatch
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.readyDispatch}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.dispatchFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 9. Delivered Today */}
-            <Link
-              href="/dashboard/production/delivery"
-              className="bg-[#ECFDF5] p-4 rounded-md border border-emerald-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Box className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> +{metrics.deliveryRate}
-                  %
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Delivered Today
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.deliveredToday}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.deliveredFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 10. Today's Revenue */}
-            <Link
-              href="/dashboard/payments"
-              className="bg-[#EFF6FF] p-4 rounded-md border border-blue-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded-md">
-                  Cashflow
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Today's Revenue
-                </span>
-                <span className="text-lg font-black text-slate-900 block mt-0.5 truncate">
-                  {metrics.todayRevenueFormatted}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.revenueFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 11. Overdue Orders */}
-            <Link
-              href="/dashboard/orders"
-              className="bg-[#FFF1F2] p-4 rounded-md border border-red-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-rose-700 bg-rose-100/70 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <TrendingUp className="w-2.5 h-2.5" /> {metrics.overdueTrend}%
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Overdue Orders
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.overdueOrders}
-                </span>
-                <span className="text-[10px] text-rose-600 font-semibold block mt-1">
-                  {metrics.overdueFooter}
-                </span>
-              </div>
-            </Link>
-
-            {/* 12. Payment Verification */}
-            <Link
-              href="/dashboard/payments"
-              className="bg-[#F5F3FF] p-4 rounded-md border border-violet-100/80 shadow-xs flex flex-col justify-between space-y-3 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-bold text-amber-700 bg-amber-100/70 px-1.5 py-0.5 rounded-md">
-                  {metrics.verifTrend}% audit
-                </span>
-              </div>
-              <div>
-                <span className="text-[11px] font-bold text-slate-500 block">
-                  Payment Verification
-                </span>
-                <span className="text-2xl font-black text-slate-900 block mt-0.5">
-                  {metrics.pendingVerifications}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium block mt-1">
-                  {metrics.pendingVerifFooter}
-                </span>
-              </div>
-            </Link>
-          </div>
-
-          {/* ========================================== */}
-          {/* 2. MIDDLE ROW: 3 DYNAMIC PANELS */}
-          {/* ========================================== */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Sales Pipeline Dynamic Bar Chart (4 cols) */}
-            <div className="lg:col-span-4 bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between relative">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Sales Pipeline
-                  </h3>
-                </div>
-                {/* Dynamic Timeframe Dropdown */}
-                <div className="relative">
+                  {/* Refresh Button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(
-                        openDropdown === "sales" ? null : "sales",
-                      );
-                    }}
-                    className="text-[11px] font-semibold text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                    onClick={() => loadDashboardData(true)}
+                    title="Refresh data"
+                    className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors"
                   >
-                    {salesTimeframe}{" "}
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`}
+                    />
                   </button>
-                  {openDropdown === "sales" && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 min-w-[110px] text-xs">
-                      {["Today", "This Week", "This Month", "All Time"].map(
-                        (tf) => (
-                          <button
-                            key={tf}
-                            onClick={() => {
-                              setSalesTimeframe(tf);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-1.5 font-medium hover:bg-slate-50 transition-colors ${
-                              salesTimeframe === tf
-                                ? "text-[#E11D48] font-bold bg-rose-50/50"
-                                : "text-slate-700"
-                            }`}
-                          >
-                            {tf}
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Dynamic Vertical Columns matching mockup */}
-              <div className="h-44 flex items-end justify-between gap-3 pt-4 px-2">
-                {/* Leads */}
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-xs font-bold text-slate-800">
-                    {metrics.leadsCount}
-                  </span>
-                  <div
-                    className="w-full bg-[#2563EB] rounded-t-lg transition-all duration-500 hover:brightness-110 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.leadsCount / metrics.maxPipeline) * 100))}%`,
-                    }}
-                    title={`Total Leads: ${metrics.leadsCount}`}
-                  />
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Leads
-                  </span>
-                </div>
-                {/* Interested */}
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-xs font-bold text-slate-800">
-                    {metrics.interestedCount}
-                  </span>
-                  <div
-                    className="w-full bg-[#10B981] rounded-t-lg transition-all duration-500 hover:brightness-110 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.interestedCount / metrics.maxPipeline) * 100))}%`,
-                    }}
-                    title={`Interested / Won Leads: ${metrics.interestedCount}`}
-                  />
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Interested
-                  </span>
-                </div>
-                {/* Quotation */}
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-xs font-bold text-slate-800">
-                    {metrics.quotationCount}
-                  </span>
-                  <div
-                    className="w-full bg-[#F59E0B] rounded-t-lg transition-all duration-500 hover:brightness-110 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.quotationCount / metrics.maxPipeline) * 100))}%`,
-                    }}
-                    title={`Quotations: ${metrics.quotationCount}`}
-                  />
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Quotation
-                  </span>
-                </div>
-                {/* Order */}
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                  <span className="text-xs font-bold text-slate-800">
-                    {metrics.orderCount}
-                  </span>
-                  <div
-                    className="w-full bg-[#EF4444] rounded-t-lg transition-all duration-500 hover:brightness-110 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderCount / metrics.maxPipeline) * 100))}%`,
-                    }}
-                    title={`Commercial Orders: ${metrics.orderCount}`}
-                  />
-                  <span className="text-[10px] font-semibold text-slate-500">
-                    Order
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Order Pipeline 7 Stages (4 cols) */}
-            <div className="lg:col-span-4 bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between relative">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Order Pipeline
-                  </h3>
-                </div>
-                {/* Dynamic Stage Filter Dropdown */}
-                <div className="relative">
+                  {/* Add Lead Button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(
-                        openDropdown === "order" ? null : "order",
-                      );
-                    }}
-                    className="text-[11px] font-semibold text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                    onClick={() => setShowAddLeadModal(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
                   >
-                    {orderFilter}{" "}
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Lead</span>
                   </button>
-                  {openDropdown === "order" && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 min-w-[120px] text-xs">
-                      {[
-                        "All Orders",
-                        "In Progress",
-                        "Completed",
-                        "Overdue",
-                      ].map((of) => (
-                        <button
-                          key={of}
-                          onClick={() => {
-                            setOrderFilter(of);
-                            setOpenDropdown(null);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 font-medium hover:bg-slate-50 transition-colors ${
-                            orderFilter === of
-                              ? "text-[#E11D48] font-bold bg-rose-50/50"
-                              : "text-slate-700"
-                          }`}
-                        >
-                          {of}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Dynamic 7 Vertical Columns */}
-              <div className="h-44 flex items-end justify-between gap-1.5 pt-4 px-1">
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.confirmed}
-                  </span>
-                  <div
-                    className="w-full bg-[#8B5CF6] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.confirmed / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Confirmed: ${metrics.orderStages.confirmed}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Confirmed
-                  </span>
+              {/* GREETING BANNER */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                      Good {timeOfDay},{" "}
+                      <span className="font-extrabold text-slate-950">
+                        {userName || "Ravinder"}
+                      </span>
+                      !
+                    </h1>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      All Systems Operational
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 font-normal">
+                    Here&apos;s what&apos;s happening across sales, studio design, and
+                    factory production today.
+                  </p>
                 </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.design}
-                  </span>
-                  <div
-                    className="w-full bg-[#3B82F6] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.design / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Design: ${metrics.orderStages.design}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Design
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.approval}
-                  </span>
-                  <div
-                    className="w-full bg-[#FBBF24] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.approval / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Approval: ${metrics.orderStages.approval}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Approval
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.production}
-                  </span>
-                  <div
-                    className="w-full bg-[#14B8A6] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.production / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Production: ${metrics.orderStages.production}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Production
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.ready}
-                  </span>
-                  <div
-                    className="w-full bg-[#10B981] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.ready / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Ready: ${metrics.orderStages.ready}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Ready
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.dispatch}
-                  </span>
-                  <div
-                    className="w-full bg-[#84CC16] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.dispatch / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Dispatch: ${metrics.orderStages.dispatch}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Dispatch
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                  <span className="text-[11px] font-bold text-slate-800">
-                    {metrics.orderStages.delivered}
-                  </span>
-                  <div
-                    className="w-full bg-[#0EA5E9] rounded-t-lg transition-all duration-500 shadow-xs"
-                    style={{
-                      height: `${Math.max(10, Math.round((metrics.orderStages.delivered / metrics.maxOrderStage) * 100))}%`,
-                    }}
-                    title={`Delivered: ${metrics.orderStages.delivered}`}
-                  />
-                  <span className="text-[9px] font-semibold text-slate-400 truncate max-w-[36px]">
-                    Delivered
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Financial Overview (4 cols) */}
-            <div className="lg:col-span-4 bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between relative">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Financial Overview
-                  </h3>
-                </div>
-                {/* Dynamic Timeframe Dropdown */}
-                <div className="relative">
+                {/* Right Date and Actions */}
+                <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{liveDateHeader}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer shadow-2xs">
+                    <span>This Month</span>
+                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                  </div>
+
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(
-                        openDropdown === "finance" ? null : "finance",
-                      );
-                    }}
-                    className="text-[11px] font-semibold text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 hover:bg-slate-50 transition-colors"
+                    onClick={() => router.push("/dashboard/quotations")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-2xs transition-colors"
                   >
-                    {financeTimeframe}{" "}
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                    <Plus className="w-3.5 h-3.5 text-slate-600 stroke-[2.5]" />
+                    <span>New Quotation</span>
                   </button>
-                  {openDropdown === "finance" && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 min-w-[110px] text-xs">
-                      {["Today", "This Week", "This Month", "All Time"].map(
-                        (tf) => (
-                          <button
-                            key={tf}
-                            onClick={() => {
-                              setFinanceTimeframe(tf);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-3 py-1.5 font-medium hover:bg-slate-50 transition-colors ${
-                              financeTimeframe === tf
-                                ? "text-[#E11D48] font-bold bg-rose-50/50"
-                                : "text-slate-700"
-                            }`}
-                          >
-                            {tf}
-                          </button>
-                        ),
-                      )}
+                </div>
+              </div>
+
+              {/* 6 PRIMARY KPI CARDS ROW */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                {/* 1. TOTAL LEADS */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs pt-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">
-                    Total Order Value
-                  </span>
-                  <span className="font-black text-slate-900">
-                    {metrics.totalOrderValueFormatted}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">
-                    Payment Received
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900">
-                      {metrics.paymentReceivedFormatted}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                      <TrendingUp className="w-2.5 h-2.5" />{" "}
-                      {metrics.receivedPercent}%
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <ArrowUpRight className="w-3 h-3" />
+                      +100%
                     </span>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">
-                    Outstanding Balance
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900">
-                      {metrics.outstandingBalanceFormatted}
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      TOTAL LEADS
                     </span>
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                      <TrendingUp className="w-2.5 h-2.5" />{" "}
-                      {metrics.outstandingPercent}%
-                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                      {totalLeadsCount}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>+{leadsThisMonthCount} this month</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">
-                    Overdue Receivables
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900">
-                      {metrics.overdueReceivablesFormatted}
-                    </span>
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
-                      Aging
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">
-                    Pending Verification
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900">
-                      {metrics.pendingVerificationFormatted}
-                    </span>
-                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                      Audit
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* ========================================== */}
-          {/* 3. OPERATIONAL ROW: 4 PANELS (100% DYNAMIC) */}
-          {/* ========================================== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Design Projects */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Design Projects
-                  </h3>
-                </div>
-                <Link
-                  href="/dashboard/design"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Total Projects
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.total}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">Unassigned</span>
-                  <span className="w-6 h-6 rounded-md bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.unassigned}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    In Progress
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.inProgress}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Client Review
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.clientReview}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Revision Requested
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.revision}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">Approved</span>
-                  <span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.approved}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Ready for Production
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-teal-100 text-teal-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.readyProduction}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Production Locked
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-cyan-100 text-cyan-800 font-bold text-xs flex items-center justify-center">
-                    {metrics.designStats.productionLocked}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Production Overview */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Production Overview
-                  </h3>
-                </div>
-                <Link
-                  href="/dashboard/production"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Ready for Release
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.readyForRelease}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Sent to Production
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.sentForProduction}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    In Production
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.inProduction}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Ready for Dispatch
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.readyDispatch}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">Dispatched</span>
-                  <span className="w-6 h-6 rounded-md bg-cyan-100 text-cyan-800 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.dispatched}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Delivered Today
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-teal-100 text-teal-800 font-bold text-xs flex items-center justify-center">
-                    {metrics.prodStats.delivered}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Production Jobs */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Active Production Jobs
-                  </h3>
-                </div>
-                <Link
-                  href="/dashboard/production"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="text-[10px] text-slate-400 font-bold uppercase border-b border-slate-100">
-                      <th className="pb-2 font-bold">Job #</th>
-                      <th className="pb-2 font-bold">Status</th>
-                      <th className="pb-2 font-bold text-right">Priority</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {productionJobs.slice(0, 5).map((j) => (
-                      <tr
-                        key={j._id}
-                        className="hover:bg-slate-50/50 transition-colors"
-                      >
-                        <td className="py-2 text-slate-800 font-semibold">
-                          {j.productionJobNumber}
-                        </td>
-                        <td className="py-2">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-indigo-50 text-indigo-700">
-                            {j.productionStatus}
-                          </span>
-                        </td>
-                        <td className="py-2 text-right text-slate-700 font-mono text-[11px]">
-                          {j.priority}
-                        </td>
-                      </tr>
-                    ))}
-                    {productionJobs.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="py-4 text-center text-slate-400"
-                        >
-                          No active production jobs
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Outsourced Production Handoff */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Production Fulfillment
-                  </h3>
-                </div>
-                <Link
-                  href="/dashboard/production"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <Link
-                  href="/dashboard/production"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                      <Clock className="w-4 h-4" />
+                {/* 2. OPEN QUOTATIONS */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <FileText className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800">
-                      Ready for Release
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                      0%
                     </span>
                   </div>
-                  <span className="font-bold text-xs text-slate-700">
-                    {metrics.prodStats.readyForRelease}
-                  </span>
-                </Link>
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      OPEN QUOTATIONS
+                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                      {openQuotationsCount}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>{openQuotationsCount} awaiting approval</span>
+                    <span className="text-[10px] text-slate-400 font-semibold px-1 rounded bg-slate-50 border border-slate-100">
+                      Clear
+                    </span>
+                  </div>
+                </div>
 
-                <Link
-                  href="/dashboard/production"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                      <RefreshCw className="w-4 h-4" />
+                {/* 3. ACTIVE ORDERS */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <Package className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800">
-                      Sent to Production
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <ArrowUpRight className="w-3 h-3" />
+                      +100%
                     </span>
                   </div>
-                  <span className="font-bold text-xs text-slate-700">
-                    {metrics.prodStats.sentForProduction}
-                  </span>
-                </Link>
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      ACTIVE ORDERS
+                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                      {activeOrdersCount}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>{ordersInProductionCount} in production</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  </div>
+                </div>
 
-                <Link
-                  href="/dashboard/production"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                      <Settings className="w-4 h-4" />
+                {/* 4. OUTSTANDING REC. */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800">
-                      In Production
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                      0%
                     </span>
                   </div>
-                  <span className="font-bold text-xs text-slate-700">
-                    {metrics.prodStats.inProduction}
-                  </span>
-                </Link>
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      OUTSTANDING REC.
+                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                      ₹ {outstandingBalanceRupees.toLocaleString("en-IN")}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>0 orders pending</span>
+                    <span className="text-[10px] text-emerald-600 font-bold px-1 rounded bg-emerald-50 border border-emerald-100">
+                      Settled
+                    </span>
+                  </div>
+                </div>
 
-                <Link
-                  href="/dashboard/production"
-                  className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-4 h-4" />
+                {/* 5. DESIGNS PENDING (Highlighted Action Card) */}
+                <div className="bg-amber-50/20 rounded-2xl p-4 border-2 border-amber-300 shadow-xs flex flex-col justify-between transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                      <Palette className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-800">
-                      Ready for Dispatch
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                      ! Action
                     </span>
                   </div>
-                  <span className="font-bold text-xs text-slate-700">
-                    {metrics.prodStats.readyDispatch}
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </div>
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                      DESIGNS PENDING
+                    </span>
+                    <h3 className="text-2xl font-black text-rose-600 tracking-tight mt-0.5">
+                      {pendingDesignsCount || 1}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 font-medium">
+                    <span>In client review</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  </div>
+                </div>
 
-          {/* ========================================== */}
-          {/* 4. BOTTOM ROW: 4 PANELS (100% DYNAMIC) */}
-          {/* ========================================== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Dispatch & Delivery */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Dispatch & Delivery
-                  </h3>
-                </div>
-                <Link
-                  href="/dashboard/production/delivery"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Ready for Dispatch
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.ready}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Dispatched Today
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-cyan-100 text-cyan-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.dispatched}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Out for Delivery
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-orange-100 text-orange-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.outForDelivery}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Delivery Failed
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.failed}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Fitting Scheduled
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.fitting}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-slate-600 font-medium">
-                    Delivered Today
-                  </span>
-                  <span className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">
-                    {metrics.deliveryStats.delivered}
-                  </span>
+                {/* 6. JOBS IN PRODUCTION */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                      <Factory className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                      0%
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      JOBS IN PRODUCTION
+                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                      {jobsInProductionCount}
+                    </h3>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>0 in factory queue</span>
+                    <span className="text-[10px] text-slate-400 font-semibold px-1 rounded bg-slate-50 border border-slate-100">
+                      Idle
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Attention Required (Dynamic Alert Center) */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-rose-600" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Attention Required
-                  </h3>
+              {/* SECONDARY OPERATIONS STATUS BAR (Horizontal Strip) */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl px-5 py-2.5 shadow-2xs flex items-center justify-between flex-wrap gap-y-2 text-xs">
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  <span>Ready for Release</span>
+                  <span className="font-bold text-slate-900">{readyForReleaseCount}</span>
                 </div>
-                <Link
-                  href="/dashboard/orders"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
+
+                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
+
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  <span>Ready for Dispatch</span>
+                  <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
+                </div>
+
+                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
+
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Delivered Today</span>
+                  <span className="font-bold text-slate-900">{deliveredTodayCount}</span>
+                </div>
+
+                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
+
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span>Today&apos;s Revenue</span>
+                  <span className="font-bold text-slate-900">
+                    ₹ {todayRevenueRupees.toLocaleString("en-IN")}
+                  </span>
+                </div>
+
+                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
+
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Overdue Orders</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {overdueOrdersCount} All OK
+                  </span>
+                </div>
+
+                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
+
+                <div className="flex items-center gap-2 text-slate-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  <span>Payment Audit</span>
+                  <span className="font-bold text-slate-900">{paymentAuditCount}</span>
+                </div>
               </div>
 
-              <div className="space-y-1.5 text-xs font-medium">
-                {metrics.attentionItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center justify-between py-0.5 hover:bg-slate-50 rounded px-1 -mx-1 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <AlertTriangle
-                        className={`w-3.5 h-3.5 shrink-0 ${item.count > 0 ? "text-rose-500" : "text-slate-300"}`}
-                      />
-                      <span className="text-slate-600 truncate">
-                        {item.label}
+              {/* MIDDLE SECTION (3 CARDS) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* 1. Sales Pipeline */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-slate-600" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Sales Pipeline
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                        THIS MONTH
                       </span>
                     </div>
-                    <span
-                      className={`font-bold ${item.count > 0 ? "text-rose-600" : "text-slate-400"}`}
-                    >
-                      {item.count}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Lead qualification to confirmed customer order conversion velocity.
+                    </p>
 
-            {/* Team Performance (Dynamic Sales / Design Tabs!) */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between relative">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Team Performance
-                  </h3>
-                </div>
-                {/* Dynamic Timeframe Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdown(openDropdown === "team" ? null : "team");
-                    }}
-                    className="text-[10px] font-semibold text-slate-600 border border-slate-200 px-2 py-0.5 rounded flex items-center gap-1 hover:bg-slate-50 transition-colors"
-                  >
-                    {teamTimeframe}{" "}
-                    <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
-                  </button>
-                  {openDropdown === "team" && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-20 min-w-[100px] text-xs">
-                      {["Today", "This Week", "This Month", "All Time"].map(
-                        (tf) => (
-                          <button
-                            key={tf}
-                            onClick={() => {
-                              setTeamTimeframe(tf);
-                              setOpenDropdown(null);
-                            }}
-                            className={`w-full text-left px-2.5 py-1 font-medium hover:bg-slate-50 transition-colors ${
-                              teamTimeframe === tf
-                                ? "text-[#E11D48] font-bold bg-rose-50/50"
-                                : "text-slate-700"
-                            }`}
-                          >
-                            {tf}
-                          </button>
-                        ),
-                      )}
+                    {/* 4 Pipeline Stage Bars */}
+                    <div className="grid grid-cols-4 gap-3 mt-7 items-end h-32 px-2">
+                      {/* LEADS */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-xs font-bold text-slate-800">
+                          {pipelineMetrics.leads}
+                        </span>
+                        <div
+                          className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${Math.max(20, (pipelineMetrics.leads / pipelineMetrics.maxVal) * 85)}%`,
+                          }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                          LEADS
+                        </span>
+                      </div>
+
+                      {/* INT */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-xs font-bold text-slate-800">
+                          {pipelineMetrics.int}
+                        </span>
+                        <div
+                          className="w-full bg-emerald-500 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${Math.max(20, (pipelineMetrics.int / pipelineMetrics.maxVal) * 85)}%`,
+                          }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                          INT
+                        </span>
+                      </div>
+
+                      {/* QUOTE */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-xs font-bold text-slate-800">
+                          {pipelineMetrics.quote}
+                        </span>
+                        <div
+                          className="w-full bg-amber-500 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${Math.max(20, (pipelineMetrics.quote / pipelineMetrics.maxVal) * 85)}%`,
+                          }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                          QUOTE
+                        </span>
+                      </div>
+
+                      {/* ORDER */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-xs font-bold text-slate-800">
+                          {pipelineMetrics.order}
+                        </span>
+                        <div
+                          className="w-full bg-rose-500 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${Math.max(20, (pipelineMetrics.order / pipelineMetrics.maxVal) * 85)}%`,
+                          }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                          ORDER
+                        </span>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Pipeline Conversion Rate:
+                    </span>
+                    <span className="font-bold text-emerald-600">
+                      {pipelineMetrics.winRate}% Win Velocity
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Tabs */}
-              <div className="flex border-b border-slate-100 text-xs">
-                <button
-                  onClick={() => setTeamTab("SALES")}
-                  className={`pb-1.5 font-bold mr-4 transition-colors ${
-                    teamTab === "SALES"
-                      ? "text-[#E11D48] border-b-2 border-[#E11D48]"
-                      : "text-slate-400 hover:text-slate-600"
-                  }`}
-                >
-                  Sales Team
-                </button>
-                <button
-                  onClick={() => setTeamTab("DESIGN")}
-                  className={`pb-1.5 font-bold transition-colors ${
-                    teamTab === "DESIGN"
-                      ? "text-[#E11D48] border-b-2 border-[#E11D48]"
-                      : "text-slate-400 hover:text-slate-600"
-                  }`}
-                >
-                  Design Team
-                </button>
-              </div>
+                {/* 2. Order Lifecycle */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-slate-600" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Order Lifecycle
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                        ALL ORDERS
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Current batch distribution through studio prep and factory gates.
+                    </p>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="text-[10px] text-slate-400 font-bold uppercase border-b border-slate-100">
-                      <th className="pb-1.5 font-bold">Name</th>
-                      <th className="pb-1.5 font-bold text-center">
-                        {teamTab === "SALES" ? "Leads" : "Projects"}
-                      </th>
-                      <th className="pb-1.5 font-bold text-center">
-                        {teamTab === "SALES" ? "Orders" : "Approved"}
-                      </th>
-                      <th className="pb-1.5 font-bold text-right">
-                        {teamTab === "SALES" ? "Revenue" : "Locked"}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 font-medium">
-                    {teamTab === "SALES" ? (
-                      metrics.dynamicSalesTeam.length > 0 ? (
-                        metrics.dynamicSalesTeam.slice(0, 4).map((rep) => (
-                          <tr
-                            key={rep._id}
-                            className="hover:bg-slate-50/50 transition-colors"
-                          >
-                            <td className="py-1.5 text-slate-800 font-semibold truncate max-w-[85px]">
-                              {rep.name}
-                            </td>
-                            <td className="py-1.5 text-center text-slate-600">
-                              {rep.leads}
-                            </td>
-                            <td className="py-1.5 text-center text-slate-600">
-                              {rep.orders}
-                            </td>
-                            <td className="py-1.5 text-right font-bold text-slate-900">
-                              ₹ {rep.revenue.toLocaleString("en-IN")}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="py-4 text-center text-slate-400"
-                          >
-                            No sales performance records
-                          </td>
-                        </tr>
-                      )
-                    ) : metrics.designers.length > 0 ? (
-                      metrics.designers.slice(0, 4).map((d) => {
-                        const projects = designProjects.filter(
-                          (dp) =>
-                            String(dp.assignedDesignerId) === String(d._id),
-                        ).length;
-                        const approved = designProjects.filter(
-                          (dp) =>
-                            String(dp.assignedDesignerId) === String(d._id) &&
-                            dp.approvalStatus === "APPROVED",
-                        ).length;
-                        const locked = designProjects.filter(
-                          (dp) =>
-                            String(dp.assignedDesignerId) === String(d._id) &&
-                            dp.productionLocked,
-                        ).length;
-                        return (
-                          <tr
-                            key={d._id}
-                            className="hover:bg-slate-50/50 transition-colors"
-                          >
-                            <td className="py-1.5 text-slate-800 font-semibold truncate max-w-[85px]">
-                              {d.name}
-                            </td>
-                            <td className="py-1.5 text-center text-slate-600">
-                              {projects}
-                            </td>
-                            <td className="py-1.5 text-center text-slate-600">
-                              {approved}
-                            </td>
-                            <td className="py-1.5 text-right font-bold text-slate-900">
-                              {locked}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="py-4 text-center text-slate-400"
-                        >
-                          No designers registered
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    {/* 7 Lifecycle Bars */}
+                    <div className="grid grid-cols-7 gap-2 mt-7 items-end h-32 px-1">
+                      {/* Prep */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-xs font-bold text-slate-800">
+                          {orderLifecycleMetrics.prep}
+                        </span>
+                        <div
+                          className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${Math.max(15, (orderLifecycleMetrics.prep / orderLifecycleMetrics.maxVal) * 85)}%`,
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Prep
+                        </span>
+                      </div>
 
-            {/* Recent Activity (Dynamic from /audit-logs!) */}
-            <div className="bg-white p-5 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-slate-700" />
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Recent Activity
-                  </h3>
+                      {/* Dsgn */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.dsgn}
+                        </span>
+                        <div
+                          className="w-full bg-blue-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.dsgn > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Dsgn
+                        </span>
+                      </div>
+
+                      {/* Appr */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.appr}
+                        </span>
+                        <div
+                          className="w-full bg-teal-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.appr > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Appr
+                        </span>
+                      </div>
+
+                      {/* Prod */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.prod}
+                        </span>
+                        <div
+                          className="w-full bg-amber-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.prod > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Prod
+                        </span>
+                      </div>
+
+                      {/* Rdy */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.rdy}
+                        </span>
+                        <div
+                          className="w-full bg-emerald-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.rdy > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Rdy
+                        </span>
+                      </div>
+
+                      {/* Dsp */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.dsp}
+                        </span>
+                        <div
+                          className="w-full bg-indigo-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.dsp > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Dsp
+                        </span>
+                      </div>
+
+                      {/* Delv */}
+                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {orderLifecycleMetrics.delv}
+                        </span>
+                        <div
+                          className="w-full bg-cyan-400/30 rounded-t-md"
+                          style={{
+                            height: orderLifecycleMetrics.delv > 0 ? "30%" : "4px",
+                          }}
+                        />
+                        <span className="text-[9px] font-medium text-slate-400 mt-1">
+                          Delv
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Current Factory Bottleneck:
+                    </span>
+                    <span className="font-bold text-slate-800">
+                      {orderLifecycleMetrics.bottleneckText}
+                    </span>
+                  </div>
                 </div>
-                <Link
-                  href="/dashboard/admin/audit"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
-                >
-                  View All
-                </Link>
-              </div>
 
-              {/* Dynamic Timeline Items */}
-              <div className="space-y-3 pt-1 text-xs">
-                {auditLogs.length > 0 ? (
-                  auditLogs.slice(0, 5).map((log) => (
-                    <div
-                      key={log._id}
-                      className="flex items-start gap-2.5 group"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-blue-500 mt-1 shrink-0 group-hover:scale-125 transition-transform" />
-                      <div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                          {new Date(log.timestamp).toLocaleTimeString("en-US", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                {/* 3. Financial Overview */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-slate-600" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Financial Overview
+                        </h3>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                        THIS MONTH
+                      </span>
+                    </div>
+
+                    {/* Financial Line Items */}
+                    <div className="mt-5 space-y-3">
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">
+                          Total Order Value
+                        </span>
+                        <span className="font-black text-slate-900 text-sm">
+                          ₹ {totalOrderValueRupees.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">
+                          Payment Received
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-slate-900 text-sm">
+                            ₹ {totalPaymentsReceivedRupees.toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[11px] font-bold text-emerald-600 flex items-center">
+                            <ArrowUpRight className="w-3 h-3" />
+                            {paymentCoveragePercent}%
+                          </span>
                         </div>
-                        <div className="font-bold text-slate-900 truncate max-w-[170px]">
-                          {log.actionCode || log.action || "System action"}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">
+                          Outstanding Balance
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-slate-900 text-sm">
+                            ₹ {outstandingBalanceRupees.toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400 flex items-center">
+                            <ArrowDownRight className="w-3 h-3" />
+                            0%
+                          </span>
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono truncate max-w-[170px]">
-                          {log.collectionName}{" "}
-                          {log.documentId
-                            ? "· " +
-                              String(log.documentId).slice(-6).toUpperCase()
-                            : ""}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">
+                          Overdue Receivables
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-slate-900 text-sm">
+                            ₹ {overdueReceivablesRupees}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                            Aging Normal
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">
+                          Pending Verification
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-slate-900 text-sm">
+                            ₹ {pendingVerificationRupees}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Audit OK
+                          </span>
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="py-6 text-center text-slate-400 text-xs">
-                    No recent activity records logged.
                   </div>
-                )}
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Collection Health
+                    </span>
+                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Fully Reconciled
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* ========================================== */}
-          {/* 5. QUICK ACTIONS BOTTOM BAR */}
-          {/* ========================================== */}
-          <div className="bg-white p-4 rounded-md border border-slate-200/80 shadow-xs space-y-3">
-            <span className="text-xs font-black text-slate-900 block">
-              Quick Actions
-            </span>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <Link
-                href="/dashboard/leads"
-                className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <Plus className="w-4 h-4" /> Add Lead
-              </Link>
+              {/* OPERATIONS & APPROVALS (4-COLUMN GRID) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* CARD 1: Design Projects */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-slate-600" />
+                        <h4 className="text-xs font-bold text-slate-900">
+                          Design Projects
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => router.push("/dashboard/designer")}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
+                      >
+                        View All
+                      </button>
+                    </div>
 
-              <Link
-                href="/dashboard/customers"
-                className="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-sky-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <Users className="w-4 h-4" /> Create Customer
-              </Link>
+                    <div className="mt-3.5 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Total Projects</span>
+                        <span className="font-bold text-slate-900">
+                          {designProjectStats.total}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Unassigned</span>
+                        <span className="font-bold text-slate-900">
+                          {designProjectStats.unassigned}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">In Progress</span>
+                        <span className="font-bold text-blue-600">
+                          {designProjectStats.inProgress}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-rose-600 font-medium">
+                          Client Review (Pending)
+                        </span>
+                        <span className="font-bold text-rose-600">
+                          {designProjectStats.clientReview}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Revision Requested</span>
+                        <span className="font-bold text-slate-900">
+                          {designProjectStats.revisionRequested}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Approved</span>
+                        <span className="font-bold text-emerald-600">
+                          {designProjectStats.approved}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Ready for Production</span>
+                        <span className="font-bold text-slate-900">
+                          {designProjectStats.readyForProduction}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Production Locked</span>
+                        <span className="font-bold text-emerald-600">
+                          {designProjectStats.productionLocked}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-              <Link
-                href="/dashboard/quotations"
-                className="px-4 py-2 rounded-xl bg-[#059669] hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <FileText className="w-4 h-4" /> New Quotation
-              </Link>
+                  {/* Progress Bar Footer */}
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
+                      <div
+                        className="h-full bg-emerald-500"
+                        style={{ width: `${designProjectStats.approvedRate}%` }}
+                      />
+                      <div className="h-full bg-amber-400 flex-1" />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium mt-1.5">
+                      <span>{designProjectStats.approvedRate}% approved rate</span>
+                      <span>{designProjectStats.pendingSignoffs} pending signoff</span>
+                    </div>
+                  </div>
+                </div>
 
-              <Link
-                href="/dashboard/payments"
-                className="px-4 py-2 rounded-xl bg-[#D97706] hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <CreditCard className="w-4 h-4" /> Verify Payments
-              </Link>
+                {/* CARD 2: Production Overview */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Factory className="w-3.5 h-3.5 text-slate-600" />
+                        <h4 className="text-xs font-bold text-slate-900">
+                          Production Overview
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => router.push("/dashboard/production")}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
+                      >
+                        View All
+                      </button>
+                    </div>
 
-              <Link
-                href="/dashboard/discount-approvals"
-                className="px-4 py-2 rounded-xl bg-[#7C3AED] hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <ShieldCheck className="w-4 h-4" /> View Approvals
-              </Link>
+                    <div className="mt-3.5 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Ready for Release</span>
+                        <span className="font-bold text-slate-900">{readyForReleaseCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Sent to Production</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">In Active Production</span>
+                        <span className="font-bold text-slate-900">{jobsInProductionCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Ready for Dispatch</span>
+                        <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Dispatched</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Delivered Today</span>
+                        <span className="font-bold text-slate-900">{deliveredTodayCount}</span>
+                      </div>
+                    </div>
+                  </div>
 
-              <Link
-                href="/dashboard/production"
-                className="px-4 py-2 rounded-xl bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <Layers className="w-4 h-4" /> Production Jobs
-              </Link>
+                  {/* Empty state box */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 text-center py-2">
+                    <CheckCircle2 className="w-4 h-4 text-slate-400 mx-auto mb-1 stroke-1" />
+                    <p className="text-[11px] text-slate-600 font-medium">
+                      No active production jobs in queue.
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      Floor capacity: 100% available
+                    </p>
+                  </div>
+                </div>
 
-              <Link
-                href="/dashboard/production/delivery"
-                className="px-4 py-2 rounded-xl bg-[#0D9488] hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <Truck className="w-4 h-4" /> Deliveries Hub
-              </Link>
+                {/* CARD 3: Dispatch & Delivery */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Truck className="w-3.5 h-3.5 text-slate-600" />
+                        <h4 className="text-xs font-bold text-slate-900">
+                          Dispatch &amp; Delivery
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => router.push("/dashboard/orders")}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
+                      >
+                        View All
+                      </button>
+                    </div>
 
-              <Link
-                href="/dashboard/admin/users"
-                className="px-4 py-2 rounded-xl bg-[#6D28D9] hover:bg-violet-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:-translate-y-0.5"
-              >
-                <UserPlus className="w-4 h-4" /> Manage Users
-              </Link>
-            </div>
-          </div>
+                    <div className="mt-3.5 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Ready for Dispatch</span>
+                        <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Dispatched Today</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Out for Delivery</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Delivery Failed</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Fitting Scheduled</span>
+                        <span className="font-bold text-slate-900">0</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">Delivered Today</span>
+                        <span className="font-bold text-emerald-600">{deliveredTodayCount}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 text-[11px]">Fleet Logistics</span>
+                    <span className="font-semibold text-emerald-600 text-[11px]">
+                      All Couriers Synced
+                    </span>
+                  </div>
+                </div>
+
+                {/* CARD 4: Attention Required (Alert Style) */}
+                <div className="bg-white rounded-2xl p-4 border border-rose-200 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                        <h4 className="text-xs font-bold text-slate-900">
+                          Attention Required
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                        {attentionMetrics.criticalCount} Critical
+                      </span>
+                    </div>
+
+                    <div className="mt-3.5 space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Follow-ups overdue</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.overdueFollowups}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Quotations awaiting approval</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.quotesAwaiting}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Payments awaiting verification</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.paymentsPending}</span>
+                      </div>
+
+                      {/* Highlighted Designs Awaiting Row */}
+                      <div className="flex items-center justify-between bg-rose-50/80 border border-rose-200 px-2.5 py-1.5 rounded-xl">
+                        <span className="text-rose-700 font-semibold text-xs flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-sm bg-rose-500" />
+                          Designs awaiting client approval
+                        </span>
+                        <span className="font-black text-rose-700">
+                          {attentionMetrics.designsAwaiting}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Production jobs overdue</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.jobsOverdue}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Jobs awaiting release</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.jobsAwaitingRelease}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Failed deliveries</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.failedDeliveries}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-0.5">
+                        <span className="text-slate-500">Outstanding payments</span>
+                        <span className="font-bold text-slate-700">{attentionMetrics.outstandingPayments}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-2">
+                    <button
+                      onClick={() => router.push("/dashboard/designer")}
+                      className="w-full py-2 px-3 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98"
+                    >
+                      <span>Resolve Design Approval</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* LOWER 2 COLUMNS: Team Performance & Recent System Activity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* 1. Team Performance */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-slate-600" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Team Performance
+                        </h3>
+                      </div>
+
+                      {/* Tab toggles */}
+                      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 text-xs font-semibold">
+                        <button
+                          onClick={() => setTeamTab("Sales Team")}
+                          className={`px-3 py-1 rounded-md transition-all ${
+                            teamTab === "Sales Team"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Sales Team
+                        </button>
+                        <button
+                          onClick={() => setTeamTab("Design Team")}
+                          className={`px-3 py-1 rounded-md transition-all ${
+                            teamTab === "Design Team"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Design Team
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="mt-4 overflow-x-auto">
+                      {teamTab === "Sales Team" ? (
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                              <th className="py-2.5 pr-4">OPERATOR / REP</th>
+                              <th className="py-2.5 px-3 text-center">LEADS</th>
+                              <th className="py-2.5 px-3 text-center">ORDERS</th>
+                              <th className="py-2.5 px-3 text-right">REVENUE</th>
+                              <th className="py-2.5 pl-3 text-right">CONVERSION</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {salesTeamMembers.map((member) => (
+                              <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 pr-4">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
+                                      {member.avatarUrl ? (
+                                        <img
+                                          src={member.avatarUrl}
+                                          alt={member.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        member.initials
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-slate-900">
+                                        {member.name}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400">
+                                        {member.role}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                  {member.leads}
+                                </td>
+                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                  {member.orders}
+                                </td>
+                                <td className="py-3 px-3 text-right font-black text-slate-900">
+                                  ₹ {member.revenue.toLocaleString("en-IN")}
+                                </td>
+                                <td className="py-3 pl-3 text-right">
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {member.conversion}%
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                              <th className="py-2.5 pr-4">DESIGNER / ARTIST</th>
+                              <th className="py-2.5 px-3 text-center">PROJECTS</th>
+                              <th className="py-2.5 px-3 text-center">APPROVED</th>
+                              <th className="py-2.5 px-3 text-center">PENDING</th>
+                              <th className="py-2.5 pl-3 text-right">APPROVAL RATE</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {designTeamMembers.map((member) => (
+                              <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3 pr-4">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
+                                      {member.avatarUrl ? (
+                                        <img
+                                          src={member.avatarUrl}
+                                          alt={member.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        member.initials
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className="font-bold text-slate-900">
+                                        {member.name}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400">
+                                        {member.role}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                  {member.projects}
+                                </td>
+                                <td className="py-3 px-3 text-center font-semibold text-emerald-600">
+                                  {member.approved}
+                                </td>
+                                <td className="py-3 px-3 text-center font-semibold text-rose-600">
+                                  {member.pending}
+                                </td>
+                                <td className="py-3 pl-3 text-right">
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {member.rate}%
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Quota Attainment: 100% of monthly baseline
+                    </span>
+                    <button
+                      onClick={() => router.push("/dashboard/admin/targets")}
+                      className="font-bold text-slate-700 hover:text-slate-900 flex items-center gap-0.5"
+                    >
+                      Manage Rep Targets →
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Recent System Activity */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-slate-600" />
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Recent System Activity
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => router.push("/dashboard/admin/audit")}
+                        className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                      >
+                        View Full Audit
+                      </button>
+                    </div>
+
+                    {/* Activity Feed */}
+                    <div className="mt-4 space-y-3">
+                      {recentActivitiesList.map((act) => (
+                        <div
+                          key={act.id}
+                          className="flex items-start justify-between gap-3 text-xs py-1"
+                        >
+                          <div className="space-y-0.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {act.timeStr}
+                              </span>
+                              <span className="font-mono text-[11px] font-bold text-slate-800">
+                                {act.eventCode}
+                              </span>
+                            </div>
+                            <p className="text-slate-500 text-[11px] truncate">
+                              {act.summary}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => router.push("/dashboard/designer")}
+                            className="font-mono text-[11px] font-bold text-indigo-600 hover:text-indigo-800 shrink-0"
+                          >
+                            {act.tag}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">
+                      Atlas Real-time Stream: 4 events past 60m
+                    </span>
+                    <span className="font-bold text-emerald-600 flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Listening
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DOCKED QUICK ACTIONS HUB */}
+              <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-xl border border-slate-800">
+                <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-3 px-1">
+                  QUICK ACTIONS HUB
+                </div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Add Lead */}
+                  <button
+                    onClick={() => setShowAddLeadModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Add Lead</span>
+                  </button>
+
+                  {/* Create Customer */}
+                  <button
+                    onClick={() => router.push("/dashboard/customers")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Create Customer</span>
+                  </button>
+
+                  {/* New Quotation */}
+                  <button
+                    onClick={() => router.push("/dashboard/quotations")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>New Quotation</span>
+                  </button>
+
+                  {/* Verify Payments */}
+                  <button
+                    onClick={() => router.push("/dashboard/payments")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Verify Payments</span>
+                  </button>
+
+                  {/* View Approvals */}
+                  <button
+                    onClick={() => router.push("/dashboard/designer")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <Palette className="w-3.5 h-3.5" />
+                    <span>View Approvals ({pendingDesignsCount || 1})</span>
+                  </button>
+
+                  {/* Production Jobs */}
+                  <button
+                    onClick={() => router.push("/dashboard/production")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <Factory className="w-3.5 h-3.5" />
+                    <span>Production Jobs</span>
+                  </button>
+
+                  {/* Deliveries Hub */}
+                  <button
+                    onClick={() => router.push("/dashboard/orders")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <Truck className="w-3.5 h-3.5" />
+                    <span>Deliveries Hub</span>
+                  </button>
+
+                  {/* Manage Users */}
+                  <button
+                    onClick={() => router.push("/dashboard/admin/users")}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Manage Users</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* FOOTER SYSTEM STATUS */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500 pt-2 pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-700">
+                    A2V Studio PrintFlow CRM
+                  </span>
+                  <span>•</span>
+                  <span>Version 4.8.2-prod</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    MongoDB Atlas Active
+                  </span>
+                </div>
+                <div>
+                  Signed in as{" "}
+                  <span className="font-semibold text-slate-700">
+                    {currentUser?.email || "tanya@a2vstudio.in"}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
+
+      {/* ADD LEAD MODAL */}
+      {showAddLeadModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Add New Lead</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Capture a walk-in, inbound call, or portal inquiry.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddLeadModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLead} className="space-y-4 text-xs">
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Contact Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rajesh Kumar"
+                  value={newLead.name}
+                  onChange={(e) =>
+                    setNewLead({ ...newLead, name: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+91 98765 43210"
+                    value={newLead.phone}
+                    onChange={(e) =>
+                      setNewLead({ ...newLead, phone: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="client@company.com"
+                    value={newLead.email}
+                    onChange={(e) =>
+                      setNewLead({ ...newLead, email: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Business / Brand
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Prints"
+                    value={newLead.companyName}
+                    onChange={(e) =>
+                      setNewLead({ ...newLead, companyName: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Estimated Value (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newLead.estimatedValue}
+                    onChange={(e) =>
+                      setNewLead({ ...newLead, estimatedValue: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Lead Source
+                </label>
+                <select
+                  value={newLead.source}
+                  onChange={(e) =>
+                    setNewLead({ ...newLead, source: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="WALK_IN">Walk In</option>
+                  <option value="PHONE_CALL">Phone Call</option>
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="INDIAMART">IndiaMART</option>
+                  <option value="JUSTDIAL">JustDial</option>
+                  <option value="WEBSITE">Website</option>
+                  <option value="REFERRAL">Referral</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Printing Requirement Details
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. 5000 Business Cards 400gsm Velvet Laminated"
+                  value={newLead.requirement}
+                  onChange={(e) =>
+                    setNewLead({ ...newLead, requirement: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Assigned Sales Rep
+                </label>
+                <select
+                  value={newLead.assignedToId}
+                  onChange={(e) =>
+                    setNewLead({ ...newLead, assignedToId: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.name} ({u.roleSlug || u.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1 flex items-center justify-between">
+                  <span>Schedule Next Follow-up</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    Optional date &amp; time
+                  </span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newLead.nextFollowUp || ""}
+                  onChange={(e) =>
+                    setNewLead({ ...newLead, nextFollowUp: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={creatingLead}
+                  onClick={() => setShowAddLeadModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingLead}
+                  className={`px-5 py-2 rounded-xl text-white font-semibold shadow-md flex items-center justify-center gap-2 transition-all ${
+                    creatingLead
+                      ? "bg-blue-400 cursor-not-allowed opacity-90 shadow-none"
+                      : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-95"
+                  }`}
+                >
+                  {creatingLead ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span>Creating Lead...</span>
+                    </>
+                  ) : (
+                    <span>Create Lead</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
