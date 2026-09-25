@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -102,6 +103,82 @@ export default function UsersDirectoryPage() {
   });
 
   const [selectedUser, setSelectedUser] = useState(null);
+  const [avatarVersion, setAvatarVersion] = useState(0);
+
+  // Robust multi-tier avatar resolver
+  const resolveUserAvatar = (u) => {
+    if (!u) return null;
+    const uEmail = (u.email || "").toLowerCase().trim();
+    const uName = (u.name || "").toLowerCase().trim();
+    const uId = (u._id || u.id || "").toString();
+
+    let avatarDirectory = {};
+    if (typeof window !== "undefined") {
+      try {
+        avatarDirectory = JSON.parse(
+          localStorage.getItem("crm_user_avatars") || "{}"
+        );
+      } catch {}
+    }
+
+    const currentLoggedInName = (
+      typeof window !== "undefined"
+        ? localStorage.getItem("userName") || ""
+        : ""
+    )
+      .toLowerCase()
+      .trim();
+    const currentLoggedInEmail = (
+      typeof window !== "undefined"
+        ? localStorage.getItem("userEmail") || ""
+        : ""
+    )
+      .toLowerCase()
+      .trim();
+    const currentLoggedInAvatar =
+      typeof window !== "undefined"
+        ? localStorage.getItem("userAvatar") || null
+        : null;
+
+    const isSelf =
+      (currentLoggedInEmail && uEmail && currentLoggedInEmail === uEmail) ||
+      (currentLoggedInName && uName && currentLoggedInName === uName);
+
+    return (
+      u.avatarUrl ||
+      u.avatar ||
+      u.profileImage ||
+      (uId && avatarDirectory[uId]) ||
+      (uEmail && avatarDirectory[uEmail]) ||
+      (uName && avatarDirectory[uName]) ||
+      (isSelf ? currentLoggedInAvatar : null) ||
+      null
+    );
+  };
+
+  const isCurrentUser = (u) => {
+    if (!u) return false;
+    const uEmail = (u.email || "").toLowerCase().trim();
+    const uName = (u.name || "").toLowerCase().trim();
+    const currentLoggedInName = (
+      typeof window !== "undefined"
+        ? localStorage.getItem("userName") || ""
+        : ""
+    )
+      .toLowerCase()
+      .trim();
+    const currentLoggedInEmail = (
+      typeof window !== "undefined"
+        ? localStorage.getItem("userEmail") || ""
+        : ""
+    )
+      .toLowerCase()
+      .trim();
+    return (
+      (currentLoggedInEmail && uEmail && currentLoggedInEmail === uEmail) ||
+      (currentLoggedInName && uName && currentLoggedInName === uName)
+    );
+  };
 
   const fetchUsersData = async () => {
     try {
@@ -119,7 +196,11 @@ export default function UsersDirectoryPage() {
       }
 
       if (uRes.status === "fulfilled" && uRes.value?.data) {
-        setUsers(uRes.value.data);
+        const rawUsers = uRes.value.data;
+        const usersList = Array.isArray(rawUsers)
+          ? rawUsers
+          : rawUsers.users || [];
+        setUsers(usersList);
       }
       if (aRes.status === "fulfilled" && aRes.value?.data) {
         setAreas(aRes.value.data);
@@ -140,6 +221,16 @@ export default function UsersDirectoryPage() {
       setIsAuthorized(false);
     }
     fetchUsersData();
+
+    const handleAvatarUpdate = () => {
+      setAvatarVersion((v) => v + 1);
+      fetchUsersData();
+    };
+
+    window.addEventListener("crm:avatar-updated", handleAvatarUpdate);
+    return () => {
+      window.removeEventListener("crm:avatar-updated", handleAvatarUpdate);
+    };
   }, []);
 
   const handleCreateUser = async (e) => {
@@ -517,6 +608,8 @@ export default function UsersDirectoryPage() {
                         "sales"
                       ).toLowerCase();
                       const isActive = u.status === "ACTIVE";
+                      const userAvatar = resolveUserAvatar(u);
+                      const isSelf = isCurrentUser(u);
 
                       return (
                         <tr
@@ -524,13 +617,32 @@ export default function UsersDirectoryPage() {
                           className="hover:bg-slate-50 transition-colors"
                         >
                           <td className="py-3.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center">
-                                {(u.name || "US").slice(0, 2).toUpperCase()}
+                            <div className="flex items-center gap-3">
+                              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                                {userAvatar ? (
+                                  <img
+                                    src={userAvatar}
+                                    alt={u.name || "User Avatar"}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span>{(u.name || "US").slice(0, 2).toUpperCase()}</span>
+                                )}
+                                {u.isOnline && (
+                                  <span
+                                    className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"
+                                    title="Online Now"
+                                  />
+                                )}
                               </div>
                               <div>
-                                <span className="font-bold text-slate-900 block">
+                                <span className="font-bold text-slate-900 block flex items-center gap-1.5">
                                   {u.name}
+                                  {isSelf && (
+                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[9px] font-bold border border-blue-200">
+                                      You
+                                    </span>
+                                  )}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
                                   {u.phone || "No phone"}
@@ -820,12 +932,30 @@ export default function UsersDirectoryPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">
-                Edit User Profile & Role
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                  {resolveUserAvatar(selectedUser) ? (
+                    <img
+                      src={resolveUserAvatar(selectedUser)}
+                      alt={selectedUser.name || "User Avatar"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{(selectedUser.name || "US").slice(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Edit User Profile & Role
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {selectedUser.email}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100"
               >
                 ✕
               </button>
@@ -958,22 +1088,30 @@ export default function UsersDirectoryPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <Key className="w-4 h-4" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-50 to-orange-100 text-amber-600 flex items-center justify-center shrink-0 overflow-hidden border border-amber-200/60 font-bold text-xs shadow-xs">
+                  {resolveUserAvatar(passwordUser) ? (
+                    <img
+                      src={resolveUserAvatar(passwordUser)}
+                      alt={passwordUser.name || "User Avatar"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Key className="w-4 h-4" />
+                  )}
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
                     Change User Password
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    {passwordUser.name}
+                    {passwordUser.name} · {passwordUser.email}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowPasswordModal(false)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100"
               >
                 ✕
               </button>
@@ -1059,8 +1197,16 @@ export default function UsersDirectoryPage() {
             {/* Modal Header */}
             <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-100 text-indigo-600 flex items-center justify-center font-bold shrink-0 overflow-hidden border border-indigo-200/60 shadow-xs text-xs">
+                  {resolveUserAvatar(permissionsUser) ? (
+                    <img
+                      src={resolveUserAvatar(permissionsUser)}
+                      alt={permissionsUser.name || "User Avatar"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ShieldCheck className="w-5 h-5" />
+                  )}
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">

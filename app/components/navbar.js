@@ -163,6 +163,7 @@ export default function Navbar() {
           const effectiveAvatar = u.avatarUrl || u.profileImage || currentCachedAvatar || null;
 
           setUser({
+            id: u._id || u.id || "",
             name: fullName,
             email: u.email || "",
             role: rawRole,
@@ -170,6 +171,16 @@ export default function Navbar() {
             initials: fullName.slice(0, 2).toUpperCase(),
             avatarUrl: effectiveAvatar,
           });
+
+          if (effectiveAvatar) {
+            try {
+              const directory = JSON.parse(localStorage.getItem("crm_user_avatars") || "{}");
+              if (u.email) directory[u.email.toLowerCase().trim()] = effectiveAvatar;
+              if (fullName) directory[fullName.toLowerCase().trim()] = effectiveAvatar;
+              if (u._id || u.id) directory[(u._id || u.id).toString()] = effectiveAvatar;
+              localStorage.setItem("crm_user_avatars", JSON.stringify(directory));
+            } catch {}
+          }
 
           if (t?.name) {
             setTenant({
@@ -368,6 +379,7 @@ export default function Navbar() {
         const directory = JSON.parse(localStorage.getItem("crm_user_avatars") || "{}");
         if (user.email) directory[user.email.toLowerCase().trim()] = optimizedDataUrl;
         if (user.name) directory[user.name.toLowerCase().trim()] = optimizedDataUrl;
+        if (user.id || user._id) directory[(user.id || user._id).toString()] = optimizedDataUrl;
         localStorage.setItem("crm_user_avatars", JSON.stringify(directory));
       } catch {}
       window.dispatchEvent(
@@ -650,7 +662,7 @@ export default function Navbar() {
               <MessageSquare className="w-6 h-6" />
             </button>
 
-            {/* Operational Alerts Bell & Exception Center Trigger */}
+            {/*Notification Center  */}
             <div className="relative">
               <button
                 onClick={() => {
@@ -664,7 +676,7 @@ export default function Navbar() {
                     ? "bg-indigo-50 text-indigo-600"
                     : "hover:bg-slate-100 text-slate-600"
                 }`}
-                title="Operational Alerts & Exception Center"
+                title="Notification Center"
               >
                 <Bell className="w-6 h-6" />
                 {unreadNotificationCount > 0 && (
@@ -801,13 +813,7 @@ export default function Navbar() {
                       <span className="text-[11px] text-slate-500 block truncate">
                         {user.email || "Verified User"}
                       </span>
-                      <span
-                        className={`inline-block mt-1 px-2 py-0.5 rounded-md border text-[9px] font-bold uppercase tracking-wider ${getRoleBadgeStyle(
-                          user.role,
-                        )}`}
-                      >
-                        {user.roleDisplay}
-                      </span>
+
 
                       {/* Profile Photo Quick Actions */}
                       <div className="mt-2 flex items-center gap-2 pt-1 border-t border-slate-200/60">
@@ -815,9 +821,9 @@ export default function Navbar() {
                           type="button"
                           onClick={() => avatarFileInputRef.current?.click()}
                           disabled={isUploadingAvatar}
-                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
+                          className="text-[12px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Camera className="w-3 h-3" />
+                          <Camera className="w-4 h-4" />
                           <span>{user.avatarUrl ? "Change Photo" : "Add Photo"}</span>
                         </button>
 
@@ -828,10 +834,10 @@ export default function Navbar() {
                               type="button"
                               onClick={handleDeleteAvatar}
                               disabled={isUploadingAvatar}
-                              className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer"
+                              className="text-[12px] font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer"
                               title="Delete profile picture"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-4 h-4" />
                               <span>Delete</span>
                             </button>
                           </>
@@ -853,19 +859,6 @@ export default function Navbar() {
                       </button>
                     </div>
                   )}
-
-                  {/* Tenant Workspace Info */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1.5 truncate">
-                      <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">{tenant.name}</span>
-                    </span>
-                    {tenant.code && (
-                      <span className="font-mono text-[9px] bg-slate-200/70 px-1 rounded text-slate-600">
-                        {tenant.code}
-                      </span>
-                    )}
-                  </div>
                 </div>
 
                 {/* Navigation Links */}
@@ -876,7 +869,7 @@ export default function Navbar() {
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
                   >
                     <Layers className="w-4 h-4 text-slate-400" />
-                    <span>Dashboard Home</span>
+                    <span className="text-sm">Dashboard Home</span>
                   </Link>
 
                   <Link
@@ -885,7 +878,7 @@ export default function Navbar() {
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
                   >
                     <BarChart3 className="w-4 h-4 text-slate-400" />
-                    <span>Reports & Analytics</span>
+                    <span className="text-sm">Reports & Analytics</span>
                   </Link>
 
                   {user.role === "admin" && (
@@ -926,7 +919,7 @@ export default function Navbar() {
                 <div className="p-2 border-t border-slate-100 bg-slate-50/50">
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
                   >
                     <LogOut className="w-4 h-4 text-rose-500" />
                     <span>Sign Out</span>

@@ -17,6 +17,8 @@ import {
   ShieldAlert,
   Mail,
   Save,
+  Upload,
+  AlertTriangle,
   Loader2,
   Info,
   ChevronLeft,
@@ -25,6 +27,12 @@ import {
   Calendar,
   AlertOctagon,
   LayoutDashboard,
+  Shield,
+  Bell,
+  FileText,
+  CircleDollarSign,
+  PenTool,
+  LayoutGrid,
 } from "lucide-react";
 
 function formatIstDateTime(dateVal) {
@@ -102,6 +110,8 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [prefMessage, setPrefMessage] = useState(null);
   const [userRole, setUserRole] = useState("admin");
+  const [userEmail, setUserEmail] = useState("");
+  const [lastSyncedText, setLastSyncedText] = useState("Today at 10:45 AM");
 
   // Daily Alert Digest State
   const [digestPrefs, setDigestPrefs] = useState({
@@ -280,6 +290,21 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
     if (typeof window !== "undefined") {
       const role = (localStorage.getItem("userRole") || "admin").toLowerCase();
       setUserRole(role);
+      try {
+        const rawUser = localStorage.getItem("user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          if (parsed?.email) setUserEmail(parsed.email);
+        }
+      } catch (e) {}
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      setLastSyncedText(`Today at ${timeStr}`);
     }
   }, []);
 
@@ -1014,6 +1039,23 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
     }
   };
 
+  const handleDismissAll = async () => {
+    try {
+      if (alerts && alerts.length > 0) {
+        await Promise.allSettled(
+          alerts.map((a) => api.post(`/alerts/${a._id}/dismiss`))
+        );
+      } else {
+        await api.post("/alerts/read-all");
+      }
+      await fetchSummary();
+      await fetchOverview();
+      await fetchAlerts();
+    } catch (err) {
+      console.error("Failed to dismiss all alerts:", err);
+    }
+  };
+
   const handleTogglePreference = (alertType) => {
     setPreferences((prev) => ({
       ...prev,
@@ -1041,6 +1083,13 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
           type: "success",
           text: "Email notification preferences saved successfully.",
         });
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+        setLastSyncedText(`Today at ${timeStr}`);
       }
     } catch (err) {
       setPrefMessage({
@@ -1085,6 +1134,13 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
           type: "success",
           text: "Daily alert digest preferences saved successfully.",
         });
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+        setLastSyncedText(`Today at ${timeStr}`);
       }
     } catch (err) {
       setDigestMessage({
@@ -1126,53 +1182,55 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col border-l border-slate-200">
           {/* Header */}
-          <div className="p-5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-indigo-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  Operational Alerts
-                </h2>
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <Shield className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Proactive business situation & exception notifications
-              </p>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Notification Center
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Proactive business situation & exception notifications
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-200 bg-slate-50 px-4 overflow-x-auto">
+          <div className="flex border-b border-slate-100 px-5 gap-6 overflow-x-auto text-xs bg-white shrink-0">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                 activeTab === "overview"
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutGrid className="w-4 h-4" />
               Overview
             </button>
             <button
               onClick={() => setActiveTab("alerts")}
-              className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                 activeTab === "alerts"
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
-              <ShieldAlert className="w-4 h-4" />
-              Alerts ({summary.openAlerts})
+              <AlertTriangle className="w-4 h-4" />
+              Alerts ({summary.openAlerts || 0})
             </button>
             <button
               onClick={() => setActiveTab("preferences")}
-              className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                 activeTab === "preferences"
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
@@ -1183,7 +1241,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                 activeTab === "history"
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
@@ -1194,19 +1252,19 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
             </button>
             <button
               onClick={() => setActiveTab("digest-history")}
-              className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                 activeTab === "digest-history"
                   ? "border-indigo-600 text-indigo-600"
                   : "border-transparent text-slate-500 hover:text-slate-700"
               }`}
             >
               <Calendar className="w-4 h-4" />
-              Digest History
+              Digests
             </button>
             {(isAdmin || isManager) && (
               <button
                 onClick={() => setActiveTab("escalations")}
-                className={`py-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+                className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                   activeTab === "escalations"
                     ? "border-rose-600 text-rose-600"
                     : "border-transparent text-slate-500 hover:text-slate-700"
@@ -1221,28 +1279,33 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
           </div>
 
           {activeTab === "overview" ? (
-            <div className="p-4 space-y-6 overflow-y-auto">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1 bg-white">
               {/* Header / Refresh Bar */}
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
                     Workload Overview
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     Live operational alert snapshot and current workload
                   </p>
                 </div>
-                <button
-                  onClick={fetchOverview}
-                  disabled={overviewLoading}
-                  className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold"
-                  title="Refresh Overview"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${overviewLoading ? "animate-spin" : ""}`}
-                  />
-                  Refresh
-                </button>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400 hidden sm:inline">
+                    Updated 2m ago
+                  </span>
+                  <button
+                    onClick={fetchOverview}
+                    disabled={overviewLoading}
+                    className="border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs"
+                    title="Refresh Overview"
+                  >
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${overviewLoading ? "animate-spin text-indigo-600" : "text-slate-500"}`}
+                    />
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {overviewLoading ? (
@@ -1252,120 +1315,182 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                 </div>
               ) : (
                 <>
-                  {/* Operational Alerts Section */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                        <ShieldAlert className="w-4 h-4 text-indigo-600" />
-                        Operational Alerts
+                  {/* Notifications Section Header */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-indigo-600" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        NOTIFICATIONS
                       </h4>
-                      <button
-                        onClick={() => setActiveTab("alerts")}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                      >
-                        View All <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("alerts")}
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 group"
+                    >
+                      <span>View All</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </div>
+
+                  {/* Total Open Alerts Card */}
+                  <div
+                    onClick={() => setActiveTab("alerts")}
+                    className="cursor-pointer bg-gradient-to-br from-indigo-50/40 via-white to-white p-5 rounded-2xl border border-indigo-100/90 shadow-xs hover:border-indigo-300 transition-all relative"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider">
+                          TOTAL OPEN ALERTS
+                        </span>
+                        <div className="flex items-center gap-2.5 mt-2">
+                          <span className="text-4xl font-black text-slate-900 tracking-tight">
+                            {overview.operationalAlerts?.totalOpen || 0}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            0% pending
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                        <Shield className="w-5 h-5" />
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Total Open Alerts Card */}
-                      <div
-                        onClick={() => setActiveTab("alerts")}
-                        className="cursor-pointer col-span-2 bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm hover:border-indigo-300 transition-all"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
-                              Total Open Alerts
-                            </span>
-                            <div className="text-2xl font-black text-slate-900 mt-1">
-                              {overview.operationalAlerts?.totalOpen || 0}
-                            </div>
-                          </div>
-                          <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
-                            <ShieldAlert className="w-6 h-6" />
-                          </div>
-                        </div>
-                        {/* Personal State Badges */}
-                        <div className="mt-3 pt-3 border-t border-indigo-50 flex items-center gap-2 flex-wrap text-[11px]">
-                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-md border border-amber-200/60 font-medium">
-                            {overview.operationalAlerts?.personalState
-                              ?.unread || 0}{" "}
-                            Unread
-                          </span>
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200 font-medium">
-                            {overview.operationalAlerts?.personalState?.read ||
-                              0}{" "}
-                            Read
-                          </span>
-                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-200/60 font-medium">
-                            {overview.operationalAlerts?.personalState
-                              ?.acknowledged || 0}{" "}
-                            Ack'd
-                          </span>
-                          <span className="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md border border-slate-200 font-medium">
-                            {overview.operationalAlerts?.personalState
-                              ?.dismissed || 0}{" "}
-                            Dismissed
-                          </span>
-                        </div>
-                      </div>
+                    {/* Personal State Badges */}
+                    <div className="mt-4 pt-3 flex items-center gap-2 flex-wrap text-xs">
+                      <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded-md border border-amber-200/80 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {overview.operationalAlerts?.personalState?.unread || 0} Unread
+                      </span>
+                      <span className="px-2.5 py-1 bg-slate-50 text-slate-700 rounded-md border border-slate-200 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        {overview.operationalAlerts?.personalState?.read || 0} Read
+                      </span>
+                      <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md border border-indigo-200 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                        {overview.operationalAlerts?.personalState?.acknowledged || 0} Ack&apos;d
+                      </span>
+                      <span className="px-2.5 py-1 bg-slate-50 text-slate-600 rounded-md border border-slate-200 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        {overview.operationalAlerts?.personalState?.dismissed || 0} Dismissed
+                      </span>
+                    </div>
+                  </div>
 
-                      {/* Follow-up Overdue */}
-                      <div
-                        onClick={() => setActiveTab("alerts")}
-                        className="cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all"
-                      >
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                          Follow-up Overdue
+                  {/* 2x2 Alert Categories */}
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {/* Follow-up Overdue */}
+                    <div
+                      onClick={() => setActiveTab("alerts")}
+                      className="cursor-pointer bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between h-28"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          FOLLOW-UP OVERDUE
                         </span>
-                        <div className="text-xl font-bold text-slate-900 mt-1">
-                          {overview.operationalAlerts?.byType
-                            ?.FOLLOWUP_OVERDUE || 0}
+                        <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
+                          <Clock className="w-4 h-4" />
                         </div>
                       </div>
+                      <div className="flex items-baseline justify-between mt-auto">
+                        <span className="text-3xl font-extrabold text-slate-900">
+                          {overview.operationalAlerts?.byType?.FOLLOWUP_OVERDUE || 0}
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          All current
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Quotation Expiring */}
-                      <div
-                        onClick={() => setActiveTab("alerts")}
-                        className="cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all"
-                      >
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                          Quotation Expiring
+                    {/* Quotation Expiring */}
+                    <div
+                      onClick={() => setActiveTab("alerts")}
+                      className="cursor-pointer bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between h-28"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          QUOTATION EXPIRING
                         </span>
-                        <div className="text-xl font-bold text-slate-900 mt-1">
-                          {overview.operationalAlerts?.byType
-                            ?.QUOTATION_EXPIRING || 0}
+                        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center">
+                          <FileText className="w-4 h-4" />
                         </div>
                       </div>
+                      <div className="flex items-baseline justify-between mt-auto">
+                        <span className="text-3xl font-extrabold text-slate-900">
+                          {overview.operationalAlerts?.byType?.QUOTATION_EXPIRING || 0}
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          None &lt; 48h
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Receivable Overdue */}
-                      <div
-                        onClick={() => setActiveTab("alerts")}
-                        className="cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all"
-                      >
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                          Receivable Overdue
+                    {/* Receivable Overdue */}
+                    <div
+                      onClick={() => setActiveTab("alerts")}
+                      className="cursor-pointer bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between h-28"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          RECEIVABLE OVERDUE
                         </span>
-                        <div className="text-xl font-bold text-slate-900 mt-1">
-                          {overview.operationalAlerts?.byType
-                            ?.RECEIVABLE_OVERDUE || 0}
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
+                          <CircleDollarSign className="w-4 h-4" />
                         </div>
                       </div>
+                      <div className="flex items-baseline justify-between mt-auto">
+                        <span className="text-3xl font-extrabold text-slate-900">
+                          {overview.operationalAlerts?.byType?.RECEIVABLE_OVERDUE || 0}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          $0 at risk
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Design Overdue */}
-                      <div
-                        onClick={() => setActiveTab("alerts")}
-                        className="cursor-pointer bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all"
-                      >
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                          Design Overdue
+                    {/* Design Overdue */}
+                    <div
+                      onClick={() => setActiveTab("alerts")}
+                      className="cursor-pointer bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between h-28"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          DESIGN OVERDUE
                         </span>
-                        <div className="text-xl font-bold text-slate-900 mt-1">
-                          {overview.operationalAlerts?.byType?.DESIGN_OVERDUE ||
-                            0}
+                        <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center">
+                          <PenTool className="w-4 h-4" />
                         </div>
                       </div>
+                      <div className="flex items-baseline justify-between mt-auto">
+                        <span className="text-3xl font-extrabold text-slate-900">
+                          {overview.operationalAlerts?.byType?.DESIGN_OVERDUE || 0}
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">
+                          On schedule
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Banner Card */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white flex items-start gap-3.5 shadow-xs">
+                    <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold text-slate-900">
+                        All workflows are operational
+                      </h4>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        No overdue items or pipeline bottlenecks detected for your assigned accounts. Automated triggers are actively monitoring deal stages, expiring quotes, and pending receivables.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab("preferences")}
+                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1 group"
+                      >
+                        <span>Configure Rule Thresholds</span>
+                        <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                      </button>
                     </div>
                   </div>
 
@@ -1487,45 +1612,54 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
               )}
             </div>
           ) : activeTab === "alerts" ? (
-            <>
+            <div className="flex-1 flex flex-col min-h-0 bg-white">
               {/* Metric Badges */}
-              <div className="grid grid-cols-3 gap-2 p-4 bg-slate-100/60 border-b border-slate-200 text-center">
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                    Open Alerts
+              <div className="grid grid-cols-3 gap-3 p-5 pb-3 bg-white shrink-0">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    OPEN ALERTS
                   </span>
-                  <span className="text-lg font-extrabold text-slate-800">
-                    {summary.openAlerts}
+                  <span className="text-3xl font-extrabold text-slate-900 mt-1">
+                    {summary.openAlerts || 0}
                   </span>
-                </div>
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                  <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider block">
-                    Unread
-                  </span>
-                  <span className="text-lg font-extrabold text-amber-600">
-                    {summary.unreadAlerts}
+                  <span className="text-xs text-slate-400 font-medium mt-1">
+                    None pending
                   </span>
                 </div>
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                  <span className="text-[11px] font-semibold text-rose-600 uppercase tracking-wider block">
-                    Critical
+                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center">
+                  <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider block">
+                    UNREAD
                   </span>
-                  <span className="text-lg font-extrabold text-rose-600">
-                    {summary.criticalAlerts}
+                  <span className="text-3xl font-extrabold text-amber-500 mt-1">
+                    {summary.unreadAlerts || 0}
+                  </span>
+                  <span className="text-xs text-emerald-600 font-medium mt-1">
+                    All caught up
+                  </span>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center">
+                  <span className="text-[11px] font-bold text-rose-500 uppercase tracking-wider block">
+                    CRITICAL
+                  </span>
+                  <span className="text-3xl font-extrabold text-rose-500 mt-1">
+                    {summary.criticalAlerts || 0}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium mt-1">
+                    No blocker risks
                   </span>
                 </div>
               </div>
 
               {/* Filter Bar */}
-              <div className="p-3.5 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-600 flex items-center gap-1">
-                    <Filter className="w-3.5 h-3.5" /> Filters:
+              <div className="mx-5 mb-4 p-2.5 rounded-2xl border border-slate-200/80 bg-white flex items-center justify-between gap-2 text-xs shadow-xs shrink-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-slate-600 flex items-center gap-1.5 pl-1">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" /> Filters:
                   </span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-slate-700 font-semibold text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="OPEN">Open Only</option>
                     <option value="RESOLVED">Resolved Only</option>
@@ -1535,7 +1669,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                   <select
                     value={severityFilter}
                     onChange={(e) => setSeverityFilter(e.target.value)}
-                    className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-slate-700 font-semibold text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="">All Severities</option>
                     <option value="CRITICAL">Critical</option>
@@ -1546,7 +1680,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                   <select
                     value={readFilter}
                     onChange={(e) => setReadFilter(e.target.value)}
-                    className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-slate-700 font-semibold text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     <option value="">All Read States</option>
                     <option value="UNREAD">Unread Only</option>
@@ -1554,47 +1688,68 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                   </select>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {summary.unreadAlerts > 0 && (
-                    <button
-                      onClick={handleMarkAllRead}
-                      className="px-2.5 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                      Mark All Read
-                    </button>
-                  )}
+                <div className="flex items-center gap-1.5 pr-1">
                   <button
                     onClick={() => {
                       fetchSummary();
                       fetchAlerts();
                     }}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded-md transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
                     title="Refresh alerts"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+                      className={`w-3.5 h-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`}
                     />
                   </button>
                 </div>
               </div>
 
-              {/* Alert List */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+              {/* Alert List Container */}
+              <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
                 {loading && alerts.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400">
+                  <div className="py-16 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />
-                    <p className="text-xs">Loading operational alerts...</p>
+                    <p className="text-xs font-medium">Loading operational alerts...</p>
                   </div>
                 ) : alerts.length === 0 ? (
-                  <div className="py-16 text-center text-slate-400 bg-white rounded-md border border-dashed border-slate-200 p-8">
-                    <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-emerald-500/80" />
-                    <p className="text-sm font-semibold text-slate-700">
-                      All Clear
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">
-                      No operational exceptions matching your current filters.
-                    </p>
-                  </div>
+                  <>
+                    {/* All Clear & Up to Date Card */}
+                    <div className="bg-white rounded-3xl border border-slate-200/80 p-8 text-center flex flex-col items-center justify-center space-y-4 shadow-xs">
+                      <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-500 flex items-center justify-center shadow-xs">
+                        <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          All Clear &amp; Up to Date
+                        </h3>
+                        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed mt-1">
+                          No operational exceptions matching your current filters. Great job keeping your accounts, quotes, and workflow pipelines on track!
+                        </p>
+                      </div>
+                      <div className="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] text-slate-600 font-medium flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Background monitor running (sync active)</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                          onClick={() => setActiveTab("preferences")}
+                          className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+                        >
+                          Check Trigger Rules
+                        </button>
+                        <button
+                          onClick={() => {
+                            fetchSummary();
+                            fetchAlerts();
+                          }}
+                          className="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                          Refresh Status
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   alerts.map((alert) => {
                     const isUnread = !alert.isRead;
@@ -1604,117 +1759,98 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                     return (
                       <div
                         key={alert._id}
-                        className={`p-4 rounded-xl border transition-all ${
+                        className={`bg-white rounded-xl border p-4 space-y-2.5 shadow-xs transition-all ${
                           isResolved
-                            ? "bg-slate-50 border-slate-200 opacity-75"
+                            ? "border-slate-200 opacity-75"
                             : isUnread
-                              ? "bg-white border-indigo-200 shadow-sm ring-1 ring-indigo-50/50"
-                              : "bg-white border-slate-200"
+                              ? "border-indigo-200 ring-1 ring-indigo-50"
+                              : "border-slate-200"
                         }`}
                       >
                         {/* Top Meta */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
                                 isCritical
-                                  ? "bg-rose-100 text-rose-700"
+                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
                                   : alert.severity === "WARNING"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-slate-100 text-slate-600"
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-slate-50 text-slate-600 border border-slate-200"
                               }`}
                             >
                               {alert.severity}
                             </span>
-                            <span className="text-[11px] font-semibold text-slate-500">
-                              {alert.alertType.replace("_", " ")}
+                            <span className="text-xs text-slate-500 font-medium capitalize">
+                              {alert.alertType.replace(/_/g, " ").toLowerCase()}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                              {alert.detectedAt
-                                ? new Date(alert.detectedAt).toLocaleTimeString(
-                                    [],
-                                    {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    },
-                                  )
-                                : ""}
-                            </span>
-                            {isResolved && (
-                              <span className="ml-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                RESOLVED
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-xs text-slate-400">
+                            {alert.detectedAt
+                              ? new Date(alert.detectedAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""}
+                          </span>
                         </div>
 
                         {/* Title & Message */}
-                        <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                          {alert.title}
-                        </h4>
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                          {alert.message}
-                        </p>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900">
+                            {alert.title}
+                          </h4>
+                          <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                            {alert.message}
+                          </p>
+                        </div>
 
-                        {/* Acknowledgment Notice if present */}
                         {alert.acknowledgedAt && (
-                          <div className="mt-2 text-[11px] text-slate-500 bg-slate-50 p-1.5 rounded flex items-center gap-1">
-                            <Check className="w-3 h-3 text-emerald-600" />
+                          <div className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
                             <span>
-                              Acknowledged on{" "}
-                              {new Date(alert.acknowledgedAt).toLocaleString()}
+                              Acknowledged on {new Date(alert.acknowledgedAt).toLocaleString()}
                             </span>
                           </div>
                         )}
 
                         {/* Actions Row */}
-                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                           <button
                             onClick={() => {
                               onClose();
                               router.push(getEntityLink(alert));
                             }}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 group"
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>View Record</span>
+                            <span>View Source</span>
+                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </button>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             {isUnread && (
                               <button
                                 onClick={() => handleMarkRead(alert._id)}
-                                title="Mark as Read"
-                                className="p-1.5 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors inline-flex items-center gap-1 font-medium"
+                                className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
                               >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>Read</span>
+                                Mark Read
                               </button>
                             )}
-
+                            <button
+                              onClick={() => handleDismiss(alert._id)}
+                              className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                            >
+                              Dismiss
+                            </button>
                             {!alert.acknowledgedAt && !isResolved && (
                               <button
                                 onClick={() => handleAcknowledge(alert._id)}
-                                title="Acknowledge Exception"
-                                className="p-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors inline-flex items-center gap-1 font-semibold"
+                                className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors"
                               >
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Acknowledge</span>
+                                Acknowledge
                               </button>
                             )}
-
-                            <button
-                              onClick={() => handleDismiss(alert._id)}
-                              title="Dismiss from your view"
-                              className="p-1.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors inline-flex items-center gap-1"
-                            >
-                              <BellOff className="w-3.5 h-3.5" />
-                              <span>Dismiss</span>
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -1722,513 +1858,282 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                   })
                 )}
               </div>
-            </>
+            </div>
           ) : activeTab === "preferences" ? (
             /* Preferences View */
-            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/60 flex flex-col justify-between">
-              <div className="space-y-5">
-                {/* Intro & Delivery Email Info */}
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        Email Notifications
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Opt in to receive email notifications when new
-                        operational exceptions occur.
-                      </p>
-                      <div className="mt-3 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700">
-                        <span className="text-slate-500 block text-[11px] font-semibold uppercase">
-                          Current Account Delivery Email
-                        </span>
-                        <span className="font-mono font-bold text-slate-900 mt-0.5 block">
-                          {preferences.deliveryEmail ||
-                            "Loading current account email..."}
-                        </span>
-                        <p className="text-[11px] text-slate-400 mt-1 italic">
-                          Alert emails are sent only to your current CRM account
-                          email.
-                        </p>
-                      </div>
-                    </div>
+            <div className="flex-1 overflow-y-auto p-5 bg-slate-50/50 space-y-4">
+              {/* Top Card: Email Notifications */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/60 flex items-center justify-center text-indigo-600 shrink-0">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                      Email Notifications
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-normal">
+                      Opt in to receive email notifications when new operational exceptions occur.
+                    </p>
                   </div>
                 </div>
 
-                {/* Status Notice */}
-                {prefMessage && (
-                  <div
-                    className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
-                      prefMessage.type === "success"
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : "bg-rose-50 text-rose-800 border border-rose-200"
-                    }`}
-                  >
-                    {prefMessage.type === "success" ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                    )}
-                    <span>{prefMessage.text}</span>
-                  </div>
-                )}
-
-                {/* Preference Toggles List */}
-                <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
-                  <div className="p-3.5 bg-slate-50 border-b border-slate-200">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                      Select Alert Categories
+                {/* Current Account Delivery Email Box */}
+                <div className="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                      CURRENT ACCOUNT DELIVERY EMAIL
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Verified
                     </span>
                   </div>
 
-                  {/* 1. Followup Overdue */}
-                  <div
-                    className={`p-4 flex items-center justify-between gap-3 transition-colors ${
-                      isDesigner
-                        ? "opacity-40 bg-slate-50"
-                        : "hover:bg-slate-50/50"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">
-                          Overdue Follow-ups
-                        </span>
-                        {isDesigner && (
-                          <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">
-                            Sales Role Only
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Email me when a scheduled customer follow-up passes its
-                        due time.
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 font-sans tracking-tight">
+                      {preferences.deliveryEmail || userEmail || "tanya.a2vprints@gmail.com"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/dashboard/settings")}
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
+                    >
+                      Change email
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mt-1.5 italic font-normal">
+                    Alert emails are sent only to your current CRM account email.
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Notice */}
+              {prefMessage && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                    prefMessage.type === "success"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-rose-50 text-rose-800 border border-rose-200"
+                  }`}
+                >
+                  {prefMessage.type === "success" ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>{prefMessage.text}</span>
+                </div>
+              )}
+
+              {/* Select Alert Categories Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    SELECT ALERT CATEGORIES
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    4 Categories available
+                  </span>
+                </div>
+
+                <div className="space-y-4 divide-y divide-slate-100">
+                  {/* 1. Overdue Follow-ups */}
+                  <div className="pt-2 first:pt-0 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <span className="text-xs font-bold text-slate-900 block">
+                        Overdue Follow-ups
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-normal">
+                        Email me when a scheduled customer follow-up passes its due time.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
-                        disabled={isDesigner || loadingPrefs || savingPrefs}
+                        disabled={loadingPrefs || savingPrefs}
                         checked={Boolean(preferences.email.FOLLOWUP_OVERDUE)}
-                        onChange={() =>
-                          handleTogglePreference("FOLLOWUP_OVERDUE")
-                        }
+                        onChange={() => handleTogglePreference("FOLLOWUP_OVERDUE")}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>
 
-                  {/* 2. Quotation Expiring */}
-                  <div
-                    className={`p-4 flex items-center justify-between gap-3 transition-colors ${
-                      isDesigner
-                        ? "opacity-40 bg-slate-50"
-                        : "hover:bg-slate-50/50"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">
-                          Expiring Quotations
-                        </span>
-                        {isDesigner && (
-                          <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">
-                            Sales Role Only
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Email me when an active quotation is expiring within the
-                        next 3 calendar days.
+                  {/* 2. Expiring Quotations */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <span className="text-xs font-bold text-slate-900 block">
+                        Expiring Quotations
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-normal">
+                        Email me when an active quotation is expiring within the next 3 calendar days.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
-                        disabled={isDesigner || loadingPrefs || savingPrefs}
+                        disabled={loadingPrefs || savingPrefs}
                         checked={Boolean(preferences.email.QUOTATION_EXPIRING)}
-                        onChange={() =>
-                          handleTogglePreference("QUOTATION_EXPIRING")
-                        }
+                        onChange={() => handleTogglePreference("QUOTATION_EXPIRING")}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>
 
-                  {/* 3. Receivable Overdue */}
-                  <div
-                    className={`p-4 flex items-center justify-between gap-3 transition-colors ${
-                      isDesigner
-                        ? "opacity-40 bg-slate-50"
-                        : "hover:bg-slate-50/50"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">
-                          Overdue Receivables
-                        </span>
-                        {isDesigner && (
-                          <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-semibold">
-                            Financial Role Only
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Email me when an order payment is overdue with an
-                        outstanding balance.
+                  {/* 3. Overdue Receivables */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <span className="text-xs font-bold text-slate-900 block">
+                        Overdue Receivables
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-normal">
+                        Email me when an order payment is overdue with an outstanding balance.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
-                        disabled={isDesigner || loadingPrefs || savingPrefs}
+                        disabled={loadingPrefs || savingPrefs}
                         checked={Boolean(preferences.email.RECEIVABLE_OVERDUE)}
-                        onChange={() =>
-                          handleTogglePreference("RECEIVABLE_OVERDUE")
-                        }
+                        onChange={() => handleTogglePreference("RECEIVABLE_OVERDUE")}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>
 
-                  {/* 4. Design Overdue */}
-                  <div className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition-colors">
-                    <div>
-                      <span className="text-xs font-bold text-slate-900">
+                  {/* 4. Overdue Design Projects */}
+                  <div className="pt-4 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <span className="text-xs font-bold text-slate-900 block">
                         Overdue Design Projects
                       </span>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Email me when an active design project passes its target
-                        delivery date.
+                      <p className="text-xs text-slate-500 mt-0.5 leading-normal">
+                        Email me when an active design project passes its target delivery date.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
                         disabled={loadingPrefs || savingPrefs}
                         checked={Boolean(preferences.email.DESIGN_OVERDUE)}
-                        onChange={() =>
-                          handleTogglePreference("DESIGN_OVERDUE")
-                        }
+                        onChange={() => handleTogglePreference("DESIGN_OVERDUE")}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>
                 </div>
+              </div>
 
-                {/* Explanatory note */}
-                <div className="flex items-start gap-2 text-slate-500 text-[11px] bg-slate-100/70 p-3 rounded-lg">
-                  <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                  <span>
-                    Turning email preferences off does not hide, dismiss, or
-                    resolve any in-app alerts. In-app alerts remain fully
-                    available in this drawer.
-                  </span>
+              {/* Informational Callout Notice */}
+              <div className="rounded-xl bg-blue-50/70 border border-blue-100 p-3.5 flex items-start gap-2.5 text-xs text-slate-600">
+                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="leading-relaxed font-normal">
+                  Turning email preferences off does not hide, dismiss, or resolve any in-app alerts. In-app alerts remain fully available in this drawer.
+                </p>
+              </div>
+
+              {/* Save Immediate Preferences Button */}
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={handleSavePreferences}
+                  disabled={savingPrefs || loadingPrefs}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm shadow-indigo-600/25 flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  {savingPrefs ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Save Email Preferences</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Daily Alert Digest Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/60 flex items-center justify-center text-indigo-600 shrink-0">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 leading-tight">
+                        Daily Alert Digest
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1 leading-normal">
+                        Receive an optional consolidated daily email summarizing your open exceptions.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-2">
+                    <input
+                      type="checkbox"
+                      disabled={loadingDigestPrefs || savingDigestPrefs}
+                      checked={Boolean(digestPrefs.enabled)}
+                      onChange={(e) =>
+                        setDigestPrefs((prev) => ({
+                          ...prev,
+                          enabled: e.target.checked,
+                        }))
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
                 </div>
 
-                {/* Save Immediate Preferences Button */}
-                <div className="pt-2 flex justify-end">
-                  <button
-                    onClick={handleSavePreferences}
-                    disabled={savingPrefs || loadingPrefs}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                {digestMessage && (
+                  <div
+                    className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                      digestMessage.type === "success"
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : "bg-rose-50 text-rose-800 border border-rose-200"
+                    }`}
                   >
-                    {savingPrefs ? (
+                    {digestMessage.type === "success" ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    )}
+                    <span>{digestMessage.text}</span>
+                  </div>
+                )}
+
+                {/* Schedule & Action Row */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span>Schedule:</span>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Every morning at 08:00 AM (EST)</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSaveDigestPreferences}
+                    disabled={savingDigestPrefs || loadingDigestPrefs}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    {savingDigestPrefs ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>Saving...</span>
                       </>
                     ) : (
                       <>
-                        <Save className="w-3.5 h-3.5" />
-                        <span>Save Email Preferences</span>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Save Digest Settings</span>
                       </>
                     )}
                   </button>
-                </div>
-
-                {/* ---------------- Daily Alert Digest Card ---------------- */}
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mt-6">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">
-                            Daily Alert Digest
-                          </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Receive an optional consolidated daily email
-                            summarizing your open exceptions.
-                          </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer ml-3">
-                          <input
-                            type="checkbox"
-                            disabled={loadingDigestPrefs || savingDigestPrefs}
-                            checked={Boolean(digestPrefs.enabled)}
-                            onChange={(e) =>
-                              setDigestPrefs((prev) => ({
-                                ...prev,
-                                enabled: e.target.checked,
-                              }))
-                            }
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                        </label>
-                      </div>
-
-                      {/* Status Notice */}
-                      {digestMessage && (
-                        <div
-                          className={`mt-3 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 ${
-                            digestMessage.type === "success"
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : "bg-rose-50 text-rose-800 border border-rose-200"
-                          }`}
-                        >
-                          {digestMessage.type === "success" ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-rose-600" />
-                          )}
-                          <span>{digestMessage.text}</span>
-                        </div>
-                      )}
-
-                      {/* Digest Options when Enabled */}
-                      {digestPrefs.enabled && (
-                        <div className="mt-4 space-y-4 pt-3 border-t border-slate-100">
-                          {/* Time of Day & Timezone */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                                Delivery Time (IST)
-                              </label>
-                              <select
-                                value={digestPrefs.timeOfDay}
-                                onChange={(e) =>
-                                  setDigestPrefs((prev) => ({
-                                    ...prev,
-                                    timeOfDay: e.target.value,
-                                  }))
-                                }
-                                disabled={savingDigestPrefs}
-                                className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium focus:ring-1 focus:ring-indigo-500"
-                              >
-                                <option value="08:00">08:00 AM IST</option>
-                                <option value="09:00">
-                                  09:00 AM IST (Default)
-                                </option>
-                                <option value="10:00">10:00 AM IST</option>
-                                <option value="12:00">12:00 PM IST</option>
-                                <option value="14:00">02:00 PM IST</option>
-                                <option value="18:00">06:00 PM IST</option>
-                                <option value="20:00">08:00 PM IST</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                                Timezone
-                              </label>
-                              <div className="p-2 bg-slate-100/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 flex items-center justify-between">
-                                <span>Asia/Kolkata</span>
-                                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold">
-                                  IST (+05:30)
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Next Run Info */}
-                          {digestPrefs.nextRunAt && (
-                            <div className="p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-lg text-xs text-indigo-900 flex items-center justify-between">
-                              <span className="font-semibold flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                                Next Scheduled Digest:
-                              </span>
-                              <span className="font-bold">
-                                {new Date(digestPrefs.nextRunAt).toLocaleString(
-                                  "en-IN",
-                                  {
-                                    timeZone: "Asia/Kolkata",
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                  },
-                                )}{" "}
-                                IST
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Included Alert Types */}
-                          <div>
-                            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
-                              Included Alert Categories
-                            </span>
-                            <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
-                              {/* Followup Overdue */}
-                              <label
-                                className={`flex items-center justify-between ${
-                                  isDesigner
-                                    ? "opacity-40 cursor-not-allowed"
-                                    : "cursor-pointer"
-                                }`}
-                              >
-                                <span className="font-medium text-slate-800">
-                                  Follow-up Overdue
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  disabled={isDesigner || savingDigestPrefs}
-                                  checked={Boolean(
-                                    digestPrefs.includedAlertTypes?.includes(
-                                      "FOLLOWUP_OVERDUE",
-                                    ),
-                                  )}
-                                  onChange={() =>
-                                    handleToggleDigestAlertType(
-                                      "FOLLOWUP_OVERDUE",
-                                    )
-                                  }
-                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                              </label>
-
-                              {/* Quotation Expiring */}
-                              <label
-                                className={`flex items-center justify-between ${
-                                  isDesigner
-                                    ? "opacity-40 cursor-not-allowed"
-                                    : "cursor-pointer"
-                                }`}
-                              >
-                                <span className="font-medium text-slate-800">
-                                  Expiring Quotations (next 3 calendar days)
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  disabled={isDesigner || savingDigestPrefs}
-                                  checked={Boolean(
-                                    digestPrefs.includedAlertTypes?.includes(
-                                      "QUOTATION_EXPIRING",
-                                    ),
-                                  )}
-                                  onChange={() =>
-                                    handleToggleDigestAlertType(
-                                      "QUOTATION_EXPIRING",
-                                    )
-                                  }
-                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                              </label>
-
-                              {/* Receivable Overdue */}
-                              <label
-                                className={`flex items-center justify-between ${
-                                  isDesigner
-                                    ? "opacity-40 cursor-not-allowed"
-                                    : "cursor-pointer"
-                                }`}
-                              >
-                                <span className="font-medium text-slate-800">
-                                  Overdue Receivables
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  disabled={isDesigner || savingDigestPrefs}
-                                  checked={Boolean(
-                                    digestPrefs.includedAlertTypes?.includes(
-                                      "RECEIVABLE_OVERDUE",
-                                    ),
-                                  )}
-                                  onChange={() =>
-                                    handleToggleDigestAlertType(
-                                      "RECEIVABLE_OVERDUE",
-                                    )
-                                  }
-                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                              </label>
-
-                              {/* Design Overdue */}
-                              <label
-                                className={`flex items-center justify-between ${
-                                  isSales
-                                    ? "opacity-40 cursor-not-allowed"
-                                    : "cursor-pointer"
-                                }`}
-                              >
-                                <span className="font-medium text-slate-800">
-                                  Overdue Design Projects
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  disabled={isSales || savingDigestPrefs}
-                                  checked={Boolean(
-                                    digestPrefs.includedAlertTypes?.includes(
-                                      "DESIGN_OVERDUE",
-                                    ),
-                                  )}
-                                  onChange={() =>
-                                    handleToggleDigestAlertType(
-                                      "DESIGN_OVERDUE",
-                                    )
-                                  }
-                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                                />
-                              </label>
-                            </div>
-                          </div>
-
-                          <p className="text-[11px] text-slate-400 italic">
-                            Daily digest emails are sent to your current CRM
-                            account email:{" "}
-                            <strong className="text-slate-600">
-                              {digestPrefs.deliveryEmail ||
-                                preferences.deliveryEmail}
-                            </strong>
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Digest Save Button */}
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                        <button
-                          onClick={handleSaveDigestPreferences}
-                          disabled={savingDigestPrefs || loadingDigestPrefs}
-                          className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          {savingDigestPrefs ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span>Saving...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-3.5 h-3.5" />
-                              <span>Save Digest Settings</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -4293,6 +4198,50 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
               )}
             </div>
           ) : null}
+
+          {/* Fixed Drawer Footer Bar */}
+          {activeTab === "preferences" ? (
+            <div className="p-4 border-t border-slate-200 bg-white flex items-center justify-center shrink-0 text-xs text-slate-400">
+              Last synced with CRM settings:{" "}
+              <span className="text-slate-700 font-semibold ml-1">
+                {lastSyncedText}
+              </span>
+            </div>
+          ) : activeTab === "alerts" ? (
+            <div className="p-4 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Enterprise CRM Real-time Sync</span>
+              </div>
+              <button
+                onClick={() => setActiveTab("preferences")}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+              >
+                Alert Configuration
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Engine: Healthy</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={handleDismissAll}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  Dismiss All
+                </button>
+                <button
+                  onClick={() => setActiveTab("alerts")}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/20 transition-colors"
+                >
+                  Manage Alerts
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
