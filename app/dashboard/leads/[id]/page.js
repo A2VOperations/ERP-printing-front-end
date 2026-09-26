@@ -155,6 +155,7 @@ export default function LeadDetailPage() {
   // Create Order Form State
   const [orderForm, setOrderForm] = useState({
     quotationId: "",
+    selectedItemIndex: "",
     title: "",
     amount: "",
     advanceRequiredPercent: 50,
@@ -667,6 +668,12 @@ export default function LeadDetailPage() {
         leadId,
         customerId: lead?.customerId?._id || lead?.customerId || undefined,
         quotationId: orderForm.quotationId || undefined,
+        selectedItemIndexes:
+          orderForm.selectedItemIndex !== "" &&
+          orderForm.selectedItemIndex !== undefined
+            ? [Number(orderForm.selectedItemIndex)]
+            : undefined,
+        allowMultipleOrders: true,
         title: orderForm.title || lead?.requirement || "Commercial Print Order",
         totalAmount: orderForm.amount ? Number(orderForm.amount) : undefined,
         advanceRequiredPercent: Number(orderForm.advanceRequiredPercent) || 50,
@@ -692,6 +699,7 @@ export default function LeadDetailPage() {
       setShowCreateOrderModal(false);
       setOrderForm({
         quotationId: "",
+        selectedItemIndex: "",
         title: "",
         amount: "",
         advanceRequiredPercent: 50,
@@ -4366,6 +4374,7 @@ export default function LeadDetailPage() {
                       setOrderForm({
                         ...orderForm,
                         quotationId: selectedQId,
+                        selectedItemIndex: "",
                         title: it?.title || orderForm.title || "",
                         amount: q
                           ? (q.grandTotalPaise
@@ -4408,6 +4417,120 @@ export default function LeadDetailPage() {
                       </option>
                     ))}
                   </select>
+
+                  {/* If quotation has multiple items, allow splitting by selecting specific item */}
+                  {(() => {
+                    const selectedQ = quotations.find(
+                      (item) => item._id === orderForm.quotationId,
+                    );
+                    if (
+                      !selectedQ ||
+                      !selectedQ.items ||
+                      selectedQ.items.length <= 1
+                    )
+                      return null;
+                    return (
+                      <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200">
+                        <label className="text-indigo-950 font-bold block mb-1 text-[11px]">
+                          Select Item from Quotation to Order (Split Mode)
+                        </label>
+                        <select
+                          value={
+                            orderForm.selectedItemIndex !== undefined
+                              ? orderForm.selectedItemIndex
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const itemIdx = e.target.value;
+                            if (itemIdx === "") {
+                              const it0 = selectedQ.items[0];
+                              setOrderForm({
+                                ...orderForm,
+                                selectedItemIndex: "",
+                                title: it0?.title || orderForm.title,
+                                amount: (
+                                  selectedQ.grandTotalPaise
+                                    ? selectedQ.grandTotalPaise / 100
+                                    : selectedQ.totalAmount || 0
+                                ).toString(),
+                              });
+                            } else {
+                              const it = selectedQ.items[Number(itemIdx)];
+                              const gross =
+                                (Number(it.quantity) || 1) *
+                                (it.unitRatePaise
+                                  ? it.unitRatePaise / 100
+                                  : it.rate || 0);
+                              const disc =
+                                (gross * Number(it.discountPercent || 0)) / 100;
+                              const tax =
+                                ((gross - disc) *
+                                  Number(
+                                    it.taxRatePercent !== undefined
+                                      ? it.taxRatePercent
+                                      : 18,
+                                  )) /
+                                100;
+                              const itemTotal = gross - disc + tax;
+
+                              setOrderForm({
+                                ...orderForm,
+                                selectedItemIndex: itemIdx,
+                                title:
+                                  it?.title ||
+                                  `Item ${Number(itemIdx) + 1}`,
+                                amount: Math.round(itemTotal).toString(),
+                                width: it?.width ? it.width.toString() : "",
+                                height: it?.height ? it.height.toString() : "",
+                                dimensionUnit: it?.dimensionUnit || "inch",
+                                quantity: it?.quantity || 1,
+                                material: it?.paperType || "",
+                                gsm: it?.paperGsm ? it.paperGsm.toString() : "",
+                                colors: it?.colors || "CMYK",
+                                printSides: it?.printSides || "SINGLE",
+                                finishing: it?.finishing || [],
+                              });
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-indigo-300 text-slate-800 font-semibold text-xs"
+                        >
+                          <option value="">
+                            -- All Items in Quotation (₹
+                            {(
+                              selectedQ.grandTotalPaise
+                                ? selectedQ.grandTotalPaise / 100
+                                : selectedQ.totalAmount || 0
+                            ).toLocaleString("en-IN")}
+                            ) --
+                          </option>
+                          {selectedQ.items.map((it, idx) => {
+                            const gross =
+                              (Number(it.quantity) || 1) *
+                              (it.unitRatePaise
+                                ? it.unitRatePaise / 100
+                                : it.rate || 0);
+                            const disc =
+                              (gross * Number(it.discountPercent || 0)) / 100;
+                            const tax =
+                              ((gross - disc) *
+                                Number(
+                                  it.taxRatePercent !== undefined
+                                    ? it.taxRatePercent
+                                    : 18,
+                                )) /
+                              100;
+                            const itemTotal = Math.round(gross - disc + tax);
+                            return (
+                              <option key={idx} value={idx.toString()}>
+                                Item #{idx + 1}: {it.title} (Qty: {it.quantity} • ₹
+                                {itemTotal.toLocaleString("en-IN")})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

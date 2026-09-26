@@ -35,6 +35,9 @@ import {
   X,
   Share2,
   MessageCircle,
+  Layers,
+  Package,
+  Palette,
 } from "lucide-react";
 
 const formatDate = (dateVal) => {
@@ -140,6 +143,59 @@ function QuotationsContent() {
   const [editNotes, setEditNotes] = useState("");
   const [editTerms, setEditTerms] = useState("");
   const [editIsRevision, setEditIsRevision] = useState(false);
+
+  // Multi-Order / Convert to Orders State
+  const [designers, setDesigners] = useState([]);
+  const [quoteOrders, setQuoteOrders] = useState([]);
+  const [quoteOrdersLoading, setQuoteOrdersLoading] = useState(false);
+  const [showConvertOrderModal, setShowConvertOrderModal] = useState(false);
+  const [convertQuote, setConvertQuote] = useState(null);
+  const [convertForm, setConvertForm] = useState({
+    selectedItemIndexes: [],
+    assignedDesignerId: "",
+    designNotes: "",
+    designDeadline: "",
+    promisedDeliveryDate: "",
+    deliveryMethod: "PICKUP",
+    advanceRequiredPercent: 50,
+    orderNotes: "",
+  });
+
+  useEffect(() => {
+    api
+      .get("/users?limit=100")
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.records || [];
+        setDesigners(list);
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchQuoteOrders = async (quoteId) => {
+    if (!quoteId) {
+      setQuoteOrders([]);
+      return;
+    }
+    try {
+      setQuoteOrdersLoading(true);
+      const res = await api.get(`/quotations/${quoteId}/orders`);
+      const list = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      setQuoteOrders(list);
+    } catch (err) {
+      console.error("Failed to fetch quote orders:", err);
+      setQuoteOrders([]);
+    } finally {
+      setQuoteOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedQuote?._id) {
+      fetchQuoteOrders(selectedQuote._id);
+    } else {
+      setQuoteOrders([]);
+    }
+  }, [selectedQuote?._id]);
 
   useEffect(() => {
     if (leadIdParam || customerNameParam || phoneParam) {
@@ -428,27 +484,102 @@ function QuotationsContent() {
     }
   };
 
-  // Mark Client Accepted
-  const handleMarkClientAccepted = async (quote) => {
+  // Open Convert to Order Modal (with item selection and designer assignment)
+  const handleOpenConvertOrder = (quote) => {
+    const targetQuote = quote || selectedQuote;
+    if (!targetQuote) return;
+
+    setConvertQuote(targetQuote);
+
+    // Compute which items in quote.items were already ordered
+    const alreadyOrderedIndexes = new Set();
+    (quoteOrders || []).forEach((ord) => {
+      (ord.items || []).forEach((it) => {
+        if (it.quotationItemIndex !== undefined && it.quotationItemIndex !== null) {
+          alreadyOrderedIndexes.add(Number(it.quotationItemIndex));
+        }
+      });
+    });
+
+    const items = targetQuote.items || [];
+    // If some items are not yet ordered, default to selecting the remaining unordered items!
+    // If all are ordered or none are ordered, default to all items.
+    const unorderedIndexes = items
+      .map((_, idx) => idx)
+      .filter((idx) => !alreadyOrderedIndexes.has(idx));
+    const initialSelected =
+      unorderedIndexes.length > 0 ? unorderedIndexes : items.map((_, idx) => idx);
+
+    // Default dates
+    const dDeadline = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+    const dDelivery = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+
+    setConvertForm({
+      selectedItemIndexes: initialSelected,
+      assignedDesignerId: "",
+      designNotes: "",
+      designDeadline: dDeadline,
+      promisedDeliveryDate: dDelivery,
+      deliveryMethod: "PICKUP",
+      advanceRequiredPercent: 50,
+      orderNotes: "",
+    });
+
+    setShowConvertOrderModal(true);
+  };
+
+  // Submit Create Order from Quotation
+  const handleCreateOrderFromQuote = async (e) => {
+    if (e) e.preventDefault();
+    if (!convertQuote) return;
     if (
-      !confirm(
-        `Mark quotation ${quote.quotationNumber} as ACCEPTED by client? This will convert it to a Commercial Order.`,
-      )
-    )
+      !convertForm.selectedItemIndexes ||
+      convertForm.selectedItemIndexes.length === 0
+    ) {
+      alert(
+        "Please select at least one quotation line item to include in this order.",
+      );
       return;
+    }
+
     try {
       setActionLoading(true);
-      await api.post(`/quotations/${quote._id}/manual-accept`, {
-        acceptanceSource: "PHONE_CONFIRMATION",
-        acceptanceEvidence: "Client confirmed via call/WhatsApp",
-      });
-      alert("Quotation accepted! Commercial order has been generated.");
+      const payload = {
+        selectedItemIndexes: convertForm.selectedItemIndexes,
+        assignedDesignerId: convertForm.assignedDesignerId || undefined,
+        designNotes: convertForm.designNotes || "",
+        designDeadline: convertForm.designDeadline || undefined,
+        promisedDeliveryDate: convertForm.promisedDeliveryDate || undefined,
+        deliveryMethod: convertForm.deliveryMethod || "PICKUP",
+        advanceRequiredPercent:
+          Number(convertForm.advanceRequiredPercent) || 50,
+        notes: convertForm.orderNotes || "",
+      };
+
+      const res = await api.post(
+        `/quotations/${convertQuote._id}/create-order`,
+        payload,
+      );
+      alert(
+        `Commercial Order ${res.data?.orderNumber || ""} successfully created for selected item(s)!`,
+      );
+      setShowConvertOrderModal(false);
       await fetchQuotations();
+      await fetchQuoteOrders(convertQuote._id);
     } catch (err) {
-      alert(err.message || "Failed to mark quotation accepted");
+      alert(err.message || "Failed to create order from quotation");
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // Mark Client Accepted (Opens item selection and designer assignment modal)
+  const handleMarkClientAccepted = (quote) => {
+    handleOpenConvertOrder(quote);
   };
 
   // Mark Client Declined (Not Accepted)
@@ -547,6 +678,45 @@ function QuotationsContent() {
     return sum + (taxable * taxRate) / 100;
   }, 0);
   const builderGrandTotal = builderTaxable + builderGst;
+
+  // Live calculation of selected items in convertForm
+  const convertSelectedItems = (convertQuote?.items || []).filter((_, idx) =>
+    (convertForm?.selectedItemIndexes || []).includes(idx),
+  );
+
+  const convertSubtotal = convertSelectedItems.reduce((acc, it) => {
+    const gross =
+      (Number(it.quantity) || 1) *
+      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
+    return acc + gross;
+  }, 0);
+
+  const convertDiscount = convertSelectedItems.reduce((acc, it) => {
+    const gross =
+      (Number(it.quantity) || 1) *
+      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
+    const disc = Number(it.discountPercent || 0);
+    return acc + (gross * disc) / 100;
+  }, 0);
+
+  const convertTaxable = Math.max(0, convertSubtotal - convertDiscount);
+
+  const convertGst = convertSelectedItems.reduce((acc, it) => {
+    const gross =
+      (Number(it.quantity) || 1) *
+      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
+    const disc = Number(it.discountPercent || 0);
+    const taxable = Math.max(0, gross - (gross * disc) / 100);
+    const taxRate = Number(
+      it.taxRatePercent !== undefined ? it.taxRatePercent : 18,
+    );
+    return acc + (taxable * taxRate) / 100;
+  }, 0);
+
+  const convertGrandTotal = convertTaxable + convertGst;
+  const convertAdvanceReq =
+    (convertGrandTotal * (Number(convertForm?.advanceRequiredPercent) || 50)) /
+    100;
 
   // Selected Quote Resolved Values
   const tenantName = currentTenant?.name || "A2V PRINTING SOLUTIONS";
@@ -822,6 +992,15 @@ function QuotationsContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenConvertOrder(selectedQuote)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                        title="Create dedicated orders for items in this quotation and assign to designers"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        Create Order (Split Items)
+                      </button>
+
                       {selectedQuote.status !== "ACCEPTED" ? (
                         <button
                           onClick={() => handleOpenEdit(selectedQuote)}
@@ -835,11 +1014,11 @@ function QuotationsContent() {
                         </button>
                       ) : (
                         <span
-                          title="Accepted quotations are converted to orders and locked."
+                          title="Accepted quotation with generated orders."
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          Accepted (Order Created)
+                          Accepted ({quoteOrders.length} Order{quoteOrders.length === 1 ? "" : "s"})
                         </span>
                       )}
 
@@ -1033,26 +1212,35 @@ function QuotationsContent() {
 
                   {/* 4. Accepted Banner */}
                   {selectedQuote.status === "ACCEPTED" && (
-                    <div className="p-4 bg-green-50 border-b border-green-200 text-green-950 text-xs flex items-center justify-between gap-3">
+                    <div className="p-4 bg-green-50 border-b border-green-200 text-green-950 text-xs flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
                         <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                         <div>
                           <strong className="block font-bold">
-                            ✓ Quotation Accepted by Client
+                            ✓ Quotation Accepted by Client ({quoteOrders.length} Order{quoteOrders.length === 1 ? "" : "s"} Created)
                           </strong>
                           <span className="text-[11px] text-green-800">
-                            Commercial deal closed and order generated.
+                            Commercial deal closed. You can create multiple orders for specific items and assign them to different designers.
                           </span>
                         </div>
                       </div>
 
-                      <Link
-                        href={`/dashboard/orders`}
-                        className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
-                      >
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        View in Orders →
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenConvertOrder(selectedQuote)}
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Create Another Order
+                        </button>
+                        <Link
+                          href={`/dashboard/orders`}
+                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          View in Orders →
+                        </Link>
+                      </div>
                     </div>
                   )}
 
@@ -1482,6 +1670,174 @@ function QuotationsContent() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* ORDERS GENERATED FROM THIS QUOTATION SECTION */}
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">
+                            Orders Generated from this Quotation ({quoteOrders.length})
+                          </h4>
+                          <p className="text-[11px] text-slate-500">
+                            Create multiple orders from this quotation to assign items to different designers.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleOpenConvertOrder(selectedQuote)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Create Order (Split Items)
+                      </button>
+                    </div>
+
+                    {quoteOrdersLoading ? (
+                      <div className="p-6 text-center text-slate-400 text-xs">
+                        <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-indigo-500" />
+                        Loading linked orders...
+                      </div>
+                    ) : quoteOrders.length === 0 ? (
+                      <div className="p-6 text-center bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 text-slate-500 text-xs space-y-2">
+                        <Package className="w-6 h-6 text-slate-400 mx-auto" />
+                        <p className="font-semibold text-slate-700">
+                          No orders created from this quotation yet.
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Click &quot;Create Order (Split Items)&quot; to convert items into orders and assign to designers.
+                        </p>
+                        <button
+                          onClick={() => handleOpenConvertOrder(selectedQuote)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-bold transition-all shadow-2xs mt-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Convert to Order Now
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {quoteOrders.map((ord) => {
+                          const grandTotal = ord.grandTotalPaise
+                            ? ord.grandTotalPaise / 100
+                            : ord.totalAmount || 0;
+                          const totalPaid = ord.totalPaidPaise
+                            ? ord.totalPaidPaise / 100
+                            : 0;
+                          const balance =
+                            ord.balancePaise !== undefined
+                              ? ord.balancePaise / 100
+                              : Math.max(0, grandTotal - totalPaid);
+                          const designer = ord.assignedDesignerId;
+
+                          return (
+                            <div
+                              key={ord._id}
+                              className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/70 border border-slate-200/80 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-mono font-bold text-xs text-slate-900">
+                                    {ord.orderNumber}
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                      ord.orderStatus === "CONFIRMED"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                    }`}
+                                  >
+                                    {ord.orderStatus}
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                      ord.paymentStatus === "PAID"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : ord.paymentStatus === "PARTIALLY_PAID"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : "bg-rose-50 text-rose-700 border-rose-200"
+                                    }`}
+                                  >
+                                    {ord.paymentStatus}
+                                  </span>
+                                  {ord.designStatus && (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                      🎨 {ord.designStatus.replace(/_/g, " ")}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Order items summary */}
+                                <div className="text-xs text-slate-700 flex flex-wrap items-center gap-1.5">
+                                  <span className="font-medium text-slate-500">
+                                    Items:
+                                  </span>
+                                  {(ord.items || []).map((it, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-800"
+                                    >
+                                      {it.quantity}× {it.title}
+                                    </span>
+                                  ))}
+                                </div>
+
+                                {/* Designer and dates */}
+                                <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                                  <span className="flex items-center gap-1">
+                                    <Palette className="w-3 h-3 text-purple-500" />
+                                    Designer:{" "}
+                                    <strong className="text-slate-700 font-semibold">
+                                      {designer
+                                        ? designer.name || designer.email
+                                        : "Unassigned"}
+                                    </strong>
+                                  </span>
+                                  {ord.designDeadline && (
+                                    <span className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3 text-slate-400" />
+                                      Due: {formatDate(ord.designDeadline)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200">
+                                <div className="text-right">
+                                  <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">
+                                    Order Total
+                                  </span>
+                                  <span className="font-mono font-bold text-sm text-slate-900">
+                                    ₹
+                                    {grandTotal.toLocaleString("en-IN", {
+                                      minimumFractionDigits: 2,
+                                    })}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 block">
+                                    Bal: ₹
+                                    {balance.toLocaleString("en-IN", {
+                                      minimumFractionDigits: 2,
+                                    })}
+                                  </span>
+                                </div>
+
+                                <Link
+                                  href={`/dashboard/orders`}
+                                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold shadow-2xs flex items-center gap-1 transition-all"
+                                >
+                                  View in Orders <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -2108,6 +2464,403 @@ function QuotationsContent() {
                     : editIsRevision
                       ? "Save New Revision"
                       : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE ORDER FROM QUOTATION (SPLIT ITEMS / ASSIGN DESIGNER) MODAL */}
+      {showConvertOrderModal && convertQuote && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl p-6 md:p-8 space-y-6 shadow-2xl animate-scale-up max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-2xs">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Create Order from Quotation
+                    </h3>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold">
+                      {convertQuote.quotationNumber}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Select line items for this specific order and assign to a designer with dedicated deadlines and notes.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowConvertOrderModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrderFromQuote} className="space-y-6">
+              {/* Step 1: Select Items */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center">
+                      1
+                    </span>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Select Quotation Items for this Order
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setConvertForm({
+                          ...convertForm,
+                          selectedItemIndexes: (convertQuote.items || []).map((_, i) => i),
+                        })
+                      }
+                      className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setConvertForm({
+                          ...convertForm,
+                          selectedItemIndexes: [],
+                        })
+                      }
+                      className="text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
+                  {(convertQuote.items || []).map((it, idx) => {
+                    const isSelected = convertForm.selectedItemIndexes.includes(idx);
+                    const grossPaise =
+                      (Number(it.quantity) || 1) *
+                      (it.unitRatePaise || (it.rate ? it.rate * 100 : 0));
+                    const discPaise =
+                      (grossPaise * Number(it.discountPercent || 0)) / 100;
+                    const taxPaise =
+                      ((grossPaise - discPaise) *
+                        Number(
+                          it.taxRatePercent !== undefined ? it.taxRatePercent : 18,
+                        )) /
+                      100;
+                    const totalVal = (grossPaise - discPaise + taxPaise) / 100;
+
+                    // Check if already ordered in any existing order
+                    const alreadyOrderedIn = (quoteOrders || []).find((ord) =>
+                      (ord.items || []).some(
+                        (oIt) => Number(oIt.quotationItemIndex) === idx,
+                      ),
+                    );
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          const current = convertForm.selectedItemIndexes;
+                          const next = current.includes(idx)
+                            ? current.filter((i) => i !== idx)
+                            : [...current, idx];
+                          setConvertForm({ ...convertForm, selectedItemIndexes: next });
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          isSelected
+                            ? "bg-indigo-50/70 border-indigo-300 shadow-2xs"
+                            : "bg-white border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // handled by parent div
+                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 pointer-events-none"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-slate-900">
+                                {it.title || "Print Item"}
+                              </span>
+                              {alreadyOrderedIn && (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                  Ordered in {alreadyOrderedIn.orderNumber}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                              <span>
+                                Qty: <strong>{it.quantity}</strong> × ₹
+                                {(
+                                  it.unitRatePaise
+                                    ? it.unitRatePaise / 100
+                                    : it.rate || 0
+                                ).toLocaleString("en-IN")}
+                              </span>
+                              {it.width && it.height && (
+                                <span>
+                                  • Size: {it.width}×{it.height}{" "}
+                                  {it.dimensionUnit || "inch"}
+                                </span>
+                              )}
+                              {it.paperType && <span>• Media: {it.paperType}</span>}
+                              {it.colors && <span>• Colors: {it.colors}</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="font-mono font-bold text-xs text-slate-900 block">
+                            ₹
+                            {totalVal.toLocaleString("en-IN", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                          <span className="text-[10px] text-slate-400">incl. GST</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {convertForm.selectedItemIndexes.length === 0 && (
+                  <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Please select at least one item to generate this order.
+                  </p>
+                )}
+              </div>
+
+              {/* Step 2: Designer Assignment */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    2
+                  </span>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Designer Assignment &amp; Artwork Instructions
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Assign Designer for this Order
+                    </label>
+                    <select
+                      value={convertForm.assignedDesignerId}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          assignedDesignerId: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-purple-500/20"
+                    >
+                      <option value="">-- Unassigned (Assign Designer Later) --</option>
+                      {designers.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name || u.email} ({u.roleSlug || u.role?.name || u.role || "Staff"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Design Artwork Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={convertForm.designDeadline}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          designDeadline: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-purple-500/20"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Design Instructions / Brief for Assigned Designer
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={convertForm.designNotes}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          designNotes: e.target.value,
+                        })
+                      }
+                      placeholder="Specific instructions for this designer (e.g., Flag artwork specifications, bleed, color profiles, client logo guidelines)..."
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:ring-2 focus:ring-purple-500/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Production & Commercial Details */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    3
+                  </span>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Delivery &amp; Advance Payment Configuration
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Promised Delivery Date
+                    </label>
+                    <input
+                      type="date"
+                      value={convertForm.promisedDeliveryDate}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          promisedDeliveryDate: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Delivery Method
+                    </label>
+                    <select
+                      value={convertForm.deliveryMethod}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          deliveryMethod: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold"
+                    >
+                      <option value="PICKUP">Pickup at Workshop</option>
+                      <option value="STANDARD_DELIVERY">Standard Local Delivery</option>
+                      <option value="EXPRESS_COURIER">Express Courier</option>
+                      <option value="SELF_INSTALLATION">On-site Installation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 font-semibold text-xs block mb-1">
+                      Advance Required (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={convertForm.advanceRequiredPercent}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          advanceRequiredPercent: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Calculation Summary */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-50 border border-indigo-200/80 flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold text-indigo-950 uppercase tracking-wider block">
+                    ORDER FINANCIAL PREVIEW ({convertForm.selectedItemIndexes.length} item{convertForm.selectedItemIndexes.length === 1 ? "" : "s"} selected)
+                  </span>
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
+                    <span>
+                      Subtotal:{" "}
+                      <strong>
+                        ₹
+                        {convertSubtotal.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </strong>
+                    </span>
+                    <span>
+                      GST Tax:{" "}
+                      <strong>
+                        ₹
+                        {convertGst.toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </strong>
+                    </span>
+                    <span className="text-indigo-900 font-bold">
+                      Advance Req ({convertForm.advanceRequiredPercent || 50}%): ₹
+                      {convertAdvanceReq.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider block">
+                    Order Grand Total
+                  </span>
+                  <span className="font-mono text-xl font-black text-indigo-900">
+                    ₹
+                    {convertGrandTotal.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowConvertOrderModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    actionLoading || convertForm.selectedItemIndexes.length === 0
+                  }
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  {actionLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Generating Order...
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-4 h-4" />
+                      Generate Order ({convertForm.selectedItemIndexes.length} item{convertForm.selectedItemIndexes.length === 1 ? "" : "s"})
+                    </>
+                  )}
                 </button>
               </div>
             </form>
