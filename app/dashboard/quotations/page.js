@@ -2298,7 +2298,7 @@ function QuotationsContent() {
                           type="text"
                           required
                           placeholder="e.g. Flex Banner 440 GSM"
-                          value={item.title}
+                          value={item.title ?? ""}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
                             copy[idx].title = e.target.value;
@@ -2315,7 +2315,7 @@ function QuotationsContent() {
                         <input
                           type="text"
                           placeholder="e.g. 10x4 ft Frontlit"
-                          value={item.description}
+                          value={item.description ?? ""}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
                             copy[idx].description = e.target.value;
@@ -2333,7 +2333,7 @@ function QuotationsContent() {
                           type="number"
                           min="1"
                           required
-                          value={item.quantity}
+                          value={item.quantity ?? 1}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
                             copy[idx].quantity = e.target.value;
@@ -2351,7 +2351,7 @@ function QuotationsContent() {
                           type="number"
                           step="0.01"
                           required
-                          value={item.rate}
+                          value={item.rate ?? 0}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
                             copy[idx].rate = e.target.value;
@@ -2371,7 +2371,7 @@ function QuotationsContent() {
                           type="number"
                           min="0"
                           max="100"
-                          value={item.discountPercent}
+                          value={item.discountPercent ?? 0}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
                             copy[idx].discountPercent = Number(e.target.value);
@@ -2602,7 +2602,7 @@ function QuotationsContent() {
                         <input
                           type="text"
                           required
-                          value={item.title}
+                          value={item.title ?? ""}
                           onChange={(e) => {
                             const copy = [...editItems];
                             copy[idx].title = e.target.value;
@@ -2618,7 +2618,7 @@ function QuotationsContent() {
                         </label>
                         <input
                           type="text"
-                          value={item.description}
+                          value={item.description ?? ""}
                           onChange={(e) => {
                             const copy = [...editItems];
                             copy[idx].description = e.target.value;
@@ -2636,7 +2636,7 @@ function QuotationsContent() {
                           type="number"
                           min="1"
                           required
-                          value={item.quantity}
+                          value={item.quantity ?? 1}
                           onChange={(e) => {
                             const copy = [...editItems];
                             copy[idx].quantity = e.target.value;
@@ -2654,7 +2654,7 @@ function QuotationsContent() {
                           type="number"
                           step="0.01"
                           required
-                          value={item.rate}
+                          value={item.rate ?? 0}
                           onChange={(e) => {
                             const copy = [...editItems];
                             copy[idx].rate = e.target.value;
@@ -2674,7 +2674,7 @@ function QuotationsContent() {
                           type="number"
                           min="0"
                           max="100"
-                          value={item.discountPercent}
+                          value={item.discountPercent ?? 0}
                           onChange={(e) => {
                             const copy = [...editItems];
                             copy[idx].discountPercent = Number(e.target.value);
@@ -3041,7 +3041,7 @@ function QuotationsContent() {
                     </label>
                     <input
                       type="date"
-                      value={convertForm.designDeadline}
+                      value={convertForm.designDeadline ?? ""}
                       onChange={(e) =>
                         setConvertForm({
                           ...convertForm,
@@ -3090,7 +3090,7 @@ function QuotationsContent() {
                     </label>
                     <input
                       type="date"
-                      value={convertForm.promisedDeliveryDate}
+                      value={convertForm.promisedDeliveryDate ?? ""}
                       onChange={(e) =>
                         setConvertForm({
                           ...convertForm,
@@ -3106,7 +3106,7 @@ function QuotationsContent() {
                       Delivery Method
                     </label>
                     <select
-                      value={convertForm.deliveryMethod}
+                      value={convertForm.deliveryMethod || "PICKUP"}
                       onChange={(e) =>
                         setConvertForm({
                           ...convertForm,
@@ -3130,7 +3130,7 @@ function QuotationsContent() {
                       type="number"
                       min="0"
                       max="100"
-                      value={convertForm.advanceRequiredPercent}
+                      value={convertForm.advanceRequiredPercent ?? 50}
                       onChange={(e) =>
                         setConvertForm({
                           ...convertForm,
@@ -3534,7 +3534,7 @@ function QuotationsContent() {
                         type="number"
                         step="0.01"
                         min="1"
-                        value={directPaymentForm.amount}
+                        value={directPaymentForm.amount ?? ""}
                         onChange={(e) =>
                           setDirectPaymentForm({
                             ...directPaymentForm,
@@ -3554,7 +3554,7 @@ function QuotationsContent() {
                       Payment Method <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={directPaymentForm.paymentMethod}
+                      value={directPaymentForm.paymentMethod || "CASH"}
                       onChange={(e) =>
                         setDirectPaymentForm({
                           ...directPaymentForm,
@@ -3579,7 +3579,7 @@ function QuotationsContent() {
                       </label>
                       <input
                         type="text"
-                        value={directPaymentForm.transactionReference}
+                        value={directPaymentForm.transactionReference ?? ""}
                         onChange={(e) =>
                           setDirectPaymentForm({
                             ...directPaymentForm,
@@ -3601,7 +3601,7 @@ function QuotationsContent() {
                         </label>
                         <input
                           type="text"
-                          value={directPaymentForm.chequeNumber}
+                          value={directPaymentForm.chequeNumber ?? ""}
                           onChange={(e) =>
                             setDirectPaymentForm({
                               ...directPaymentForm,
@@ -3619,7 +3619,7 @@ function QuotationsContent() {
                         </label>
                         <input
                           type="text"
-                          value={directPaymentForm.bankName}
+                          value={directPaymentForm.bankName ?? ""}
                           onChange={(e) =>
                             setDirectPaymentForm({
                               ...directPaymentForm,
@@ -3641,7 +3641,7 @@ function QuotationsContent() {
                     </label>
                     <input
                       type="text"
-                      value={directPaymentForm.notes}
+                      value={directPaymentForm.notes ?? ""}
                       onChange={(e) =>
                         setDirectPaymentForm({
                           ...directPaymentForm,

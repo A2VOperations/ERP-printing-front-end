@@ -2627,7 +2627,7 @@ function DesignStudioContent() {
                       type="number"
                       step="any"
                       placeholder="e.g. 3.5"
-                      value={editSpecsForm.width}
+                      value={editSpecsForm.width ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2646,7 +2646,7 @@ function DesignStudioContent() {
                       type="number"
                       step="any"
                       placeholder="e.g. 2"
-                      value={editSpecsForm.height}
+                      value={editSpecsForm.height ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2713,7 +2713,7 @@ function DesignStudioContent() {
                     <input
                       type="text"
                       placeholder="e.g. Art Card, Star Flex, Vinyl..."
-                      value={editSpecsForm.material}
+                      value={editSpecsForm.material ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2756,7 +2756,7 @@ function DesignStudioContent() {
                     <input
                       type="number"
                       placeholder="e.g. 350"
-                      value={editSpecsForm.gsm}
+                      value={editSpecsForm.gsm ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2828,7 +2828,7 @@ function DesignStudioContent() {
                       <input
                         type="number"
                         placeholder="100"
-                        value={editSpecsForm.dpi}
+                        value={editSpecsForm.dpi ?? ""}
                         onChange={(e) =>
                           setEditSpecsForm({
                             ...editSpecsForm,
@@ -2868,7 +2868,7 @@ function DesignStudioContent() {
                     <input
                       type="text"
                       placeholder="e.g. Digital Offset"
-                      value={editSpecsForm.printingMethod}
+                      value={editSpecsForm.printingMethod ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2951,7 +2951,7 @@ function DesignStudioContent() {
                     <textarea
                       rows={2}
                       placeholder="Special instructions from client or salesperson..."
-                      value={editSpecsForm.specialInstructions}
+                      value={editSpecsForm.specialInstructions ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
@@ -2968,7 +2968,7 @@ function DesignStudioContent() {
                     </label>
                     <input
                       type="date"
-                      value={editSpecsForm.dueDate}
+                      value={editSpecsForm.dueDate ?? ""}
                       onChange={(e) =>
                         setEditSpecsForm({
                           ...editSpecsForm,
