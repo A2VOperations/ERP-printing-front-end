@@ -348,9 +348,9 @@ export default function LeadDetailPage() {
           api.get(`/leads/${leadId}`),
           api.get(`/leads/${leadId}/activities`),
           api.get(`/followups?leadId=${leadId}`),
-          api.get("/quotations?limit=100"),
-          api.get("/orders?limit=100"),
-          api.get("/payments?limit=100"),
+          api.get(`/quotations?leadId=${leadId}&limit=100`),
+          api.get(`/orders?leadId=${leadId}&limit=100`),
+          api.get(`/payments?leadId=${leadId}&limit=100`),
           api.get(`/leads/${leadId}/notes`),
           api.get(`/leads/${leadId}/documents`),
         ]);
@@ -419,65 +419,21 @@ export default function LeadDetailPage() {
         const allQuotes = Array.isArray(qRes.value.data)
           ? qRes.value.data
           : qRes.value.data?.records || [];
-        const custId = (
-          loadedLead?.customerId?._id ||
-          loadedLead?.customerId ||
-          ""
-        )?.toString();
-        const leadPhone = (loadedLead?.phone || "")?.replace(/\D/g, "");
-        const leadContact = (loadedLead?.contactName || "")
-          ?.toLowerCase()
-          .trim();
-        const leadBusiness = (loadedLead?.businessName || "")
-          ?.toLowerCase()
-          .trim();
+        const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
+        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
 
         const matchingQuotes = allQuotes.filter((q) => {
-          const qLeadId = (q.leadId?._id || q.leadId || "")?.toString();
-          const qCustId = (q.customerId?._id || q.customerId || "")?.toString();
-          const qPhone = (
-            q.customerSnapshot?.phone ||
-            q.customerId?.phone ||
-            q.phone ||
+          const qLeadObj = q.leadId;
+          const qLeadId = (
+            qLeadObj?._id ||
+            qLeadObj?.id ||
+            (typeof qLeadObj === "string" ? qLeadObj : "") ||
             ""
-          )?.replace(/\D/g, "");
-          const qCustName = (
-            q.customerSnapshot?.displayName ||
-            q.customerId?.displayName ||
-            q.customerName ||
-            ""
-          )
-            ?.toLowerCase()
-            .trim();
-          const qCompName = (
-            q.customerSnapshot?.companyName ||
-            q.customerId?.companyName ||
-            ""
-          )
-            ?.toLowerCase()
-            .trim();
+          ).toString();
+          const qLeadNumber = (qLeadObj?.leadNumber || qLeadObj?.leadId || "").toString();
 
-          if (qLeadId && qLeadId === leadId.toString()) return true;
-          if (custId && qCustId && qCustId === custId) return true;
-          if (
-            leadPhone &&
-            qPhone &&
-            (qPhone.includes(leadPhone) || leadPhone.includes(qPhone))
-          )
-            return true;
-          if (
-            leadContact &&
-            qCustName &&
-            (qCustName.includes(leadContact) || leadContact.includes(qCustName))
-          )
-            return true;
-          if (
-            leadBusiness &&
-            qCompName &&
-            (qCompName.includes(leadBusiness) ||
-              leadBusiness.includes(qCompName))
-          )
-            return true;
+          if (qLeadId && (qLeadId === currentLeadDbId || (currentLeadNumber && qLeadId === currentLeadNumber))) return true;
+          if (qLeadNumber && (qLeadNumber === currentLeadNumber || qLeadNumber === currentLeadDbId)) return true;
           return false;
         });
         setQuotations(matchingQuotes);
@@ -487,29 +443,21 @@ export default function LeadDetailPage() {
         const allOrders = Array.isArray(oRes.value.data)
           ? oRes.value.data
           : oRes.value.data?.records || [];
-        const custId = (
-          loadedLead?.customerId?._id ||
-          loadedLead?.customerId ||
-          ""
-        )?.toString();
-        const leadPhone = (loadedLead?.phone || "")?.replace(/\D/g, "");
+        const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
+        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
 
         const matchingOrders = allOrders.filter((o) => {
-          const oLeadId = (o.leadId?._id || o.leadId || "")?.toString();
-          const oCustId = (o.customerId?._id || o.customerId || "")?.toString();
-          const oPhone = (o.customerSnapshot?.phone || o.phone || "")?.replace(
-            /\D/g,
-            "",
-          );
+          const oLeadObj = o.leadId;
+          const oLeadId = (
+            oLeadObj?._id ||
+            oLeadObj?.id ||
+            (typeof oLeadObj === "string" ? oLeadObj : "") ||
+            ""
+          ).toString();
+          const oLeadNumber = (oLeadObj?.leadNumber || oLeadObj?.leadId || "").toString();
 
-          if (oLeadId && oLeadId === leadId.toString()) return true;
-          if (custId && oCustId && oCustId === custId) return true;
-          if (
-            leadPhone &&
-            oPhone &&
-            (oPhone.includes(leadPhone) || leadPhone.includes(oPhone))
-          )
-            return true;
+          if (oLeadId && (oLeadId === currentLeadDbId || (currentLeadNumber && oLeadId === currentLeadNumber))) return true;
+          if (oLeadNumber && (oLeadNumber === currentLeadNumber || oLeadNumber === currentLeadDbId)) return true;
           return false;
         });
         setOrders(matchingOrders);
@@ -519,16 +467,22 @@ export default function LeadDetailPage() {
         const allPayments = Array.isArray(pRes.value.data)
           ? pRes.value.data
           : pRes.value.data?.records || [];
-        const custId = (
-          loadedLead?.customerId?._id ||
-          loadedLead?.customerId ||
-          ""
-        )?.toString();
+        const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
+        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
+
         const matchingPayments = allPayments.filter((p) => {
-          const pCustId = (p.customerId?._id || p.customerId || "")?.toString();
-          const pLeadId = (p.leadId?._id || p.leadId || "")?.toString();
-          if (pLeadId && pLeadId === leadId.toString()) return true;
-          return custId && pCustId && pCustId === custId;
+          const pLeadObj = p.leadId;
+          const pLeadId = (
+            pLeadObj?._id ||
+            pLeadObj?.id ||
+            (typeof pLeadObj === "string" ? pLeadObj : "") ||
+            ""
+          ).toString();
+          const pLeadNumber = (pLeadObj?.leadNumber || pLeadObj?.leadId || "").toString();
+
+          if (pLeadId && (pLeadId === currentLeadDbId || (currentLeadNumber && pLeadId === currentLeadNumber))) return true;
+          if (pLeadNumber && (pLeadNumber === currentLeadNumber || pLeadNumber === currentLeadDbId)) return true;
+          return false;
         });
         setPayments(matchingPayments);
       }

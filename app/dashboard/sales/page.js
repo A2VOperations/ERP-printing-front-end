@@ -626,6 +626,43 @@ export default function SalesDashboardPage() {
     );
   }, [acceptedQuotations]);
 
+  // Combined sales across all sales reps (Tanya + Roshni) calculated strictly by quotation approval
+  const totalTeamSalesRupees = useMemo(() => {
+    if (topPerformers && topPerformers.length > 0) {
+      return topPerformers.reduce(
+        (sum, p) => sum + (p.achievedPaise || 0) / 100,
+        0,
+      );
+    }
+    return totalSalesFromQuotationsRupees;
+  }, [topPerformers, totalSalesFromQuotationsRupees]);
+
+  const tanyaSalesRupees = useMemo(() => {
+    const tanya = topPerformers.find((p) =>
+      (p.user?.name || p.userName || "").toLowerCase().includes("tanya"),
+    );
+    if (tanya) return (tanya.achievedPaise || 0) / 100;
+    return totalSalesFromQuotationsRupees;
+  }, [topPerformers, totalSalesFromQuotationsRupees]);
+
+  const roshniSalesRupees = useMemo(() => {
+    const roshni = topPerformers.find((p) =>
+      (p.user?.name || p.userName || "").toLowerCase().includes("roshni"),
+    );
+    if (roshni) return (roshni.achievedPaise || 0) / 100;
+    return 0;
+  }, [topPerformers]);
+
+  const totalWonQuotationsCount = useMemo(() => {
+    if (topPerformers && topPerformers.length > 0) {
+      return topPerformers.reduce(
+        (sum, p) => sum + (p.ordersWonCount || 0),
+        0,
+      );
+    }
+    return acceptedQuotations.length;
+  }, [topPerformers, acceptedQuotations]);
+
   const targetRupees = useMemo(() => {
     if (targetProgress?.targetPaise) return targetProgress.targetPaise / 100;
     if (targetProgress?.targetAmountPaise)
@@ -968,39 +1005,28 @@ export default function SalesDashboardPage() {
               </div>
             </div>
 
-            {/* 4. Orders Confirmed */}
+            {/* 4. Total Sales (Approved Quotations) */}
             <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-start justify-between">
                 <div>
                   <span className="text-[11px] font-semibold text-slate-500 block">
-                    Orders Confirmed
+                    Total Sales (Approved Quotes)
                   </span>
                   <div className="text-2xl font-black text-slate-900 mt-1">
-                    {loading ? "..." : ordersConfirmedCount}
+                    {loading ? "..." : `₹${Math.round(totalTeamSalesRupees).toLocaleString("en-IN")}`}
                   </div>
                 </div>
                 <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <ShoppingBag className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4" />
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span
-                  className={`text-[10px] font-bold ${
-                    ordersTrend.isUp
-                      ? "text-emerald-600"
-                      : ordersTrend.neutral
-                        ? "text-slate-400"
-                        : "text-rose-600"
-                  }`}
-                >
-                  {ordersTrend.text}
+              <div className="mt-3 flex items-center justify-between gap-1">
+                <span className="text-[10px] font-bold text-emerald-700 truncate">
+                  Tanya: ₹{Math.round(tanyaSalesRupees).toLocaleString("en-IN")} • Roshni: ₹{Math.round(roshniSalesRupees).toLocaleString("en-IN")}
                 </span>
-                <svg
-                  className="w-20 h-5 text-emerald-500 stroke-current fill-none stroke-2"
-                  viewBox="0 0 100 25"
-                >
-                  <path d="M0 20 Q 25 8, 50 14 T 100 5" />
-                </svg>
+                <span className="text-[10px] font-semibold text-slate-400 shrink-0">
+                  {totalWonQuotationsCount} Won
+                </span>
               </div>
             </div>
 

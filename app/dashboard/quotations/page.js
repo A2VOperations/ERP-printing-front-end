@@ -252,7 +252,10 @@ function QuotationsContent() {
   const fetchQuotations = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/quotations?limit=100");
+      const url = leadIdParam
+        ? `/quotations?leadId=${encodeURIComponent(leadIdParam)}&limit=100`
+        : "/quotations?limit=100";
+      const res = await api.get(url);
       if (res && res.data) {
         const list = Array.isArray(res.data)
           ? res.data
@@ -264,6 +267,8 @@ function QuotationsContent() {
             const found = list.find((q) => q._id === prev._id);
             return found || list[0];
           });
+        } else {
+          setSelectedQuote(null);
         }
       }
     } catch (err) {
@@ -274,9 +279,8 @@ function QuotationsContent() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchQuotations();
-  }, []);
+  }, [leadIdParam]);
 
   // Creation Item Management
   const handleAddCreateItem = () => {
@@ -780,7 +784,23 @@ function QuotationsContent() {
       qNum.includes(searchQuery.toLowerCase()) ||
       cName.includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "ALL" || q.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    let matchesLead = true;
+    if (leadIdParam) {
+      const qLeadObj = q.leadId;
+      const qLeadId = (
+        qLeadObj?._id ||
+        qLeadObj?.id ||
+        (typeof qLeadObj === "string" ? qLeadObj : "") ||
+        ""
+      ).toString();
+      const qLeadNumber = (qLeadObj?.leadNumber || qLeadObj?.leadId || "").toString();
+      matchesLead =
+        qLeadId === leadIdParam.toString() ||
+        (qLeadNumber && qLeadNumber === leadIdParam.toString());
+    }
+
+    return matchesSearch && matchesStatus && matchesLead;
   });
 
   // Calculate live edit totals with dynamic per-item GST
@@ -1042,6 +1062,21 @@ function QuotationsContent() {
               </button>
             ))}
           </div>
+
+          {leadIdParam && (
+            <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 text-indigo-800 px-4 py-2.5 rounded-2xl text-xs font-medium shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-indigo-950">Filtered strictly for Lead:</span>
+                <span className="bg-indigo-200/70 text-indigo-900 px-2.5 py-0.5 rounded-lg font-mono font-semibold text-[11px]">{leadIdParam}</span>
+              </div>
+              <button
+                onClick={() => router.push("/dashboard/quotations")}
+                className="text-xs font-semibold text-indigo-700 hover:text-indigo-950 underline cursor-pointer"
+              >
+                Clear Filter & Show All
+              </button>
+            </div>
+          )}
 
           {/* 2-Column Responsive Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
