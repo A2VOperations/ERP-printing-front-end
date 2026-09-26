@@ -38,6 +38,8 @@ import {
   Layers,
   Package,
   Palette,
+  CreditCard,
+  Receipt,
 } from "lucide-react";
 
 const formatDate = (dateVal) => {
@@ -161,6 +163,22 @@ function QuotationsContent() {
     orderNotes: "",
   });
 
+  // Direct Quotation Payment State (Products / Retail items without design/orders)
+  const [quotePayments, setQuotePayments] = useState([]);
+  const [quotePaymentsLoading, setQuotePaymentsLoading] = useState(false);
+  const [showDirectPaymentModal, setShowDirectPaymentModal] = useState(false);
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [directPaymentForm, setDirectPaymentForm] = useState({
+    selectedItemIndexes: [],
+    amount: "",
+    paymentMethod: "CASH",
+    paymentType: "FINAL_SETTLEMENT",
+    transactionReference: "",
+    bankName: "",
+    chequeNumber: "",
+    notes: "",
+  });
+
   useEffect(() => {
     api
       .get("/users?limit=100")
@@ -189,11 +207,32 @@ function QuotationsContent() {
     }
   };
 
+  const fetchQuotePayments = async (quoteId) => {
+    if (!quoteId) {
+      setQuotePayments([]);
+      return;
+    }
+    try {
+      setQuotePaymentsLoading(true);
+      const res = await api.get(`/quotations/${quoteId}/payments`);
+      const list = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      setQuotePayments(list);
+    } catch (err) {
+      console.error("Failed to fetch quote direct payments:", err);
+      setQuotePayments([]);
+    } finally {
+      setQuotePaymentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (selectedQuote?._id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchQuoteOrders(selectedQuote._id);
+      fetchQuotePayments(selectedQuote._id);
     } else {
       setQuoteOrders([]);
+      setQuotePayments([]);
     }
   }, [selectedQuote?._id]);
 
@@ -574,6 +613,96 @@ function QuotationsContent() {
       alert(err.message || "Failed to create order from quotation");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // Open Direct Quotation Payment Modal (Pay directly for products/hardware)
+  const handleOpenDirectPaymentModal = (targetQuote = selectedQuote) => {
+    if (!targetQuote) return;
+    const items = targetQuote.items || [];
+    // Default select unpaid direct items (or items where directPaymentStatus !== 'PAID')
+    const unpaidIndexes = items
+      .map((it, idx) => idx)
+      .filter((idx) => items[idx].directPaymentStatus !== "PAID");
+    const initialSelected =
+      unpaidIndexes.length > 0 ? unpaidIndexes : items.map((_, idx) => idx);
+
+    // Sum remaining unpaid for selected items
+    const selectedTotal = initialSelected.reduce((sum, idx) => {
+      const it = items[idx];
+      const itemPrice = (it?.itemTotalPaise || 0) / 100;
+      const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
+      return sum + Math.max(0, itemPrice - alreadyPaid);
+    }, 0);
+
+    setDirectPaymentForm({
+      selectedItemIndexes: initialSelected,
+      amount:
+        selectedTotal > 0
+          ? selectedTotal.toFixed(2)
+          : (
+              (targetQuote.directBalancePaise !== undefined
+                ? targetQuote.directBalancePaise
+                : targetQuote.grandTotalPaise || 0) / 100
+            ).toFixed(2),
+      paymentMethod: "CASH",
+      paymentType: "FINAL_SETTLEMENT",
+      transactionReference: "",
+      bankName: "",
+      chequeNumber: "",
+      notes: "",
+    });
+    setShowDirectPaymentModal(true);
+  };
+
+  // Submit Direct Quotation Payment
+  const handleRecordDirectPayment = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedQuote) return;
+    if (
+      !directPaymentForm.selectedItemIndexes ||
+      directPaymentForm.selectedItemIndexes.length === 0
+    ) {
+      alert("Please select at least one quotation line item for this direct payment.");
+      return;
+    }
+    const enteredAmt = Number(directPaymentForm.amount);
+    if (!enteredAmt || enteredAmt <= 0) {
+      alert("Please enter a valid payment amount greater than zero.");
+      return;
+    }
+
+    try {
+      setPaymentSubmitting(true);
+      const payload = {
+        amount: enteredAmt,
+        paymentMethod: directPaymentForm.paymentMethod,
+        paymentType: directPaymentForm.paymentType,
+        selectedItemIndexes: directPaymentForm.selectedItemIndexes,
+        transactionReference: directPaymentForm.transactionReference || undefined,
+        bankName: directPaymentForm.bankName || undefined,
+        chequeNumber: directPaymentForm.chequeNumber || undefined,
+        notes: directPaymentForm.notes || undefined,
+      };
+
+      const res = await api.post(
+        `/quotations/${selectedQuote._id}/payments`,
+        payload,
+      );
+      alert(
+        `Direct payment of ₹${enteredAmt.toLocaleString("en-IN")} successfully recorded! (Receipt: ${res.data?.receiptNumber || "Confirmed"})`,
+      );
+      setShowDirectPaymentModal(false);
+      await fetchQuotations();
+      await fetchQuotePayments(selectedQuote._id);
+      const updatedQuoteRes = await api.get(`/quotations/${selectedQuote._id}`);
+      if (updatedQuoteRes.data) {
+        setSelectedQuote(updatedQuoteRes.data);
+      }
+    } catch (err) {
+      alert(err.message || "Failed to record direct payment");
+    } finally {
+      setPaymentSubmitting(false);
     }
   };
 
@@ -958,9 +1087,16 @@ function QuotationsContent() {
                         <span className="text-slate-500 text-[11px]">
                           Grand Total
                         </span>
-                        <strong className="font-mono font-bold text-slate-900">
-                          ₹{total}
-                        </strong>
+                        <div className="text-right">
+                          <strong className="font-mono font-bold text-slate-900 block">
+                            ₹{total}
+                          </strong>
+                          {item.directPaidPaise > 0 && (
+                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
+                              Direct Paid: ₹{(item.directPaidPaise / 100).toLocaleString("en-IN")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -992,6 +1128,15 @@ function QuotationsContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                        title="Record direct payment for products (e.g. iron, hardware) without converting to order or assigning to designers"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        Record Direct Payment
+                      </button>
+
                       <button
                         onClick={() => handleOpenConvertOrder(selectedQuote)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
@@ -1470,11 +1615,23 @@ function QuotationsContent() {
                                       {item.description}
                                     </span>
                                   )}
-                                  {specs.length > 0 && (
-                                    <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md inline-block mt-1 font-medium border border-blue-100">
-                                      {specs.join(" • ")}
-                                    </span>
-                                  )}
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    {specs.length > 0 && (
+                                      <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md inline-block font-medium border border-blue-100">
+                                        {specs.join(" • ")}
+                                      </span>
+                                    )}
+                                    {item.directPaymentStatus === "PAID" && (
+                                      <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold border border-emerald-300">
+                                        ✓ Paid Directly (Product - ₹{((item.directPaymentPaidPaise || item.itemTotalPaise || 0) / 100).toLocaleString("en-IN")})
+                                      </span>
+                                    )}
+                                    {item.directPaymentStatus === "PARTIALLY_PAID" && (
+                                      <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold border border-amber-300">
+                                        Partially Paid Directly (₹{((item.directPaymentPaidPaise || 0) / 100).toLocaleString("en-IN")})
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-3 px-3 text-right font-semibold text-slate-800 font-mono">
                                   {qty}
@@ -1657,6 +1814,36 @@ function QuotationsContent() {
                               })}
                             </span>
                           </div>
+
+                          {selectedQuote.directPaidPaise > 0 && (
+                            <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                              <span>Direct Paid (Products):</span>
+                              <span className="font-mono">
+                                ₹
+                                {(selectedQuote.directPaidPaise / 100).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                          )}
+
+                          {selectedQuote.directPaidPaise > 0 && (
+                            <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-slate-100 rounded-xl border border-slate-200">
+                              <span>Remaining Balance:</span>
+                              <span className="font-mono font-bold text-slate-800">
+                                ₹
+                                {(
+                                  (selectedQuote.directBalancePaise !== undefined
+                                    ? selectedQuote.directBalancePaise
+                                    : Math.max(0, (selectedQuote.grandTotalPaise || 0) - (selectedQuote.directPaidPaise || 0))) / 100
+                                ).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Signatory Box */}
@@ -1833,6 +2020,112 @@ function QuotationsContent() {
                                   View in Orders <ArrowRight className="w-3 h-3" />
                                 </Link>
                               </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* DIRECT PAYMENTS & RECEIPTS RECORDED ON THIS QUOTATION */}
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                          <CreditCard className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">
+                            Direct Payments & Receipts ({quotePayments.length})
+                          </h4>
+                          <p className="text-[11px] text-slate-500">
+                            Payments recorded directly for products (like iron, hardware, materials) without routing through design or orders.
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        Record Direct Payment
+                      </button>
+                    </div>
+
+                    {quotePaymentsLoading ? (
+                      <div className="p-6 text-center text-slate-400 text-xs">
+                        <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-emerald-500" />
+                        Loading direct payments...
+                      </div>
+                    ) : quotePayments.length === 0 ? (
+                      <div className="p-6 text-center bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 text-slate-500 text-xs space-y-2">
+                        <CreditCard className="w-6 h-6 text-slate-400 mx-auto" />
+                        <p className="font-semibold text-slate-700">
+                          No direct payments recorded for this quotation yet.
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          For products (like iron, stands, hardware) that don&apos;t go to designers, record payment directly here.
+                        </p>
+                        <button
+                          onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-xs font-bold transition-all shadow-2xs mt-1 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Record Direct Payment Now
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {quotePayments.map((pmt) => {
+                          const amt = (pmt.amountPaise || 0) / 100;
+                          return (
+                            <div
+                              key={pmt._id}
+                              className="p-4 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-all bg-slate-50/50 space-y-3"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-xs text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                                    {pmt.receiptNumber || "RECEIPT"}
+                                  </span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    {pmt.status || "CONFIRMED"}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-slate-500">
+                                    {pmt.paymentMethod?.replace(/_/g, " ")} • {formatDate(pmt.createdAt)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-bold text-emerald-700 font-mono">
+                                    ₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </span>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        const res = await api.get(`/payments/${pmt._id}/receipt`, { responseType: "blob" });
+                                        const blob = new Blob([res.data], { type: "application/pdf" });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, "_blank");
+                                      } catch (err) {
+                                        alert("Failed to view receipt: " + (err.message || "Error"));
+                                      }
+                                    }}
+                                    className="p-1.5 px-2.5 rounded-lg border border-slate-200 hover:bg-white text-slate-700 hover:text-emerald-700 transition-all text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                                    title="View Electronic PDF Receipt"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" />
+                                    Receipt PDF
+                                  </button>
+                                </div>
+                              </div>
+
+                              {pmt.selectedItemTitles && pmt.selectedItemTitles.length > 0 && (
+                                <div className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">
+                                  <span className="font-semibold text-slate-700">For Items: </span>
+                                  {pmt.selectedItemTitles.join(", ")}
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -2859,6 +3152,399 @@ function QuotationsContent() {
                     <>
                       <Layers className="w-4 h-4" />
                       Generate Order ({convertForm.selectedItemIndexes.length} item{convertForm.selectedItemIndexes.length === 1 ? "" : "s"})
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* DIRECT QUOTATION PAYMENT MODAL (PRODUCTS / HARDWARE WITHOUT ORDERS) */}
+      {showDirectPaymentModal && selectedQuote && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-scale-up max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Record Direct Payment (Products / Retail)
+                    </h3>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                      {selectedQuote.quotationNumber}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Pay directly for items (e.g. iron, hardware, materials) without sending them to designers or creating production orders.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDirectPaymentModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRecordDirectPayment} className="space-y-6">
+              {/* Step 1: Select Items to Pay For */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">
+                      1
+                    </span>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Select Quotation Item(s) to Pay For
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allIdx = (selectedQuote.items || []).map((_, i) => i);
+                        const selTotal = allIdx.reduce((sum, idx) => {
+                          const it = selectedQuote.items[idx];
+                          const itemPrice = (it?.itemTotalPaise || 0) / 100;
+                          const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
+                          return sum + Math.max(0, itemPrice - alreadyPaid);
+                        }, 0);
+                        setDirectPaymentForm({
+                          ...directPaymentForm,
+                          selectedItemIndexes: allIdx,
+                          amount: selTotal > 0 ? selTotal.toFixed(2) : directPaymentForm.amount,
+                        });
+                      }}
+                      className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDirectPaymentForm({
+                          ...directPaymentForm,
+                          selectedItemIndexes: [],
+                          amount: "0",
+                        })
+                      }
+                      className="text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
+                  {(selectedQuote.items || []).map((it, idx) => {
+                    const isSelected = directPaymentForm.selectedItemIndexes.includes(idx);
+                    const itemTotal = (it.itemTotalPaise || 0) / 100;
+                    const alreadyPaid = (it.directPaymentPaidPaise || 0) / 100;
+                    const remainingItemPayable = Math.max(0, itemTotal - alreadyPaid);
+                    const isFullyPaid = it.directPaymentStatus === "PAID" || remainingItemPayable <= 0.01;
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          const current = directPaymentForm.selectedItemIndexes;
+                          const next = current.includes(idx)
+                            ? current.filter((i) => i !== idx)
+                            : [...current, idx];
+
+                          const newTotal = next.reduce((sum, itemIdx) => {
+                            const itemObj = selectedQuote.items[itemIdx];
+                            const price = (itemObj?.itemTotalPaise || 0) / 100;
+                            const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
+                            return sum + Math.max(0, price - paid);
+                          }, 0);
+
+                          setDirectPaymentForm({
+                            ...directPaymentForm,
+                            selectedItemIndexes: next,
+                            amount: newTotal > 0 ? newTotal.toFixed(2) : "0",
+                          });
+                        }}
+                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          isSelected
+                            ? "bg-emerald-50/70 border-emerald-300 shadow-2xs"
+                            : "bg-white border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // handled by parent div
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 pointer-events-none"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-slate-900">
+                                {it.title || "Quotation Item"}
+                              </span>
+                              {isFullyPaid ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  ✓ Fully Paid Directly
+                                </span>
+                              ) : it.directPaymentStatus === "PARTIALLY_PAID" ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                  Partially Paid: ₹{alreadyPaid.toLocaleString("en-IN")}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                              <span>
+                                Qty: <strong>{it.quantity}</strong>
+                              </span>
+                              <span>
+                                • Line Total: <strong>₹{itemTotal.toLocaleString("en-IN")}</strong>
+                              </span>
+                              {alreadyPaid > 0 && !isFullyPaid && (
+                                <span className="text-amber-700 font-semibold">
+                                  • Remaining: ₹{remainingItemPayable.toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-xs font-mono font-bold text-slate-900 block">
+                            ₹{remainingItemPayable.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {isFullyPaid ? "Paid in full" : "Payable"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Calculation Summary */}
+                {directPaymentForm.selectedItemIndexes.length > 0 && (() => {
+                  const selSum = directPaymentForm.selectedItemIndexes.reduce((sum, idx) => {
+                    const it = selectedQuote.items[idx];
+                    const itemPrice = (it?.itemTotalPaise || 0) / 100;
+                    const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
+                    return sum + Math.max(0, itemPrice - alreadyPaid);
+                  }, 0);
+
+                  return (
+                    <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
+                      <span className="text-emerald-900 font-semibold">
+                        Total Remaining Balance for Selected ({directPaymentForm.selectedItemIndexes.length} item{directPaymentForm.selectedItemIndexes.length === 1 ? "" : "s"}):
+                      </span>
+                      <strong className="text-emerald-900 font-mono text-sm font-bold">
+                        ₹{selSum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      </strong>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Step 2: Payment Particulars */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">
+                    2
+                  </span>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Payment Particulars
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Amount */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Payment Amount (₹) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="1"
+                        value={directPaymentForm.amount}
+                        onChange={(e) =>
+                          setDirectPaymentForm({
+                            ...directPaymentForm,
+                            amount: e.target.value,
+                          })
+                        }
+                        className="w-full pl-8 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Payment Method <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={directPaymentForm.paymentMethod}
+                      onChange={(e) =>
+                        setDirectPaymentForm({
+                          ...directPaymentForm,
+                          paymentMethod: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
+                    >
+                      <option value="CASH">Cash</option>
+                      <option value="UPI">UPI / QR Code</option>
+                      <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                      <option value="CHEQUE">Cheque</option>
+                      <option value="CARD">Debit / Credit Card</option>
+                    </select>
+                  </div>
+
+                  {/* Transaction Ref (for UPI/Bank/Card) */}
+                  {["UPI", "BANK_TRANSFER", "CARD"].includes(directPaymentForm.paymentMethod) && (
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Transaction Reference / UTR Number
+                      </label>
+                      <input
+                        type="text"
+                        value={directPaymentForm.transactionReference}
+                        onChange={(e) =>
+                          setDirectPaymentForm({
+                            ...directPaymentForm,
+                            transactionReference: e.target.value,
+                          })
+                        }
+                        placeholder="e.g. UPI Ref / Bank UTR #12345678"
+                        className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
+                      />
+                    </div>
+                  )}
+
+                  {/* Cheque Details */}
+                  {directPaymentForm.paymentMethod === "CHEQUE" && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Cheque Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={directPaymentForm.chequeNumber}
+                          onChange={(e) =>
+                            setDirectPaymentForm({
+                              ...directPaymentForm,
+                              chequeNumber: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. 000123"
+                          className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Bank Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={directPaymentForm.bankName}
+                          onChange={(e) =>
+                            setDirectPaymentForm({
+                              ...directPaymentForm,
+                              bankName: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. HDFC Bank, SBI"
+                          className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Payment Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Payment Type
+                    </label>
+                    <select
+                      value={directPaymentForm.paymentType}
+                      onChange={(e) =>
+                        setDirectPaymentForm({
+                          ...directPaymentForm,
+                          paymentType: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
+                    >
+                      <option value="FINAL_SETTLEMENT">Full / Final Settlement</option>
+                      <option value="PART_PAYMENT">Part Payment</option>
+                      <option value="ADVANCE">Advance</option>
+                    </select>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Internal Notes / Remarks
+                    </label>
+                    <input
+                      type="text"
+                      value={directPaymentForm.notes}
+                      onChange={(e) =>
+                        setDirectPaymentForm({
+                          ...directPaymentForm,
+                          notes: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. Direct cash payment for iron stand"
+                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowDirectPaymentModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    paymentSubmitting ||
+                    directPaymentForm.selectedItemIndexes.length === 0 ||
+                    !Number(directPaymentForm.amount)
+                  }
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  {paymentSubmitting ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Recording Payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4" />
+                      Record Payment (₹{Number(directPaymentForm.amount || 0).toLocaleString("en-IN")})
                     </>
                   )}
                 </button>
