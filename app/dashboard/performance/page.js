@@ -251,6 +251,7 @@ export default function PerformancePage() {
   // Raw fetched datasets
   const [leads, setLeads] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [quotations, setQuotations] = useState([]);
   const [payments, setPayments] = useState([]);
   const [followups, setFollowups] = useState([]);
   const [targetsData, setTargetsData] = useState(null);
@@ -304,11 +305,12 @@ export default function PerformancePage() {
               : "month";
 
         if (isSalesRole) {
-          // SALESPERSON — only own data. Backend already scopes /leads, /orders, /payments, /followups to OWN.
-          const [leadsRes, ordersRes, paymentsRes, followupsRes, myAchRes] =
+          // SALESPERSON — only own data. Backend already scopes /leads, /orders, /quotations, /payments, /followups to OWN.
+          const [leadsRes, ordersRes, quotesRes, paymentsRes, followupsRes, myAchRes] =
             await Promise.allSettled([
               api.get("/leads?limit=250"),
               api.get("/orders?limit=100"),
+              api.get("/quotations?limit=500"),
               api.get("/payments?limit=100"),
               api.get("/followups?limit=250"),
               api.get(
@@ -328,6 +330,14 @@ export default function PerformancePage() {
               Array.isArray(ordersRes.value.data)
                 ? ordersRes.value.data
                 : ordersRes.value.data.orders || [],
+            );
+          }
+          if (quotesRes.status === "fulfilled" && quotesRes.value?.data) {
+            const rawQ = quotesRes.value.data;
+            setQuotations(
+              Array.isArray(rawQ)
+                ? rawQ
+                : rawQ?.records || rawQ?.quotations || rawQ?.data || [],
             );
           }
           if (paymentsRes.status === "fulfilled" && paymentsRes.value?.data) {
@@ -352,6 +362,7 @@ export default function PerformancePage() {
           const [
             leadsRes,
             ordersRes,
+            quotesRes,
             paymentsRes,
             followupsRes,
             targetsRes,
@@ -360,6 +371,7 @@ export default function PerformancePage() {
           ] = await Promise.allSettled([
             api.get("/leads?limit=250"),
             api.get("/orders?limit=100"),
+            api.get("/quotations?limit=500"),
             api.get("/payments?limit=100"),
             api.get("/followups?limit=250"),
             api.get(
@@ -381,6 +393,14 @@ export default function PerformancePage() {
               Array.isArray(ordersRes.value.data)
                 ? ordersRes.value.data
                 : ordersRes.value.data.orders || [],
+            );
+          }
+          if (quotesRes.status === "fulfilled" && quotesRes.value?.data) {
+            const rawQ = quotesRes.value.data;
+            setQuotations(
+              Array.isArray(rawQ)
+                ? rawQ
+                : rawQ?.records || rawQ?.quotations || rawQ?.data || [],
             );
           }
           if (paymentsRes.status === "fulfilled" && paymentsRes.value?.data) {
@@ -519,29 +539,45 @@ export default function PerformancePage() {
     [convertedLeadsCount, prevConvertedCount, periodLabel],
   );
 
-  const totalOrdersCount = currentOrders.length;
+  const currentAcceptedQuotations = useMemo(() => {
+    return quotations.filter((q) => {
+      if (q.status !== "ACCEPTED") return false;
+      const d = new Date(q.acceptedAt || q.updatedAt || q.createdAt);
+      return d >= startCurrent && d <= endCurrent;
+    });
+  }, [quotations, startCurrent, endCurrent]);
+
+  const prevAcceptedQuotations = useMemo(() => {
+    return quotations.filter((q) => {
+      if (q.status !== "ACCEPTED") return false;
+      const d = new Date(q.acceptedAt || q.updatedAt || q.createdAt);
+      return d >= startPrev && d <= endPrev;
+    });
+  }, [quotations, startPrev, endPrev]);
+
+  const totalOrdersCount = currentAcceptedQuotations.length;
   const ordersTrend = useMemo(
-    () => calculateTrend(totalOrdersCount, prevOrders.length, periodLabel),
-    [totalOrdersCount, prevOrders.length, periodLabel],
+    () => calculateTrend(totalOrdersCount, prevAcceptedQuotations.length, periodLabel),
+    [totalOrdersCount, prevAcceptedQuotations.length, periodLabel],
   );
 
   const totalOrderValueRupees = useMemo(() => {
-    return currentOrders.reduce((sum, o) => {
-      const val = o.grandTotalPaise
-        ? o.grandTotalPaise / 100
-        : o.grandTotal || o.totalAmount || 0;
+    return currentAcceptedQuotations.reduce((sum, q) => {
+      const val = q.grandTotalPaise
+        ? q.grandTotalPaise / 100
+        : q.grandTotal || q.totalAmount || 0;
       return sum + val;
     }, 0);
-  }, [currentOrders]);
+  }, [currentAcceptedQuotations]);
 
   const prevOrderValueRupees = useMemo(() => {
-    return prevOrders.reduce((sum, o) => {
-      const val = o.grandTotalPaise
-        ? o.grandTotalPaise / 100
-        : o.grandTotal || o.totalAmount || 0;
+    return prevAcceptedQuotations.reduce((sum, q) => {
+      const val = q.grandTotalPaise
+        ? q.grandTotalPaise / 100
+        : q.grandTotal || q.totalAmount || 0;
       return sum + val;
     }, 0);
-  }, [prevOrders]);
+  }, [prevAcceptedQuotations]);
   const orderValueTrend = useMemo(
     () =>
       calculateTrend(totalOrderValueRupees, prevOrderValueRupees, periodLabel),
@@ -690,41 +726,48 @@ export default function PerformancePage() {
         ["WON", "ORDER_CREATED", "CLOSED_WON"].includes(l.status),
       ).length;
 
-      // Confirmed Orders
-      const repOrders = currentOrders.filter((o) => {
-        const repId = String(
-          o.salesRep?._id ||
-            o.salesRep ||
-            o.createdById?._id ||
-            o.createdById ||
-            "",
+      // Client-accepted quotations for this rep
+      const repLeadIdSet = new Set(repLeads.map((l) => String(l._id || l.id || "")));
+      const repPrevLeadIdSet = new Set(repPrevLeads.map((l) => String(l._id || l.id || "")));
+
+      const repAcceptedQuotes = currentAcceptedQuotations.filter((q) => {
+        const assignedId = String(
+          q.assignedSalesId?._id ||
+          q.assignedSalesId ||
+          q.salesRepId ||
+          q.createdById?._id ||
+          q.createdById ||
+          "",
         );
-        return repId === rep.id;
+        const quoteLeadId = String(q.leadId?._id || q.leadId || "");
+        return assignedId === rep.id || (quoteLeadId && repLeadIdSet.has(quoteLeadId));
       });
 
-      const repPrevOrders = prevOrders.filter((o) => {
-        const repId = String(
-          o.salesRep?._id ||
-            o.salesRep ||
-            o.createdById?._id ||
-            o.createdById ||
-            "",
+      const repPrevAcceptedQuotes = prevAcceptedQuotations.filter((q) => {
+        const assignedId = String(
+          q.assignedSalesId?._id ||
+          q.assignedSalesId ||
+          q.salesRepId ||
+          q.createdById?._id ||
+          q.createdById ||
+          "",
         );
-        return repId === rep.id;
+        const quoteLeadId = String(q.leadId?._id || q.leadId || "");
+        return assignedId === rep.id || (quoteLeadId && repPrevLeadIdSet.has(quoteLeadId));
       });
 
-      // Order value
-      const repOrderValue = repOrders.reduce((sum, o) => {
-        const val = o.grandTotalPaise
-          ? o.grandTotalPaise / 100
-          : o.grandTotal || o.totalAmount || 0;
+      // Total sales value from client accepted quotations
+      const repOrderValue = repAcceptedQuotes.reduce((sum, q) => {
+        const val = q.grandTotalPaise
+          ? q.grandTotalPaise / 100
+          : q.grandTotal || q.totalAmount || 0;
         return sum + val;
       }, 0);
 
-      const repPrevOrderValue = repPrevOrders.reduce((sum, o) => {
-        const val = o.grandTotalPaise
-          ? o.grandTotalPaise / 100
-          : o.grandTotal || o.totalAmount || 0;
+      const repPrevOrderValue = repPrevAcceptedQuotes.reduce((sum, q) => {
+        const val = q.grandTotalPaise
+          ? q.grandTotalPaise / 100
+          : q.grandTotal || q.totalAmount || 0;
         return sum + val;
       }, 0);
 
@@ -779,10 +822,10 @@ export default function PerformancePage() {
         ).text,
         convRate: convRateStr,
         convRateNum,
-        orders: repOrders.length,
+        orders: repAcceptedQuotes.length,
         ordersDelta: calculateTrend(
-          repOrders.length,
-          repPrevOrders.length,
+          repAcceptedQuotes.length,
+          repPrevAcceptedQuotes.length,
           periodLabel,
         ).text,
         orderValue: repOrderValue,
@@ -814,8 +857,8 @@ export default function PerformancePage() {
     usersList,
     currentLeads,
     prevLeads,
-    currentOrders,
-    prevOrders,
+    currentAcceptedQuotations,
+    prevAcceptedQuotations,
     currentPayments,
     periodLabel,
   ]);

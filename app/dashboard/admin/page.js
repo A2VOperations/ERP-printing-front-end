@@ -128,7 +128,7 @@ export default function AdminOverviewPage() {
         api.get("/auth/me"),
         api.get("/activities?limit=20", { silent: true }),
         api.get("/payments?limit=100", { silent: true }),
-        api.get("/quotations?limit=100", { silent: true }),
+        api.get("/quotations?limit=500", { silent: true }),
         api.get("/design-projects?limit=50", { silent: true }),
         api.get("/production-jobs?limit=50", { silent: true }),
       ]);
@@ -171,7 +171,11 @@ export default function AdminOverviewPage() {
         setPayments(paymentsRes.value.data);
       }
       if (quotationsRes.status === "fulfilled" && quotationsRes.value?.data) {
-        setQuotations(quotationsRes.value.data);
+        const rawQ = quotationsRes.value.data;
+        const list = Array.isArray(rawQ)
+          ? rawQ
+          : rawQ?.records || rawQ?.quotations || rawQ?.data || [];
+        setQuotations(list);
       }
       if (
         designProjectsRes.status === "fulfilled" &&
@@ -704,44 +708,45 @@ export default function AdminOverviewPage() {
         effectiveLeads.map((l) => extractId(l._id || l.id)),
       );
 
-      // Filter orders belonging to this sales rep (by assignedSalesId, salesRepId, createdBy, or linked leadId)
-      const userOrders = orders.filter((o) => {
+      // Filter accepted quotations belonging to this sales rep (by assignedSalesId, createdBy, or linked leadId)
+      const userQuotations = quotations.filter((q) => {
+        if (q.status !== "ACCEPTED") return false;
         const repId =
-          extractId(o.assignedSalesId) ||
-          extractId(o.salesRepId) ||
-          extractId(o.salesExecutiveId);
+          extractId(q.assignedSalesId) ||
+          extractId(q.salesRepId) ||
+          extractId(q.salesExecutiveId);
         const repName =
-          extractName(o.assignedSalesId) ||
-          extractName(o.salesRep);
-        const createdById = extractId(o.createdBy);
-        const orderLeadId = extractId(o.leadId);
+          extractName(q.assignedSalesId) ||
+          extractName(q.salesRep);
+        const createdById = extractId(q.createdById) || extractId(q.createdBy);
+        const quoteLeadId = extractId(q.leadId);
 
         return (
           (repId && repId === uIdStr) ||
           (repName &&
             (repName === uNameStr || repName.includes(uNameStr))) ||
           (createdById && createdById === uIdStr) ||
-          (orderLeadId && userLeadIdSet.has(orderLeadId))
+          (quoteLeadId && userLeadIdSet.has(quoteLeadId))
         );
       });
 
-      const effectiveOrders =
-        userOrders.length > 0
-          ? userOrders
-          : salesUsers.length === 1 && orders.length > 0
-            ? orders
+      const effectiveQuotations =
+        userQuotations.length > 0
+          ? userQuotations
+          : salesUsers.length === 1 && quotations.filter((q) => q.status === "ACCEPTED").length > 0
+            ? quotations.filter((q) => q.status === "ACCEPTED")
             : [];
 
-      // Calculate revenue specifically earned by this sales rep
-      const userRevenue = effectiveOrders.reduce((sum, o) => {
-        const val = o.grandTotalPaise
-          ? o.grandTotalPaise / 100
-          : o.grandTotal || o.totalAmount || 0;
+      // Calculate revenue specifically earned by this sales rep from accepted quotations
+      const userRevenue = effectiveQuotations.reduce((sum, q) => {
+        const val = q.grandTotalPaise
+          ? q.grandTotalPaise / 100
+          : q.grandTotal || q.totalAmount || 0;
         return sum + Number(val || 0);
       }, 0);
 
       const leadsCount = effectiveLeads.length;
-      const ordersCount = effectiveOrders.length;
+      const ordersCount = effectiveQuotations.length;
       const conversionRate =
         leadsCount > 0 ? Math.round((ordersCount / leadsCount) * 100) : 0;
 
@@ -769,7 +774,7 @@ export default function AdminOverviewPage() {
         conversion: conversionRate,
       };
     });
-  }, [users, leads, orders]);
+  }, [users, leads, orders, quotations]);
 
   const designTeamMembers = useMemo(() => {
     const extractId = (val) => {

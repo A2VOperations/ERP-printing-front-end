@@ -83,7 +83,7 @@ export default function SalesReportPage() {
       setLoading(true);
       const [quoteRes, orderRes, payRes, leadRes, leaderRes] =
         await Promise.allSettled([
-          api.get("/quotations?limit=200"),
+          api.get("/quotations?limit=500"),
           api.get("/orders?limit=200"),
           api.get("/payments?limit=200"),
           api.get("/leads?limit=200"),
@@ -91,10 +91,11 @@ export default function SalesReportPage() {
         ]);
 
       if (quoteRes.status === "fulfilled" && quoteRes.value?.data) {
+        const rawQ = quoteRes.value.data;
         setQuotations(
-          Array.isArray(quoteRes.value.data)
-            ? quoteRes.value.data
-            : quoteRes.value.data.items || [],
+          Array.isArray(rawQ)
+            ? rawQ
+            : rawQ.records || rawQ.quotations || rawQ.items || [],
         );
       }
       if (orderRes.status === "fulfilled" && orderRes.value?.data) {
@@ -192,29 +193,21 @@ export default function SalesReportPage() {
     );
   }, [filteredQuotations]);
 
-  const confirmedOrders = useMemo(() => {
-    return filteredOrders.filter((o) =>
-      [
-        "CONFIRMED",
-        "AWAITING_ADVANCE",
-        "IN_PRODUCTION",
-        "COMPLETED",
-        "DELIVERED",
-      ].includes(o.orderStatus),
-    );
-  }, [filteredOrders]);
+  const acceptedQuotations = useMemo(() => {
+    return filteredQuotations.filter((q) => q.status === "ACCEPTED");
+  }, [filteredQuotations]);
 
   const totalOrderValueRupees = useMemo(() => {
     return (
-      confirmedOrders.reduce(
-        (sum, o) =>
+      acceptedQuotations.reduce(
+        (sum, q) =>
           sum +
-          (o.grandTotalPaise ||
-            (o.grandTotal ? Math.round(o.grandTotal * 100) : 0)),
+          (q.grandTotalPaise ||
+            (q.grandTotal ? Math.round(q.grandTotal * 100) : 0)),
         0,
       ) / 100
     );
-  }, [confirmedOrders]);
+  }, [acceptedQuotations]);
 
   const totalCollectionRupees = useMemo(() => {
     return (
@@ -231,7 +224,7 @@ export default function SalesReportPage() {
     return Math.round(totalOrderValueRupees * 0.28);
   }, [totalOrderValueRupees]);
 
-  const ordersCount = confirmedOrders.length;
+  const ordersCount = acceptedQuotations.length;
 
   // Source Distribution from real leads
   const sourceDistribution = useMemo(() => {
@@ -421,7 +414,7 @@ export default function SalesReportPage() {
             <div className="bg-white rounded-md p-4 border border-slate-200 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-semibold text-slate-500">
-                  Total Order Value
+                  Total Sales (Approved Quotes)
                 </span>
                 <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <ShoppingBag className="w-3.5 h-3.5" />
@@ -432,7 +425,7 @@ export default function SalesReportPage() {
                   ₹{Math.round(totalOrderValueRupees).toLocaleString("en-IN")}
                 </div>
                 <div className="text-[10px] font-bold text-emerald-600 mt-0.5">
-                  {ordersCount} confirmed orders
+                  {ordersCount} accepted quotations
                 </div>
               </div>
             </div>

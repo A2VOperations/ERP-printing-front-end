@@ -608,18 +608,23 @@ export default function SalesDashboardPage() {
     };
   }, [filteredLeads, leads]);
 
-  // Real Target progress calculation
-  const totalSalesFromOrdersRupees = useMemo(() => {
+  // Real Target progress calculation (Client-Approved / Accepted Quotations)
+  const acceptedQuotations = useMemo(() => {
+    return filteredQuotations.filter((q) => q.status === "ACCEPTED");
+  }, [filteredQuotations]);
+
+  const totalSalesFromQuotationsRupees = useMemo(() => {
     return (
-      confirmedOrders.reduce(
-        (sum, o) =>
+      acceptedQuotations.reduce(
+        (sum, q) =>
           sum +
-          (o.grandTotalPaise ||
-            (o.grandTotal ? Math.round(o.grandTotal * 100) : 0)),
+          (q.grandTotalPaise !== undefined && q.grandTotalPaise !== null
+            ? q.grandTotalPaise
+            : (q.grandTotal ? Math.round(q.grandTotal * 100) : 0)),
         0,
       ) / 100
     );
-  }, [confirmedOrders]);
+  }, [acceptedQuotations]);
 
   const targetRupees = useMemo(() => {
     if (targetProgress?.targetPaise) return targetProgress.targetPaise / 100;
@@ -642,8 +647,8 @@ export default function SalesDashboardPage() {
     ) {
       return targetProgress.achieved;
     }
-    return totalSalesFromOrdersRupees;
-  }, [targetProgress, totalSalesFromOrdersRupees]);
+    return totalSalesFromQuotationsRupees;
+  }, [targetProgress, totalSalesFromQuotationsRupees]);
 
   const targetPercent = useMemo(() => {
     if (targetRupees > 0) {

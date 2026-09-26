@@ -107,7 +107,7 @@ export default function DashboardPage() {
         api.get("/leads/stats", { silent: true }),
         api.get("/activities?limit=20", { silent: true }),
         api.get("/payments?limit=100", { silent: true }),
-        api.get("/quotations?limit=100", { silent: true }),
+        api.get("/quotations?limit=500", { silent: true }),
         api.get("/design-projects?limit=50", { silent: true }),
         api.get("/production-jobs?limit=50", { silent: true }),
         api.get("/health", { silent: true }),
@@ -132,7 +132,9 @@ export default function DashboardPage() {
         setPayments(paymentsRes.value.data);
       }
       if (quotationsRes.status === "fulfilled" && quotationsRes.value?.data) {
-        setQuotations(quotationsRes.value.data);
+        const rawQ = quotationsRes.value.data;
+        const listQ = Array.isArray(rawQ) ? rawQ : rawQ.records || rawQ.items || [];
+        setQuotations(listQ);
       }
       if (
         designProjectsRes.status === "fulfilled" &&
@@ -302,23 +304,37 @@ export default function DashboardPage() {
     return "Evening";
   }, []);
 
-  // 2. Dynamic Sales & Orders Metrics
+  // 2. Dynamic Sales Metrics (Calculated from Client-Approved / Accepted Quotations)
+  const acceptedQuotations = useMemo(() => {
+    const list = Array.isArray(quotations)
+      ? quotations
+      : quotations?.items || quotations?.records || [];
+    return list.filter((q) => q.status === "ACCEPTED");
+  }, [quotations]);
+
   const totalSalesRupees = useMemo(() => {
-    return orders.reduce((sum, o) => {
-      const val = o.grandTotalPaise
-        ? o.grandTotalPaise / 100
-        : o.grandTotal || o.totalAmount || 0;
+    return acceptedQuotations.reduce((sum, q) => {
+      const val =
+        q.grandTotalPaise !== undefined && q.grandTotalPaise !== null
+          ? q.grandTotalPaise / 100
+          : q.grandTotal || q.totalAmount || 0;
       return sum + Number(val || 0);
     }, 0);
-  }, [orders]);
+  }, [acceptedQuotations]);
+
+  const acceptedQuotationsCount = useMemo(() => {
+    return acceptedQuotations.length;
+  }, [acceptedQuotations]);
 
   const ordersCount = useMemo(() => {
     return orders.filter((o) => o.orderStatus !== "CANCELLED").length;
   }, [orders]);
 
   const avgDealSize = useMemo(() => {
-    return ordersCount > 0 ? totalSalesRupees / ordersCount : 0;
-  }, [totalSalesRupees, ordersCount]);
+    return acceptedQuotationsCount > 0
+      ? totalSalesRupees / acceptedQuotationsCount
+      : 0;
+  }, [totalSalesRupees, acceptedQuotationsCount]);
 
   // Target values from targets collection
   const targetRupees = useMemo(() => {
@@ -690,16 +706,16 @@ export default function DashboardPage() {
           59,
           999,
         );
-        const dayOrders = orders.filter((o) => {
-          const od = new Date(o.orderDate || o.createdAt);
-          return od >= dayStart && od <= dayEnd;
+        const dayQuotes = acceptedQuotations.filter((q) => {
+          const qd = new Date(q.acceptedAt || q.updatedAt || q.createdAt);
+          return qd >= dayStart && qd <= dayEnd;
         });
-        const sales = dayOrders.reduce(
-          (sum, o) =>
+        const sales = dayQuotes.reduce(
+          (sum, q) =>
             sum +
-            (o.grandTotalPaise
-              ? o.grandTotalPaise / 100
-              : o.grandTotal || 0),
+            (q.grandTotalPaise !== undefined && q.grandTotalPaise !== null
+              ? q.grandTotalPaise / 100
+              : q.grandTotal || q.totalAmount || 0),
           0,
         );
         buckets.push({ label, sales, expense: Math.round(sales * 0.3646) });
@@ -718,16 +734,16 @@ export default function DashboardPage() {
           59,
           999,
         );
-        const mOrders = orders.filter((o) => {
-          const od = new Date(o.orderDate || o.createdAt);
-          return od >= mStart && od <= mEnd;
+        const mQuotes = acceptedQuotations.filter((q) => {
+          const qd = new Date(q.acceptedAt || q.updatedAt || q.createdAt);
+          return qd >= mStart && qd <= mEnd;
         });
-        const sales = mOrders.reduce(
-          (sum, o) =>
+        const sales = mQuotes.reduce(
+          (sum, q) =>
             sum +
-            (o.grandTotalPaise
-              ? o.grandTotalPaise / 100
-              : o.grandTotal || 0),
+            (q.grandTotalPaise !== undefined && q.grandTotalPaise !== null
+              ? q.grandTotalPaise / 100
+              : q.grandTotal || q.totalAmount || 0),
           0,
         );
         buckets.push({ label, sales, expense: Math.round(sales * 0.3646) });
@@ -752,16 +768,16 @@ export default function DashboardPage() {
           59,
           999,
         );
-        const cumOrders = orders.filter((o) => {
-          const od = new Date(o.orderDate || o.createdAt);
-          return od <= cutoffDate;
+        const cumQuotes = acceptedQuotations.filter((q) => {
+          const qd = new Date(q.acceptedAt || q.updatedAt || q.createdAt);
+          return qd <= cutoffDate;
         });
-        const sales = cumOrders.reduce(
-          (sum, o) =>
+        const sales = cumQuotes.reduce(
+          (sum, q) =>
             sum +
-            (o.grandTotalPaise
-              ? o.grandTotalPaise / 100
-              : o.grandTotal || 0),
+            (q.grandTotalPaise !== undefined && q.grandTotalPaise !== null
+              ? q.grandTotalPaise / 100
+              : q.grandTotal || q.totalAmount || 0),
           0,
         );
         buckets.push({ label, sales, expense: Math.round(sales * 0.3646) });
@@ -812,7 +828,7 @@ export default function DashboardPage() {
       lastRevY,
       lastExpY,
     };
-  }, [financialTab, orders, daysInCurrentMonth, totalSalesRupees]);
+  }, [financialTab, acceptedQuotations, daysInCurrentMonth, totalSalesRupees]);
 
   // 8. Dynamic Production & Deals Activity Feed
   const displayActivities = useMemo(() => {
@@ -1103,9 +1119,14 @@ export default function DashboardPage() {
                 {/* Card 1: TOTAL SALES */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      TOTAL SALES
-                    </span>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                        TOTAL SALES
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-bold block">
+                        Quotation Approved (Client Accepted)
+                      </span>
+                    </div>
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center">
                       <DollarSign className="w-4 h-4" />
                     </div>
@@ -1118,7 +1139,7 @@ export default function DashboardPage() {
                       <span className="text-emerald-600 font-semibold flex items-center gap-1">
                         ↑ {targetPercent}% of {targetRupees >= 100000 ? `₹${(targetRupees / 100000).toFixed(2)}L` : targetRupees > 0 ? `₹${targetRupees.toLocaleString("en-IN")}` : "Quota"}
                       </span>
-                      <span className="text-slate-400 font-medium">Target</span>
+                      <span className="text-slate-400 font-medium">{acceptedQuotationsCount} Accepted</span>
                     </div>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between">

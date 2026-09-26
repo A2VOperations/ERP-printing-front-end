@@ -87,7 +87,7 @@ export default function ManagerDashboardPage() {
       ] = await Promise.allSettled([
         api.get("/leads?limit=100"),
         api.get("/followups?limit=100"),
-        api.get("/quotations?limit=100"),
+        api.get("/quotations?limit=500"),
         api.get("/discount-approvals?status=PENDING"),
         api.get("/orders?limit=100"),
         api.get("/receivables/summary"),
@@ -110,9 +110,10 @@ export default function ManagerDashboardPage() {
         setFollowups(list);
       }
       if (quoteRes.status === "fulfilled" && quoteRes.value?.data) {
-        const list = Array.isArray(quoteRes.value.data)
-          ? quoteRes.value.data
-          : quoteRes.value.data?.records || [];
+        const rawQuote = quoteRes.value.data;
+        const list = Array.isArray(rawQuote)
+          ? rawQuote
+          : rawQuote?.records || rawQuote?.quotations || rawQuote?.data || [];
         setQuotations(list);
       }
       if (apprRes.status === "fulfilled" && apprRes.value?.data) {
@@ -295,15 +296,20 @@ export default function ManagerDashboardPage() {
     };
   }, [leads]);
 
-  // Target values
+  // Target values (calculated from client-accepted quotations)
+  const acceptedQuotations = useMemo(
+    () => quotations.filter((q) => q.status === "ACCEPTED"),
+    [quotations],
+  );
+
   const totalRevenuePaise = useMemo(
     () =>
-      orders.reduce(
-        (sum, o) =>
-          sum + (o.grandTotalPaise || (o.grandTotal ? o.grandTotal * 100 : 0)),
+      acceptedQuotations.reduce(
+        (sum, q) =>
+          sum + (q.grandTotalPaise || (q.grandTotal ? Math.round(q.grandTotal * 100) : 0)),
         0,
       ),
-    [orders],
+    [acceptedQuotations],
   );
   const targetRupees = teamTarget?.targetPaise
     ? teamTarget.targetPaise / 100
