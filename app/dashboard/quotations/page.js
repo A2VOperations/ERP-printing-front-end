@@ -616,35 +616,72 @@ function QuotationsContent() {
     }
   };
 
-  // Open Direct Quotation Payment Modal (Pay directly for products/hardware)
-  const handleOpenDirectPaymentModal = (targetQuote = selectedQuote) => {
-    if (!targetQuote) return;
-    const items = targetQuote.items || [];
-    // Default select unpaid direct items (or items where directPaymentStatus !== 'PAID')
-    const unpaidIndexes = items
-      .map((it, idx) => idx)
-      .filter((idx) => items[idx].directPaymentStatus !== "PAID");
-    const initialSelected =
-      unpaidIndexes.length > 0 ? unpaidIndexes : items.map((_, idx) => idx);
+  // Toggle Item Selection in Direct Payment Modal
+  const handleToggleDirectItem = (idx) => {
+    const targetIdx = Number(idx);
+    const current = (directPaymentForm.selectedItemIndexes || []).map(Number);
+    const next = current.includes(targetIdx)
+      ? current.filter((i) => i !== targetIdx)
+      : [...current, targetIdx];
 
-    // Sum remaining unpaid for selected items
-    const selectedTotal = initialSelected.reduce((sum, idx) => {
-      const it = items[idx];
-      const itemPrice = (it?.itemTotalPaise || 0) / 100;
-      const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
-      return sum + Math.max(0, itemPrice - alreadyPaid);
+    const newTotal = next.reduce((sum, itemIdx) => {
+      const itemObj = selectedQuote?.items?.[itemIdx];
+      const price = (itemObj?.itemTotalPaise || 0) / 100;
+      const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
+      return sum + Math.max(0, price - paid);
     }, 0);
 
-    setDirectPaymentForm({
-      selectedItemIndexes: initialSelected,
-      amount:
+    setDirectPaymentForm((prev) => ({
+      ...prev,
+      selectedItemIndexes: next,
+      amount: newTotal > 0 ? newTotal.toFixed(2) : "0",
+    }));
+  };
+
+  // Open Direct Quotation Payment Modal (Pay directly for products/hardware)
+  const handleOpenDirectPaymentModal = (targetQuote = selectedQuote, specificItemIndex = null) => {
+    if (!targetQuote) return;
+    const items = targetQuote.items || [];
+    let initialSelected = [];
+    let initialAmount = "0";
+
+    if (specificItemIndex !== null && specificItemIndex !== undefined) {
+      const sIdx = Number(specificItemIndex);
+      initialSelected = [sIdx];
+      const itemObj = items[sIdx];
+      const price = (itemObj?.itemTotalPaise || 0) / 100;
+      const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
+      const rem = Math.max(0, price - paid);
+      initialAmount = rem > 0 ? rem.toFixed(2) : (price || 0).toFixed(2);
+    } else {
+      // Default select unpaid direct items (or items where directPaymentStatus !== 'PAID')
+      const unpaidIndexes = items
+        .map((it, idx) => idx)
+        .filter((idx) => items[idx].directPaymentStatus !== "PAID");
+      initialSelected =
+        unpaidIndexes.length > 0 ? unpaidIndexes : items.map((_, idx) => idx);
+
+      // Sum remaining unpaid for selected items
+      const selectedTotal = initialSelected.reduce((sum, idx) => {
+        const it = items[idx];
+        const itemPrice = (it?.itemTotalPaise || 0) / 100;
+        const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
+        return sum + Math.max(0, itemPrice - alreadyPaid);
+      }, 0);
+
+      initialAmount =
         selectedTotal > 0
           ? selectedTotal.toFixed(2)
           : (
               (targetQuote.directBalancePaise !== undefined
                 ? targetQuote.directBalancePaise
                 : targetQuote.grandTotalPaise || 0) / 100
-            ).toFixed(2),
+            ).toFixed(2);
+    }
+
+    setDirectPaymentForm({
+      selectedItemIndexes: initialSelected,
+      amount: initialAmount,
       paymentMethod: "CASH",
       paymentType: "FINAL_SETTLEMENT",
       transactionReference: "",
@@ -1327,27 +1364,35 @@ function QuotationsContent() {
                             Quotation Sent to Client
                           </strong>
                           <span className="text-[11px] text-blue-800">
-                            Awaiting client response. Record acceptance to
-                            convert into an active order.
+                            Awaiting client response. You can record direct payment for products (no order) or convert custom items to an order for designers.
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                          title="Record payment directly for products (iron, hardware) without creating orders or sending to designers"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          💳 Pay Directly (Products - No Order)
+                        </button>
                         <button
                           onClick={() =>
                             handleMarkClientAccepted(selectedQuote)
                           }
                           disabled={actionLoading}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
+                          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                          title="Convert items that need design/fabrication into orders and assign to designers"
                         >
-                          <Check className="w-4 h-4" />✓ Client Accepted
-                          (Convert to Order)
+                          <Layers className="w-4 h-4" />
+                          Convert Items to Order (Designers)
                         </button>
                         <button
                           onClick={() => handleMarkNotAccepted(selectedQuote)}
                           disabled={actionLoading}
-                          className="px-3.5 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs transition-all flex items-center gap-1"
+                          className="px-3 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
                         >
                           <X className="w-4 h-4" />✕ Not Accepted
                         </button>
@@ -1544,6 +1589,7 @@ function QuotationsContent() {
                             </th>
                             <th className="py-3 px-3 text-right">TAX (₹)</th>
                             <th className="py-3 px-4 text-right">TOTAL (₹)</th>
+                            <th className="py-3 px-3 text-center">ACTION</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1686,6 +1732,23 @@ function QuotationsContent() {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
+                                </td>
+                                <td className="py-3 px-3 text-center whitespace-nowrap">
+                                  {item.directPaymentStatus === "PAID" ? (
+                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                      ✓ Paid
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDirectPaymentModal(selectedQuote, idx)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition-all cursor-pointer"
+                                      title="Pay directly for this specific item without creating an order or assigning to a designer"
+                                    >
+                                      <CreditCard className="w-3 h-3" />
+                                      Pay Direct
+                                    </button>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -3180,7 +3243,7 @@ function QuotationsContent() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Pay directly for items (e.g. iron, hardware, materials) without sending them to designers or creating production orders.
+                    Pay directly for items (e.g. iron rod, hardware, materials) without sending them to designers or creating production orders.
                   </p>
                 </div>
               </div>
@@ -3190,6 +3253,21 @@ function QuotationsContent() {
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            {/* Informative Notice */}
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
+              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                <Check className="w-4 h-4 font-bold" />
+              </div>
+              <div className="text-xs">
+                <strong className="block font-bold text-emerald-950">
+                  Direct Payment Flow (Quotation → Payment Only)
+                </strong>
+                <p className="text-emerald-800 text-[11px] mt-0.5 leading-relaxed">
+                  Items selected below will be settled directly. They will <strong>NOT</strong> create an order and will <strong>NOT</strong> be sent to any designer or production queue.
+                </p>
+              </div>
             </div>
 
             <form onSubmit={handleRecordDirectPayment} className="space-y-6">
@@ -3244,7 +3322,9 @@ function QuotationsContent() {
 
                 <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
                   {(selectedQuote.items || []).map((it, idx) => {
-                    const isSelected = directPaymentForm.selectedItemIndexes.includes(idx);
+                    const isSelected = (directPaymentForm.selectedItemIndexes || [])
+                      .map(Number)
+                      .includes(Number(idx));
                     const itemTotal = (it.itemTotalPaise || 0) / 100;
                     const alreadyPaid = (it.directPaymentPaidPaise || 0) / 100;
                     const remainingItemPayable = Math.max(0, itemTotal - alreadyPaid);
@@ -3253,45 +3333,36 @@ function QuotationsContent() {
                     return (
                       <div
                         key={idx}
-                        onClick={() => {
-                          const current = directPaymentForm.selectedItemIndexes;
-                          const next = current.includes(idx)
-                            ? current.filter((i) => i !== idx)
-                            : [...current, idx];
-
-                          const newTotal = next.reduce((sum, itemIdx) => {
-                            const itemObj = selectedQuote.items[itemIdx];
-                            const price = (itemObj?.itemTotalPaise || 0) / 100;
-                            const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
-                            return sum + Math.max(0, price - paid);
-                          }, 0);
-
-                          setDirectPaymentForm({
-                            ...directPaymentForm,
-                            selectedItemIndexes: next,
-                            amount: newTotal > 0 ? newTotal.toFixed(2) : "0",
-                          });
-                        }}
+                        onClick={() => handleToggleDirectItem(idx)}
                         className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           isSelected
-                            ? "bg-emerald-50/70 border-emerald-300 shadow-2xs"
+                            ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/20 shadow-xs"
                             : "bg-white border-slate-200 hover:border-slate-300"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <input
                             type="checkbox"
+                            id={`direct-chk-${idx}`}
                             checked={isSelected}
-                            onChange={() => {}} // handled by parent div
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 pointer-events-none"
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleToggleDirectItem(idx);
+                            }}
+                            className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
                           />
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-xs text-slate-900">
                                 {it.title || "Quotation Item"}
                               </span>
+                              {isSelected && (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white">
+                                  ✓ Selected for Direct Payment
+                                </span>
+                              )}
                               {isFullyPaid ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                   ✓ Fully Paid Directly
                                 </span>
                               ) : it.directPaymentStatus === "PARTIALLY_PAID" ? (
@@ -3362,12 +3433,99 @@ function QuotationsContent() {
                   </h4>
                 </div>
 
+                {/* Payment Type Selection (Advance / Part / Full Settlement) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Payment Category
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {[
+                      { id: "ADVANCE", label: "Advance Payment", desc: "Token / Deposit payment" },
+                      { id: "PART_PAYMENT", label: "Part Payment", desc: "Partial milestone installment" },
+                      { id: "FINAL_SETTLEMENT", label: "Full Settlement", desc: "100% total balance" },
+                    ].map((pt) => {
+                      const isChosen = directPaymentForm.paymentType === pt.id;
+                      return (
+                        <button
+                          key={pt.id}
+                          type="button"
+                          onClick={() => {
+                            const selSum = (directPaymentForm.selectedItemIndexes || []).reduce((sum, idx) => {
+                              const it = selectedQuote?.items?.[idx];
+                              const price = (it?.itemTotalPaise || 0) / 100;
+                              const paid = (it?.directPaymentPaidPaise || 0) / 100;
+                              return sum + Math.max(0, price - paid);
+                            }, 0);
+                            let newAmt = directPaymentForm.amount;
+                            if (pt.id === "FINAL_SETTLEMENT") {
+                              newAmt = selSum > 0 ? selSum.toFixed(2) : "0";
+                            } else if (pt.id === "ADVANCE" && (!Number(newAmt) || Number(newAmt) === selSum)) {
+                              newAmt = (selSum * 0.5).toFixed(2);
+                            }
+                            setDirectPaymentForm({
+                              ...directPaymentForm,
+                              paymentType: pt.id,
+                              amount: newAmt,
+                            });
+                          }}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                            isChosen
+                              ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20"
+                              : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="font-bold text-xs text-slate-900">{pt.label}</div>
+                          <div className="text-[10px] text-slate-500 mt-0.5">{pt.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Amount */}
+                  {/* Amount with Quick Percentages */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Payment Amount (₹) <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-slate-700">
+                        Payment Amount (₹) <span className="text-red-500">*</span>
+                      </label>
+                      {directPaymentForm.selectedItemIndexes.length > 0 && (() => {
+                        const selSum = directPaymentForm.selectedItemIndexes.reduce((sum, idx) => {
+                          const it = selectedQuote.items[idx];
+                          const price = (it?.itemTotalPaise || 0) / 100;
+                          const paid = (it?.directPaymentPaidPaise || 0) / 100;
+                          return sum + Math.max(0, price - paid);
+                        }, 0);
+                        return (
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDirectPaymentForm({
+                                  ...directPaymentForm,
+                                  amount: (selSum * 0.5).toFixed(2),
+                                })
+                              }
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
+                            >
+                              50%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDirectPaymentForm({
+                                  ...directPaymentForm,
+                                  amount: selSum.toFixed(2),
+                                })
+                              }
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer"
+                            >
+                              100%
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
                         ₹
@@ -3476,29 +3634,8 @@ function QuotationsContent() {
                     </>
                   )}
 
-                  {/* Payment Type */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Payment Type
-                    </label>
-                    <select
-                      value={directPaymentForm.paymentType}
-                      onChange={(e) =>
-                        setDirectPaymentForm({
-                          ...directPaymentForm,
-                          paymentType: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
-                    >
-                      <option value="FINAL_SETTLEMENT">Full / Final Settlement</option>
-                      <option value="PART_PAYMENT">Part Payment</option>
-                      <option value="ADVANCE">Advance</option>
-                    </select>
-                  </div>
-
                   {/* Notes */}
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Internal Notes / Remarks
                     </label>
@@ -3511,7 +3648,7 @@ function QuotationsContent() {
                           notes: e.target.value,
                         })
                       }
-                      placeholder="e.g. Direct cash payment for iron stand"
+                      placeholder="e.g. Direct payment for iron rod (no order / no design)"
                       className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
                     />
                   </div>
@@ -3544,7 +3681,7 @@ function QuotationsContent() {
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4" />
-                      Record Payment (₹{Number(directPaymentForm.amount || 0).toLocaleString("en-IN")})
+                      Record Direct Payment (₹{Number(directPaymentForm.amount || 0).toLocaleString("en-IN")}) — No Order Created
                     </>
                   )}
                 </button>

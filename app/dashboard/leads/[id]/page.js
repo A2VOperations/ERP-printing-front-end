@@ -149,6 +149,8 @@ export default function LeadDetailPage() {
     chequeDate: "",
     quotationId: "",
     orderId: "",
+    selectedItemIndexes: [],
+    isDirectQuotationPayment: false,
     notes: "",
   });
 
@@ -1025,7 +1027,9 @@ export default function LeadDetailPage() {
         leadId,
         customerId: lead?.customerId?._id || lead?.customerId || undefined,
         quotationId: paymentForm.quotationId || undefined,
-        orderId: paymentForm.orderId || undefined,
+        orderId: paymentForm.isDirectQuotationPayment ? undefined : (paymentForm.orderId || undefined),
+        isDirectQuotationPayment: Boolean(paymentForm.isDirectQuotationPayment),
+        selectedItemIndexes: paymentForm.selectedItemIndexes && paymentForm.selectedItemIndexes.length > 0 ? paymentForm.selectedItemIndexes : undefined,
         amount: amountNum,
         paymentType: "ADVANCE",
         paymentMethod: paymentForm.paymentMethod,
@@ -1046,6 +1050,8 @@ export default function LeadDetailPage() {
         chequeDate: "",
         quotationId: "",
         orderId: "",
+        selectedItemIndexes: [],
+        isDirectQuotationPayment: false,
         notes: "",
       });
       await loadLeadDetails();
@@ -5666,7 +5672,7 @@ export default function LeadDetailPage() {
 
               {/* Order / Quotation Linking */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {orders.length > 0 && (
+                {orders.length > 0 && !paymentForm.isDirectQuotationPayment && (
                   <div>
                     <label className="text-slate-700 font-semibold block mb-1">
                       Link to Order
@@ -5697,18 +5703,24 @@ export default function LeadDetailPage() {
                 )}
 
                 {quotations.length > 0 && (
-                  <div>
+                  <div className={orders.length > 0 && !paymentForm.isDirectQuotationPayment ? "" : "md:col-span-2"}>
                     <label className="text-slate-700 font-semibold block mb-1">
                       Link to Quotation
                     </label>
                     <select
                       value={paymentForm.quotationId}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const qId = e.target.value;
+                        const quoteObj = quotations.find((q) => q._id === qId);
+                        const items = quoteObj?.items || [];
                         setPaymentForm({
                           ...paymentForm,
-                          quotationId: e.target.value,
-                        })
-                      }
+                          quotationId: qId,
+                          selectedItemIndexes: items.map((_, i) => i),
+                          isDirectQuotationPayment: qId ? true : false,
+                          orderId: qId ? "" : paymentForm.orderId,
+                        });
+                      }}
                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
                     >
                       <option value="">-- No specific quote --</option>
@@ -5725,6 +5737,77 @@ export default function LeadDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* Direct Quotation Item Selection (No Order / No Designer) */}
+              {paymentForm.quotationId && (() => {
+                const chosenQuote = quotations.find((q) => q._id === paymentForm.quotationId);
+                const qItems = chosenQuote?.items || [];
+                if (qItems.length === 0) return null;
+
+                return (
+                  <div className="space-y-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          id="lead-direct-quote-toggle"
+                          checked={paymentForm.isDirectQuotationPayment}
+                          onChange={(e) =>
+                            setPaymentForm({
+                              ...paymentForm,
+                              isDirectQuotationPayment: e.target.checked,
+                              orderId: e.target.checked ? "" : paymentForm.orderId,
+                            })
+                          }
+                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                        />
+                        <label htmlFor="lead-direct-quote-toggle" className="text-xs font-bold text-emerald-950 cursor-pointer">
+                          Direct Payment for Product Items (Do NOT Create Order)
+                        </label>
+                      </div>
+                      <span className="text-[10px] text-emerald-800 font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">
+                        Quotation → Payment Only
+                      </span>
+                    </div>
+
+                    {paymentForm.isDirectQuotationPayment && (
+                      <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
+                        {qItems.map((it, idx) => {
+                          const isSel = (paymentForm.selectedItemIndexes || []).map(Number).includes(Number(idx));
+                          const itTot = (it.itemTotalPaise || 0) / 100;
+                          return (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                const cur = (paymentForm.selectedItemIndexes || []).map(Number);
+                                const next = cur.includes(idx) ? cur.filter((i) => i !== idx) : [...cur, idx];
+                                setPaymentForm({
+                                  ...paymentForm,
+                                  selectedItemIndexes: next,
+                                });
+                              }}
+                              className={`p-2 rounded-xl border flex items-center justify-between text-xs cursor-pointer ${
+                                isSel ? "bg-white border-emerald-400 font-bold shadow-2xs" : "bg-white/60 border-slate-200 text-slate-600"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isSel}
+                                  onChange={() => {}}
+                                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                                />
+                                <span>{it.title || `Item #${idx + 1}`}</span>
+                              </div>
+                              <span className="font-mono text-emerald-800">₹{itTot.toLocaleString("en-IN")}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="text-slate-700 font-semibold block mb-1">
