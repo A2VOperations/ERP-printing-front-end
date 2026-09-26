@@ -88,18 +88,28 @@ export default function PaymentsPage() {
     userRole === "SALES" || userRole === "SALES_REP" || userRole === "DESIGNER";
   const canVerifyPayment = !isSalesOnly;
 
+  const [loadError, setLoadError] = useState(null);
+
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const res = await api.get("/payments?limit=100");
       if (res && res.data) {
         const list = Array.isArray(res.data)
           ? res.data
-          : res.data.records || [];
+          : res.data.records || res.data.items || [];
         setPayments(list);
+      } else if (Array.isArray(res)) {
+        setPayments(res);
+      } else if (Array.isArray(res?.items)) {
+        setPayments(res.items);
+      } else if (Array.isArray(res?.records)) {
+        setPayments(res.records);
       }
     } catch (err) {
       console.error("Failed to load payments:", err);
+      setLoadError(err.message || "Failed to load payments");
     } finally {
       setLoading(false);
     }
@@ -550,6 +560,22 @@ export default function PaymentsPage() {
                         </tr>
                       );
                     })
+                  ) : loadError ? (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="py-12 text-center text-rose-600 text-xs"
+                      >
+                        <AlertTriangle className="w-5 h-5 mx-auto mb-1.5 text-rose-500" />
+                        <span className="font-semibold block">{loadError}</span>
+                        <button
+                          onClick={loadPayments}
+                          className="mt-3 px-3 py-1 bg-white border border-rose-300 text-rose-700 rounded-lg text-xs font-semibold hover:bg-rose-50 shadow-2xs"
+                        >
+                          Retry Loading Payments
+                        </button>
+                      </td>
+                    </tr>
                   ) : (
                     <tr>
                       <td
