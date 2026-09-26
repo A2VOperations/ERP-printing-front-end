@@ -27,6 +27,7 @@ import {
   ArrowUpRight,
   X,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function OrdersBillingPage() {
@@ -175,10 +176,39 @@ export default function OrdersBillingPage() {
     e.preventDefault();
     if (!selectedOrder) return;
 
+    const amountNum = Number(paymentAmountRupees);
+    if (!amountNum || isNaN(amountNum) || amountNum <= 0) {
+      alert("Please enter a valid payment amount greater than ₹0.");
+      return;
+    }
+
+    const orderBalanceRupees = (selectedOrder.balancePaise !== undefined
+      ? selectedOrder.balancePaise
+      : selectedOrder.grandTotalPaise || 0) / 100;
+    const orderTotalRupees = (selectedOrder.grandTotalPaise || 0) / 100;
+
+    if (amountNum > orderBalanceRupees) {
+      alert(
+        `[Payment Rejected - Amount Mismatch]\n\n` +
+        `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+        `Allowable Balance: ₹${orderBalanceRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })} (Order Total: ₹${orderTotalRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })})\n\n` +
+        `The client cannot pay more than the agreed total of ₹${orderBalanceRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}.\n` +
+        `Overpayments are strictly not accepted. If additional services or quantities are required, please create a new quotation or a new order.`
+      );
+      return;
+    }
+
+    const mappedMethod =
+      paymentMethod === "BANK_TRANSFER"
+        ? "BANK_TRANSFER_NEFT_RTGS"
+        : paymentMethod;
+
     try {
       await api.post(`/payments/orders/${selectedOrder._id}`, {
-        amountPaise: Math.round(Number(paymentAmountRupees) * 100),
-        method: paymentMethod,
+        amountPaise: Math.round(amountNum * 100),
+        paymentMethod: mappedMethod,
+        method: mappedMethod,
+        transactionReference: referenceNumber,
         referenceNumber,
       });
       alert("Payment Recorded Successfully & Ledger Updated!");
@@ -659,11 +689,38 @@ export default function OrdersBillingPage() {
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
+                  max={(selectedOrder.balancePaise !== undefined ? selectedOrder.balancePaise : selectedOrder.grandTotalPaise || 0) / 100}
                   required
                   value={paymentAmountRupees}
                   onChange={(e) => setPaymentAmountRupees(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold text-sm focus:outline-none focus:border-blue-600 focus:bg-white"
+                  className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 border text-slate-900 font-semibold text-sm focus:outline-none focus:bg-white ${
+                    Number(paymentAmountRupees || 0) > ((selectedOrder.balancePaise !== undefined ? selectedOrder.balancePaise : selectedOrder.grandTotalPaise || 0) / 100)
+                      ? "border-rose-400 focus:border-rose-600 bg-rose-50/30"
+                      : "border-slate-200 focus:border-blue-600"
+                  }`}
                 />
+                {(() => {
+                  const balRupees = (selectedOrder.balancePaise !== undefined ? selectedOrder.balancePaise : selectedOrder.grandTotalPaise || 0) / 100;
+                  const amt = Number(paymentAmountRupees || 0);
+                  if (amt > balRupees) {
+                    return (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2 mt-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">Payment Exceeds Allowed Amount</span>
+                          <span>
+                            The entered payment (₹{amt.toLocaleString("en-IN", { minimumFractionDigits: 2 })}) exceeds the maximum allowed balance of ₹{balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}.
+                          </span>
+                          <p className="mt-1 text-[11px] text-rose-700">
+                            Overpayment is not accepted. If the client is paying for additional scope or quantities, please create a new quotation or a new order.
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div>
@@ -707,7 +764,15 @@ export default function OrdersBillingPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs cursor-pointer"
+                  disabled={
+                    !paymentAmountRupees ||
+                    Number(paymentAmountRupees) <= 0 ||
+                    Number(paymentAmountRupees) >
+                      ((selectedOrder.balancePaise !== undefined
+                        ? selectedOrder.balancePaise
+                        : selectedOrder.grandTotalPaise || 0) / 100)
+                  }
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold shadow-xs cursor-pointer transition-opacity"
                 >
                   Confirm Payment
                 </button>

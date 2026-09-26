@@ -975,9 +975,40 @@ export default function LeadDetailPage() {
   // Submit Record Advance Payment
   const handleRecordPaymentSubmit = async (e) => {
     e.preventDefault();
-    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
+    const amountNum = Number(paymentForm.amount);
+    if (!amountNum || amountNum <= 0) {
       alert("Please enter a valid advance payment amount.");
       return;
+    }
+
+    if (paymentForm.orderId) {
+      const ord = orders.find((o) => o._id === paymentForm.orderId);
+      if (ord) {
+        const balRupees = (ord.balancePaise !== undefined ? ord.balancePaise : ord.grandTotalPaise || 0) / 100;
+        if (amountNum > balRupees) {
+          alert(
+            `Payment Rejected: Overpayment is not allowed.\n\n` +
+            `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+            `Maximum Allowed Balance: ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+            `Payments cannot exceed the approved order balance. To bill additional items, please create a new quotation or order.`
+          );
+          return;
+        }
+      }
+    } else if (paymentForm.quotationId) {
+      const q = quotations.find((quo) => quo._id === paymentForm.quotationId);
+      if (q) {
+        const qTotalRupees = (q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0);
+        if (amountNum > qTotalRupees) {
+          alert(
+            `Payment Rejected: Overpayment is not allowed.\n\n` +
+            `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+            `Quotation Total: ₹${qTotalRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+            `Payments cannot exceed the quotation total. Please create a new quotation for extra amounts.`
+          );
+          return;
+        }
+      }
     }
 
     try {
@@ -987,7 +1018,7 @@ export default function LeadDetailPage() {
         customerId: lead?.customerId?._id || lead?.customerId || undefined,
         quotationId: paymentForm.quotationId || undefined,
         orderId: paymentForm.orderId || undefined,
-        amount: Number(paymentForm.amount),
+        amount: amountNum,
         paymentType: "ADVANCE",
         paymentMethod: paymentForm.paymentMethod,
         transactionReference: paymentForm.transactionReference,
