@@ -2,13 +2,14 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
 import { DashboardSkeleton } from "@/app/components/ui/skeleton";
 
 import {
+  Users,
   Clock,
   ShoppingBag,
   CreditCard,
@@ -66,6 +67,10 @@ export default function DashboardPage() {
   const [topPerformers, setTopPerformers] = useState([]);
   const [leadStats, setLeadStats] = useState(null);
 
+  const searchParams = useSearchParams();
+  const requestedUserId = searchParams.get("userId");
+  const [viewingUserId, setViewingUserId] = useState(requestedUserId || null);
+
   // New Lead Form State
   const [newLead, setNewLead] = useState({
     name: "",
@@ -79,8 +84,13 @@ export default function DashboardPage() {
     nextFollowUp: "",
   });
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (targetUserId = viewingUserId) => {
     try {
+      const userParam = targetUserId ? `&assignedToId=${targetUserId}` : "";
+      const userGenericParam = targetUserId ? `&userId=${targetUserId}` : "";
+      const targetQuery = targetUserId ? `/targets/my-achievement?userId=${targetUserId}` : "/targets/my-achievement";
+      const actQuery = targetUserId ? `/activities?limit=20&actorId=${targetUserId}` : "/activities?limit=20";
+
       const [
         leadsRes,
         followupsRes,
@@ -97,18 +107,18 @@ export default function DashboardPage() {
         productionJobsRes,
         healthRes,
       ] = await Promise.allSettled([
-        api.get("/leads?limit=100"),
-        api.get("/followups?limit=100"),
-        api.get("/orders?limit=100"),
-        api.get("/targets/my-achievement", { silent: true }),
+        api.get(`/leads?limit=100${userParam}`),
+        api.get(`/followups?limit=100${userParam}`),
+        api.get(`/orders?limit=100${userGenericParam}`),
+        api.get(targetQuery, { silent: true }),
         api.get("/targets/leaderboard", { silent: true }),
         api.get("/users"),
         api.get("/auth/me"),
         api.get("/leads/stats", { silent: true }),
-        api.get("/activities?limit=20", { silent: true }),
+        api.get(actQuery, { silent: true }),
         api.get("/payments?limit=100", { silent: true }),
-        api.get("/quotations?limit=500", { silent: true }),
-        api.get("/design-projects?limit=50", { silent: true }),
+        api.get(`/quotations?limit=500${userGenericParam}`, { silent: true }),
+        api.get(`/design-projects?limit=50${userGenericParam}`, { silent: true }),
         api.get("/production-jobs?limit=50", { silent: true }),
         api.get("/health", { silent: true }),
       ]);
@@ -1046,6 +1056,74 @@ export default function DashboardPage() {
             <DashboardSkeleton />
           ) : (
             <>
+              {/* Admin Perspective / User Switcher Banner */}
+              {isManagerOrAdmin && (
+                <div className="bg-gradient-to-r from-indigo-900/5 via-blue-900/5 to-slate-900/5 border border-indigo-200/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                        <span>Admin View Mode:</span>
+                        {viewingUserId ? (
+                          <span className="text-indigo-700 font-black bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                            Viewing as: {users.find((u) => (u._id || u.id) === viewingUserId)?.name || "Selected Team Member"}
+                          </span>
+                        ) : (
+                          <span className="text-slate-700 font-bold bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                            🏢 Full Organization Overview (All Users)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Filter this dashboard to inspect any individual team member&apos;s leads, follow-ups, and sales metrics.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <select
+                      value={viewingUserId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value || null;
+                        setViewingUserId(val);
+                        loadDashboardData(val);
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-slate-800 shadow-2xs outline-none focus:ring-2 focus:ring-indigo-100"
+                    >
+                      <option value="">🏢 Full Organization Overview (All Users)</option>
+                      <optgroup label="Select Team Member">
+                        {users.map((u) => (
+                          <option key={u._id || u.id} value={u._id || u.id}>
+                            {u.name} ({u.roleSlug || u.role})
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+
+                    {viewingUserId && (
+                      <button
+                        onClick={() => {
+                          setViewingUserId(null);
+                          loadDashboardData(null);
+                        }}
+                        className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+                      >
+                        Reset
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => router.push("/dashboard/admin/user-dashboards")}
+                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-xs whitespace-nowrap"
+                    >
+                      All User Dashboards Hub →
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Top Greeting Header */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
@@ -1122,9 +1200,6 @@ export default function DashboardPage() {
                     <div>
                       <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                         TOTAL SALES
-                      </span>
-                      <span className="text-[10px] text-emerald-600 font-bold block">
-                        Quotation Approved (Client Accepted)
                       </span>
                     </div>
                     <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/60 flex items-center justify-center">

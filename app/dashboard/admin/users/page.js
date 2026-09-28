@@ -8,6 +8,7 @@ import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
 import {
   Users,
+  LayoutDashboard,
   Plus,
   Search,
   Filter,
@@ -696,6 +697,14 @@ export default function UsersDirectoryPage() {
                           </td>
                           <td className="py-3.5 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${u._id || u.id}`)}
+                                className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors"
+                                title="View User's Dashboard"
+                              >
+                                <LayoutDashboard className="w-3.5 h-3.5" />
+                              </button>
+
                               <button
                                 onClick={() => {
                                   setSelectedUser({

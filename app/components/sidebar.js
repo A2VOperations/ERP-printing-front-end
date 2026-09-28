@@ -422,6 +422,11 @@ export default function Sidebar() {
         title: "ADMINISTRATION",
         items: [
           {
+            name: "User Dashboards",
+            href: "/dashboard/admin/user-dashboards",
+            icon: LayoutDashboard,
+          },
+          {
             name: "Users Directory",
             href: "/dashboard/admin/users",
             icon: Users,

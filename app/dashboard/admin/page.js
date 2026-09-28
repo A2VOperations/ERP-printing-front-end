@@ -1886,27 +1886,38 @@ export default function AdminOverviewPage() {
                         </h3>
                       </div>
 
-                      {/* Tab toggles */}
-                      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 text-xs font-semibold">
+                      <div className="flex items-center gap-2">
+                        {/* Tab toggles */}
+                        <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 text-xs font-semibold">
+                          <button
+                            onClick={() => setTeamTab("Sales Team")}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                              teamTab === "Sales Team"
+                                ? "bg-white text-slate-900 shadow-2xs"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
+                          >
+                            Sales Team
+                          </button>
+                          <button
+                            onClick={() => setTeamTab("Design Team")}
+                            className={`px-3 py-1 rounded-md transition-all ${
+                              teamTab === "Design Team"
+                                ? "bg-white text-slate-900 shadow-2xs"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
+                          >
+                            Design Team
+                          </button>
+                        </div>
+
                         <button
-                          onClick={() => setTeamTab("Sales Team")}
-                          className={`px-3 py-1 rounded-md transition-all ${
-                            teamTab === "Sales Team"
-                              ? "bg-white text-slate-900 shadow-2xs"
-                              : "text-slate-500 hover:text-slate-800"
-                          }`}
+                          onClick={() => router.push("/dashboard/admin/user-dashboards")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition border border-indigo-200 shadow-2xs"
+                          title="Open User Dashboards Hub"
                         >
-                          Sales Team
-                        </button>
-                        <button
-                          onClick={() => setTeamTab("Design Team")}
-                          className={`px-3 py-1 rounded-md transition-all ${
-                            teamTab === "Design Team"
-                              ? "bg-white text-slate-900 shadow-2xs"
-                              : "text-slate-500 hover:text-slate-800"
-                          }`}
-                        >
-                          Design Team
+                          <span>User Dashboards</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -1926,7 +1937,12 @@ export default function AdminOverviewPage() {
                           </thead>
                           <tbody className="divide-y divide-slate-50">
                             {salesTeamMembers.map((member) => (
-                              <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                              <tr
+                                key={member.id}
+                                onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
+                                className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
+                                title={`Open ${member.name}'s Dashboard`}
+                              >
                                 <td className="py-3 pr-4">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
@@ -1981,7 +1997,12 @@ export default function AdminOverviewPage() {
                           </thead>
                           <tbody className="divide-y divide-slate-50">
                             {designTeamMembers.map((member) => (
-                              <tr key={member.id} className="hover:bg-slate-50/60 transition-colors">
+                              <tr
+                                key={member.id}
+                                onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
+                                className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
+                                title={`Open ${member.name}'s Dashboard`}
+                              >
                                 <td className="py-3 pr-4">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
