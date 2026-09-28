@@ -214,20 +214,20 @@ export default function Navbar() {
         // Fallback or ignore if unauthorized
       });
 
-    // Fetch dynamic communication message threads
-    api
-      .get("/communications/threads?limit=5", { silent: true })
-      .then((res) => {
-        const list = res?.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setThreads(list);
-          const unread = list.filter((t) => t.unreadCount > 0).length;
-          setUnreadMessageCount(unread || list.length);
-        }
-      })
-      .catch(() => {
-        // Fail gracefully
-      });
+    // Communication message threads disabled until backend communications module is active
+    // api
+    //   .get("/communications/threads?limit=5", { silent: true })
+    //   .then((res) => {
+    //     const list = res?.data || [];
+    //     if (Array.isArray(list) && list.length > 0) {
+    //       setThreads(list);
+    //       const unread = list.filter((t) => t.unreadCount > 0).length;
+    //       setUnreadMessageCount(unread || list.length);
+    //     }
+    //   })
+    //   .catch(() => {
+    //     // Fail gracefully
+    //   });
 
     // Global Keyboard Shortcuts (Ctrl+K / Cmd+K and Escape)
     const handleKeyDown = (e) => {
