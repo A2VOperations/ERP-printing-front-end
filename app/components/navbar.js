@@ -125,9 +125,14 @@ export default function Navbar() {
       supabase.auth.getSession().then(({ data }) => {
         const sbAvatar = data?.session?.user?.user_metadata?.avatar_url;
         if (sbAvatar) {
-          setUser((prev) => ({ ...prev, avatarUrl: prev.avatarUrl || sbAvatar }));
-          if (typeof window !== "undefined" && !localStorage.getItem("userAvatar")) {
-            localStorage.setItem("userAvatar", sbAvatar);
+          if (typeof sbAvatar === "string" && sbAvatar.startsWith("data:")) {
+            // Clean legacy base64 avatar from Supabase metadata to prevent JWT token explosion (>16KB)
+            supabase.auth.updateUser({ data: { avatar_url: null } }).catch(() => {});
+          } else {
+            setUser((prev) => ({ ...prev, avatarUrl: prev.avatarUrl || sbAvatar }));
+            if (typeof window !== "undefined" && !localStorage.getItem("userAvatar")) {
+              localStorage.setItem("userAvatar", sbAvatar);
+            }
           }
         }
       }).catch(() => {});
@@ -386,14 +391,7 @@ export default function Navbar() {
         new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: optimizedDataUrl, user } })
       );
 
-      // 3. Sync to Supabase user metadata if authenticated
-      if (supabase?.auth) {
-        supabase.auth.updateUser({
-          data: { avatar_url: optimizedDataUrl },
-        }).catch(() => {});
-      }
-
-      // 4. Send to backend /auth/avatar (if backend is running locally or once deployed on Render)
+      // 3. Send to backend /auth/avatar (saves to Cloudinary/storage and returns hosted URL)
       try {
         const formData = new FormData();
         formData.append("avatar", file);
@@ -402,9 +400,16 @@ export default function Navbar() {
           const finalUrl = res?.data?.avatarUrl || res?.avatarUrl;
           setUser((prev) => ({ ...prev, avatarUrl: finalUrl }));
           localStorage.setItem("userAvatar", finalUrl);
+
+          // Only sync clean HTTP/HTTPS hosted URLs to Supabase auth metadata (never large base64 strings)
+          if (supabase?.auth && typeof finalUrl === "string" && (finalUrl.startsWith("http://") || finalUrl.startsWith("https://"))) {
+            supabase.auth.updateUser({
+              data: { avatar_url: finalUrl },
+            }).catch(() => {});
+          }
         }
       } catch {
-        // Backend not yet redeployed with /avatar endpoint; preserved safely in localStorage & Supabase
+        // Backend not yet redeployed with /avatar endpoint; preserved safely in local storage
       }
     } catch (err) {
       console.error("Avatar upload failed:", err);
