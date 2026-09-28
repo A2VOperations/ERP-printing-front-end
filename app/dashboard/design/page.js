@@ -182,6 +182,7 @@ function DesignStudioContent() {
   const [uploadCategory, setUploadCategory] = useState("PROOF");
   const [uploadingAsset, setUploadingAsset] = useState(false);
   const [uploadStatusMsg, setUploadStatusMsg] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   // Version creation state
@@ -1832,7 +1833,100 @@ function DesignStudioContent() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      {/* Drag & Drop Zone */}
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(true);
+                        }}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                          const file = e.dataTransfer?.files?.[0];
+                          if (file) {
+                            setUploadFile(file);
+                          }
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`relative border-2 border-dashed rounded-2xl p-5 text-center transition-all cursor-pointer select-none ${
+                          isDragging
+                            ? "border-blue-500 bg-blue-50/70 ring-4 ring-blue-100 scale-[1.01]"
+                            : uploadFile
+                              ? "border-emerald-400 bg-emerald-50/30 hover:bg-emerald-50/50"
+                              : "border-slate-300 hover:border-blue-400 bg-white hover:bg-blue-50/20"
+                        }`}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          onChange={(e) =>
+                            setUploadFile(e.target.files?.[0] || null)
+                          }
+                        />
+
+                        {uploadFile ? (
+                          <div className="flex items-center justify-between gap-3 text-left">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                <FileCheck className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-800 truncate">
+                                  {uploadFile.name}
+                                </p>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                  {(uploadFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUploadFile(null);
+                                if (fileInputRef.current) fileInputRef.current.value = "";
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                              title="Remove file"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-2">
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors ${
+                                isDragging
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-blue-100 text-blue-600"
+                              }`}
+                            >
+                              <Upload className="w-5 h-5" />
+                            </div>
+                            <p className="text-xs font-bold text-slate-700">
+                              <span className="text-blue-600 hover:underline">Click to browse</span> or drag and drop artwork file
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-1">
+                              PDF, PNG, JPG, TIFF, PSD, AI up to 50MB
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                         <div>
                           <label className="text-[11px] font-semibold text-slate-700 block mb-1.5">
                             Asset Category
@@ -1859,21 +1953,6 @@ function DesignStudioContent() {
                             </option>
                             <option value="OTHER">OTHER</option>
                           </select>
-                        </div>
-
-                        <div>
-                          <label className="text-[11px] font-semibold text-slate-700 block mb-1.5">
-                            Select Artwork File *
-                          </label>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            required
-                            onChange={(e) =>
-                              setUploadFile(e.target.files?.[0] || null)
-                            }
-                            className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                          />
                         </div>
 
                         <div>
