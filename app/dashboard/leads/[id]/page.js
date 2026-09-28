@@ -176,7 +176,10 @@ export default function LeadDetailPage() {
     colors: "CMYK",
     printSides: "SINGLE",
     finishing: [],
+    briefAttachments: [],
   });
+  const [orderDropzoneActive, setOrderDropzoneActive] = useState(false);
+  const [orderUploading, setOrderUploading] = useState(false);
 
   // Designer Handoff Form State
   const [handoffForm, setHandoffForm] = useState({
@@ -615,6 +618,43 @@ export default function LeadDetailPage() {
     }
   };
 
+  // Helper to open Create Order modal with defaults & reset attachments
+  const handleOpenCreateOrderModal = (customFields = {}) => {
+    setOrderForm({
+      quotationId: quotations.length > 0 ? quotations[0]._id : "",
+      selectedItemIndex: "",
+      title: lead?.requirement || "Commercial Print Order",
+      amount:
+        lead?.expectedValue ||
+        (quotations[0]?.grandTotalPaise
+          ? quotations[0].grandTotalPaise / 100
+          : ""),
+      advanceRequiredPercent: 50,
+      assignedDesignerId: designersList.length > 0 ? designersList[0]._id : "",
+      designNotes: lead?.requirement || "",
+      designDeadline: new Date(Date.now() + 86400000 * 3)
+        .toISOString()
+        .slice(0, 10),
+      promisedDeliveryDate: new Date(Date.now() + 86400000 * 7)
+        .toISOString()
+        .slice(0, 10),
+      deliveryMethod: "PICKUP",
+      notes: "",
+      width: "",
+      height: "",
+      dimensionUnit: "inch",
+      quantity: 1,
+      material: "",
+      gsm: "",
+      colors: "CMYK",
+      printSides: "SINGLE",
+      finishing: [],
+      briefAttachments: [],
+      ...customFields,
+    });
+    setShowCreateOrderModal(true);
+  };
+
   // Submit Create Commercial Order
   const handleCreateOrderSubmit = async (e) => {
     e.preventDefault();
@@ -649,6 +689,8 @@ export default function LeadDetailPage() {
         colors: orderForm.colors || "CMYK",
         printSides: orderForm.printSides || "SINGLE",
         finishing: orderForm.finishing || [],
+        briefAttachments: orderForm.briefAttachments || [],
+        designBriefAttachments: orderForm.briefAttachments || [],
       };
 
       await api.post("/orders", payload);
@@ -674,6 +716,7 @@ export default function LeadDetailPage() {
         colors: "CMYK",
         printSides: "SINGLE",
         finishing: [],
+        briefAttachments: [],
       });
       await loadLeadDetails();
       setActiveTab("Orders");
@@ -1332,30 +1375,7 @@ export default function LeadDetailPage() {
               </button>
 
               <button
-                onClick={() => {
-                  setOrderForm({
-                    quotationId: quotations.length > 0 ? quotations[0]._id : "",
-                    title: lead?.requirement || "Custom Print Job",
-                    amount:
-                      lead?.expectedValue ||
-                      (quotations[0]?.grandTotalPaise
-                        ? quotations[0].grandTotalPaise / 100
-                        : ""),
-                    advanceRequiredPercent: 50,
-                    assignedDesignerId:
-                      designersList.length > 0 ? designersList[0]._id : "",
-                    designNotes: lead?.requirement || "",
-                    designDeadline: new Date(Date.now() + 86400000 * 3)
-                      .toISOString()
-                      .slice(0, 10),
-                    promisedDeliveryDate: new Date(Date.now() + 86400000 * 7)
-                      .toISOString()
-                      .slice(0, 10),
-                    deliveryMethod: "PICKUP",
-                    notes: "",
-                  });
-                  setShowCreateOrderModal(true);
-                }}
+                onClick={() => handleOpenCreateOrderModal()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />+ Create / Convert Order
@@ -1817,35 +1837,7 @@ export default function LeadDetailPage() {
 
                   <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
                     <button
-                      onClick={() => {
-                        setOrderForm({
-                          quotationId:
-                            quotations.length > 0 ? quotations[0]._id : "",
-                          title: lead?.requirement || "Custom Print Job",
-                          amount:
-                            lead?.expectedValue ||
-                            (quotations[0]?.grandTotalPaise
-                              ? quotations[0].grandTotalPaise / 100
-                              : ""),
-                          advanceRequiredPercent: 50,
-                          assignedDesignerId:
-                            designersList.length > 0
-                              ? designersList[0]._id
-                              : "",
-                          designNotes: lead?.requirement || "",
-                          designDeadline: new Date(Date.now() + 86400000 * 3)
-                            .toISOString()
-                            .slice(0, 10),
-                          promisedDeliveryDate: new Date(
-                            Date.now() + 86400000 * 7,
-                          )
-                            .toISOString()
-                            .slice(0, 10),
-                          deliveryMethod: "PICKUP",
-                          notes: "",
-                        });
-                        setShowCreateOrderModal(true);
-                      }}
+                      onClick={() => handleOpenCreateOrderModal()}
                       className="p-3 rounded-md bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <ShoppingBag className="w-4 h-4" />
@@ -2049,37 +2041,7 @@ export default function LeadDetailPage() {
                           No orders created yet for this lead.
                         </p>
                         <button
-                          onClick={() => {
-                            setOrderForm({
-                              quotationId:
-                                quotations.length > 0 ? quotations[0]._id : "",
-                              title: lead?.requirement || "Custom Print Job",
-                              amount:
-                                lead?.expectedValue ||
-                                (quotations[0]?.grandTotalPaise
-                                  ? quotations[0].grandTotalPaise / 100
-                                  : ""),
-                              advanceRequiredPercent: 50,
-                              assignedDesignerId:
-                                designersList.length > 0
-                                  ? designersList[0]._id
-                                  : "",
-                              designNotes: lead?.requirement || "",
-                              designDeadline: new Date(
-                                Date.now() + 86400000 * 3,
-                              )
-                                .toISOString()
-                                .slice(0, 10),
-                              promisedDeliveryDate: new Date(
-                                Date.now() + 86400000 * 7,
-                              )
-                                .toISOString()
-                                .slice(0, 10),
-                              deliveryMethod: "PICKUP",
-                              notes: "",
-                            });
-                            setShowCreateOrderModal(true);
-                          }}
+                          onClick={() => handleOpenCreateOrderModal()}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-xs"
                         >
                           <Plus className="w-3.5 h-3.5" /> + Create Commercial
@@ -2149,7 +2111,7 @@ export default function LeadDetailPage() {
                           <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/50">
                             <button
                               onClick={() => {
-                                setOrderForm({
+                                handleOpenCreateOrderModal({
                                   quotationId: q._id,
                                   title:
                                     q.items?.[0]?.title ||
@@ -2157,26 +2119,8 @@ export default function LeadDetailPage() {
                                   amount: q.grandTotalPaise
                                     ? q.grandTotalPaise / 100
                                     : q.totalAmount || 0,
-                                  advanceRequiredPercent: 50,
-                                  assignedDesignerId:
-                                    designersList.length > 0
-                                      ? designersList[0]._id
-                                      : "",
                                   designNotes: `Converted from Quotation ${q.quotationNumber}`,
-                                  designDeadline: new Date(
-                                    Date.now() + 86400000 * 3,
-                                  )
-                                    .toISOString()
-                                    .slice(0, 10),
-                                  promisedDeliveryDate: new Date(
-                                    Date.now() + 86400000 * 7,
-                                  )
-                                    .toISOString()
-                                    .slice(0, 10),
-                                  deliveryMethod: "PICKUP",
-                                  notes: "",
                                 });
-                                setShowCreateOrderModal(true);
                               }}
                               className="text-[10px] font-bold text-indigo-700 hover:underline flex items-center gap-1"
                             >
@@ -2332,33 +2276,7 @@ export default function LeadDetailPage() {
 
                 <div className="flex items-center gap-2.5">
                   <button
-                    onClick={() => {
-                      setOrderForm({
-                        quotationId:
-                          quotations.length > 0 ? quotations[0]._id : "",
-                        title: lead?.requirement || "Commercial Printing Order",
-                        amount:
-                          lead?.expectedValue ||
-                          (quotations[0]?.grandTotalPaise
-                            ? quotations[0].grandTotalPaise / 100
-                            : ""),
-                        advanceRequiredPercent: 50,
-                        assignedDesignerId:
-                          designersList.length > 0 ? designersList[0]._id : "",
-                        designNotes: lead?.requirement || "",
-                        designDeadline: new Date(Date.now() + 86400000 * 3)
-                          .toISOString()
-                          .slice(0, 10),
-                        promisedDeliveryDate: new Date(
-                          Date.now() + 86400000 * 7,
-                        )
-                          .toISOString()
-                          .slice(0, 10),
-                        deliveryMethod: "PICKUP",
-                        notes: "",
-                      });
-                      setShowCreateOrderModal(true);
-                    }}
+                    onClick={() => handleOpenCreateOrderModal()}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs transition-all"
                   >
                     <Plus className="w-4 h-4" />+ Create Commercial Order
@@ -2614,33 +2532,6 @@ export default function LeadDetailPage() {
                                     </strong>
                                   </span>
                                 )}
-
-                                {o.designBriefAttachments &&
-                                  o.designBriefAttachments.length > 0 && (
-                                    <div className="pt-1 space-y-1">
-                                      <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
-                                        Attached Files (
-                                        {o.designBriefAttachments.length}):
-                                      </span>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {o.designBriefAttachments.map(
-                                          (att, aIdx) => (
-                                            <a
-                                              key={aIdx}
-                                              href={att.fileUrl}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              download
-                                              className="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-100 text-indigo-800 text-[10px] font-semibold border border-indigo-200 flex items-center gap-1 shadow-2xs"
-                                              title="Click to view/download file"
-                                            >
-                                              📎 {att.fileName || "Asset"}
-                                            </a>
-                                          ),
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                               </div>
                             ) : (
                               <div className="text-center py-2 space-y-1.5">
@@ -2649,6 +2540,34 @@ export default function LeadDetailPage() {
                                 </p>
                               </div>
                             )}
+
+                            {/* Attached Files & Documents */}
+                            {o.designBriefAttachments &&
+                              o.designBriefAttachments.length > 0 && (
+                                <div className="pt-1.5 space-y-1 border-t border-indigo-100/60">
+                                  <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
+                                    Attached Documents &amp; Artwork (
+                                    {o.designBriefAttachments.length}):
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {o.designBriefAttachments.map(
+                                      (att, aIdx) => (
+                                        <a
+                                          key={aIdx}
+                                          href={att.fileUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          download
+                                          className="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-100 text-indigo-800 text-[10px] font-semibold border border-indigo-200 flex items-center gap-1 shadow-2xs"
+                                          title="Click to view/download file"
+                                        >
+                                          📎 {att.fileName || "Asset"}
+                                        </a>
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                             <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
                               {designer && (
@@ -2753,35 +2672,7 @@ export default function LeadDetailPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setOrderForm({
-                          quotationId:
-                            quotations.length > 0 ? quotations[0]._id : "",
-                          title: lead?.requirement || "Commercial Print Order",
-                          amount:
-                            lead?.expectedValue ||
-                            (quotations[0]?.grandTotalPaise
-                              ? quotations[0].grandTotalPaise / 100
-                              : ""),
-                          advanceRequiredPercent: 50,
-                          assignedDesignerId:
-                            designersList.length > 0
-                              ? designersList[0]._id
-                              : "",
-                          designNotes: lead?.requirement || "",
-                          designDeadline: new Date(Date.now() + 86400000 * 3)
-                            .toISOString()
-                            .slice(0, 10),
-                          promisedDeliveryDate: new Date(
-                            Date.now() + 86400000 * 7,
-                          )
-                            .toISOString()
-                            .slice(0, 10),
-                          deliveryMethod: "PICKUP",
-                          notes: "",
-                        });
-                        setShowCreateOrderModal(true);
-                      }}
+                      onClick={() => handleOpenCreateOrderModal()}
                       className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20"
                     >
                       <Plus className="w-4 h-4" />
@@ -2916,7 +2807,7 @@ export default function LeadDetailPage() {
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => {
-                                  setOrderForm({
+                                  handleOpenCreateOrderModal({
                                     quotationId: q._id,
                                     title:
                                       q.items?.[0]?.title ||
@@ -2924,26 +2815,8 @@ export default function LeadDetailPage() {
                                     amount: q.grandTotalPaise
                                       ? q.grandTotalPaise / 100
                                       : q.totalAmount || 0,
-                                    advanceRequiredPercent: 50,
-                                    assignedDesignerId:
-                                      designersList.length > 0
-                                        ? designersList[0]._id
-                                        : "",
                                     designNotes: `Converted from Quotation ${q.quotationNumber}`,
-                                    designDeadline: new Date(
-                                      Date.now() + 86400000 * 3,
-                                    )
-                                      .toISOString()
-                                      .slice(0, 10),
-                                    promisedDeliveryDate: new Date(
-                                      Date.now() + 86400000 * 7,
-                                    )
-                                      .toISOString()
-                                      .slice(0, 10),
-                                    deliveryMethod: "PICKUP",
-                                    notes: "",
                                   });
-                                  setShowCreateOrderModal(true);
                                 }}
                                 className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
                               >
@@ -2965,7 +2838,7 @@ export default function LeadDetailPage() {
                           {q.status === "ACCEPTED" && (
                             <button
                               onClick={() => {
-                                setOrderForm({
+                                handleOpenCreateOrderModal({
                                   quotationId: q._id,
                                   title:
                                     q.items?.[0]?.title ||
@@ -2973,26 +2846,8 @@ export default function LeadDetailPage() {
                                   amount: q.grandTotalPaise
                                     ? q.grandTotalPaise / 100
                                     : q.totalAmount || 0,
-                                  advanceRequiredPercent: 50,
-                                  assignedDesignerId:
-                                    designersList.length > 0
-                                      ? designersList[0]._id
-                                      : "",
                                   designNotes: `Converted from Quotation ${q.quotationNumber}`,
-                                  designDeadline: new Date(
-                                    Date.now() + 86400000 * 3,
-                                  )
-                                    .toISOString()
-                                    .slice(0, 10),
-                                  promisedDeliveryDate: new Date(
-                                    Date.now() + 86400000 * 7,
-                                  )
-                                    .toISOString()
-                                    .slice(0, 10),
-                                  deliveryMethod: "PICKUP",
-                                  notes: "",
                                 });
-                                setShowCreateOrderModal(true);
                               }}
                               className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
                             >
@@ -4828,6 +4683,284 @@ export default function LeadDetailPage() {
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800"
                   />
+                </div>
+
+                {/* ATTACH FILES, DOCUMENTS & ARTWORK FOR ORDER */}
+                <div className="space-y-2.5 pt-3 border-t border-indigo-100">
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                      Attach Artwork, Documents &amp; Reference Files (
+                      {orderForm.briefAttachments?.length || 0})
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {orderUploading && (
+                        <span className="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
+                          <RefreshCw className="w-3 h-3 animate-spin" /> Uploading...
+                        </span>
+                      )}
+                      <label
+                        htmlFor="orderDirectFileInput"
+                        className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer border border-indigo-200 flex items-center gap-1 transition-all"
+                      >
+                        <Plus className="w-3 h-3" /> + Upload Document
+                      </label>
+                    </div>
+                    <input
+                      type="file"
+                      id="orderDirectFileInput"
+                      multiple
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (!files || files.length === 0) return;
+                        try {
+                          setOrderUploading(true);
+                          for (const file of Array.from(files)) {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("title", file.name || "Order Attachment");
+                            formData.append("category", "ARTWORK");
+                            formData.append(
+                              "description",
+                              "Attached to commercial order."
+                            );
+                            const res = await api.post(
+                              `/leads/${leadId}/documents`,
+                              formData
+                            );
+                            const dList = Array.isArray(res.data)
+                              ? res.data
+                              : res.data.records || [];
+                            if (dList.length > 0) {
+                              setDocuments(dList);
+                              const newlyUploaded = dList[0];
+                              setOrderForm((prev) => {
+                                const alreadyAttached = (prev.briefAttachments || []).some(
+                                  (a) => a.fileUrl === newlyUploaded.fileUrl
+                                );
+                                if (alreadyAttached) return prev;
+                                return {
+                                  ...prev,
+                                  briefAttachments: [
+                                    ...(prev.briefAttachments || []),
+                                    {
+                                      fileUrl: newlyUploaded.fileUrl,
+                                      fileName:
+                                        newlyUploaded.fileName || newlyUploaded.title,
+                                      fileType: newlyUploaded.fileType,
+                                      fileSizeBytes: newlyUploaded.fileSizeBytes,
+                                      cloudinaryPublicId:
+                                        newlyUploaded.cloudinaryPublicId,
+                                    },
+                                  ],
+                                };
+                              });
+                            }
+                          }
+                        } catch (err) {
+                          alert(err.message || "Failed to upload document");
+                        } finally {
+                          setOrderUploading(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* Drag and Drop Zone */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setOrderDropzoneActive(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setOrderDropzoneActive(false);
+                    }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      setOrderDropzoneActive(false);
+                      const files = e.dataTransfer.files;
+                      if (!files || files.length === 0) return;
+                      try {
+                        setOrderUploading(true);
+                        for (const file of Array.from(files)) {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("title", file.name || "Order Attachment");
+                          formData.append("category", "ARTWORK");
+                          formData.append(
+                            "description",
+                            "Attached to commercial order via drag-and-drop."
+                          );
+                          const res = await api.post(
+                            `/leads/${leadId}/documents`,
+                            formData
+                          );
+                          const dList = Array.isArray(res.data)
+                            ? res.data
+                            : res.data.records || [];
+                          if (dList.length > 0) {
+                            setDocuments(dList);
+                            const newlyUploaded = dList[0];
+                            setOrderForm((prev) => {
+                              const alreadyAttached = (prev.briefAttachments || []).some(
+                                (a) => a.fileUrl === newlyUploaded.fileUrl
+                              );
+                              if (alreadyAttached) return prev;
+                              return {
+                                ...prev,
+                                briefAttachments: [
+                                  ...(prev.briefAttachments || []),
+                                  {
+                                    fileUrl: newlyUploaded.fileUrl,
+                                    fileName:
+                                      newlyUploaded.fileName || newlyUploaded.title,
+                                    fileType: newlyUploaded.fileType,
+                                    fileSizeBytes: newlyUploaded.fileSizeBytes,
+                                    cloudinaryPublicId:
+                                      newlyUploaded.cloudinaryPublicId,
+                                  },
+                                ],
+                              };
+                            });
+                          }
+                        }
+                      } catch (err) {
+                        alert(err.message || "Failed to upload document");
+                      } finally {
+                        setOrderUploading(false);
+                      }
+                    }}
+                    className={`border-2 border-dashed rounded-xl p-3 text-center transition-all cursor-pointer ${
+                      orderDropzoneActive
+                        ? "border-indigo-500 bg-indigo-100/70 scale-[1.01]"
+                        : "border-indigo-200/80 bg-white/70 hover:bg-white hover:border-indigo-300"
+                    }`}
+                    onClick={() => {
+                      const input = document.getElementById("orderDirectFileInput");
+                      if (input) input.click();
+                    }}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <Upload className="w-4 h-4" />
+                      </div>
+                      <p className="text-xs font-semibold text-slate-700">
+                        Drag &amp; drop artwork or documents here, or click to browse
+                      </p>
+                      <p className="text-[10px] text-slate-400">
+                        Upload artwork proofs, PDF, CDR, PSD, AI, images or ZIP to attach directly to this order
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Currently Attached Files List */}
+                  {orderForm.briefAttachments &&
+                    orderForm.briefAttachments.length > 0 && (
+                      <div className="space-y-1.5 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100">
+                        <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
+                          Attached to this Order ({orderForm.briefAttachments.length}):
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {orderForm.briefAttachments.map((att, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-slate-800 text-[11px] shadow-2xs"
+                            >
+                              <span
+                                className="font-semibold truncate max-w-[200px]"
+                                title={att.fileName || att.title}
+                              >
+                                📎 {att.fileName || att.title || "Attachment"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    briefAttachments: prev.briefAttachments.filter(
+                                      (_, i) => i !== idx
+                                    ),
+                                  }));
+                                }}
+                                className="text-slate-400 hover:text-rose-600 font-bold ml-1"
+                                title="Remove file from order"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Pick from Lead's Uploaded Documents */}
+                  {documents && documents.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] text-slate-500 font-bold block">
+                        Quick Pick from Lead&apos;s Saved Documents &amp; Artwork ({documents.length}):
+                      </span>
+                      <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1 bg-white/60 rounded-xl border border-indigo-100/60">
+                        {documents.map((d) => {
+                          const isAttached = orderForm.briefAttachments?.some(
+                            (a) => a.fileUrl === d.fileUrl
+                          );
+                          return (
+                            <div
+                              key={d._id}
+                              onClick={() => {
+                                if (isAttached) {
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    briefAttachments:
+                                      prev.briefAttachments.filter(
+                                        (a) => a.fileUrl !== d.fileUrl
+                                      ),
+                                  }));
+                                } else {
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    briefAttachments: [
+                                      ...(prev.briefAttachments || []),
+                                      {
+                                        fileUrl: d.fileUrl,
+                                        fileName: d.fileName || d.title,
+                                        fileType: d.fileType,
+                                        fileSizeBytes: d.fileSizeBytes,
+                                        cloudinaryPublicId: d.cloudinaryPublicId,
+                                      },
+                                    ],
+                                  }));
+                                }
+                              }}
+                              className={`p-2 rounded-xl border text-left cursor-pointer transition-all flex items-center gap-2 select-none ${
+                                isAttached
+                                  ? "bg-indigo-50 border-indigo-400 text-indigo-900 font-bold shadow-2xs"
+                                  : "bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 font-medium"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isAttached}
+                                readOnly
+                                className="rounded text-indigo-600 pointer-events-none"
+                              />
+                              <div className="truncate flex-1">
+                                <span className="block text-[11px] truncate">
+                                  {d.title || d.fileName || "Document"}
+                                </span>
+                                <span className="block text-[9px] text-slate-400">
+                                  {d.category || "ARTWORK"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
