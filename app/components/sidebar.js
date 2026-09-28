@@ -497,7 +497,7 @@ export default function Sidebar() {
           </button>
           {!collapsed && (
             <div className="min-w-0 flex-1 overflow-hidden animate-fade-in">
-              <span className="font-medium text-2xl text-white block truncate">
+              <span className="font-medium text-[23px] text-white block truncate">
                 A2V PRINTS
               </span>
             </div>
