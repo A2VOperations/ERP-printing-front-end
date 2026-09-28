@@ -144,9 +144,15 @@ export default function OrdersBillingPage() {
     if (!editingOrder) return;
     try {
       setSavingSpecs(true);
-      await api.patch(`/orders/${editingOrder._id}/specifications`, specsForm);
+      const res = await api.patch(`/orders/${editingOrder._id}/specifications`, specsForm);
+      const updatedOrder = res?.data || res?.order;
+      if (updatedOrder) {
+        setOrders((prev) =>
+          prev.map((o) => (o._id === editingOrder._id ? { ...o, ...updatedOrder } : o))
+        );
+      }
       setShowSpecsModal(false);
-      await loadOrders();
+      loadOrders(true);
     } catch (err) {
       alert(err.message || "Failed to update order specifications");
     } finally {
@@ -154,17 +160,17 @@ export default function OrdersBillingPage() {
     }
   };
 
-  const loadOrders = async () => {
+  const loadOrders = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await api.get("/orders");
-      if (res.data) {
+      if (res?.data) {
         setOrders(res.data);
       }
     } catch (err) {
       console.error("Failed to load orders:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -203,21 +209,44 @@ export default function OrdersBillingPage() {
         ? "BANK_TRANSFER_NEFT_RTGS"
         : paymentMethod;
 
+    const paidPaise = Math.round(amountNum * 100);
+
+    // Optimistic UI update: update state immediately so user sees result in 0ms
+    setOrders((prev) =>
+      prev.map((ord) => {
+        if (ord._id === selectedOrder._id) {
+          const newPaid = (ord.totalPaidPaise || 0) + paidPaise;
+          const newBal = Math.max(0, (ord.grandTotalPaise || 0) - newPaid);
+          const newStatus =
+            newBal <= 0 ? "PAID" : newPaid > 0 ? "PARTIAL" : "UNPAID";
+          return {
+            ...ord,
+            totalPaidPaise: newPaid,
+            balancePaise: newBal,
+            paymentStatus: newStatus,
+          };
+        }
+        return ord;
+      })
+    );
+    setShowPaymentModal(false);
+    setPaymentAmountRupees("");
+    setReferenceNumber("");
+
     try {
       await api.post(`/payments/orders/${selectedOrder._id}`, {
-        amountPaise: Math.round(amountNum * 100),
+        amountPaise: paidPaise,
         paymentMethod: mappedMethod,
         method: mappedMethod,
         transactionReference: referenceNumber,
         referenceNumber,
       });
-      alert("Payment Recorded Successfully & Ledger Updated!");
-      setShowPaymentModal(false);
-      setPaymentAmountRupees("");
-      setReferenceNumber("");
-      loadOrders();
+      // Background sync quietly without wiping UI with full-screen skeletons
+      loadOrders(true);
     } catch (err) {
       alert(err.message || "Failed to record payment");
+      // Revert / re-sync on failure
+      loadOrders(true);
     }
   };
 
