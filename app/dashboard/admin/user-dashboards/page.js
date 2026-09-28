@@ -38,6 +38,7 @@ import {
   ChevronRight,
   Phone,
   Layers,
+  Printer,
   Award,
   Zap,
   ExternalLink,
@@ -89,6 +90,146 @@ export default function AdminUserDashboardsPage() {
   const [selectedUserDashboard, setSelectedUserDashboard] = useState(null);
   const [loadingUserDashboard, setLoadingUserDashboard] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState("overview"); // 'overview' | 'leads' | 'followups' | 'quotations' | 'orders' | 'activity' | 'design'
+  const [designStatusFilter, setDesignStatusFilter] = useState("ALL");
+  const [designSearchTerm, setDesignSearchTerm] = useState("");
+
+  const isUserDesigner = useMemo(() => {
+    return Boolean(
+      (
+        selectedUserDashboard?.user?.roleSlug ||
+        selectedUserDashboard?.user?.role ||
+        ""
+      )
+        .toLowerCase()
+        .includes("designer")
+    );
+  }, [selectedUserDashboard]);
+
+  const designerTabs = useMemo(() => {
+    if (!selectedUserDashboard) return [];
+    return [
+      {
+        id: "overview",
+        label: "Designer Overview",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "design",
+        label: `Design Projects (${selectedUserDashboard.designProjects?.length || selectedUserDashboard.kpi?.designStats?.totalProjects || 0})`,
+        icon: Palette,
+      },
+      {
+        id: "orders",
+        label: `Assigned Orders (${selectedUserDashboard.kpi?.totalOrdersCount ?? selectedUserDashboard.recentOrders?.length ?? 0})`,
+        icon: ShoppingBag,
+      },
+      { id: "activity", label: "Activity Log", icon: Activity },
+      ...(selectedUserDashboard.recentLeads?.length > 0
+        ? [
+            {
+              id: "leads",
+              label: `Leads (${selectedUserDashboard.recentLeads.length})`,
+              icon: Users,
+            },
+          ]
+        : []),
+      ...(selectedUserDashboard.recentQuotations?.length > 0
+        ? [
+            {
+              id: "quotations",
+              label: `Quotations (${selectedUserDashboard.recentQuotations.length})`,
+              icon: FileText,
+            },
+          ]
+        : []),
+    ];
+  }, [selectedUserDashboard]);
+
+  const salesTabs = useMemo(() => {
+    if (!selectedUserDashboard) return [];
+    return [
+      {
+        id: "overview",
+        label: "Overview & Schedule",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "leads",
+        label: `Assigned Leads (${selectedUserDashboard.kpi?.totalLeads ?? selectedUserDashboard.recentLeads?.length ?? 0})`,
+        icon: Users,
+      },
+      {
+        id: "followups",
+        label: `Follow-ups (${selectedUserDashboard.kpi?.totalScheduledCount ?? selectedUserDashboard.upcomingFollowups?.length ?? 0})`,
+        icon: Clock,
+      },
+      {
+        id: "quotations",
+        label: `Quotations (${selectedUserDashboard.kpi?.totalQuotationsCount ?? selectedUserDashboard.recentQuotations?.length ?? 0})`,
+        icon: FileText,
+      },
+      {
+        id: "orders",
+        label: `Orders (${selectedUserDashboard.kpi?.totalOrdersCount ?? selectedUserDashboard.recentOrders?.length ?? 0})`,
+        icon: ShoppingBag,
+      },
+      { id: "activity", label: "Activity Log", icon: Activity },
+      ...(selectedUserDashboard.designProjects?.length > 0
+        ? [
+            {
+              id: "design",
+              label: `Design Studio (${selectedUserDashboard.designProjects.length})`,
+              icon: Palette,
+            },
+          ]
+        : []),
+    ];
+  }, [selectedUserDashboard]);
+
+  const filteredDesignProjects = useMemo(() => {
+    if (!selectedUserDashboard?.designProjects) return [];
+    let list = selectedUserDashboard.designProjects;
+    if (designStatusFilter !== "ALL") {
+      if (designStatusFilter === "ACTIVE") {
+        list = list.filter((p) =>
+          [
+            "ASSIGNED",
+            "IN_PROGRESS",
+            "BRIEFING",
+            "IN_REVIEW",
+            "CLIENT_REVIEW",
+            "REVISION_REQUESTED",
+          ].includes(p.status)
+        );
+      } else if (designStatusFilter === "APPROVED") {
+        list = list.filter((p) =>
+          [
+            "APPROVED",
+            "PRODUCTION_LOCKED",
+            "DESIGN_PRODUCTION_READY",
+            "IN_PRODUCTION",
+          ].includes(p.status)
+        );
+      } else {
+        list = list.filter((p) => p.status === designStatusFilter);
+      }
+    }
+    if (designSearchTerm.trim()) {
+      const q = designSearchTerm.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.projectNumber?.toLowerCase().includes(q) ||
+          p.title?.toLowerCase().includes(q) ||
+          p.customerId?.displayName?.toLowerCase().includes(q) ||
+          p.customerId?.companyName?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [
+    selectedUserDashboard?.designProjects,
+    designStatusFilter,
+    designSearchTerm,
+  ]);
 
   // Fetch all users overview
   const loadOverviewData = useCallback(async () => {
@@ -1221,211 +1362,305 @@ export default function AdminUserDashboardsPage() {
                 </div>
               ) : selectedUserDashboard ? (
                 <>
-                  {/* Detailed KPI Cards Strip */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* 1. Leads KPI */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                      <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-                        <span>Leads In Pipeline</span>
-                        <Users className="w-4 h-4 text-indigo-600" />
+                  {/* Detailed KPI Cards Strip - Designer Mode vs Sales Mode */}
+                  {isUserDesigner ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* 1. Total Artwork Projects Workload */}
+                      <div className="bg-white rounded-2xl p-5 border border-purple-200 shadow-xs relative overflow-hidden">
+                        <div className="flex items-center justify-between text-purple-700 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Total Artwork Projects</span>
+                          <Palette className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div className="text-2xl font-black text-slate-900">
+                          {selectedUserDashboard.kpi.designStats?.totalProjects ??
+                            selectedUserDashboard.designProjects?.length ??
+                            0}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-purple-50">
+                          <span>
+                            Active:{" "}
+                            <strong className="text-amber-600 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.activeProjects ?? 0}
+                            </strong>
+                          </span>
+                          <span>
+                            Print-Ready:{" "}
+                            <strong className="text-emerald-600 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.approvedProjects ?? 0}
+                            </strong>
+                          </span>
+                          <span>
+                            Rate:{" "}
+                            <strong className="text-purple-600 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.completionRate ?? 0}%
+                            </strong>
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {selectedUserDashboard.kpi.totalLeads}
+
+                      {/* 2. Active Artwork in Progress & Review */}
+                      <div className="bg-white rounded-2xl p-5 border border-blue-200 shadow-xs">
+                        <div className="flex items-center justify-between text-blue-700 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Active Design Queue</span>
+                          <Clock className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                          {selectedUserDashboard.kpi.designStats?.activeProjects ?? 0}
+                          <span className="text-xs font-semibold text-slate-400">
+                            In Pipeline
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-blue-50">
+                          <span>
+                            Client Review:{" "}
+                            <strong className="text-blue-700 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.inReviewCount ?? 0}
+                            </strong>
+                          </span>
+                          <span>
+                            Revisions:{" "}
+                            <strong
+                              className={
+                                (selectedUserDashboard.kpi.designStats?.revisionRequestedCount ?? 0) > 0
+                                  ? "text-rose-600 font-bold"
+                                  : "text-slate-700 font-semibold"
+                              }
+                            >
+                              {selectedUserDashboard.kpi.designStats?.revisionRequestedCount ?? 0}
+                            </strong>
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
-                        <span>
-                          Open:{" "}
-                          <strong className="text-slate-800">
-                            {selectedUserDashboard.kpi.openLeads}
-                          </strong>
-                        </span>
-                        <span>
-                          Won:{" "}
-                          <strong className="text-emerald-600">
-                            {selectedUserDashboard.kpi.wonLeads}
-                          </strong>
-                        </span>
-                        <span>
-                          Rate:{" "}
-                          <strong className="text-indigo-600">
-                            {selectedUserDashboard.kpi.conversionRate}%
-                          </strong>
-                        </span>
+
+                      {/* 3. Approved & Print-Ready Production */}
+                      <div className="bg-white rounded-2xl p-5 border border-emerald-200 shadow-xs">
+                        <div className="flex items-center justify-between text-emerald-700 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Approved &amp; Print-Ready</span>
+                          <Printer className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="text-2xl font-black text-emerald-600">
+                          {selectedUserDashboard.kpi.designStats?.approvedProjects ?? 0}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-emerald-50">
+                          <span>
+                            Production Locked:{" "}
+                            <strong className="text-emerald-700 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.inProductionCount ?? 0}
+                            </strong>
+                          </span>
+                          <span>
+                            Linked Orders:{" "}
+                            <strong className="text-slate-800 font-bold">
+                              {selectedUserDashboard.kpi.designStats?.assignedOrdersCount ??
+                                selectedUserDashboard.kpi?.totalOrdersCount ??
+                                selectedUserDashboard.recentOrders?.length ??
+                                0}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 4. Proof Deadlines & SLA */}
+                      <div className="bg-white rounded-2xl p-5 border border-amber-200 shadow-xs">
+                        <div className="flex items-center justify-between text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Proof Deadlines</span>
+                          <Calendar className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                          {selectedUserDashboard.kpi.designStats?.dueTodayCount ?? 0}
+                          <span className="text-xs font-semibold text-slate-400">
+                            Due Today
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-amber-50">
+                          {(selectedUserDashboard.kpi.designStats?.overdueCount ?? 0) > 0 ? (
+                            <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                              {selectedUserDashboard.kpi.designStats.overdueCount} Overdue
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> 0 Overdue
+                            </span>
+                          )}
+                          <Link
+                            href="/dashboard/design"
+                            className="text-indigo-600 font-bold text-[11px] hover:underline flex items-center gap-0.5"
+                          >
+                            Studio →
+                          </Link>
+                        </div>
                       </div>
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* 1. Leads KPI */}
+                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                        <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Leads In Pipeline</span>
+                          <Users className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div className="text-2xl font-black text-slate-900">
+                          {selectedUserDashboard.kpi.totalLeads}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
+                          <span>
+                            Open:{" "}
+                            <strong className="text-slate-800">
+                              {selectedUserDashboard.kpi.openLeads}
+                            </strong>
+                          </span>
+                          <span>
+                            Won:{" "}
+                            <strong className="text-emerald-600">
+                              {selectedUserDashboard.kpi.wonLeads}
+                            </strong>
+                          </span>
+                          <span>
+                            Rate:{" "}
+                            <strong className="text-indigo-600">
+                              {selectedUserDashboard.kpi.conversionRate}%
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* 2. Follow-ups KPI */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                      <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-                        <span>Follow-ups Schedule</span>
-                        <Clock className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                        {selectedUserDashboard.kpi.todayFollowupsCount}
-                        <span className="text-xs font-semibold text-slate-400">
-                          Due Today
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
-                        <span>
-                          Total:{" "}
-                          <strong className="text-slate-800">
-                            {selectedUserDashboard.kpi.totalScheduledCount}
-                          </strong>
-                        </span>
-                        {selectedUserDashboard.kpi.overdueFollowupsCount > 0 ? (
-                          <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                            {selectedUserDashboard.kpi.overdueFollowupsCount}{" "}
-                            Overdue
+                      {/* 2. Follow-ups KPI */}
+                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                        <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Follow-ups Schedule</span>
+                          <Clock className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                          {selectedUserDashboard.kpi.todayFollowupsCount}
+                          <span className="text-xs font-semibold text-slate-400">
+                            Due Today
                           </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
+                          <span>
+                            Total:{" "}
+                            <strong className="text-slate-800">
+                              {selectedUserDashboard.kpi.totalScheduledCount}
+                            </strong>
+                          </span>
+                          {selectedUserDashboard.kpi.overdueFollowupsCount > 0 ? (
+                            <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                              {selectedUserDashboard.kpi.overdueFollowupsCount}{" "}
+                              Overdue
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 font-semibold">
+                              0 Overdue
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 3. Orders & Revenue KPI */}
+                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                        <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Total Sales</span>
+                          <DollarSign className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <div className="text-2xl font-black text-emerald-600">
+                          ₹{" "}
+                          {(
+                            selectedUserDashboard.kpi.approvedQuotesRevenueRupees ??
+                            selectedUserDashboard.kpi.totalRevenueRupees ??
+                            0
+                          ).toLocaleString("en-IN")}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
+                          <span>
+                            Approved Quotes:{" "}
+                            <strong className="text-emerald-700">
+                              {selectedUserDashboard.kpi.approvedQuotesCount ??
+                                selectedUserDashboard.kpi.totalQuotationsCount ??
+                                0}
+                            </strong>
+                          </span>
+                          <span>
+                            Orders Won:{" "}
+                            <strong className="text-slate-800">
+                              {selectedUserDashboard.kpi.totalOrdersCount ?? 0}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 4. Target Progress */}
+                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                        <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
+                          <span>Target Quota</span>
+                          <Target className="w-4 h-4 text-amber-500" />
+                        </div>
+                        {(selectedUserDashboard.kpi.target?.hasTarget ||
+                          (selectedUserDashboard.kpi.target?.targetAmountRupees ?? 0) > 0 ||
+                          (selectedUserDashboard.kpi.target?.targetPaise ?? 0) > 0) ? (
+                          <>
+                            <div className="text-2xl font-black text-amber-600">
+                              {
+                                selectedUserDashboard.kpi.target
+                                  .achievementPercent
+                              }
+                              %
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1.5">
+                              <div
+                                className="h-full bg-amber-500 rounded-full"
+                                style={{
+                                  width: `${Math.min(100, selectedUserDashboard.kpi.target.achievementPercent || 0)}%`,
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1.5 pt-1 border-t border-slate-100">
+                              <span>
+                                ₹{" "}
+                                {(
+                                  selectedUserDashboard.kpi.target.achievedRupees ??
+                                  Math.round(
+                                    (selectedUserDashboard.kpi.target.achievedPaise ||
+                                      0) / 100,
+                                  )
+                                ).toLocaleString("en-IN")}
+                              </span>
+                              <span>
+                                Quota: ₹{" "}
+                                {(
+                                  selectedUserDashboard.kpi.target
+                                    .targetAmountRupees ??
+                                  Math.round(
+                                    (selectedUserDashboard.kpi.target.targetPaise ||
+                                      0) / 100,
+                                  )
+                                ).toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                          </>
                         ) : (
-                          <span className="text-emerald-600 font-semibold">
-                            0 Overdue
-                          </span>
+                          <div className="py-2 text-center text-slate-400 text-xs">
+                            <p className="font-semibold">No Quota Set</p>
+                            <Link
+                              href="/dashboard/admin/targets"
+                              className="text-[11px] text-indigo-600 hover:underline font-bold mt-1 inline-block"
+                            >
+                              Set Target →
+                            </Link>
+                          </div>
                         )}
                       </div>
                     </div>
-
-                    {/* 3. Orders & Revenue KPI */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                      <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-                        <span>Total Sales</span>
-                        <DollarSign className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="text-2xl font-black text-emerald-600">
-                        ₹{" "}
-                        {(
-                          selectedUserDashboard.kpi.approvedQuotesRevenueRupees ??
-                          selectedUserDashboard.kpi.totalRevenueRupees ??
-                          0
-                        ).toLocaleString("en-IN")}
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-slate-100">
-                        <span>
-                          Approved Quotes:{" "}
-                          <strong className="text-emerald-700">
-                            {selectedUserDashboard.kpi.approvedQuotesCount ??
-                              selectedUserDashboard.kpi.totalQuotationsCount ??
-                              0}
-                          </strong>
-                        </span>
-                        <span>
-                          Orders Won:{" "}
-                          <strong className="text-slate-800">
-                            {selectedUserDashboard.kpi.totalOrdersCount ?? 0}
-                          </strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 4. Target Progress */}
-                    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                      <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
-                        <span>Target Quota</span>
-                        <Target className="w-4 h-4 text-amber-500" />
-                      </div>
-                      {(selectedUserDashboard.kpi.target?.hasTarget ||
-                        (selectedUserDashboard.kpi.target?.targetAmountRupees ?? 0) > 0 ||
-                        (selectedUserDashboard.kpi.target?.targetPaise ?? 0) > 0) ? (
-                        <>
-                          <div className="text-2xl font-black text-amber-600">
-                            {
-                              selectedUserDashboard.kpi.target
-                                .achievementPercent
-                            }
-                            %
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1.5">
-                            <div
-                              className="h-full bg-amber-500 rounded-full"
-                              style={{
-                                width: `${Math.min(100, selectedUserDashboard.kpi.target.achievementPercent || 0)}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1.5 pt-1 border-t border-slate-100">
-                            <span>
-                              ₹{" "}
-                              {(
-                                selectedUserDashboard.kpi.target.achievedRupees ??
-                                Math.round(
-                                  (selectedUserDashboard.kpi.target.achievedPaise ||
-                                    0) / 100,
-                                )
-                              ).toLocaleString("en-IN")}
-                            </span>
-                            <span>
-                              Quota: ₹{" "}
-                              {(
-                                selectedUserDashboard.kpi.target
-                                  .targetAmountRupees ??
-                                Math.round(
-                                  (selectedUserDashboard.kpi.target.targetPaise ||
-                                    0) / 100,
-                                )
-                              ).toLocaleString("en-IN")}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="py-2 text-center text-slate-400 text-xs">
-                          <p className="font-semibold">No Quota Set</p>
-                          <Link
-                            href="/dashboard/admin/targets"
-                            className="text-[11px] text-indigo-600 hover:underline font-bold mt-1 inline-block"
-                          >
-                            Set Target →
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Sub-tabs Navigation */}
-                  <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                    {[
-                      {
-                        id: "overview",
-                        label: "Overview & Schedule",
-                        icon: LayoutDashboard,
-                      },
-                      {
-                        id: "leads",
-                        label: `Assigned Leads (${selectedUserDashboard.kpi?.totalLeads ?? selectedUserDashboard.recentLeads?.length ?? 0})`,
-                        icon: Users,
-                      },
-                      {
-                        id: "followups",
-                        label: `Follow-ups (${selectedUserDashboard.kpi?.totalScheduledCount ?? selectedUserDashboard.upcomingFollowups?.length ?? 0})`,
-                        icon: Clock,
-                      },
-                      {
-                        id: "quotations",
-                        label: `Quotations (${selectedUserDashboard.kpi?.totalQuotationsCount ?? selectedUserDashboard.recentQuotations?.length ?? 0})`,
-                        icon: FileText,
-                      },
-                      {
-                        id: "orders",
-                        label: `Orders (${selectedUserDashboard.kpi?.totalOrdersCount ?? selectedUserDashboard.recentOrders?.length ?? 0})`,
-                        icon: ShoppingBag,
-                      },
-                      { id: "activity", label: "Activity Log", icon: Activity },
-                      ...(selectedUserDashboard.designProjects?.length > 0
-                        ? [
-                            {
-                              id: "design",
-                              label: `Design Studio (${selectedUserDashboard.designProjects.length})`,
-                              icon: Palette,
-                            },
-                          ]
-                        : []),
-                    ].map((tab) => {
+                  <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+                    {(isUserDesigner ? designerTabs : salesTabs).map((tab) => {
                       const Icon = tab.icon;
                       return (
                         <button
                           key={tab.id}
                           onClick={() => setActiveInspectorTab(tab.id)}
-                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition ${
+                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                             activeInspectorTab === tab.id
                               ? "bg-indigo-600 text-white shadow-xs"
                               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -1438,147 +1673,393 @@ export default function AdminUserDashboardsPage() {
                     })}
                   </div>
 
-                  {/* TAB 1: OVERVIEW & SCHEDULE */}
-                  {activeInspectorTab === "overview" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Left: Today's / Upcoming Follow-ups */}
-                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-blue-600" />
-                            Scheduled Follow-ups for{" "}
-                            {selectedUserDashboard.user.name.split(" ")[0]}
-                          </h3>
-                          <button
-                            onClick={() => setActiveInspectorTab("followups")}
-                            className="text-xs text-indigo-600 hover:underline font-bold"
-                          >
-                            View All →
-                          </button>
-                        </div>
-
-                        {selectedUserDashboard.upcomingFollowups?.length ===
-                        0 ? (
-                          <div className="py-8 text-center text-slate-400 text-xs">
-                            No follow-ups currently scheduled for this user.
-                          </div>
-                        ) : (
-                          <div className="divide-y divide-slate-100">
-                            {selectedUserDashboard.upcomingFollowups
-                              .slice(0, 5)
-                              .map((f) => (
-                                <div
-                                  key={f._id}
-                                  className="py-3 flex items-start justify-between gap-3"
+                  {/* TAB 1: OVERVIEW & SCHEDULE / DESIGNER OVERVIEW */}
+                  {activeInspectorTab === "overview" &&
+                    (isUserDesigner ? (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Left: Active Artwork & Proof Queue */}
+                          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <Palette className="w-4 h-4 text-purple-600" />
+                                Active Artwork &amp; Proof Queue ({selectedUserDashboard.designProjects?.length || 0})
+                              </h3>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => setActiveInspectorTab("design")}
+                                  className="text-xs text-indigo-600 hover:underline font-bold"
                                 >
-                                  <div>
-                                    <div className="text-xs font-bold text-slate-800">
-                                      {f.title || "Follow-up Call"}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 mt-0.5">
-                                      {f.customerId?.displayName ||
-                                        f.leadId?.contactName ||
-                                        "Client"}
-                                      {(f.customerId?.phone ||
-                                        f.leadId?.phone) && (
-                                        <span className="ml-1 text-slate-400">
-                                          •{" "}
-                                          {f.customerId?.phone ||
-                                            f.leadId?.phone}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <span
-                                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                        new Date(f.dueAt || f.scheduledAt) <
-                                        new Date()
-                                          ? "bg-rose-50 text-rose-600 border border-rose-200"
-                                          : "bg-blue-50 text-blue-700 border border-blue-200"
-                                      }`}
+                                  View All ({selectedUserDashboard.designProjects?.length || 0}) →
+                                </button>
+                                <Link
+                                  href="/dashboard/design"
+                                  className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 transition-all"
+                                  title="Open live Design Studio"
+                                >
+                                  Studio <ExternalLink className="w-3 h-3" />
+                                </Link>
+                              </div>
+                            </div>
+
+                            {!selectedUserDashboard.designProjects ||
+                            selectedUserDashboard.designProjects.length === 0 ? (
+                              <div className="py-10 text-center text-slate-400 text-xs">
+                                No artwork projects assigned yet for this designer.
+                              </div>
+                            ) : (
+                              <div className="divide-y divide-slate-100">
+                                {selectedUserDashboard.designProjects
+                                  .slice(0, 6)
+                                  .map((p) => {
+                                    const isDuePast =
+                                      p.dueDate &&
+                                      new Date(p.dueDate) < new Date() &&
+                                      ![
+                                        "APPROVED",
+                                        "PRODUCTION_LOCKED",
+                                        "DESIGN_PRODUCTION_READY",
+                                        "IN_PRODUCTION",
+                                        "CANCELLED",
+                                      ].includes(p.status);
+                                    let statusColor =
+                                      "bg-slate-100 text-slate-700 border-slate-200";
+                                    if (
+                                      p.status === "CLIENT_REVIEW" ||
+                                      p.status === "IN_REVIEW"
+                                    )
+                                      statusColor =
+                                        "bg-blue-50 text-blue-700 border-blue-200";
+                                    else if (p.status === "IN_PROGRESS")
+                                      statusColor =
+                                        "bg-amber-50 text-amber-700 border-amber-200";
+                                    else if (p.status === "REVISION_REQUESTED")
+                                      statusColor =
+                                        "bg-rose-50 text-rose-700 border-rose-200";
+                                    else if (
+                                      [
+                                        "APPROVED",
+                                        "PRODUCTION_LOCKED",
+                                        "DESIGN_PRODUCTION_READY",
+                                        "IN_PRODUCTION",
+                                      ].includes(p.status)
+                                    )
+                                      statusColor =
+                                        "bg-emerald-50 text-emerald-700 border-emerald-200";
+
+                                    return (
+                                      <div
+                                        key={p._id}
+                                        className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-2 -mx-2 transition"
+                                      >
+                                        <div className="min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-mono font-bold text-amber-600 text-xs">
+                                              {p.projectNumber}
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-900 truncate">
+                                              {p.title}
+                                            </span>
+                                          </div>
+                                          <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                            <span>
+                                              {p.customerId?.displayName ||
+                                                p.customerId?.companyName ||
+                                                "Client"}
+                                            </span>
+                                            {p.orderId?.orderNumber && (
+                                              <span className="text-slate-400">
+                                                • Order: {p.orderId.orderNumber}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <span
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusColor}`}
+                                          >
+                                            {p.status.replace(/_/g, " ")}
+                                          </span>
+                                          {p.dueDate && (
+                                            <span
+                                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                                                isDuePast
+                                                  ? "bg-rose-50 text-rose-600 border border-rose-200 font-bold"
+                                                  : "text-slate-400"
+                                              }`}
+                                            >
+                                              {new Date(p.dueDate).toLocaleDateString(
+                                                "en-IN",
+                                                {
+                                                  month: "short",
+                                                  day: "numeric",
+                                                },
+                                              )}
+                                            </span>
+                                          )}
+                                          <Link
+                                            href={`/dashboard/design?projectId=${p._id}`}
+                                            className="p-1 rounded-lg hover:bg-indigo-50 text-indigo-600 transition"
+                                            title="Open in Design Studio"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </Link>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right: Commercial Orders in Design */}
+                          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                <ShoppingBag className="w-4 h-4 text-indigo-600" />
+                                Commercial Orders in Design ({selectedUserDashboard.recentOrders?.length || 0})
+                              </h3>
+                              <button
+                                onClick={() => setActiveInspectorTab("orders")}
+                                className="text-xs text-indigo-600 hover:underline font-bold"
+                              >
+                                View All Orders ({selectedUserDashboard.kpi?.totalOrdersCount ?? selectedUserDashboard.recentOrders?.length ?? 0}) →
+                              </button>
+                            </div>
+
+                            {!selectedUserDashboard.recentOrders ||
+                            selectedUserDashboard.recentOrders.length === 0 ? (
+                              <div className="py-10 text-center text-slate-400 text-xs">
+                                No commercial orders assigned to this designer.
+                              </div>
+                            ) : (
+                              <div className="divide-y divide-slate-100">
+                                {selectedUserDashboard.recentOrders
+                                  .slice(0, 6)
+                                  .map((ord) => (
+                                    <div
+                                      key={ord._id}
+                                      className="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/60 rounded-xl px-2 -mx-2 transition"
                                     >
-                                      {new Date(
-                                        f.dueAt || f.scheduledAt,
-                                      ).toLocaleDateString("en-IN", {
-                                        month: "short",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </div>
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono font-bold text-indigo-600 text-xs">
+                                            {ord.orderNumber}
+                                          </span>
+                                          <span className="text-xs font-bold text-slate-800 truncate">
+                                            {ord.customerId?.displayName ||
+                                              ord.customerId?.companyName ||
+                                              "Commercial Client"}
+                                          </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                                          <span>
+                                            ₹{" "}
+                                            {(
+                                              ord.grandTotalPaise
+                                                ? ord.grandTotalPaise / 100
+                                                : ord.totalAmount || 0
+                                            ).toLocaleString("en-IN")}
+                                          </span>
+                                          {ord.promisedDeliveryDate && (
+                                            <span className="text-slate-400">
+                                              • Promised:{" "}
+                                              {new Date(
+                                                ord.promisedDeliveryDate,
+                                              ).toLocaleDateString("en-IN", {
+                                                month: "short",
+                                                day: "numeric",
+                                              })}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
 
-                      {/* Right: Recent Assigned Leads */}
-                      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                            <Briefcase className="w-4 h-4 text-indigo-600" />
-                            Recent Assigned Leads
-                          </h3>
-                          <button
-                            onClick={() => setActiveInspectorTab("leads")}
-                            className="text-xs text-indigo-600 hover:underline font-bold"
-                          >
-                            View All →
-                          </button>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">
+                                          {ord.designStatus ||
+                                            ord.commercialStatus ||
+                                            ord.orderStatus}
+                                        </span>
+                                        <Link
+                                          href={`/dashboard/design?orderId=${ord._id}`}
+                                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-indigo-50 transition"
+                                        >
+                                          Design →
+                                        </Link>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
-                        {selectedUserDashboard.recentLeads?.length === 0 ? (
-                          <div className="py-8 text-center text-slate-400 text-xs">
-                            No leads assigned to this user yet.
+                        {/* Quick Studio Workflow Action Banner */}
+                        <div className="p-4 rounded-2xl bg-linear-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-between gap-4 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-600/20">
+                              <Palette className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-slate-900">
+                                Design Studio &amp; Proof Approval System
+                              </h4>
+                              <p className="text-[11px] text-slate-500">
+                                Manage revisions, upload hi-res assets, generate customer proof approval links, and lock files for print production.
+                              </p>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="divide-y divide-slate-100">
-                            {selectedUserDashboard.recentLeads
-                              .slice(0, 5)
-                              .map((lead) => (
-                                <div
-                                  key={lead._id}
-                                  className="py-3 flex items-start justify-between gap-3"
-                                >
-                                  <div>
-                                    <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                                      <span>
-                                        {lead.contactName ||
-                                          lead.businessName ||
-                                          "Unnamed Lead"}
-                                      </span>
-                                      <span className="text-[10px] text-slate-400 font-mono">
-                                        #{lead.leadNumber}
-                                      </span>
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 mt-0.5">
-                                      {lead.businessName &&
-                                        `${lead.businessName} • `}
-                                      {lead.phone}
-                                    </div>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                                      {lead.status}
-                                    </span>
-                                    <div className="text-[11px] font-black text-slate-900 mt-1">
-                                      ₹{" "}
-                                      {(
-                                        lead.expectedValue ||
-                                        lead.estimatedBudget ||
-                                        0
-                                      ).toLocaleString("en-IN")}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
+                          <Link
+                            href="/dashboard/design"
+                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition"
+                          >
+                            <Palette className="w-4 h-4" />
+                            Launch Design Studio
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left: Today's / Upcoming Follow-ups */}
+                        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-blue-600" />
+                              Scheduled Follow-ups for{" "}
+                              {selectedUserDashboard.user.name.split(" ")[0]}
+                            </h3>
+                            <button
+                              onClick={() => setActiveInspectorTab("followups")}
+                              className="text-xs text-indigo-600 hover:underline font-bold"
+                            >
+                              View All →
+                            </button>
+                          </div>
+
+                          {selectedUserDashboard.upcomingFollowups?.length ===
+                          0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs">
+                              No follow-ups currently scheduled for this user.
+                            </div>
+                          ) : (
+                            <div className="divide-y divide-slate-100">
+                              {selectedUserDashboard.upcomingFollowups
+                                .slice(0, 5)
+                                .map((f) => (
+                                  <div
+                                    key={f._id}
+                                    className="py-3 flex items-start justify-between gap-3"
+                                  >
+                                    <div>
+                                      <div className="text-xs font-bold text-slate-800">
+                                        {f.title || "Follow-up Call"}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 mt-0.5">
+                                        {f.customerId?.displayName ||
+                                          f.leadId?.contactName ||
+                                          "Client"}
+                                        {(f.customerId?.phone ||
+                                          f.leadId?.phone) && (
+                                          <span className="ml-1 text-slate-400">
+                                            •{" "}
+                                            {f.customerId?.phone ||
+                                              f.leadId?.phone}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                          new Date(f.dueAt || f.scheduledAt) <
+                                          new Date()
+                                            ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                            : "bg-blue-50 text-blue-700 border border-blue-200"
+                                        }`}
+                                      >
+                                        {new Date(
+                                          f.dueAt || f.scheduledAt,
+                                        ).toLocaleDateString("en-IN", {
+                                          month: "short",
+                                          day: "numeric",
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: Recent Assigned Leads */}
+                        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-indigo-600" />
+                              Recent Assigned Leads
+                            </h3>
+                            <button
+                              onClick={() => setActiveInspectorTab("leads")}
+                              className="text-xs text-indigo-600 hover:underline font-bold"
+                            >
+                              View All →
+                            </button>
+                          </div>
+
+                          {selectedUserDashboard.recentLeads?.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs">
+                              No leads assigned to this user yet.
+                            </div>
+                          ) : (
+                            <div className="divide-y divide-slate-100">
+                              {selectedUserDashboard.recentLeads
+                                .slice(0, 5)
+                                .map((lead) => (
+                                  <div
+                                    key={lead._id}
+                                    className="py-3 flex items-start justify-between gap-3"
+                                  >
+                                    <div>
+                                      <div className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                        <span>
+                                          {lead.contactName ||
+                                            lead.businessName ||
+                                            "Unnamed Lead"}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-mono">
+                                          #{lead.leadNumber}
+                                        </span>
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 mt-0.5">
+                                        {lead.businessName &&
+                                          `${lead.businessName} • `}
+                                        {lead.phone}
+                                      </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                        {lead.status}
+                                      </span>
+                                      <div className="text-[11px] font-black text-slate-900 mt-1">
+                                        ₹{" "}
+                                        {(
+                                          lead.expectedValue ||
+                                          lead.estimatedBudget ||
+                                          0
+                                        ).toLocaleString("en-IN")}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
 
                   {/* TAB 2: LEADS TABLE */}
                   {activeInspectorTab === "leads" && (
@@ -1918,67 +2399,194 @@ export default function AdminUserDashboardsPage() {
                   )}
 
                   {/* TAB 7: DESIGN STUDIO (if designer) */}
-                  {activeInspectorTab === "design" &&
-                    selectedUserDashboard.designProjects && (
-                      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                          <h3 className="text-sm font-bold text-slate-900">
-                            Design Studio Projects Assigned to{" "}
+                  {activeInspectorTab === "design" && (
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs space-y-4 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <Palette className="w-4 h-4 text-purple-600" />
+                            Design Projects Assigned to{" "}
                             {selectedUserDashboard.user.name}
                           </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Track proofs, artwork revisions, dimensions, and approval workflows.
+                          </p>
+                        </div>
+                        <Link
+                          href="/dashboard/design"
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          Launch Full Studio
+                        </Link>
+                      </div>
+
+                      {/* Filter & Search Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto">
+                          {[
+                            { id: "ALL", label: "All Projects" },
+                            { id: "ACTIVE", label: "In Progress / Review" },
+                            { id: "CLIENT_REVIEW", label: "Client Review" },
+                            { id: "REVISION_REQUESTED", label: "Revisions" },
+                            { id: "APPROVED", label: "Approved / Print-Ready" },
+                          ].map((f) => (
+                            <button
+                              key={f.id}
+                              onClick={() => setDesignStatusFilter(f.id)}
+                              className={`px-3 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+                                designStatusFilter === f.id
+                                  ? "bg-purple-600 text-white shadow-2xs"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
                         </div>
 
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr className="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
-                                <th className="py-3 px-4">Project #</th>
-                                <th className="py-3 px-3">Title / Artwork</th>
-                                <th className="py-3 px-3">Customer</th>
-                                <th className="py-3 px-3">Status</th>
-                                <th className="py-3 px-3">Priority</th>
-                                <th className="py-3 px-4 text-right">
-                                  Due Date
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {selectedUserDashboard.designProjects.map((p) => (
-                                <tr
-                                  key={p._id}
-                                  className="hover:bg-slate-50/80 transition-colors"
-                                >
-                                  <td className="py-3 px-4 font-mono font-bold text-amber-600">
-                                    {p.projectNumber}
-                                  </td>
-                                  <td className="py-3 px-3 font-semibold text-slate-900">
-                                    {p.title}
-                                  </td>
-                                  <td className="py-3 px-3 text-slate-600">
-                                    {p.customerId?.displayName || "Client"}
-                                  </td>
-                                  <td className="py-3 px-3">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                      {p.status}
-                                    </span>
-                                  </td>
-                                  <td className="py-3 px-3 font-bold text-slate-700">
-                                    {p.priority || "NORMAL"}
-                                  </td>
-                                  <td className="py-3 px-4 text-right text-slate-400">
-                                    {p.dueDate
-                                      ? new Date(p.dueDate).toLocaleDateString(
-                                          "en-IN",
-                                        )
-                                      : "—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div className="relative min-w-[220px]">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Search projects..."
+                            value={designSearchTerm}
+                            onChange={(e) =>
+                              setDesignSearchTerm(e.target.value)
+                            }
+                            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:border-purple-500"
+                          />
                         </div>
                       </div>
-                    )}
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                              <th className="py-3 px-4">Project #</th>
+                              <th className="py-3 px-3">Title / Artwork</th>
+                              <th className="py-3 px-3">Customer</th>
+                              <th className="py-3 px-3">Status</th>
+                              <th className="py-3 px-3">Priority</th>
+                              <th className="py-3 px-3">Due Date</th>
+                              <th className="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredDesignProjects.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={7}
+                                  className="py-10 text-center text-slate-400 text-xs"
+                                >
+                                  No design projects found matching your filter.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredDesignProjects.map((p) => {
+                                const isDuePast =
+                                  p.dueDate &&
+                                  new Date(p.dueDate) < new Date() &&
+                                  ![
+                                    "APPROVED",
+                                    "PRODUCTION_LOCKED",
+                                    "DESIGN_PRODUCTION_READY",
+                                    "IN_PRODUCTION",
+                                    "CANCELLED",
+                                  ].includes(p.status);
+
+                                let statusColor =
+                                  "bg-slate-100 text-slate-700 border-slate-200";
+                                if (
+                                  p.status === "CLIENT_REVIEW" ||
+                                  p.status === "IN_REVIEW"
+                                )
+                                  statusColor =
+                                    "bg-blue-50 text-blue-700 border-blue-200";
+                                else if (p.status === "IN_PROGRESS")
+                                  statusColor =
+                                    "bg-amber-50 text-amber-700 border-amber-200";
+                                else if (p.status === "REVISION_REQUESTED")
+                                  statusColor =
+                                    "bg-rose-50 text-rose-700 border-rose-200";
+                                else if (
+                                  [
+                                    "APPROVED",
+                                    "PRODUCTION_LOCKED",
+                                    "DESIGN_PRODUCTION_READY",
+                                    "IN_PRODUCTION",
+                                  ].includes(p.status)
+                                )
+                                  statusColor =
+                                    "bg-emerald-50 text-emerald-700 border-emerald-200";
+
+                                return (
+                                  <tr
+                                    key={p._id}
+                                    className="hover:bg-slate-50/80 transition-colors"
+                                  >
+                                    <td className="py-3 px-4 font-mono font-bold text-purple-700">
+                                      {p.projectNumber}
+                                    </td>
+                                    <td className="py-3 px-3">
+                                      <div className="font-semibold text-slate-900">
+                                        {p.title}
+                                      </div>
+                                      {p.orderId?.orderNumber && (
+                                        <span className="text-[10px] text-slate-400">
+                                          Order #{p.orderId.orderNumber}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-3 text-slate-600">
+                                      {p.customerId?.displayName ||
+                                        p.customerId?.companyName ||
+                                        "Client"}
+                                    </td>
+                                    <td className="py-3 px-3">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusColor}`}
+                                      >
+                                        {p.status.replace(/_/g, " ")}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-3 font-bold text-slate-700">
+                                      {p.priority || "NORMAL"}
+                                    </td>
+                                    <td className="py-3 px-3 text-slate-600">
+                                      {p.dueDate ? (
+                                        <span
+                                          className={
+                                            isDuePast
+                                              ? "text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"
+                                              : ""
+                                          }
+                                        >
+                                          {new Date(
+                                            p.dueDate,
+                                          ).toLocaleDateString("en-IN")}
+                                        </span>
+                                      ) : (
+                                        "—"
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                      <Link
+                                        href={`/dashboard/design?projectId=${p._id}`}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 transition"
+                                      >
+                                        Studio <ExternalLink className="w-3 h-3" />
+                                      </Link>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>
