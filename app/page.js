@@ -21,6 +21,15 @@ export default function Home() {
 
   // Check if user is already logged in or has saved rememberMe email
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlError = urlParams.get("error");
+      if (urlError) {
+        setError(urlError);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
     const user = localStorage.getItem("user");
     if (user) {
       router.push("/dashboard");
@@ -74,15 +83,29 @@ export default function Home() {
               Authorization: `Bearer ${data.session.access_token}`,
             },
           });
-          if (authMeRes.ok) {
-            const authMeData = await authMeRes.json();
-            if (authMeData.success && authMeData.data) {
-              const u = authMeData.data.user;
-              if (u.role) userRole = u.role;
-              if (u.name) userName = u.name;
-              if (u.id) userMongoId = u.id;
-              tenantInfo = authMeData.data.tenant;
-              permissions = authMeData.data.permissions || [];
+          const authMeData = await authMeRes.json().catch(() => ({}));
+
+          if (authMeRes.ok && authMeData.success && authMeData.data) {
+            const u = authMeData.data.user;
+            if (u.role) userRole = u.role;
+            if (u.name) userName = u.name;
+            if (u.id) userMongoId = u.id;
+            tenantInfo = authMeData.data.tenant;
+            permissions = authMeData.data.permissions || [];
+          } else {
+            if (
+              authMeRes.status === 403 ||
+              authMeData?.code === "USER_DISABLED" ||
+              (typeof authMeData?.message === "string" &&
+                authMeData.message.toLowerCase().includes("disabled"))
+            ) {
+              await supabase.auth.signOut();
+              setError(
+                authMeData.message ||
+                  "User account is disabled. Contact system administrator."
+              );
+              setIsLoading(false);
+              return;
             }
           }
         } catch (pErr) {

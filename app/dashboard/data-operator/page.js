@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
+import DailyReportView from "./components/DailyReportView";
+import ExportDataView from "./components/ExportDataView";
 import { api } from "@/lib/api";
 import {
   Upload,
@@ -12,6 +14,7 @@ import {
   AlertTriangle,
   Send,
   Trash2,
+  
   ZoomIn,
   ZoomOut,
   RotateCw,
@@ -79,9 +82,17 @@ const BUSINESS_CATEGORIES = [
 // Real-time Data Operator Hub (Dynamic Data)
 
 export default function DataOperatorPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [internalView, setInternalView] = useState(null);
   const viewParam = searchParams.get("view");
+  const actionParam = searchParams.get("action");
+
+  // Clear internal override whenever URL search parameter changes
+  useEffect(() => {
+    setInternalView(null);
+  }, [viewParam, actionParam]);
+
   const currentView =
     internalView !== null
       ? internalView
@@ -93,8 +104,20 @@ export default function DataOperatorPage() {
             ? "leads"
             : viewParam === "coverage"
               ? "coverage"
-              : "dashboard";
-  const setCurrentView = (v) => setInternalView(v);
+              : viewParam === "reports" || viewParam === "daily-report"
+                ? "reports"
+                : viewParam === "export" || actionParam === "export"
+                  ? "export"
+                  : "dashboard";
+
+  const setCurrentView = (v) => {
+    setInternalView(v);
+    const targetUrl =
+      v === "dashboard"
+        ? "/dashboard/data-operator"
+        : `/dashboard/data-operator?view=${v}`;
+    router.push(targetUrl);
+  };
 
   // Stepper State for Market Photo Upload (Screenshot 2)
   const [uploadStep, setUploadStep] = useState(1);
@@ -1672,7 +1695,7 @@ export default function DataOperatorPage() {
               </div>
 
               {/* 4-Step Stepper Header */}
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto py-1">
+              <div className="flex items-center gap-2 sm:gap-4 py-1">
                 <div className="flex items-center gap-2 relative">
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
@@ -4091,6 +4114,37 @@ export default function DataOperatorPage() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 6: DAILY REPORT VIEW                                                */}
+        {/* ========================================================================= */}
+        {currentView === "reports" && (
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+            <DailyReportView
+              leads={recentEntries}
+              areas={areas}
+              salesReps={salesReps}
+              currentUser={currentUser}
+              workingDurationStr={workingDurationStr}
+              setCurrentView={setCurrentView}
+              onRefresh={fetchLeadsFromDb}
+            />
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 7: EXPORT DATA VIEW                                                 */}
+        {/* ========================================================================= */}
+        {currentView === "export" && (
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+            <ExportDataView
+              leads={recentEntries}
+              areas={areas}
+              salesReps={salesReps}
+              setCurrentView={setCurrentView}
+            />
           </div>
         )}
       </main>

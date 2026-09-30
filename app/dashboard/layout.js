@@ -48,11 +48,21 @@ export default function DashboardSecurityLayout({ children }) {
           }
         })
         .catch((err) => {
-          if (err?.statusCode === 401 || err?.status === 401) {
+          if (
+            err?.statusCode === 401 ||
+            err?.status === 401 ||
+            err?.statusCode === 403 ||
+            err?.status === 403 ||
+            (typeof err?.message === "string" &&
+              err.message.toLowerCase().includes("disabled"))
+          ) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             localStorage.removeItem("userRole");
-            router.push("/");
+            localStorage.removeItem("userName");
+            localStorage.removeItem("tenant");
+            localStorage.removeItem("tenantId");
+            router.push(`/?error=${encodeURIComponent(err.message || 'User account is disabled. Contact system administrator.')}`);
           }
         });
     }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Home,
   LayoutDashboard,
@@ -41,6 +41,7 @@ import Image from "next/image";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [userRole, setUserRole] = useState(() =>
     typeof window !== "undefined"
       ? (localStorage.getItem("userRole") || "admin").toLowerCase()
@@ -67,6 +68,14 @@ export default function Sidebar() {
       ? new URLSearchParams(window.location.search).get("view") || ""
       : ""
   );
+
+  useEffect(() => {
+    if (searchParams) {
+      setCurrentFilter(searchParams.get("filter") || "");
+      setCurrentView(searchParams.get("view") || "");
+    }
+  }, [searchParams]);
+
   const [collapsed, setCollapsed] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem("sidebar_collapsed") === "true"
@@ -148,11 +157,13 @@ export default function Sidebar() {
               name: "Daily Report",
               href: "/dashboard/data-operator?view=reports",
               icon: BarChart3,
+              isOrange: true,
             },
             {
               name: "Export Data",
-              href: "/dashboard/data-operator?action=export",
+              href: "/dashboard/data-operator?view=export",
               icon: Download,
+              isOrange: true,
             },
           ],
         },
