@@ -158,9 +158,40 @@ export default function DataOperatorPage() {
 
   // Interactive Modal States
   const [showPreviewModal, setShowPreviewModal] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Photos Queue for Conversion
-  const [photosQueue, setPhotosQueue] = useState([]);
+  // Photos Queue for Conversion (Persisted dynamically in localStorage across browser sessions)
+  const [photosQueue, setPhotosQueue] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("data_operator_photos_queue");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.warn("Could not load photos queue:", e);
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const serializable = photosQueue.map((p) => ({
+          id: p.id,
+          fileName: p.fileName,
+          previewUrl: p.previewUrl,
+          uploadedUrl: p.uploadedUrl || p.previewUrl,
+          isUploadedToCloudinary: !!p.isUploadedToCloudinary,
+          fileSize: p.fileSize,
+          uploadDate: p.uploadDate,
+        }));
+        localStorage.setItem("data_operator_photos_queue", JSON.stringify(serializable));
+      } catch (e) {
+        console.warn("Could not save photos queue:", e);
+      }
+    }
+  }, [photosQueue]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Recent Entries Ledger (Populated dynamically from backend / current session)
@@ -218,15 +249,15 @@ export default function DataOperatorPage() {
 
   // Dynamic Hourly Distribution for Time Analysis
   const hourlyAnalysis = useMemo(() => {
-    const hours = ["10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM"];
-    const counts = { "10AM": 0, "11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0 };
+    const hours = ["9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM", "6PM"];
+    const counts = { "9AM": 0, "10AM": 0, "11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0, "6PM": 0 };
 
     recentEntries.forEach((entry) => {
       if (entry.createdDate) {
         const d = new Date(entry.createdDate);
         if (!isNaN(d.getTime())) {
           const h = d.getHours();
-          const map = { 10: "10AM", 11: "11AM", 12: "12PM", 13: "1PM", 14: "2PM", 15: "3PM", 16: "4PM", 17: "5PM" };
+          const map = { 9: "9AM", 10: "10AM", 11: "11AM", 12: "12PM", 13: "1PM", 14: "2PM", 15: "3PM", 16: "4PM", 17: "5PM", 18: "6PM" };
           const label = map[h];
           if (label && counts[label] !== undefined) counts[label]++;
         }
@@ -586,24 +617,8 @@ export default function DataOperatorPage() {
       }
     }
 
-    // 2. Fallback to smart territory defaults
-    if (zoneLower.includes("baba colony") || zoneLower.includes("baba")) {
-      matched = salesReps.find((u) => u.name?.toLowerCase().includes("tanya"));
-    } else if (
-      zoneLower.includes("kashi enclave") ||
-      zoneLower.includes("kashi") ||
-      zoneLower.includes("nathupura")
-    ) {
-      matched = salesReps.find((u) => u.name?.toLowerCase().includes("roshni"));
-    } else if (zoneLower.includes("sant nagar")) {
-      matched = salesReps.find(
-        (u) =>
-          u.name?.toLowerCase().includes("shivam") ||
-          u.name?.toLowerCase().includes("sales")
-      );
-    }
-
-    if (!matched && areaId) {
+    // 2. Direct Area sales reps / manager from database
+    if (areaId) {
       matched = salesReps.find(
         (u) =>
           Array.isArray(u.areaIds) &&
@@ -611,7 +626,7 @@ export default function DataOperatorPage() {
       );
     }
 
-    return matched ? matched._id || matched.id : salesReps[0]?._id || "tanya_id";
+    return matched ? matched._id || matched.id : salesReps[0]?._id || "";
   };
 
   // Select photo from queue for editing
@@ -871,7 +886,7 @@ export default function DataOperatorPage() {
         (s) => (s._id || s.id) === formData.assignedToId
       );
       const repName =
-        dispatchedRep?.name || formData.assignedToName || (formData.zone?.includes("Baba") ? "Tanya" : "Roshni");
+        dispatchedRep?.name || formData.assignedToName || salesReps[0]?.name || "Sales Executive";
       const initials = repName.slice(0, 2).toUpperCase();
 
       const newLeadNumber =
@@ -1027,17 +1042,33 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              {/* Calendar Card (Right) */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-2xs self-start sm:self-auto">
-                <Calendar className="w-5 h-5 text-slate-600" />
-                <div>
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Today
-                  </div>
-                  <div className="text-xs font-bold text-slate-800">
-                    {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", weekday: "long" })}
+              {/* Calendar & Live Sync Actions (Right) */}
+              <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+                <div className="bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-2xs">
+                  <Calendar className="w-5 h-5 text-slate-600" />
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                      Today
+                    </div>
+                    <div className="text-xs font-bold text-slate-800">
+                      {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", weekday: "long" })}
+                    </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={async () => {
+                    setIsSyncing(true);
+                    const res = await fetchLeadsFromDb();
+                    setIsSyncing(false);
+                    showToast(`Synced ${res.length} live leads from database!`, "success");
+                  }}
+                  className="bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 rounded-2xl px-3.5 py-2.5 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer text-xs font-bold"
+                  title="Synchronize live data with MongoDB"
+                >
+                  <RefreshCw className={`w-4 h-4 text-teal-600 ${isSyncing ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">Sync Data</span>
+                </button>
               </div>
             </div>
 
@@ -1066,7 +1097,7 @@ export default function DataOperatorPage() {
                     <FileText className="w-5 h-5" />
                   </div>
                   <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-                    ↑ +12%
+                    {totalLeadsCreated > 0 ? "↑ Active" : "0 Today"}
                   </span>
                 </div>
                 <div className="mt-3">
@@ -1088,7 +1119,7 @@ export default function DataOperatorPage() {
                     <Send className="w-5 h-5" />
                   </div>
                   <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-                    ↑ +10%
+                    {totalLeadsCreated > 0 ? `${Math.round((totalLeadsAssigned / totalLeadsCreated) * 100)}%` : "0%"}
                   </span>
                 </div>
                 <div className="mt-3">
@@ -2447,7 +2478,7 @@ export default function DataOperatorPage() {
                               zone: firstZone,
                               assignedToId: repId,
                               assignedToName:
-                                repObj?.name || (firstZone.includes("Baba") ? "Tanya" : "Roshni"),
+                                repObj?.name || salesReps[0]?.name || "Sales Executive",
                             });
                           }}
                           className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
@@ -2482,7 +2513,7 @@ export default function DataOperatorPage() {
                               zone: newZone,
                               assignedToId: repId,
                               assignedToName:
-                                repObj?.name || (newZone.includes("Baba") ? "Tanya" : "Roshni"),
+                                repObj?.name || salesReps[0]?.name || "Sales Executive",
                             });
                           }}
                           className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
@@ -2589,7 +2620,7 @@ export default function DataOperatorPage() {
                         setFormData({
                           ...formData,
                           assignedToId: repId,
-                          assignedToName: repObj?.name || "Tanya",
+                          assignedToName: repObj?.name || salesReps[0]?.name || "Sales Executive",
                         });
                       }}
                       className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
@@ -3841,7 +3872,7 @@ export default function DataOperatorPage() {
                   {new Set(coverageList.map((c) => c.assignedRep)).size}
                 </div>
                 <div className="text-[11px] text-purple-700 font-semibold mt-1">
-                  Tanya, Roshni, Shivam...
+                  {Array.from(new Set(coverageList.map((c) => c.assignedRep).filter(Boolean))).slice(0, 3).join(", ") || "Active Sales Team"}
                 </div>
               </div>
 
