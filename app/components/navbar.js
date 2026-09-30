@@ -584,6 +584,12 @@ export default function Navbar() {
       ];
     }
 
+    if (role === "data_operator") {
+      return [
+        { name: "Home", href: "/dashboard/data-operator", icon: Home },
+      ];
+    }
+
     if (role === "designer") {
       return [
         { name: "Home", href: "/dashboard/designer", icon: Home },
@@ -916,6 +922,17 @@ export default function Navbar() {
                     >
                       <Palette className="w-4 h-4 text-slate-400" />
                       <span>My Design Projects</span>
+                    </Link>
+                  )}
+
+                  {user.role === "data_operator" && (
+                    <Link
+                      href="/dashboard/data-operator"
+                      onClick={() => setShowUserDropdown(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                    >
+                      <Layers className="w-4 h-4 text-slate-400" />
+                      <span>Data Operator Workspace</span>
                     </Link>
                   )}
                 </div>

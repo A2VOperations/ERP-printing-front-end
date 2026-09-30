@@ -59,6 +59,8 @@ const ROLE_COLORS = {
   executive: "bg-emerald-50 text-emerald-700 border-emerald-200",
   designer: "bg-amber-50 text-amber-700 border-amber-200",
   graphic_designer: "bg-amber-50 text-amber-700 border-amber-200",
+  data_operator: "bg-teal-50 text-teal-700 border-teal-200",
+  "data-operator": "bg-teal-50 text-teal-700 border-teal-200",
 };
 
 export default function AdminUserDashboardsPage() {

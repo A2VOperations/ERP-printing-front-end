@@ -34,6 +34,7 @@ const ALLOWED_ROLES = [
   { slug: "manager", label: "Manager" },
   { slug: "sales", label: "Sales Representative" },
   { slug: "designer", label: "Graphic Designer" },
+  { slug: "data_operator", label: "Data Operator" },
 ];
 
 const PERMISSION_RESOURCES = [
@@ -521,8 +522,8 @@ export default function UsersDirectoryPage() {
                 Users Directory & Access Management
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                Create and manage team members across the 4 authorized roles:
-                Admin, Manager, Sales, Designer
+                Create and manage team members across the 5 authorized roles:
+                Admin, Manager, Sales, Designer, Data Operator
               </p>
             </div>
 
@@ -572,6 +573,7 @@ export default function UsersDirectoryPage() {
                 <option value="manager">Manager</option>
                 <option value="sales">Sales</option>
                 <option value="designer">Designer</option>
+                <option value="data_operator">Data Operator</option>
               </select>
 
               <select
@@ -662,10 +664,12 @@ export default function UsersDirectoryPage() {
                                       ? "bg-amber-50 text-amber-700 border-amber-200"
                                       : roleSlug === "designer"
                                         ? "bg-pink-50 text-pink-700 border-pink-200"
-                                        : "bg-blue-50 text-blue-700 border-blue-200"
+                                        : roleSlug === "data_operator"
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-blue-50 text-blue-700 border-blue-200"
                                 }`}
                               >
-                                {roleSlug.toUpperCase()}
+                                {roleSlug.replace("_", " ").toUpperCase()}
                               </span>
                               {u.hasCustomPermissions && (
                                 <span

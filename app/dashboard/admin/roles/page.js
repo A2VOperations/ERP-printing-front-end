@@ -130,6 +130,14 @@ const DEFAULT_STANDARD_ROLES = [
       { resource: "REPORTS", action: "VIEW", dataScope: "OWN" },
     ],
   },
+  {
+    slug: "data_operator",
+    name: "Data Operator",
+    description:
+      "Data operations, records processing, and administrative data entry.",
+    isSystemDefault: true,
+    permissions: [],
+  },
 ];
 
 export default function RolesPermissionsPage() {

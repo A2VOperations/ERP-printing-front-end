@@ -31,31 +31,50 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageCircle,
+  Image as ImageIcon,
+  PlusCircle,
+  List,
+  Download,
+  Headphones,
 } from "lucide-react";
 import Image from "next/image";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [userRole, setUserRole] = useState("admin");
-  const [currentFilter, setCurrentFilter] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
+  const [userRole, setUserRole] = useState(() =>
+    typeof window !== "undefined"
+      ? (localStorage.getItem("userRole") || "admin").toLowerCase()
+      : "admin"
+  );
+  const [currentUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const u = localStorage.getItem("user");
+        return u ? JSON.parse(u) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+  const [currentFilter, setCurrentFilter] = useState(() =>
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("filter") || ""
+      : ""
+  );
+  const [currentView, setCurrentView] = useState(() =>
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("view") || ""
+      : ""
+  );
+  const [collapsed, setCollapsed] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem("sidebar_collapsed") === "true"
+      : false
+  );
 
   useEffect(() => {
-    const storedRole = (
-      localStorage.getItem("userRole") || "admin"
-    ).toLowerCase();
-
-    setUserRole(storedRole);
-
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setCurrentFilter(params.get("filter") || "");
-
-      const savedCollapsed = localStorage.getItem("sidebar_collapsed");
-      if (savedCollapsed === "true") {
-        setCollapsed(true);
-      }
-
       const handleToggle = () => {
         setCollapsed((prev) => {
           const next = !prev;
@@ -72,6 +91,73 @@ export default function Sidebar() {
   // Determine role-based menu structures strictly matching specification
   const getNavSections = () => {
     const role = userRole.toLowerCase();
+
+    // 0. DATA OPERATOR MENU
+    if (role.includes("data_operator") || role.includes("operator")) {
+      return [
+        {
+          title: "",
+          items: [
+            {
+              name: "Dashboard",
+              href: "/dashboard/data-operator",
+              icon: Home,
+              exact: true,
+              isOrange: true,
+            },
+          ],
+        },
+        {
+          title: "| LEAD ENTRY",
+          items: [
+            {
+              name: "Market Photos",
+              href: "/dashboard/data-operator?view=photos",
+              icon: ImageIcon,
+              isOrange: true,
+            },
+            {
+              name: "+ Add New Lead",
+              href: "/dashboard/data-operator?view=review",
+              icon: PlusCircle,
+              isOrange: true,
+            },
+            {
+              name: "My Created Leads",
+              href: "/dashboard/data-operator?view=leads",
+              icon: List,
+              isOrange: true,
+            },
+          ],
+        },
+        {
+          title: "| MARKET COVERAGE",
+          items: [
+            {
+              name: "Area / Zone Status",
+              href: "/dashboard/data-operator?view=coverage",
+              icon: MapPin,
+              isOrange: true,
+            },
+          ],
+        },
+        {
+          title: "| REPORTS",
+          items: [
+            {
+              name: "Daily Report",
+              href: "/dashboard/data-operator?view=reports",
+              icon: BarChart3,
+            },
+            {
+              name: "Export Data",
+              href: "/dashboard/data-operator?action=export",
+              icon: Download,
+            },
+          ],
+        },
+      ];
+    }
 
     // 1. DESIGNER MENU
     if (role.includes("designer")) {
@@ -524,7 +610,16 @@ export default function Sidebar() {
                 const Icon = item.icon;
 
                 let isActive = false;
-                if (item.href.includes("?filter=")) {
+                if (item.href.includes("?view=")) {
+                  const itemView = item.href.split("?view=")[1];
+                  isActive =
+                    pathname === "/dashboard/data-operator" &&
+                    currentView === itemView;
+                } else if (item.href === "/dashboard/data-operator") {
+                  isActive =
+                    pathname === "/dashboard/data-operator" &&
+                    (!currentView || currentView === "dashboard");
+                } else if (item.href.includes("?filter=")) {
                   const itemFilter = item.href.split("?filter=")[1];
                   isActive =
                     pathname === "/dashboard/design" &&
@@ -547,7 +642,11 @@ export default function Sidebar() {
                     href={item.href}
                     title={collapsed ? item.name : undefined}
                     onClick={() => {
-                      if (item.href.includes("?filter=")) {
+                      if (item.href.includes("?view=")) {
+                        setCurrentView(item.href.split("?view=")[1]);
+                      } else if (item.href === "/dashboard/data-operator") {
+                        setCurrentView("");
+                      } else if (item.href.includes("?filter=")) {
                         setCurrentFilter(item.href.split("?filter=")[1]);
                       } else if (item.href === "/dashboard/design") {
                         setCurrentFilter("");
@@ -557,12 +656,14 @@ export default function Sidebar() {
                       collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
                     } ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                        ? item.isOrange
+                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30 rounded-xl"
+                          : "bg-blue-600 text-white shadow-md shadow-blue-600/30 rounded-xl"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl"
                     }`}
                   >
                     <Icon
-                      className={`w-6 h-6 shrink-0 ${
+                      className={`w-5 h-5 shrink-0 ${
                         isActive
                           ? "text-white"
                           : "text-slate-400 group-hover:text-slate-200"
@@ -584,6 +685,36 @@ export default function Sidebar() {
             </div>
           ))}
         </div>
+
+        {/* Data Operator Help Widget */}
+        {userRole.includes("data_operator") && !collapsed && (
+          <div className="p-3 mx-3 mb-2 rounded-2xl bg-[#191e2b] border border-slate-800 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#F95721]/15 text-[#F95721] flex items-center justify-center shrink-0">
+              <Headphones className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-[#F95721]">Need Help?</div>
+              <div className="text-[11px] text-slate-400">Call Admin</div>
+            </div>
+          </div>
+        )}
+
+        {/* Data Operator User Profile Pill Card */}
+        {userRole.includes("data_operator") && !collapsed && (
+          <div className="p-2.5 mx-3 mb-2 rounded-2xl bg-[#141824] border border-slate-800/80 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#1e2438] text-slate-200 font-bold text-xs flex items-center justify-center shrink-0">
+              {(currentUser?.name?.slice(0, 2) || "DO").toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white truncate">
+                {currentUser?.name || "Data Operator"}
+              </div>
+              <div className="text-[11px] text-slate-400 truncate">
+                {currentUser?.roleSlug?.replace("_", " ") || "Data Operator"}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Collapse Toggle Footer */}
         <div className="p-3 border-t border-slate-800/80 shrink-0">

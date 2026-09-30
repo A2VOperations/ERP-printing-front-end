@@ -120,7 +120,9 @@ export default function Home() {
             ? "/dashboard/admin"
             : roleNormalized.includes("manager")
               ? "/dashboard/manager"
-              : "/dashboard";
+              : roleNormalized.includes("data_operator") || roleNormalized.includes("data operator") || roleNormalized.includes("operator")
+                ? "/dashboard/data-operator"
+                : "/dashboard";
 
         setTimeout(() => {
           router.push(targetRoute);
