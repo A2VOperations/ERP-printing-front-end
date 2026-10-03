@@ -4350,7 +4350,7 @@ export default function DataOperatorPage() {
                   className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e04816] text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-orange-500/25 transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>+ Add New Lead</span>
+                  <span>Add New Lead</span>
                 </button>
               </div>
             </div>
