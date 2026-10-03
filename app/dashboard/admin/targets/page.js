@@ -338,7 +338,7 @@ export default function AdminTargetsPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <Navbar />
 
-        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <div className="p-6 md:p-8 space-y-6 mx-auto w-full">
           {/* Notification Toast */}
           {notification && (
             <div

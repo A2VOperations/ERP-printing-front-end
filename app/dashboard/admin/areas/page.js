@@ -305,7 +305,7 @@ export default function AreasTerritoriesPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <Navbar />
 
-        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <div className="p-6 md:p-8 space-y-6 mx-auto w-full">
           {/* Header Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
