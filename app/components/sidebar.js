@@ -126,7 +126,7 @@ export default function Sidebar() {
               isOrange: true,
             },
             {
-              name: "+ Add New Lead",
+              name: "Add New Lead",
               href: "/dashboard/data-operator?view=review",
               icon: PlusCircle,
               isOrange: true,
@@ -668,9 +668,9 @@ export default function Sidebar() {
                     } ${
                       isActive
                         ? item.isOrange
-                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30 rounded-xl"
-                          : "bg-blue-600 text-white shadow-md shadow-blue-600/30 rounded-xl"
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl"
+                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
+                          : "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
                     <Icon
@@ -681,7 +681,7 @@ export default function Sidebar() {
                       }`}
                     />
                     {!collapsed && (
-                      <span className="truncate text-sm">{item.name}</span>
+                      <span className="truncate text-base">{item.name}</span>
                     )}
 
                     {/* Floating Tooltip in Collapsed Mode */}
@@ -696,36 +696,6 @@ export default function Sidebar() {
             </div>
           ))}
         </div>
-
-        {/* Data Operator Help Widget */}
-        {userRole.includes("data_operator") && !collapsed && (
-          <div className="p-3 mx-3 mb-2 rounded-2xl bg-[#191e2b] border border-slate-800 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F95721]/15 text-[#F95721] flex items-center justify-center shrink-0">
-              <Headphones className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-[#F95721]">Need Help?</div>
-              <div className="text-[11px] text-slate-400">Call Admin</div>
-            </div>
-          </div>
-        )}
-
-        {/* Data Operator User Profile Pill Card */}
-        {userRole.includes("data_operator") && !collapsed && (
-          <div className="p-2.5 mx-3 mb-2 rounded-2xl bg-[#141824] border border-slate-800/80 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#1e2438] text-slate-200 font-bold text-xs flex items-center justify-center shrink-0">
-              {(currentUser?.name?.slice(0, 2) || "DO").toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white truncate">
-                {currentUser?.name || "Data Operator"}
-              </div>
-              <div className="text-[11px] text-slate-400 truncate">
-                {currentUser?.roleSlug?.replace("_", " ") || "Data Operator"}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Bottom Collapse Toggle Footer */}
         <div className="p-3 border-t border-slate-800/80 shrink-0">

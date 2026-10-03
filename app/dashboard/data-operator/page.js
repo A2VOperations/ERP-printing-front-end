@@ -8,16 +8,16 @@ import DailyReportView from "./components/DailyReportView";
 import ExportDataView from "./components/ExportDataView";
 import { api } from "@/lib/api";
 import {
+  PlusCircle,
   Upload,
   Image as ImageIcon,
   CheckCircle2,
   AlertTriangle,
   Send,
   Trash2,
-  
+  RotateCw,
   ZoomIn,
   ZoomOut,
-  RotateCw,
   User,
   Building,
   Phone,
@@ -30,6 +30,7 @@ import {
   Layers,
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   Check,
   X,
   Clock,
@@ -125,6 +126,24 @@ export default function DataOperatorPage() {
   const [isUploadingToCloudinary, setIsUploadingToCloudinary] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState("");
 
+  // Synchronize uploadStep with current view and URL parameters
+  useEffect(() => {
+    if (currentView === "photos") {
+      const stepParam = searchParams.get("step");
+      if (stepParam === "2") {
+        setUploadStep(2);
+      } else if (stepParam === "1") {
+        setUploadStep(1);
+      } else if (uploadStep !== 1 && uploadStep !== 2) {
+        setUploadStep(1);
+      }
+    } else if (currentView === "review") {
+      setUploadStep(3);
+    } else if (currentView === "leads") {
+      setUploadStep(4);
+    }
+  }, [currentView, searchParams]);
+
   // Filter state for My Created Leads (Screenshot 4)
   const [leadsFilterArea, setLeadsFilterArea] = useState("ALL");
   const [leadsFilterZone, setLeadsFilterZone] = useState("ALL");
@@ -135,12 +154,44 @@ export default function DataOperatorPage() {
   const [coverageSearchQuery, setCoverageSearchQuery] = useState("");
   const [coverageFilterStatus, setCoverageFilterStatus] = useState("ALL");
 
-  // Logged-in Operator User Session
-  const [currentUser, setCurrentUser] = useState(null);
+  // Logged-in Operator User Session & Profile
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("user");
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [userName, setUserName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("userName") || "Data Operator";
+    }
+    return "Data Operator";
+  });
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("userAvatar") || null;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleAvatarSync = (e) => {
+      const av =
+        e.detail?.avatarUrl || localStorage.getItem("userAvatar") || null;
+      setCurrentUserAvatar(av);
+    };
+    window.addEventListener("crm:avatar-updated", handleAvatarSync);
+    return () =>
+      window.removeEventListener("crm:avatar-updated", handleAvatarSync);
+  }, []);
 
   // Dynamic Session Tracking
   const [loginTime] = useState(() =>
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
   );
   const [sessionStartTime] = useState(() => Date.now());
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
@@ -159,7 +210,11 @@ export default function DataOperatorPage() {
 
   // Upload Batch Metadata Form (Screenshot 2)
   const [uploadMetadata, setUploadMetadata] = useState({
-    visitDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+    visitDate: new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
     area: "",
     zone: "",
     batchName: "",
@@ -168,7 +223,12 @@ export default function DataOperatorPage() {
 
   // AI Smart Suggestions Chips for Review Screen (Screenshot 3)
   const [smartSuggestions, setSmartSuggestions] = useState([
-    { id: "visiting_card", label: "Visiting Card", checked: true, color: "blue" },
+    {
+      id: "visiting_card",
+      label: "Visiting Card",
+      checked: true,
+      color: "blue",
+    },
     { id: "bill_book", label: "Bill Book", checked: true, color: "blue" },
     { id: "flex_board", label: "Flex Board", checked: true, color: "orange" },
     { id: "shop_board", label: "Shop Board", checked: false },
@@ -182,6 +242,20 @@ export default function DataOperatorPage() {
   // Interactive Modal States
   const [showPreviewModal, setShowPreviewModal] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Modal Photo Zoom, Rotate & Pan State
+  const [modalZoom, setModalZoom] = useState(1);
+  const [modalRotation, setModalRotation] = useState(0);
+  const [modalPan, setModalPan] = useState({ x: 0, y: 0 });
+  const [isPanningModal, setIsPanningModal] = useState(false);
+  const modalDragStartRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setModalZoom(1);
+    setModalRotation(0);
+    setModalPan({ x: 0, y: 0 });
+    setIsPanningModal(false);
+  }, [showPreviewModal]);
 
   // Photos Queue for Conversion (Persisted dynamically in localStorage across browser sessions)
   const [photosQueue, setPhotosQueue] = useState(() => {
@@ -208,7 +282,10 @@ export default function DataOperatorPage() {
           fileSize: p.fileSize,
           uploadDate: p.uploadDate,
         }));
-        localStorage.setItem("data_operator_photos_queue", JSON.stringify(serializable));
+        localStorage.setItem(
+          "data_operator_photos_queue",
+          JSON.stringify(serializable),
+        );
       } catch (e) {
         console.warn("Could not save photos queue:", e);
       }
@@ -255,12 +332,12 @@ export default function DataOperatorPage() {
   // Dynamic Metrics computed purely from live database data
   const totalLeadsCreated = recentEntries.length;
   const totalLeadsAssigned = recentEntries.filter(
-    (e) => e.assignedToName && e.assignedToName !== "Unassigned"
+    (e) => e.assignedToName && e.assignedToName !== "Unassigned",
   ).length;
   const totalPendingPhotos = photosQueue.length;
   const totalPhotosReceived = totalLeadsCreated + totalPendingPhotos;
   const totalIncompleteLeads = recentEntries.filter(
-    (e) => !e.phone || e.status === "Incomplete"
+    (e) => !e.phone || e.status === "Incomplete",
   ).length;
 
   const dataAccuracyStr =
@@ -272,15 +349,48 @@ export default function DataOperatorPage() {
 
   // Dynamic Hourly Distribution for Time Analysis
   const hourlyAnalysis = useMemo(() => {
-    const hours = ["9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM", "5PM", "6PM"];
-    const counts = { "9AM": 0, "10AM": 0, "11AM": 0, "12PM": 0, "1PM": 0, "2PM": 0, "3PM": 0, "4PM": 0, "5PM": 0, "6PM": 0 };
+    const hours = [
+      "9AM",
+      "10AM",
+      "11AM",
+      "12PM",
+      "1PM",
+      "2PM",
+      "3PM",
+      "4PM",
+      "5PM",
+      "6PM",
+    ];
+    const counts = {
+      "9AM": 0,
+      "10AM": 0,
+      "11AM": 0,
+      "12PM": 0,
+      "1PM": 0,
+      "2PM": 0,
+      "3PM": 0,
+      "4PM": 0,
+      "5PM": 0,
+      "6PM": 0,
+    };
 
     recentEntries.forEach((entry) => {
       if (entry.createdDate) {
         const d = new Date(entry.createdDate);
         if (!isNaN(d.getTime())) {
           const h = d.getHours();
-          const map = { 9: "9AM", 10: "10AM", 11: "11AM", 12: "12PM", 13: "1PM", 14: "2PM", 15: "3PM", 16: "4PM", 17: "5PM", 18: "6PM" };
+          const map = {
+            9: "9AM",
+            10: "10AM",
+            11: "11AM",
+            12: "12PM",
+            13: "1PM",
+            14: "2PM",
+            15: "3PM",
+            16: "4PM",
+            17: "5PM",
+            18: "6PM",
+          };
           const label = map[h];
           if (label && counts[label] !== undefined) counts[label]++;
         }
@@ -308,8 +418,12 @@ export default function DataOperatorPage() {
         incPct: 0,
       };
     }
-    const duplicates = recentEntries.filter((r) => r.status === "Duplicate").length;
-    const incomplete = recentEntries.filter((r) => r.status === "Incomplete" || !r.phone).length;
+    const duplicates = recentEntries.filter(
+      (r) => r.status === "Duplicate",
+    ).length;
+    const incomplete = recentEntries.filter(
+      (r) => r.status === "Incomplete" || !r.phone,
+    ).length;
     const newLeads = Math.max(0, total - duplicates - incomplete);
 
     return {
@@ -327,7 +441,10 @@ export default function DataOperatorPage() {
     const total = selectedPhotosList.length;
     const valid = selectedPhotosList.filter((p) => !p.isInvalid).length;
     const invalid = selectedPhotosList.filter((p) => p.isInvalid).length;
-    const totalBytes = selectedPhotosList.reduce((acc, p) => acc + (p.file?.size || 0), 0);
+    const totalBytes = selectedPhotosList.reduce(
+      (acc, p) => acc + (p.file?.size || 0),
+      0,
+    );
     const sizeStr =
       totalBytes > 1024 * 1024
         ? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
@@ -365,12 +482,15 @@ export default function DataOperatorPage() {
         const matchedRecentCount = recentEntries.filter(
           (re) =>
             re.zone?.toLowerCase() === zoneName.toLowerCase() ||
-            re.area?.toLowerCase() === area.name.toLowerCase()
+            re.area?.toLowerCase() === area.name.toLowerCase(),
         ).length;
 
         const baseTarget = z.targetLeads || area.targetLeads || 50;
         const totalCaptured = matchedRecentCount;
-        const coverage = baseTarget > 0 ? Math.min(100, Math.round((totalCaptured / baseTarget) * 100)) : 0;
+        const coverage =
+          baseTarget > 0
+            ? Math.min(100, Math.round((totalCaptured / baseTarget) * 100))
+            : 0;
 
         let status = "Not Started";
         let statusColor = "bg-slate-100 text-slate-600 border-slate-200";
@@ -436,16 +556,27 @@ export default function DataOperatorPage() {
         (item.zoneCode && item.zoneCode.toLowerCase().includes(q));
       return matchArea && matchStatus && matchQuery;
     });
-  }, [coverageList, coverageFilterArea, coverageFilterStatus, coverageSearchQuery]);
+  }, [
+    coverageList,
+    coverageFilterArea,
+    coverageFilterStatus,
+    coverageSearchQuery,
+  ]);
 
   // Nearby businesses for Review Screen derived dynamically from database
   const nearbyBusinesses = useMemo(() => {
     if (!formData.area && !formData.zone) return [];
     return recentEntries
       .filter((e) => {
-        const matchArea = formData.area && e.area?.toLowerCase() === formData.area.toLowerCase();
-        const matchZone = formData.zone && e.zone?.toLowerCase() === formData.zone.toLowerCase();
-        return (matchArea || matchZone) && e.businessName !== formData.businessName;
+        const matchArea =
+          formData.area &&
+          e.area?.toLowerCase() === formData.area.toLowerCase();
+        const matchZone =
+          formData.zone &&
+          e.zone?.toLowerCase() === formData.zone.toLowerCase();
+        return (
+          (matchArea || matchZone) && e.businessName !== formData.businessName
+        );
       })
       .slice(0, 4);
   }, [recentEntries, formData.area, formData.zone, formData.businessName]);
@@ -461,7 +592,11 @@ export default function DataOperatorPage() {
   // Loading States & Toast
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "info",
+  });
 
   const showToast = (message, type = "info") => {
     setToast({ show: true, message, type });
@@ -477,8 +612,36 @@ export default function DataOperatorPage() {
     const fetchReferenceData = async () => {
       try {
         try {
-          const uStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-          if (uStr && !isCancelled) setCurrentUser(JSON.parse(uStr));
+          const uStr =
+            typeof window !== "undefined" ? localStorage.getItem("user") : null;
+          if (uStr && !isCancelled) {
+            const parsed = JSON.parse(uStr);
+            setCurrentUser(parsed);
+            if (parsed?.name) setUserName(parsed.name);
+            if (parsed?.avatarUrl) setCurrentUserAvatar(parsed.avatarUrl);
+          }
+          const storedAvatar =
+            typeof window !== "undefined"
+              ? localStorage.getItem("userAvatar")
+              : null;
+          if (storedAvatar && !isCancelled) setCurrentUserAvatar(storedAvatar);
+        } catch {
+          // ignore
+        }
+
+        try {
+          const meRes = await api.get("/auth/me").catch(() => null);
+          if (meRes?.data && !isCancelled) {
+            const me = meRes.data.user || meRes.data;
+            setCurrentUser(me);
+            if (me.name) setUserName(me.name);
+            if (me.avatarUrl) {
+              setCurrentUserAvatar(me.avatarUrl);
+              if (typeof window !== "undefined") {
+                localStorage.setItem("userAvatar", me.avatarUrl);
+              }
+            }
+          }
         } catch {
           // ignore
         }
@@ -498,7 +661,9 @@ export default function DataOperatorPage() {
             const firstArea = list[0];
             const firstZone =
               firstArea.zones?.[0]?.name ||
-              (typeof firstArea.zones?.[0] === "string" ? firstArea.zones[0] : "");
+              (typeof firstArea.zones?.[0] === "string"
+                ? firstArea.zones[0]
+                : "");
             setBatchAreaId(firstArea._id || firstArea.id);
             setUploadMetadata((prev) => ({
               ...prev,
@@ -543,7 +708,11 @@ export default function DataOperatorPage() {
           : leadsRes.data.leads || [];
         const formatted = lList.map((l) => ({
           id: l._id || l.id,
-          leadId: l.leadNumber || `LD-${String(l._id || Math.random()).slice(-5).toUpperCase()}`,
+          leadId:
+            l.leadNumber ||
+            `LD-${String(l._id || Math.random())
+              .slice(-5)
+              .toUpperCase()}`,
           businessName: l.businessName || "Unnamed Business",
           ownerName: l.contactName || "",
           phone: l.phone || "",
@@ -553,10 +722,15 @@ export default function DataOperatorPage() {
           categoryLabel: l.businessCategory || "General Store",
           categoryColor: "bg-blue-50 text-blue-700 border-blue-200",
           assignedToName: l.assignedToId?.name || "Unassigned",
-          assignedToInitials: (l.assignedToId?.name || "UN").slice(0, 2).toUpperCase(),
+          assignedToInitials: (l.assignedToId?.name || "UN")
+            .slice(0, 2)
+            .toUpperCase(),
           assignedToColor: "bg-indigo-600",
           createdAt: l.createdAt
-            ? new Date(l.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+            ? new Date(l.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : "Today",
           createdDate: l.createdAt ? new Date(l.createdAt) : new Date(),
           entryTime: "—",
@@ -566,20 +740,23 @@ export default function DataOperatorPage() {
         setRecentEntries(formatted);
         if (formatted.length > 0) {
           const first = formatted[0];
-          setLastCreatedLead((prev) => prev || {
-            leadNumber: first.leadId,
-            businessName: first.businessName,
-            ownerName: first.ownerName || "—",
-            phone: first.phone || "—",
-            categoryLabel: first.categoryLabel,
-            area: first.area,
-            zone: first.zone,
-            assignedToName: `${first.assignedToName} (Sales Executive)`,
-            createdByName: `${currentUser?.name || "Data Operator"} (Data Operator)`,
-            createdAt: first.createdAt,
-            photoName: "Shop Photo",
-            photoUrl: first.photoUrl,
-          });
+          setLastCreatedLead(
+            (prev) =>
+              prev || {
+                leadNumber: first.leadId,
+                businessName: first.businessName,
+                ownerName: first.ownerName || "—",
+                phone: first.phone || "—",
+                categoryLabel: first.categoryLabel,
+                area: first.area,
+                zone: first.zone,
+                assignedToName: `${first.assignedToName} (Sales Executive)`,
+                createdByName: `${currentUser?.name || "Data Operator"} (Data Operator)`,
+                createdAt: first.createdAt,
+                photoName: "Shop Photo",
+                photoUrl: first.photoUrl,
+              },
+          );
         }
         return formatted;
       }
@@ -606,7 +783,7 @@ export default function DataOperatorPage() {
     const foundArea = areas.find(
       (a) =>
         (a._id || a.id) === areaNameOrId ||
-        a.name?.toLowerCase() === String(areaNameOrId).toLowerCase()
+        a.name?.toLowerCase() === String(areaNameOrId).toLowerCase(),
     );
     if (!foundArea || !Array.isArray(foundArea.zones)) {
       return [];
@@ -623,11 +800,11 @@ export default function DataOperatorPage() {
     const currentAreaObj = areas.find(
       (a) =>
         (a._id || a.id) === areaId ||
-        a.name?.toLowerCase() === String(formData?.area || "").toLowerCase()
+        a.name?.toLowerCase() === String(formData?.area || "").toLowerCase(),
     );
     if (currentAreaObj && Array.isArray(currentAreaObj.zones)) {
       const foundZone = currentAreaObj.zones.find(
-        (z) => (z.name || "").toLowerCase().trim() === zoneLower
+        (z) => (z.name || "").toLowerCase().trim() === zoneLower,
       );
       if (foundZone && foundZone.assignedSalesId) {
         const repId =
@@ -645,7 +822,7 @@ export default function DataOperatorPage() {
       matched = salesReps.find(
         (u) =>
           Array.isArray(u.areaIds) &&
-          u.areaIds.some((a) => (a._id || a) === areaId)
+          u.areaIds.some((a) => (a._id || a) === areaId),
       );
     }
 
@@ -661,7 +838,9 @@ export default function DataOperatorPage() {
     setRotation(0);
 
     const targetArea =
-      item.areaId || batchAreaId || (areas[0] ? areas[0]._id || areas[0].id : "");
+      item.areaId ||
+      batchAreaId ||
+      (areas[0] ? areas[0]._id || areas[0].id : "");
     const targetZone = item.zone || "Baba Colony";
     const autoRep = resolveMatchedRep(targetZone, targetArea);
     const repObj = salesReps.find((s) => (s._id || s.id) === autoRep);
@@ -675,10 +854,10 @@ export default function DataOperatorPage() {
       categoryLabel: item.categoryLabel || "General Store",
       subCategory: item.subCategory || "",
       areaId: targetArea,
-      area: item.areaName || (areas[0]?.name || ""),
+      area: item.areaName || areas[0]?.name || "",
       zone: targetZone,
       assignedToId: autoRep,
-      assignedToName: repObj?.name || (salesReps[0]?.name || "Sales Executive"),
+      assignedToName: repObj?.name || salesReps[0]?.name || "Sales Executive",
       remark: item.remark || "",
     });
   };
@@ -686,14 +865,14 @@ export default function DataOperatorPage() {
   const handleTogglePhotoCheck = (id) => {
     setSelectedPhotosList((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
-      )
+        item.id === id ? { ...item, checked: !item.checked } : item,
+      ),
     );
   };
 
   const handleToggleSuggestion = (id) => {
     setSmartSuggestions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, checked: !s.checked } : s))
+      prev.map((s) => (s.id === id ? { ...s, checked: !s.checked } : s)),
     );
   };
 
@@ -741,8 +920,10 @@ export default function DataOperatorPage() {
     }));
     setSelectedPhotosList((prev) => [...prev, ...newSelections]);
 
-    showToast(`Added ${newItems.length} photos to ingestion queue!`, "success");
-    if (uploadPageFileInputRef.current) uploadPageFileInputRef.current.value = "";
+    showToast(`Added ${newItems.length} photos! Proceeding to Step 2 to verify.`, "success");
+    if (uploadPageFileInputRef.current)
+      uploadPageFileInputRef.current.value = "";
+    setUploadStep(2);
   };
 
   const handleUploadAllSelected = async () => {
@@ -753,7 +934,9 @@ export default function DataOperatorPage() {
     }
 
     setIsUploadingToCloudinary(true);
-    setUploadProgressText(`Uploading 1 of ${checkedItems.length} photos to Cloudinary...`);
+    setUploadProgressText(
+      `Uploading 1 of ${checkedItems.length} photos to Cloudinary...`,
+    );
 
     const updatedQueue = [...photosQueue];
     const updatedSelected = [...selectedPhotosList];
@@ -761,15 +944,26 @@ export default function DataOperatorPage() {
 
     for (let i = 0; i < checkedItems.length; i++) {
       const item = checkedItems[i];
-      setUploadProgressText(`Uploading ${i + 1} of ${checkedItems.length} photos to Cloudinary...`);
+      setUploadProgressText(
+        `Uploading ${i + 1} of ${checkedItems.length} photos to Cloudinary...`,
+      );
 
-      if (item.file && (!item.previewUrl || !item.previewUrl.startsWith("http"))) {
+      if (
+        item.file &&
+        (!item.previewUrl || !item.previewUrl.startsWith("http"))
+      ) {
         try {
-          const res = await api.upload("/leads/upload-photo", item.file, "photo");
+          const res = await api.upload(
+            "/leads/upload-photo",
+            item.file,
+            "photo",
+          );
           if (res?.data?.url) {
             successCount++;
             // Update queue item with real Cloudinary URL
-            const qIdx = updatedQueue.findIndex((q) => q.id === item.id || q.fileName === item.fileName);
+            const qIdx = updatedQueue.findIndex(
+              (q) => q.id === item.id || q.fileName === item.fileName,
+            );
             if (qIdx !== -1) {
               updatedQueue[qIdx] = {
                 ...updatedQueue[qIdx],
@@ -790,7 +984,10 @@ export default function DataOperatorPage() {
             }
           }
         } catch (uploadErr) {
-          console.warn(`Cloudinary upload notice for ${item.fileName}:`, uploadErr);
+          console.warn(
+            `Cloudinary upload notice for ${item.fileName}:`,
+            uploadErr,
+          );
         }
       } else {
         successCount++;
@@ -807,7 +1004,7 @@ export default function DataOperatorPage() {
       successCount > 0
         ? `Uploaded ${successCount} photo${successCount > 1 ? "s" : ""} to Cloudinary! Ready to Review & Assign.`
         : `Photos ready to Review & Assign.`,
-      "success"
+      "success",
     );
     selectPhotoItem(0, updatedQueue);
     setCurrentView("review");
@@ -834,7 +1031,8 @@ export default function DataOperatorPage() {
       try {
         const dupRes = await api.post("/leads/check-duplicate", {
           phone: cleanPhone,
-          alternatePhone: formData.alternatePhone.replace(/\D/g, "") || undefined,
+          alternatePhone:
+            formData.alternatePhone.replace(/\D/g, "") || undefined,
           businessName: formData.businessName.trim(),
         });
         dupData = dupRes?.data;
@@ -869,12 +1067,15 @@ export default function DataOperatorPage() {
     try {
       let finalPhotoUrl = currentItem?.previewUrl || "";
 
-      if (currentItem?.file && (!finalPhotoUrl || !finalPhotoUrl.startsWith("http"))) {
+      if (
+        currentItem?.file &&
+        (!finalPhotoUrl || !finalPhotoUrl.startsWith("http"))
+      ) {
         try {
           const uploadRes = await api.upload(
             "/leads/upload-photo",
             currentItem.file,
-            "photo"
+            "photo",
           );
           if (uploadRes?.data?.url) {
             finalPhotoUrl = uploadRes.data.url;
@@ -906,10 +1107,13 @@ export default function DataOperatorPage() {
       });
 
       const dispatchedRep = salesReps.find(
-        (s) => (s._id || s.id) === formData.assignedToId
+        (s) => (s._id || s.id) === formData.assignedToId,
       );
       const repName =
-        dispatchedRep?.name || formData.assignedToName || salesReps[0]?.name || "Sales Executive";
+        dispatchedRep?.name ||
+        formData.assignedToName ||
+        salesReps[0]?.name ||
+        "Sales Executive";
       const initials = repName.slice(0, 2).toUpperCase();
 
       const newLeadNumber =
@@ -920,7 +1124,7 @@ export default function DataOperatorPage() {
         id: createdLead?.data?._id || newLeadNumber,
         leadId: newLeadNumber,
         businessName: formData.businessName.trim(),
-        area: formData.area || (areas[0]?.name || "—"),
+        area: formData.area || areas[0]?.name || "—",
         zone: formData.zone || "—",
         categoryLabel: formData.categoryLabel || "General",
         categoryColor: "bg-blue-50 text-blue-700 border-blue-200",
@@ -944,7 +1148,7 @@ export default function DataOperatorPage() {
         ownerName: formData.ownerName.trim() || "—",
         phone: cleanPhone,
         categoryLabel: formData.categoryLabel || "General",
-        area: formData.area || (areas[0]?.name || "—"),
+        area: formData.area || areas[0]?.name || "—",
         zone: formData.zone || "—",
         assignedToName: `${repName} (Sales Executive)`,
         createdByName: `${currentUser?.name || "Data Operator"} (Data Operator)`,
@@ -955,11 +1159,15 @@ export default function DataOperatorPage() {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        photoName: currentItem ? `${currentItem.fileName || "Photo"} (${currentItem.fileSize || "—"})` : "Manual Entry",
+        photoName: currentItem
+          ? `${currentItem.fileName || "Photo"} (${currentItem.fileSize || "—"})`
+          : "Manual Entry",
         photoUrl: finalPhotoUrl,
       });
 
-      const remainingQueue = photosQueue.filter((_, idx) => idx !== currentIndex);
+      const remainingQueue = photosQueue.filter(
+        (_, idx) => idx !== currentIndex,
+      );
       setPhotosQueue(remainingQueue);
 
       if (remainingQueue.length > 0) {
@@ -980,6 +1188,7 @@ export default function DataOperatorPage() {
       showToast(`Lead saved to MongoDB & assigned to ${repName}!`, "success");
 
       // Seamlessly advance to Screen 4 (Lead Created Successfully / My Created Leads)
+      setUploadStep(4);
       setCurrentView("leads");
     } catch (err) {
       console.error("Failed to dispatch lead:", err);
@@ -1001,7 +1210,7 @@ export default function DataOperatorPage() {
     ];
     const rows = recentEntries.map(
       (e) =>
-        `"${e.leadId}","${e.businessName}","${e.area}","${e.zone}","${e.categoryLabel}","${e.assignedToName}","${e.createdAt}","${e.status}"`
+        `"${e.leadId}","${e.businessName}","${e.area}","${e.zone}","${e.categoryLabel}","${e.assignedToName}","${e.createdAt}","${e.status}"`,
     );
     const csvContent =
       "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
@@ -1010,7 +1219,7 @@ export default function DataOperatorPage() {
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `DataOperator_Leads_${new Date().toISOString().slice(0, 10)}.csv`
+      `DataOperator_Leads_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     document.body.appendChild(link);
     link.click();
@@ -1019,12 +1228,16 @@ export default function DataOperatorPage() {
   };
 
   const activePhoto = photosQueue[currentIndex] || null;
-  const selectedPhotosCount = selectedPhotosList.filter((p) => p.checked).length;
+  const selectedPhotosCount = selectedPhotosList.filter(
+    (p) => p.checked,
+  ).length;
 
   // Filtered entries for Screen 4
   const filteredRecentEntries = recentEntries.filter((item) => {
-    if (leadsFilterArea !== "ALL" && item.area !== leadsFilterArea) return false;
-    if (leadsFilterZone !== "ALL" && item.zone !== leadsFilterZone) return false;
+    if (leadsFilterArea !== "ALL" && item.area !== leadsFilterArea)
+      return false;
+    if (leadsFilterZone !== "ALL" && item.zone !== leadsFilterZone)
+      return false;
     if (leadsSearchQuery.trim()) {
       const q = leadsSearchQuery.toLowerCase();
       return (
@@ -1034,6 +1247,170 @@ export default function DataOperatorPage() {
     }
     return true;
   });
+
+  // Reusable Interactive 4-Step Stepper Header
+  const renderStepper = (activeStep) => (
+    <div className="flex items-center gap-1.5 sm:gap-3 py-1 overflow-x-auto max-w-full">
+      {/* Step 1: Upload */}
+      <button
+        type="button"
+        onClick={() => {
+          setUploadStep(1);
+          setCurrentView("photos");
+        }}
+        className="flex items-center gap-2 group cursor-pointer focus:outline-none shrink-0"
+      >
+        <div
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-xs transition-all ${
+            activeStep === 1
+              ? "bg-[#F95721] text-white shadow-md shadow-orange-500/30 scale-105"
+              : activeStep > 1
+                ? "bg-emerald-500 text-white"
+                : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
+          }`}
+        >
+          {activeStep > 1 ? "✓" : "1"}
+        </div>
+        <span
+          className={`text-xs font-bold transition-colors whitespace-nowrap ${
+            activeStep === 1
+              ? "text-slate-900"
+              : activeStep > 1
+                ? "text-slate-700"
+                : "text-slate-400"
+          }`}
+        >
+          1. Upload
+        </span>
+      </button>
+
+      <div
+        className={`w-4 sm:w-8 h-0.5 transition-colors shrink-0 ${
+          activeStep > 1 ? "bg-emerald-500" : "bg-slate-200"
+        }`}
+      />
+
+      {/* Step 2: Verify */}
+      <button
+        type="button"
+        onClick={() => {
+          setUploadStep(2);
+          setCurrentView("photos");
+        }}
+        className="flex items-center gap-2 group cursor-pointer focus:outline-none shrink-0"
+      >
+        <div
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-xs transition-all ${
+            activeStep === 2
+              ? "bg-[#F95721] text-white shadow-md shadow-orange-500/30 scale-105"
+              : activeStep > 2
+                ? "bg-emerald-500 text-white"
+                : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
+          }`}
+        >
+          {activeStep > 2 ? "✓" : "2"}
+        </div>
+        <span
+          className={`text-xs font-bold transition-colors whitespace-nowrap ${
+            activeStep === 2
+              ? "text-slate-900"
+              : activeStep > 2
+                ? "text-slate-700"
+                : "text-slate-400"
+          }`}
+        >
+          2. Verify
+        </span>
+      </button>
+
+      <div
+        className={`w-4 sm:w-8 h-0.5 transition-colors shrink-0 ${
+          activeStep > 2 ? "bg-emerald-500" : "bg-slate-200"
+        }`}
+      />
+
+      {/* Step 3: Lead Entry */}
+      <button
+        type="button"
+        onClick={() => {
+          if (
+            activeStep === 2 &&
+            selectedPhotosList.some(
+              (p) =>
+                p.checked &&
+                p.file &&
+                (!p.previewUrl || !p.previewUrl.startsWith("http")),
+            )
+          ) {
+            handleUploadAllSelected();
+          } else {
+            if (photosQueue.length > 0) {
+              selectPhotoItem(currentIndex >= 0 ? currentIndex : 0);
+            }
+            setUploadStep(3);
+            setCurrentView("review");
+          }
+        }}
+        className="flex items-center gap-2 group cursor-pointer focus:outline-none shrink-0"
+      >
+        <div
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-xs transition-all ${
+            activeStep === 3
+              ? "bg-[#F95721] text-white shadow-md shadow-orange-500/30 scale-105"
+              : activeStep > 3
+                ? "bg-emerald-500 text-white"
+                : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
+          }`}
+        >
+          {activeStep > 3 ? "✓" : "3"}
+        </div>
+        <span
+          className={`text-xs font-bold transition-colors whitespace-nowrap ${
+            activeStep === 3
+              ? "text-slate-900"
+              : activeStep > 3
+                ? "text-slate-700"
+                : "text-slate-400"
+          }`}
+        >
+          3. Lead Entry
+        </span>
+      </button>
+
+      <div
+        className={`w-4 sm:w-8 h-0.5 transition-colors shrink-0 ${
+          activeStep > 3 ? "bg-emerald-500" : "bg-slate-200"
+        }`}
+      />
+
+      {/* Step 4: Complete */}
+      <button
+        type="button"
+        onClick={() => {
+          setUploadStep(4);
+          setCurrentView("leads");
+        }}
+        className="flex items-center gap-2 group cursor-pointer focus:outline-none shrink-0"
+      >
+        <div
+          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-xs transition-all ${
+            activeStep === 4
+              ? "bg-[#F95721] text-white shadow-md shadow-orange-500/30 scale-105"
+              : "bg-slate-200 text-slate-500 group-hover:bg-slate-300"
+          }`}
+        >
+          {lastCreatedLead && activeStep === 4 ? "✓" : "4"}
+        </div>
+        <span
+          className={`text-xs font-bold transition-colors whitespace-nowrap ${
+            activeStep === 4 ? "text-slate-900" : "text-slate-400"
+          }`}
+        >
+          4. Complete
+        </span>
+      </button>
+    </div>
+  );
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -1052,29 +1429,42 @@ export default function DataOperatorPage() {
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
-                  <ImageIcon className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md shadow-orange-500/20 shrink-0 bg-[#F95721] text-white flex items-center justify-center">
+                  {currentUserAvatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={currentUserAvatar}
+                      alt={userName || "Data Operator"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-[#F95721] text-white flex items-center justify-center font-black text-sm">
+                      {(userName || "DO").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
                     Data Operator Dashboard
                   </h1>
-                  <p className="text-xs md:text-sm font-medium text-slate-500">
-                    Convert market photos into leads and assign to the right sales executive
-                  </p>
                 </div>
               </div>
 
               {/* Calendar & Live Sync Actions (Right) */}
               <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
-                <div className="bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-2xs">
+                <div className="bg-white border border-slate-200/90 rounded-sm px-4 py-2.5 flex items-center gap-3 shadow-2xs">
                   <Calendar className="w-5 h-5 text-slate-600" />
                   <div>
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
                       Today
                     </div>
-                    <div className="text-xs font-bold text-slate-800">
-                      {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", weekday: "long" })}
+                    <div className="text-md font-bold text-slate-800">
+                      {new Date().toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                        weekday: "long",
+                      })}
                     </div>
                   </div>
                 </div>
@@ -1084,28 +1474,32 @@ export default function DataOperatorPage() {
                     setIsSyncing(true);
                     const res = await fetchLeadsFromDb();
                     setIsSyncing(false);
-                    showToast(`Synced ${res.length} live leads from database!`, "success");
+                    showToast(
+                      `Synced ${res.length} live leads from database!`,
+                      "success",
+                    );
                   }}
-                  className="bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 rounded-2xl px-3.5 py-2.5 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer text-xs font-bold"
+                  className="bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 rounded-sm px-3.5 py-2.5 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer text-xs font-bold"
                   title="Synchronize live data with MongoDB"
                 >
-                  <RefreshCw className={`w-4 h-4 text-teal-600 ${isSyncing ? "animate-spin" : ""}`} />
-                  <span className="hidden sm:inline">Sync Data</span>
+                  <RefreshCw
+                    className={`w-4 h-4 text-teal-600 ${isSyncing ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
             </div>
 
             {/* Top Metric Cards (5 Cards) */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                   <ImageIcon className="w-5 h-5" />
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-black text-slate-900">
+                <div className="mt-3 flex flex-col justify-center items-center">
+                  <div className="text-4xl font-black text-slate-900">
                     {totalPhotosReceived}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 mt-0.5">
+                  <div className="text-xl font-bold text-slate-700 mt-0.5">
                     Photos Received
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -1114,20 +1508,20 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <FileText className="w-5 h-5" />
                   </div>
                   <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
                     {totalLeadsCreated > 0 ? "↑ Active" : "0 Today"}
                   </span>
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-black text-slate-900">
+                <div className="mt-3 flex flex-col justify-center items-center">
+                  <div className="text-4xl font-black text-slate-900">
                     {totalLeadsCreated}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 mt-0.5">
+                  <div className="text-xl font-bold text-slate-700 mt-0.5">
                     Leads Created
                   </div>
                   <div className="text-[11px] text-emerald-600 font-semibold mt-0.5 truncate">
@@ -1136,20 +1530,22 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
                 <div className="flex items-start justify-between">
                   <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                     <Send className="w-5 h-5" />
                   </div>
                   <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-                    {totalLeadsCreated > 0 ? `${Math.round((totalLeadsAssigned / totalLeadsCreated) * 100)}%` : "0%"}
+                    {totalLeadsCreated > 0
+                      ? `${Math.round((totalLeadsAssigned / totalLeadsCreated) * 100)}%`
+                      : "0%"}
                   </span>
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-black text-slate-900">
+                <div className="mt-3 flex flex-col justify-center items-center">
+                  <div className="text-4xl font-black text-slate-900">
                     {totalLeadsAssigned}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 mt-0.5">
+                  <div className="text-xl font-bold text-slate-700 mt-0.5">
                     Leads Assigned
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -1158,15 +1554,15 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
                 <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                   <Clock className="w-5 h-5" />
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-black text-slate-900">
+                <div className="mt-3 flex flex-col justify-center items-center">
+                  <div className="text-4xl font-black text-slate-900">
                     {totalPendingPhotos}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 mt-0.5">
+                  <div className="text-xl font-bold text-slate-700 mt-0.5">
                     Pending Photos
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -1175,15 +1571,15 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
                 <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                   <Layers className="w-5 h-5" />
                 </div>
-                <div className="mt-3">
-                  <div className="text-2xl font-black text-slate-900">
+                <div className="mt-3 flex flex-col justify-center items-center">
+                  <div className="text-4xl font-black text-slate-900">
                     {totalIncompleteLeads}
                   </div>
-                  <div className="text-xs font-bold text-slate-700 mt-0.5">
+                  <div className="text-xl font-bold text-slate-700 mt-0.5">
                     Incomplete Leads
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -1200,15 +1596,17 @@ export default function DataOperatorPage() {
                   selectPhotoItem(0);
                   setCurrentView("review");
                 }}
-                className="bg-gradient-to-r from-[#F95721] to-[#FF7043] hover:from-[#e84915] hover:to-[#f85f31] text-white rounded-2xl p-4 shadow-md shadow-orange-500/20 transition-all flex items-center justify-between text-left group"
+                className="bg-linear-to-r from-[#F95721] to-[#FF7043] hover:from-[#e84915] hover:to-[#f85f31] text-white rounded-sm p-4 shadow-md shadow-orange-500/20 transition-all flex items-center justify-between text-left group"
               >
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                     <Plus className="w-6 h-6 text-white stroke-[2.5]" />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-white">Create New Lead</div>
-                    <div className="text-xs text-orange-100 font-medium">
+                    <div className="text-xl font-black text-white">
+                      Create New Lead
+                    </div>
+                    <div className="text-sm text-orange-100 font-medium">
                       Select a photo and enter details
                     </div>
                   </div>
@@ -1218,14 +1616,16 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={() => setCurrentView("photos")}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-2xl p-4 transition-all flex items-center gap-3.5 text-left group"
+                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group"
               >
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <FolderOpen className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <FolderOpen className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-sm font-black text-slate-900">Open Photo Folder</div>
-                  <div className="text-xs text-slate-400 font-medium">
+                  <div className="text-xl font-black text-slate-900">
+                    Open Photo Folder
+                  </div>
+                  <div className="text-sm text-slate-400 font-medium">
                     View all market photos
                   </div>
                 </div>
@@ -1233,14 +1633,16 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={() => setCurrentView("leads")}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-2xl p-4 transition-all flex items-center gap-3.5 text-left group"
+                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group"
               >
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-sm font-black text-slate-900">My Created Leads</div>
-                  <div className="text-xs text-slate-400 font-medium">
+                  <div className="text-xl font-black text-slate-900">
+                    My Created Leads
+                  </div>
+                  <div className="text-sm text-slate-400 font-medium">
                     View today&apos;s entries
                   </div>
                 </div>
@@ -1248,14 +1650,16 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={handleExportData}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-2xl p-4 transition-all flex items-center gap-3.5 text-left group"
+                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group"
               >
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <Download className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Download className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-sm font-black text-slate-900">Export Data</div>
-                  <div className="text-xs text-slate-400 font-medium">
+                  <div className="text-xl font-black text-slate-900">
+                    Export Data
+                  </div>
+                  <div className="text-sm text-slate-400 font-medium">
                     Download excel (Admin)
                   </div>
                 </div>
@@ -1267,24 +1671,23 @@ export default function DataOperatorPage() {
               {/* Left Column (8 cols) */}
               <div className="lg:col-span-8 space-y-6">
                 {/* Today's Market Photos Carousel */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
-                      <ImageIcon className="w-5 h-5 text-blue-600" />
-                      <h2 className="text-sm font-black text-slate-900">
-                        Today&apos;s Market Photos
+                      <h2 className="text-xl font-black text-slate-900">
+                        Market Photos
                       </h2>
-                      <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                      <span className="text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
                         {photosQueue.length} Pending
                       </span>
                     </div>
 
                     <button
                       onClick={() => setCurrentView("photos")}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                      className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
                     >
                       <span>View All Photos</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -1292,52 +1695,54 @@ export default function DataOperatorPage() {
                     {photosQueue.length > 0 ? (
                       <div className="flex items-center gap-3.5 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200">
                         {photosQueue.map((photo, idx) => (
-                        <div
-                          key={photo.id}
-                          onClick={() => {
-                            selectPhotoItem(idx);
-                            setCurrentView("review");
-                          }}
-                          className={`w-36 shrink-0 rounded-2xl overflow-hidden border cursor-pointer transition-all hover:scale-102 hover:shadow-md ${
-                            idx === 0
-                              ? "border-2 border-[#F95721] ring-2 ring-orange-500/20"
-                              : "border-slate-200"
-                          }`}
-                        >
-                          <div className="relative h-28 w-full bg-slate-900">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={photo.previewUrl}
-                              alt={photo.fileName}
-                              className="w-full h-full object-cover"
-                            />
-                            <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-900/80 text-white font-black text-[10px] flex items-center justify-center">
-                              {idx + 1}
-                            </span>
-                          </div>
-                          <div className="p-2.5 bg-white text-center">
-                            <div className="text-xs font-bold text-slate-800 truncate">
-                              {photo.fileName}
+                          <div
+                            key={photo.id}
+                            onClick={() => {
+                              selectPhotoItem(idx);
+                              setCurrentView("review");
+                            }}
+                            className={`w-36 shrink-0 rounded-sm overflow-hidden border cursor-pointer transition-all hover:scale-102 hover:shadow-md ${
+                              idx === 0
+                                ? "border-2 border-[#F95721] ring-2 ring-orange-500/20"
+                                : "border-slate-200"
+                            }`}
+                          >
+                            <div className="relative h-28 w-full bg-slate-900">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={photo.previewUrl}
+                                alt={photo.fileName}
+                                className="w-full h-full object-cover"
+                              />
+                              <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-900/80 text-white font-black text-[10px] flex items-center justify-center">
+                                {idx + 1}
+                              </span>
                             </div>
-                            <span className="inline-block mt-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                              Pending
-                            </span>
+                            <div className="p-2.5 bg-white text-center">
+                              <div className="text-xs font-bold text-slate-800 truncate">
+                                {photo.fileName}
+                              </div>
+                              <span className="inline-block mt-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                                Pending
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
                     ) : (
-                      <div className="py-8 px-4 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
-                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5" />
+                      <div className="py-8 px-4 text-center border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6" />
                         </div>
-                        <div className="text-xs font-bold text-slate-800">No market photos in queue</div>
-                        <div className="text-[11px] text-slate-400">Upload photos from market visits to start creating leads.</div>
+                        <div className="text-md font-bold text-slate-800">
+                          No market photos in queue
+                        </div>
                         <button
                           onClick={() => setCurrentView("photos")}
-                          className="mt-1 px-3.5 py-1.5 rounded-xl bg-[#F95721] text-white text-xs font-bold hover:bg-[#e84915] transition-colors"
+                          className="flex items-center justify-center gap-1.5 mt-1 text-sm px-3.5 py-1.5 rounded-full bg-[#F95721] text-white font-bold hover:bg-[#e84915] transition-colors"
                         >
-                          + Upload Photos
+                          <PlusCircle className="w-5 h-5" />
+                          <span>Upload Photos</span>
                         </button>
                       </div>
                     )}
@@ -1347,36 +1752,35 @@ export default function DataOperatorPage() {
                 {/* Today's Recent Entries Table */}
                 <div
                   id="recent-entries-section"
-                  className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs"
+                  className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
                       <FileText className="w-5 h-5 text-blue-600" />
-                      <h2 className="text-sm font-black text-slate-900">
-                        Today&apos;s Recent Entries
+                      <h2 className="text-xl font-black text-slate-900">
+                        Recent Entries
                       </h2>
                     </div>
                     <button
                       onClick={() => setCurrentView("leads")}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                      className="text-base font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
                     >
                       <span>View All</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-5 h-5" />
                     </button>
                   </div>
 
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                          <th className="py-2.5 px-3">#</th>
+                        <tr className="border-b border-slate-200/80 text-[12px] font-bold text-slate-400 uppercase tracking-wider">
+                          <th className="py-2.5 px-3">NO</th>
                           <th className="py-2.5 px-3">LEAD ID</th>
                           <th className="py-2.5 px-3">BUSINESS NAME</th>
                           <th className="py-2.5 px-3">AREA</th>
                           <th className="py-2.5 px-3">ZONE</th>
                           <th className="py-2.5 px-3">ASSIGNED TO</th>
                           <th className="py-2.5 px-3">CREATED AT</th>
-                          <th className="py-2.5 px-3">STATUS</th>
                           <th className="py-2.5 px-3">PHOTO</th>
                           <th className="py-2.5 px-3 text-right">ACTIONS</th>
                         </tr>
@@ -1384,75 +1788,77 @@ export default function DataOperatorPage() {
                       <tbody className="divide-y divide-slate-100">
                         {recentEntries.length > 0 ? (
                           recentEntries.map((row, idx) => (
-                          <tr
-                            key={row.id || idx}
-                            className="hover:bg-slate-50/70 transition-colors"
-                          >
-                            <td className="py-3 px-3 font-semibold text-slate-500">
-                              {idx + 1}
-                            </td>
-                            <td className="py-3 px-3 font-bold text-slate-700">
-                              {row.leadId}
-                            </td>
-                            <td className="py-3 px-3 font-extrabold text-slate-900">
-                              {row.businessName}
-                            </td>
-                            <td className="py-3 px-3 text-slate-600 font-medium">
-                              {row.area}
-                            </td>
-                            <td className="py-3 px-3 text-slate-600 font-medium">
-                              {row.zone}
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`w-6 h-6 rounded-full ${
-                                    row.assignedToColor || "bg-rose-500"
-                                  } text-white font-bold text-[10px] flex items-center justify-center shrink-0`}
+                            <tr
+                              key={row.id || idx}
+                              className="hover:bg-slate-50/70 transition-colors"
+                            >
+                              <td className="py-3 px-3 text-sm font-semibold text-slate-500">
+                                {idx + 1}
+                              </td>
+                              <td className="py-3 px-3 text-sm font-bold text-slate-700">
+                                {row.leadId}
+                              </td>
+                              <td className="py-3 px-3 text-sm font-extrabold text-slate-900">
+                                {row.businessName}
+                              </td>
+                              <td className="py-3 px-3 text-sm text-slate-600 font-medium">
+                                {row.area}
+                              </td>
+                              <td className="py-3 px-3 text-sm text-slate-600 font-medium">
+                                {row.zone}
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`w-6 h-6 rounded-full ${
+                                      row.assignedToColor || "bg-rose-500"
+                                    } text-white font-bold text-[12px] flex items-center justify-center shrink-0`}
+                                  >
+                                    {row.assignedToInitials}
+                                  </span>
+                                  <span className="font-semibold text-sm text-slate-800">
+                                    {row.assignedToName}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-sm text-slate-500 font-medium">
+                                {row.createdAt}
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPreviewModal(row)}
+                                  className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                                  title="Click to view full photo"
                                 >
-                                  {row.assignedToInitials}
-                                </span>
-                                <span className="font-bold text-slate-800">
-                                  {row.assignedToName}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-slate-500 font-medium">
-                              {row.createdAt}
-                            </td>
-                            <td className="py-3 px-3">
-                              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                                {row.status}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <button
-                                onClick={() => setShowPreviewModal(row)}
-                                className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 hover:scale-105 transition-transform"
-                              >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={row.photoUrl}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              </button>
-                            </td>
-                            <td className="py-3 px-3 text-right">
-                              <button
-                                onClick={() => setShowPreviewModal(row)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="View Lead Details"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={row.photoUrl}
+                                    alt={row.businessName || "Photo"}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </button>
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                <button
+                                  onClick={() => setShowPreviewModal(row)}
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                                  title="View Lead Details"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
-                            <td colSpan={10} className="py-8 text-center text-slate-400 text-xs">
-                              No recent lead entries recorded yet. Upload photos and create leads to populate your ledger.
+                            <td
+                              colSpan={10}
+                              className="py-8 text-center text-slate-400 text-xs"
+                            >
+                              No recent lead entries recorded yet. Upload photos
+                              and create leads to populate your ledger.
                             </td>
                           </tr>
                         )}
@@ -1465,37 +1871,40 @@ export default function DataOperatorPage() {
               {/* Right Column (4 cols) */}
               <div className="lg:col-span-4 space-y-6">
                 {/* Territory & Admin Area Coverage Card */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-emerald-600" />
+                      <MapPin className="w-6 h-6 text-emerald-600" />
                       <div>
-                        <h2 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                        <h2 className="text-md font-black text-slate-900 flex items-center gap-1.5">
                           Area / Zone Status
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200">
-                            Admin Created
-                          </span>
                         </h2>
-                        <p className="text-[10px] text-slate-400 font-medium">
-                          {areas.length > 0 ? areas.map((a) => a.name).join(", ") : "Territory Coverage"} Master Coverage
+                        <p className="text-[12px] text-slate-400 font-medium">
+                          {areas.length > 0
+                            ? areas.map((a) => a.name).join(", ")
+                            : "Territory Coverage"}{" "}
+                          Master Coverage
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => setCurrentView("coverage")}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <span>Full Status</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1.5">
+                    <div className="flex items-center justify-between text-md font-bold text-slate-700 mb-1.5">
                       <span className="flex items-center gap-1 text-slate-500">
-                        <span>↓</span> Overall Coverage ({coverageList.length} Zones)
+                        <span>↓</span> Overall Coverage ({coverageList.length}{" "}
+                        Zones)
                       </span>
-                      <span className="text-slate-900 font-extrabold">{overallCoveragePercentage}%</span>
+                      <span className="text-slate-900 font-extrabold">
+                        {overallCoveragePercentage}%
+                      </span>
                     </div>
                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                       <div
@@ -1508,43 +1917,45 @@ export default function DataOperatorPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <tr className="border-b border-slate-100 text-[12px] font-bold text-slate-400 uppercase tracking-wider">
                           <th className="pb-2">AREA / ZONE</th>
                           <th className="pb-2">REP</th>
                           <th className="pb-2">LEADS</th>
-                          <th className="pb-2">STATUS</th>
-                          <th className="pb-2 text-right">COVERAGE</th>
+                          <th className="pb-2 text-center">COVERAGE</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {coverageList.slice(0, 6).map((item, idx) => (
-                          <tr key={`${item.area}_${item.zone}_${idx}`} className="hover:bg-slate-50/50">
+                          <tr
+                            key={`${item.area}_${item.zone}_${idx}`}
+                            className="hover:bg-slate-50/50"
+                          >
                             <td className="py-2.5 pr-2 font-bold text-slate-800">
                               <div className="flex items-center gap-1.5">
-                                <MapPin className={`w-3.5 h-3.5 ${item.pinColor}`} />
-                                <div>
-                                  <span className="block leading-tight text-slate-900">{item.zone}</span>
-                                  <span className="text-[10px] text-slate-400 font-normal">{item.area}</span>
+                                <MapPin
+                                  className={`w-4 h-4 ${item.pinColor}`}
+                                />
+                                <div className="ml-2">
+                                  <span className="text-sm block leading-tight text-slate-900">
+                                    {item.zone}
+                                  </span>
+                                  <span className="text-md text-slate-400 font-normal">
+                                    {item.area}
+                                  </span>
                                 </div>
                               </div>
                             </td>
                             <td className="py-2.5 text-slate-600 font-medium">
-                              <span className="text-[10px] font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
+                              <span className="text-[12px] font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">
                                 {item.assignedRep}
                               </span>
                             </td>
                             <td className="py-2.5 text-slate-500 font-medium">
                               {item.leads}
                             </td>
-                            <td className="py-2.5">
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${item.statusColor}`}
-                              >
-                                {item.status}
-                              </span>
-                            </td>
-                            <td className="py-2.5 pl-2 text-right">
-                              <div className="flex items-center justify-end gap-2">
+
+                            <td className="py-2.5 pl-2 text-center">
+                              <div className="flex items-center justify-center gap-2">
                                 <span className="text-[11px] font-bold text-slate-700 w-7">
                                   {item.coverage}%
                                 </span>
@@ -1561,107 +1972,97 @@ export default function DataOperatorPage() {
                       </tbody>
                     </table>
                   </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 text-center">
-                    <button
-                      onClick={() => setCurrentView("coverage")}
-                      className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>View All Admin Areas & Zones ({coverageList.length})</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
                 </div>
 
                 {/* My Productivity (Today) */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs">
-                  <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="w-5 h-5 text-amber-500" />
-                    <h2 className="text-sm font-black text-slate-900">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <TrendingUp className="w-6 h-6 text-amber-500" />
+                    <h2 className="text-xl font-black text-slate-900">
                       My Productivity (Today)
                     </h2>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <Download className="w-4 h-4 rotate-180" />
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <Download className="w-5 h-5 rotate-180" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Login Time
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {loginTime}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <Clock className="w-4 h-4" />
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Working Duration
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {workingDurationStr}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <FileText className="w-4 h-4" />
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Leads Created
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {totalLeadsCreated}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <Zap className="w-4 h-4" />
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <Zap className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Avg. Entry Time
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {avgEntryTimeStr}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                        <Target className="w-4 h-4" />
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <Target className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Data Accuracy
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {dataAccuracyStr}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <ImageIcon className="w-4 h-4" />
+                    <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-sm bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                        <ImageIcon className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400">
+                        <div className="text-xs font-semibold text-slate-500">
                           Photos Pending
                         </div>
-                        <div className="text-xs font-black text-slate-800">
+                        <div className="text-base font-black text-slate-900">
                           {photosQueue.length}
                         </div>
                       </div>
@@ -1679,502 +2080,516 @@ export default function DataOperatorPage() {
         {currentView === "photos" && (
           <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full animate-fade-in">
             {/* Header & 4-Step Stepper */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2 border-b border-slate-200/80">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-4 border-b border-slate-200/80">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
-                  <ImageIcon className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-sm bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
+                  <UploadCloud className="w-6 h-6" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Market Photo Upload
+                    {uploadStep === 2
+                      ? `Step 2: Verify & Organize Photos (${selectedPhotosList.length})`
+                      : "Step 1: Upload Market Photos"}
                   </h1>
                   <p className="text-xs md:text-sm font-medium text-slate-500">
-                    Upload market photos from your device and organize by area and zone
+                    {uploadStep === 2
+                      ? "Inspect photo quality and clarity, zoom in to check signage, then proceed to Lead Entry"
+                      : "Upload market visit photos and select area/zone details before verification"}
                   </p>
                 </div>
               </div>
 
               {/* 4-Step Stepper Header */}
-              <div className="flex items-center gap-2 sm:gap-4 py-1">
-                <div className="flex items-center gap-2 relative">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                      uploadStep === 1
-                        ? "bg-[#F95721] text-white shadow-sm shadow-orange-500/30"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    1
-                  </div>
-                  <span
-                    className={`text-xs font-bold whitespace-nowrap ${
-                      uploadStep === 1 ? "text-slate-900" : "text-slate-400"
-                    }`}
-                  >
-                    Upload Photos
-                  </span>
-                  {uploadStep === 1 && (
-                    <div className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#F95721]" />
-                  )}
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                      uploadStep === 2
-                        ? "bg-[#F95721] text-white"
-                        : "bg-slate-200 text-slate-500"
-                    }`}
-                  >
-                    2
-                  </div>
-                  <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
-                    Verify & Organize
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                      uploadStep === 3
-                        ? "bg-[#F95721] text-white"
-                        : "bg-slate-200 text-slate-500"
-                    }`}
-                  >
-                    3
-                  </div>
-                  <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
-                    Select for Lead Entry
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                      uploadStep === 4
-                        ? "bg-[#F95721] text-white"
-                        : "bg-slate-200 text-slate-500"
-                    }`}
-                  >
-                    4
-                  </div>
-                  <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
-                    Complete
-                  </span>
-                </div>
-              </div>
+              {renderStepper(uploadStep === 2 ? 2 : 1)}
             </div>
 
-            {/* Top 3-Card Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-              {/* Card 1: Drag & Drop Dropzone (4 cols) */}
-              <div
-                onClick={() => uploadPageFileInputRef.current?.click()}
-                className="lg:col-span-4 border-2 border-dashed border-blue-200 hover:border-blue-500 bg-[#f8fbff] hover:bg-blue-50/40 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3"
-              >
-                <input
-                  ref={uploadPageFileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <UploadCloud className="w-8 h-8" />
-                </div>
-                <div>
-                  <div className="text-sm font-black text-slate-900">
-                    Drag & Drop Photos Here
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    or click to select multiple images
-                  </div>
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Supports: JPG, JPEG, PNG | Max size: 10MB per image
-                  <br />
-                  You can select multiple photos at once
-                </div>
-                <button
-                  type="button"
-                  className="px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center gap-2 transition-all mt-2"
-                >
-                  <FolderOpen className="w-4 h-4" />
-                  <span>Select Photos</span>
-                </button>
-              </div>
-
-              {/* Card 2: Ingestion Metadata Form (5 cols) */}
-              <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 space-y-3.5 shadow-2xs flex flex-col justify-between">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Visit Date *
-                    </label>
-                    <div className="relative">
-                      <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={uploadMetadata.visitDate}
-                        onChange={(e) =>
-                          setUploadMetadata({ ...uploadMetadata, visitDate: e.target.value })
-                        }
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Area *
-                    </label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <select
-                        value={uploadMetadata.area}
-                        onChange={(e) => {
-                          const chosenAreaName = e.target.value;
-                          const areaObj = areas.find((a) => a.name === chosenAreaName);
-                          const areaZones = getZonesForArea(chosenAreaName);
-                          const firstZone = areaZones[0]?.name || "Baba Colony";
-                          setUploadMetadata({
-                            ...uploadMetadata,
-                            area: chosenAreaName,
-                            zone: firstZone,
-                            batchName: `${chosenAreaName.toUpperCase().replace(/\s+/g, "")}-${firstZone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
-                          });
-                          if (areaObj) setBatchAreaId(areaObj._id || areaObj.id);
-                        }}
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
-                      >
-                        {areas.length > 0 ? (
-                          areas.map((a) => (
-                            <option key={a._id || a.id} value={a.name}>
-                              {a.name}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">No areas created yet</option>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Zone *
-                  </label>
-                  <div className="relative">
-                    <Compass className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <select
-                      value={uploadMetadata.zone}
-                      onChange={(e) => {
-                        const newZone = e.target.value;
-                        setUploadMetadata({
-                          ...uploadMetadata,
-                          zone: newZone,
-                          batchName: `${uploadMetadata.area.toUpperCase().replace(/\s+/g, "")}-${newZone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
-                        });
-                      }}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
-                    >
-                      {getZonesForArea(uploadMetadata.area).map((z, idx) => {
-                        const zName = typeof z === "string" ? z : z.name;
-                        return (
-                          <option key={z._id || idx} value={zName}>
-                            {zName}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Batch Name (Auto)
-                  </label>
-                  <input
-                    type="text"
-                    value={uploadMetadata.batchName}
-                    onChange={(e) =>
-                      setUploadMetadata({ ...uploadMetadata, batchName: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Remarks (Optional)
-                  </label>
-                  <div className="relative">
-                    <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            {/* ========================================== */}
+            {/* STEP 1: UPLOAD PHOTOS & METADATA          */}
+            {/* ========================================== */}
+            {uploadStep !== 2 && (
+              <div className="space-y-6 animate-fade-in">
+                {/* 3-Card Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                  {/* Card 1: Drag & Drop Dropzone (4 cols) */}
+                  <div
+                    onClick={() => uploadPageFileInputRef.current?.click()}
+                    className="lg:col-span-4 border-2 border-dashed border-blue-200 hover:border-blue-500 bg-[#f8fbff] hover:bg-blue-50/40 rounded-sm p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3"
+                  >
                     <input
-                      type="text"
-                      placeholder="e.g. Market visit - Main road area"
-                      value={uploadMetadata.remarks}
-                      onChange={(e) =>
-                        setUploadMetadata({ ...uploadMetadata, remarks: e.target.value })
-                      }
-                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                      ref={uploadPageFileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
                     />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: Upload Summary (3 cols) */}
-              <div className="lg:col-span-3 bg-[#FFF9F6] border border-orange-200/80 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Info className="w-4 h-4 text-[#F95721]" />
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      Upload Summary
-                    </h3>
-                  </div>
-
-                  <div className="space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <ImageIcon className="w-4 h-4 text-blue-500" />
-                        <span className="font-semibold">Photos Selected</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-900">{uploadStats.total}</span>
+                    <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <UploadCloud className="w-8 h-8" />
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <CheckCircle className="w-4 h-4 text-emerald-500" />
-                        <span className="font-semibold">Valid Photos</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-900">{uploadStats.valid}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <XCircle className="w-4 h-4 text-rose-500" />
-                        <span className="font-semibold">Duplicate / Invalid</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-900">{uploadStats.invalid}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-orange-200/60">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Database className="w-4 h-4 text-purple-500" />
-                        <span className="font-semibold">Estimated Size</span>
-                      </div>
-                      <span className="text-sm font-black text-slate-900">{uploadStats.sizeStr}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isUploadingToCloudinary}
-                  onClick={handleUploadAllSelected}
-                  className="w-full py-3 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-60 cursor-pointer"
-                >
-                  {isUploadingToCloudinary ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{uploadProgressText || "Uploading to Cloudinary..."}</span>
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="w-4 h-4" />
-                      <span>Upload Photos to Cloudinary</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Selected Photos (50) Section */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <ImageIcon className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <h2 className="text-sm font-black text-slate-900">
-                      Selected Photos ({selectedPhotosList.length})
-                    </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Review your selected photos before upload
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs">
-                    <SettingsIcon className="w-4 h-4 text-emerald-600" />
                     <div>
-                      <div className="text-[11px] font-bold text-slate-800 leading-none">
-                        Auto Optimization
+                      <div className="text-sm font-black text-slate-900">
+                        Drag &amp; Drop Photos Here
                       </div>
-                      <div className="text-[9px] text-slate-400">
-                        Images will be compressed for better performance
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        or click to select multiple images
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md ml-1">
-                      Enabled
-                    </span>
+                    <div className="text-[11px] text-slate-400">
+                      Supports: JPG, JPEG, PNG | Max size: 10MB per image
+                      <br />
+                      You can select multiple photos at once
+                    </div>
+                    <button
+                      type="button"
+                      className="px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center gap-2 transition-all mt-2 cursor-pointer"
+                    >
+                      <FolderOpen className="w-4 h-4" />
+                      <span>Select Photos</span>
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      showToast("Removed 2 duplicate / invalid photos from batch");
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove Invalid ({uploadStats.invalid})</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setSelectedPhotosList([]);
-                      showToast("Cleared photo selection");
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Clear All</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Selected Photo Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
-                {selectedPhotosList.length > 0 ? (
-                  selectedPhotosList.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border border-slate-200/90 rounded-2xl overflow-hidden bg-white shadow-2xs group hover:shadow-md transition-all flex flex-col justify-between"
-                  >
-                    <div className="relative h-28 w-full bg-slate-900 overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.previewUrl}
-                        alt={item.fileName}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <button
-                        onClick={() =>
-                          setShowPreviewModal({
-                            businessName: item.businessName,
-                            photoUrl: item.previewUrl,
-                            leadId: item.fileName,
-                            status: "Selected",
-                            area: uploadMetadata.area,
-                            zone: uploadMetadata.zone,
-                            assignedToName: "Auto Assigned",
-                          })
-                        }
-                        className="absolute bottom-2 right-2 w-6 h-6 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center transition-colors shadow-xs"
-                        title="Zoom Photo"
-                      >
-                        <Search className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="p-2.5 flex items-center justify-between text-xs bg-white">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePhotoCheck(item.id)}
-                          className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
-                            item.checked
-                              ? "bg-[#F95721] border-[#F95721] text-white"
-                              : "border-slate-300 bg-white"
-                          }`}
-                        >
-                          {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </button>
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-800 text-[11px] truncate">
-                            {item.fileName}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-medium">
-                            {item.size}
-                          </div>
+                  {/* Card 2: Ingestion Metadata Form (5 cols) */}
+                  <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-sm p-5 space-y-3.5 shadow-2xs flex flex-col justify-between">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Visit Date *
+                        </label>
+                        <div className="relative">
+                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={uploadMetadata.visitDate}
+                            onChange={(e) =>
+                              setUploadMetadata({
+                                ...uploadMetadata,
+                                visitDate: e.target.value,
+                              })
+                            }
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                          />
                         </div>
                       </div>
 
-                      {item.hasTag && (
-                        <span className="w-3 h-3 text-blue-500 shrink-0">📍</span>
-                      )}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Area *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <select
+                            value={uploadMetadata.area}
+                            onChange={(e) => {
+                              const chosenAreaName = e.target.value;
+                              const areaObj = areas.find(
+                                (a) => a.name === chosenAreaName,
+                              );
+                              const areaZones = getZonesForArea(chosenAreaName);
+                              const firstZone = areaZones[0]?.name || "Baba Colony";
+                              setUploadMetadata({
+                                ...uploadMetadata,
+                                area: chosenAreaName,
+                                zone: firstZone,
+                                batchName: `${chosenAreaName.toUpperCase().replace(/\s+/g, "")}-${firstZone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
+                              });
+                              if (areaObj)
+                                setBatchAreaId(areaObj._id || areaObj.id);
+                            }}
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                          >
+                            {areas.length > 0 ? (
+                              areas.map((a) => (
+                                <option key={a._id || a.id} value={a.name}>
+                                  {a.name}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="">No areas created yet</option>
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Zone *
+                      </label>
+                      <div className="relative">
+                        <Compass className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <select
+                          value={uploadMetadata.zone}
+                          onChange={(e) => {
+                            const newZone = e.target.value;
+                            setUploadMetadata({
+                              ...uploadMetadata,
+                              zone: newZone,
+                              batchName: `${uploadMetadata.area.toUpperCase().replace(/\s+/g, "")}-${newZone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
+                            });
+                          }}
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                          {getZonesForArea(uploadMetadata.area).map((z, idx) => {
+                            const zName = typeof z === "string" ? z : z.name;
+                            return (
+                              <option key={z._id || idx} value={zName}>
+                                {zName}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Batch Name (Auto)
+                      </label>
+                      <input
+                        type="text"
+                        value={uploadMetadata.batchName}
+                        onChange={(e) =>
+                          setUploadMetadata({
+                            ...uploadMetadata,
+                            batchName: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Remarks (Optional)
+                      </label>
+                      <div className="relative">
+                        <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="e.g. Market visit - Main road area"
+                          value={uploadMetadata.remarks}
+                          onChange={(e) =>
+                            setUploadMetadata({
+                              ...uploadMetadata,
+                              remarks: e.target.value,
+                            })
+                          }
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
                     </div>
                   </div>
-                ))
-                ) : (
-                  <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
-                    <UploadCloud className="w-8 h-8 text-slate-400" />
-                    <p className="text-xs font-bold text-slate-700">No photos selected yet</p>
-                    <p className="text-[11px] text-slate-400">Use the dropzone above or click &ldquo;Select Photos&rdquo; to add images from field visits.</p>
+
+                  {/* Card 3: Upload Summary (3 cols) */}
+                  <div className="lg:col-span-3 bg-[#FFF9F6] border border-orange-200/80 rounded-sm p-5 shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-4 h-4 text-[#F95721]" />
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                          Upload Summary
+                        </h3>
+                      </div>
+
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            <span className="font-semibold">Photos Selected</span>
+                          </div>
+                          <span className="text-sm font-black text-slate-900">
+                            {uploadStats.total}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <CheckCircle className="w-4 h-4 text-emerald-500" />
+                            <span className="font-semibold">Valid Photos</span>
+                          </div>
+                          <span className="text-sm font-black text-slate-900">
+                            {uploadStats.valid}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <XCircle className="w-4 h-4 text-rose-500" />
+                            <span className="font-semibold">
+                              Duplicate / Invalid
+                            </span>
+                          </div>
+                          <span className="text-sm font-black text-slate-900">
+                            {uploadStats.invalid}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-orange-200/60">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Database className="w-4 h-4 text-purple-500" />
+                            <span className="font-semibold">Estimated Size</span>
+                          </div>
+                          <span className="text-sm font-black text-slate-900">
+                            {uploadStats.sizeStr}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-orange-200/60">
+                      <button
+                        type="button"
+                        disabled={selectedPhotosList.length === 0}
+                        onClick={() => setUploadStep(2)}
+                        className="w-full py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <span>Proceed to Step 2: Verify</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional Quick Action if photos already staged */}
+                {selectedPhotosList.length > 0 && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        ✓
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">
+                          {selectedPhotosList.length} photos staged and ready for verification
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          Area: {uploadMetadata.area} • Zone: {uploadMetadata.zone} • Batch: {uploadMetadata.batchName}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUploadStep(2)}
+                      className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <span>Go to Step 2 (Verify)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Bottom Action Footer Bar */}
-              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-black text-slate-900">
-                    {selectedPhotosCount} photos selected
+            {/* ========================================== */}
+            {/* STEP 2: VERIFY & ORGANIZE PHOTOS           */}
+            {/* ========================================== */}
+            {uploadStep === 2 && (
+              <div className="space-y-6 animate-fade-in">
+                {/* Selected Photos & Verification Controls */}
+                <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <ImageIcon className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <h2 className="text-sm font-black text-slate-900">
+                          Verify &amp; Organize Photos ({selectedPhotosList.length})
+                        </h2>
+                        <p className="text-[11px] text-slate-400">
+                          Review photo clarity and zoom in before sending to Lead Entry
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setUploadStep(1)}
+                        className="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 text-blue-600 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add More Photos</span>
+                      </button>
+
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs">
+                        <SettingsIcon className="w-4 h-4 text-emerald-600" />
+                        <div>
+                          <div className="text-[11px] font-bold text-slate-800 leading-none">
+                            Auto Optimization
+                          </div>
+                          <div className="text-[9px] text-slate-400">
+                            Images compressed for speed
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md ml-1">
+                          Enabled
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          showToast(
+                            "Removed duplicate / invalid photos from batch",
+                          );
+                        }}
+                        className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove Invalid ({uploadStats.invalid})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedPhotosList([]);
+                          showToast("Cleared photo selection");
+                        }}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Clear All</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-400 font-medium">
-                    Total size: {uploadStats.sizeStr} (will be optimized)
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      if (selectedPhotosList[0]) {
-                        setShowPreviewModal({
-                          businessName: selectedPhotosList[0].businessName,
-                          photoUrl: selectedPhotosList[0].previewUrl,
-                          leadId: selectedPhotosList[0].fileName,
-                          status: "Batch Photo",
-                          area: uploadMetadata.area,
-                          zone: uploadMetadata.zone,
-                          assignedToName: "Auto Assigned",
-                        });
-                      }
-                    }}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    <span>Preview Selected</span>
-                  </button>
+                  {/* Selected Photo Cards Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+                    {selectedPhotosList.length > 0 ? (
+                      selectedPhotosList.map((item, idx) => (
+                        <div
+                          key={item.id || idx}
+                          className="border border-slate-200/90 rounded-sm overflow-hidden bg-white shadow-2xs group hover:shadow-md transition-all flex flex-col justify-between"
+                        >
+                          <div className="relative h-32 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.previewUrl}
+                              alt={item.fileName}
+                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowPreviewModal({
+                                  businessName: item.businessName || item.fileName,
+                                  photoUrl: item.previewUrl,
+                                  leadId: item.fileName,
+                                  status: "Verified Photo",
+                                  area: uploadMetadata.area,
+                                  zone: uploadMetadata.zone,
+                                  assignedToName: "Auto Assigned",
+                                })
+                              }
+                              className="absolute bottom-2 right-2 w-7 h-7 rounded-lg bg-slate-900/80 hover:bg-[#F95721] text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                              title="Zoom & Inspect Photo"
+                            >
+                              <Search className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
 
-                  <button
-                    disabled={isUploadingToCloudinary}
-                    onClick={handleUploadAllSelected}
-                    className="px-6 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 flex items-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
-                  >
-                    {isUploadingToCloudinary ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>{uploadProgressText || "Uploading to Cloudinary..."}</span>
-                      </>
+                          <div className="p-2.5 flex items-center justify-between text-xs bg-white">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePhotoCheck(item.id)}
+                                className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                                  item.checked
+                                    ? "bg-[#F95721] border-[#F95721] text-white"
+                                    : "border-slate-300 bg-white"
+                                }`}
+                              >
+                                {item.checked && (
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                )}
+                              </button>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-800 text-[11px] truncate" title={item.fileName}>
+                                  {item.fileName}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-medium">
+                                  {item.size}
+                                </div>
+                              </div>
+                            </div>
+
+                            {item.hasTag && (
+                              <span className="w-3 h-3 text-blue-500 shrink-0" title="Geotagged">
+                                📍
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
                     ) : (
-                      <>
-                        <UploadCloud className="w-4 h-4" />
-                        <span>Upload {selectedPhotosCount} Photos (Cloudinary)</span>
-                      </>
+                      <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 flex flex-col items-center justify-center space-y-3">
+                        <UploadCloud className="w-10 h-10 text-slate-400" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-700">
+                            No photos in verification queue
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Please upload photos in Step 1 first.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUploadStep(1)}
+                          className="px-4 py-2 rounded-xl bg-[#F95721] text-white font-bold text-xs shadow-xs hover:bg-[#e84915] transition-colors cursor-pointer"
+                        >
+                          ← Go to Step 1: Upload Photos
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
+
+                  {/* Bottom Navigation & Action Footer Bar */}
+                  <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setUploadStep(1)}
+                        className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to Step 1</span>
+                      </button>
+                      <div>
+                        <div className="text-xs font-black text-slate-900">
+                          {selectedPhotosCount} of {selectedPhotosList.length} photos selected
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-medium">
+                          Total size: {uploadStats.sizeStr}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        disabled={isUploadingToCloudinary || selectedPhotosCount === 0}
+                        onClick={handleUploadAllSelected}
+                        className="px-6 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {isUploadingToCloudinary ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>
+                              {uploadProgressText || "Uploading Photos to Cloudinary..."}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud className="w-4 h-4" />
+                            <span>
+                              Upload &amp; Proceed to Step 3: Lead Entry ({selectedPhotosCount})
+                            </span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -2186,7 +2601,7 @@ export default function DataOperatorPage() {
             {/* Header & 4-Step Stepper */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
+                <div className="w-12 h-12 rounded-sm bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
                   <ImageIcon className="w-6 h-6" />
                 </div>
                 <div>
@@ -2194,63 +2609,21 @@ export default function DataOperatorPage() {
                     Review &amp; Assign Lead
                   </h1>
                   <p className="text-xs md:text-sm font-medium text-slate-500">
-                    Verify the details, check for duplicates and assign to sales executive
+                    Verify the details, check for duplicates and assign to sales
+                    executive
                   </p>
                 </div>
               </div>
 
               {/* 4-Step Stepper Header */}
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto py-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                    Upload Photos
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                    Fill Business Details
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2 relative">
-                  <div className="w-7 h-7 rounded-full bg-[#F95721] text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-orange-500/30">
-                    3
-                  </div>
-                  <span className="text-xs font-bold text-slate-900 whitespace-nowrap">
-                    Review &amp; Assign
-                  </span>
-                  <div className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#F95721]" />
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-xs">
-                    4
-                  </div>
-                  <span className="text-xs font-bold text-slate-400 whitespace-nowrap">
-                    Complete
-                  </span>
-                </div>
-              </div>
+              {renderStepper(3)}
             </div>
 
             {/* Main 3-Column Review Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Column 1: Selected Market Photo (3 cols) */}
               <div className="lg:col-span-3 space-y-4">
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-3">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-blue-600" />
@@ -2261,7 +2634,9 @@ export default function DataOperatorPage() {
 
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => selectPhotoItem(Math.max(0, currentIndex - 1))}
+                        onClick={() =>
+                          selectPhotoItem(Math.max(0, currentIndex - 1))
+                        }
                         className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
@@ -2271,7 +2646,9 @@ export default function DataOperatorPage() {
                       </span>
                       <button
                         onClick={() =>
-                          selectPhotoItem(Math.min(photosQueue.length - 1, currentIndex + 1))
+                          selectPhotoItem(
+                            Math.min(photosQueue.length - 1, currentIndex + 1),
+                          )
                         }
                         className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100"
                       >
@@ -2309,7 +2686,9 @@ export default function DataOperatorPage() {
                   ) : (
                     <div className="py-12 px-4 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center justify-center space-y-2">
                       <ImageIcon className="w-8 h-8 text-slate-300" />
-                      <div className="text-xs font-bold text-slate-700">No active photo in review queue</div>
+                      <div className="text-xs font-bold text-slate-700">
+                        No active photo in review queue
+                      </div>
                       <button
                         onClick={() => setCurrentView("photos")}
                         className="px-3 py-1 rounded-lg bg-[#F95721] text-white text-xs font-bold"
@@ -2331,32 +2710,44 @@ export default function DataOperatorPage() {
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={p.previewUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
                       </button>
                     ))}
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <div className="text-[10px] text-slate-400 font-medium">File Name</div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        File Name
+                      </div>
                       <div className="font-bold text-slate-800 truncate">
                         {activePhoto ? activePhoto.fileName || "—" : "—"}
                       </div>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <div className="text-[10px] text-slate-400 font-medium">File Size</div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        File Size
+                      </div>
                       <div className="font-bold text-slate-800">
                         {activePhoto ? activePhoto.fileSize || "—" : "—"}
                       </div>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <div className="text-[10px] text-slate-400 font-medium">Captured At</div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        Captured At
+                      </div>
                       <div className="font-bold text-slate-800 text-[11px] truncate">
                         {activePhoto ? activePhoto.capturedAt || "Today" : "—"}
                       </div>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <div className="text-[10px] text-slate-400 font-medium">Upload Batch</div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        Upload Batch
+                      </div>
                       <div className="font-bold text-slate-800 text-[10px] truncate">
                         {activePhoto ? activePhoto.batchName || "Direct" : "—"}
                       </div>
@@ -2367,7 +2758,7 @@ export default function DataOperatorPage() {
 
               {/* Column 2: Business Info, Duplicate Check, Suggested Executive, AI Suggestions (6 cols) */}
               <div className="lg:col-span-6 space-y-4">
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3.5">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" />
@@ -2393,7 +2784,10 @@ export default function DataOperatorPage() {
                         type="text"
                         value={formData.businessName}
                         onChange={(e) =>
-                          setFormData({ ...formData, businessName: e.target.value })
+                          setFormData({
+                            ...formData,
+                            businessName: e.target.value,
+                          })
                         }
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
                       />
@@ -2407,7 +2801,10 @@ export default function DataOperatorPage() {
                         type="text"
                         value={formData.ownerName}
                         onChange={(e) =>
-                          setFormData({ ...formData, ownerName: e.target.value })
+                          setFormData({
+                            ...formData,
+                            ownerName: e.target.value,
+                          })
                         }
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                       />
@@ -2439,7 +2836,10 @@ export default function DataOperatorPage() {
                         type="tel"
                         value={formData.alternatePhone}
                         onChange={(e) =>
-                          setFormData({ ...formData, alternatePhone: e.target.value })
+                          setFormData({
+                            ...formData,
+                            alternatePhone: e.target.value,
+                          })
                         }
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                       />
@@ -2455,7 +2855,10 @@ export default function DataOperatorPage() {
                           type="text"
                           value={formData.categoryLabel}
                           onChange={(e) =>
-                            setFormData({ ...formData, categoryLabel: e.target.value })
+                            setFormData({
+                              ...formData,
+                              categoryLabel: e.target.value,
+                            })
                           }
                           className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
                         />
@@ -2470,7 +2873,10 @@ export default function DataOperatorPage() {
                         type="text"
                         value={formData.subCategory}
                         onChange={(e) =>
-                          setFormData({ ...formData, subCategory: e.target.value })
+                          setFormData({
+                            ...formData,
+                            subCategory: e.target.value,
+                          })
                         }
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
                       />
@@ -2486,22 +2892,33 @@ export default function DataOperatorPage() {
                           value={formData.area}
                           onChange={(e) => {
                             const selectedAreaName = e.target.value;
-                            const foundArea = areas.find((a) => a.name === selectedAreaName);
+                            const foundArea = areas.find(
+                              (a) => a.name === selectedAreaName,
+                            );
                             const areaZones = getZonesForArea(selectedAreaName);
-                            const firstZone = areaZones[0]?.name || "Baba Colony";
+                            const firstZone =
+                              areaZones[0]?.name || "Baba Colony";
                             const repId = resolveMatchedRep(
                               firstZone,
-                              foundArea ? foundArea._id || foundArea.id : formData.areaId
+                              foundArea
+                                ? foundArea._id || foundArea.id
+                                : formData.areaId,
                             );
-                            const repObj = salesReps.find((s) => (s._id || s.id) === repId);
+                            const repObj = salesReps.find(
+                              (s) => (s._id || s.id) === repId,
+                            );
                             setFormData({
                               ...formData,
                               area: selectedAreaName,
-                              areaId: foundArea ? foundArea._id || foundArea.id : formData.areaId,
+                              areaId: foundArea
+                                ? foundArea._id || foundArea.id
+                                : formData.areaId,
                               zone: firstZone,
                               assignedToId: repId,
                               assignedToName:
-                                repObj?.name || salesReps[0]?.name || "Sales Executive",
+                                repObj?.name ||
+                                salesReps[0]?.name ||
+                                "Sales Executive",
                             });
                           }}
                           className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
@@ -2529,14 +2946,21 @@ export default function DataOperatorPage() {
                           value={formData.zone}
                           onChange={(e) => {
                             const newZone = e.target.value;
-                            const repId = resolveMatchedRep(newZone, formData.areaId);
-                            const repObj = salesReps.find((s) => (s._id || s.id) === repId);
+                            const repId = resolveMatchedRep(
+                              newZone,
+                              formData.areaId,
+                            );
+                            const repObj = salesReps.find(
+                              (s) => (s._id || s.id) === repId,
+                            );
                             setFormData({
                               ...formData,
                               zone: newZone,
                               assignedToId: repId,
                               assignedToName:
-                                repObj?.name || salesReps[0]?.name || "Sales Executive",
+                                repObj?.name ||
+                                salesReps[0]?.name ||
+                                "Sales Executive",
                             });
                           }}
                           className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
@@ -2577,7 +3001,7 @@ export default function DataOperatorPage() {
 
                 {/* Duplicate Check & Suggested Executive Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2">
+                  <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-2">
                     <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs">
                       <CheckCircle className="w-4 h-4" />
                       <span>Duplicate Check</span>
@@ -2597,7 +3021,7 @@ export default function DataOperatorPage() {
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2">
+                  <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-2">
                     <div className="flex items-center gap-1.5 text-rose-500 font-bold text-xs">
                       <Target className="w-4 h-4" />
                       <span>Suggested Executive</span>
@@ -2605,7 +3029,9 @@ export default function DataOperatorPage() {
                     <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="w-7 h-7 rounded-full bg-rose-500 text-white font-bold text-[10px] flex items-center justify-center">
-                          {(formData.assignedToName || "SE").slice(0, 2).toUpperCase()}
+                          {(formData.assignedToName || "SE")
+                            .slice(0, 2)
+                            .toUpperCase()}
                         </span>
                         <div>
                           <div className="text-xs font-black text-slate-900">
@@ -2617,7 +3043,9 @@ export default function DataOperatorPage() {
                             )}
                           </div>
                           <div className="text-[10px] text-slate-400">
-                            {formData.zone ? `Assigned to ${formData.assignedToName || "executive"} for ${formData.zone}` : "Designated executive for territory"}
+                            {formData.zone
+                              ? `Assigned to ${formData.assignedToName || "executive"} for ${formData.zone}`
+                              : "Designated executive for territory"}
                           </div>
                         </div>
                       </div>
@@ -2629,7 +3057,7 @@ export default function DataOperatorPage() {
                 </div>
 
                 {/* Sales Executive Assignment Dropdown */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-2">
                   <label className="block text-xs font-black text-slate-800">
                     Assign to Sales Executive *
                   </label>
@@ -2639,11 +3067,16 @@ export default function DataOperatorPage() {
                       value={formData.assignedToId}
                       onChange={(e) => {
                         const repId = e.target.value;
-                        const repObj = salesReps.find((s) => (s._id || s.id) === repId);
+                        const repObj = salesReps.find(
+                          (s) => (s._id || s.id) === repId,
+                        );
                         setFormData({
                           ...formData,
                           assignedToId: repId,
-                          assignedToName: repObj?.name || salesReps[0]?.name || "Sales Executive",
+                          assignedToName:
+                            repObj?.name ||
+                            salesReps[0]?.name ||
+                            "Sales Executive",
                         });
                       }}
                       className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
@@ -2659,7 +3092,7 @@ export default function DataOperatorPage() {
                 </div>
 
                 {/* AI Smart Suggestions (Optional) */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-3">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-lg bg-purple-600 text-white font-black text-xs flex items-center justify-center">
@@ -2719,9 +3152,11 @@ export default function DataOperatorPage() {
 
               {/* Column 3: Lead Preview Card & Additional Actions (3 cols) */}
               <div className="lg:col-span-3 space-y-4">
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-3.5">
+                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black text-slate-900">Lead Preview Card</h3>
+                    <h3 className="text-xs font-black text-slate-900">
+                      Lead Preview Card
+                    </h3>
                     <button
                       onClick={() => showToast("Lead preview editable")}
                       className="px-2 py-0.5 rounded-md border border-blue-200 text-blue-600 font-bold text-[11px] flex items-center gap-1"
@@ -2758,7 +3193,9 @@ export default function DataOperatorPage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{formData.area} &gt; {formData.zone}</span>
+                        <span>
+                          {formData.area} &gt; {formData.zone}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
@@ -2780,14 +3217,18 @@ export default function DataOperatorPage() {
 
                   {/* Lead Status Stepper */}
                   <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-700">Lead Status</div>
+                    <div className="text-[11px] font-bold text-slate-700">
+                      Lead Status
+                    </div>
                     <div className="space-y-1.5 text-[11px]">
                       <div className="flex items-center justify-between text-slate-600">
                         <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
                           <CheckCircle className="w-3.5 h-3.5" />
                           <span>Photo Uploaded</span>
                         </div>
-                        <span className="text-slate-400 text-[10px]">27 Sep, 10:02 AM</span>
+                        <span className="text-slate-400 text-[10px]">
+                          27 Sep, 10:02 AM
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between text-slate-600">
@@ -2795,7 +3236,9 @@ export default function DataOperatorPage() {
                           <CheckCircle className="w-3.5 h-3.5" />
                           <span>Details Filled</span>
                         </div>
-                        <span className="text-slate-400 text-[10px]">27 Sep, 10:08 AM</span>
+                        <span className="text-slate-400 text-[10px]">
+                          27 Sep, 10:08 AM
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between text-slate-600">
@@ -2805,7 +3248,9 @@ export default function DataOperatorPage() {
                           </span>
                           <span>Ready to Assign</span>
                         </div>
-                        <span className="text-slate-400 text-[10px]">27 Sep, 10:08 AM</span>
+                        <span className="text-slate-400 text-[10px]">
+                          27 Sep, 10:08 AM
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-between text-slate-400">
@@ -2850,11 +3295,15 @@ export default function DataOperatorPage() {
                       <button
                         onClick={() => {
                           if (!activePhoto) {
-                            showToast("No photo currently in review queue", "warning");
+                            showToast(
+                              "No photo currently in review queue",
+                              "warning",
+                            );
                             return;
                           }
                           setShowPreviewModal({
-                            businessName: formData.businessName || "Photo Preview",
+                            businessName:
+                              formData.businessName || "Photo Preview",
                             photoUrl: activePhoto.previewUrl,
                             leadId: activePhoto.fileName || "Photo",
                             status: "Fullscreen Inspection",
@@ -2876,7 +3325,7 @@ export default function DataOperatorPage() {
 
             {/* Bottom Reference Section: Location Map + Nearby Businesses */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-600" />
@@ -2924,7 +3373,7 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
@@ -2934,7 +3383,9 @@ export default function DataOperatorPage() {
                   </div>
 
                   <button
-                    onClick={() => showToast("Showing all same-street businesses")}
+                    onClick={() =>
+                      showToast("Showing all same-street businesses")
+                    }
                     className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
                   >
                     <span>View All</span>
@@ -2951,7 +3402,11 @@ export default function DataOperatorPage() {
                       >
                         <div className="h-20 w-full bg-slate-900">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={shop.photoUrl} alt="" className="w-full h-full object-cover" />
+                          <img
+                            src={shop.photoUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div className="p-2 text-center">
                           <div className="text-[11px] font-black text-slate-900 truncate">
@@ -2975,13 +3430,19 @@ export default function DataOperatorPage() {
             {/* Bottom Fixed Action Footer Bar */}
             <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-3.5 shadow-xl flex items-center justify-between">
               <button
-                onClick={() => setCurrentView("photos")}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-colors"
+                type="button"
+                onClick={() => {
+                  setUploadStep(2);
+                  setCurrentView("photos");
+                }}
+                className="px-4 py-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <div className="text-left leading-tight">
-                  <div className="text-[11px] text-slate-400 font-medium">Previous</div>
-                  <div>Edit Details</div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    Previous
+                  </div>
+                  <div>Verify Photos (Step 2)</div>
                 </div>
               </button>
 
@@ -3043,7 +3504,7 @@ export default function DataOperatorPage() {
             {/* Header & 4-Step Stepper (All 4 complete/step 4 active) */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
+                <div className="w-12 h-12 rounded-sm bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
                   <CheckCircle2 className="w-7 h-7 text-white" />
                 </div>
                 <div>
@@ -3051,63 +3512,21 @@ export default function DataOperatorPage() {
                     Lead Created Successfully
                   </h1>
                   <p className="text-xs md:text-sm font-medium text-slate-500">
-                    The business has been saved and assigned to the sales executive
+                    The business has been saved and assigned to the sales
+                    executive
                   </p>
                 </div>
               </div>
 
-              {/* 4-Step Stepper (Step 4 Complete Active) */}
-              <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto py-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                    Upload Photos
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                    Fill Details
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs">
-                    ✓
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                    Review &amp; Assign
-                  </span>
-                </div>
-
-                <div className="w-8 h-px bg-slate-200" />
-
-                <div className="flex items-center gap-2 relative">
-                  <div className="w-7 h-7 rounded-full bg-[#F95721] text-white flex items-center justify-center font-bold text-xs shadow-sm shadow-orange-500/30">
-                    4
-                  </div>
-                  <span className="text-xs font-bold text-slate-900 whitespace-nowrap">
-                    Complete
-                  </span>
-                  <div className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#F95721]" />
-                </div>
-              </div>
+              {/* 4-Step Stepper Header */}
+              {renderStepper(4)}
             </div>
 
             {/* Top Cards: Lead Creation Status & Details */}
             {lastCreatedLead ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
                 {/* Card 1: Success Confetti Banner (3.5 cols) */}
-                <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs flex flex-col items-center justify-center text-center space-y-4">
+                <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-sm p-6 shadow-2xs flex flex-col items-center justify-center text-center space-y-4">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 text-2xl font-black">
                       ✓
@@ -3137,12 +3556,14 @@ export default function DataOperatorPage() {
                       onClick={() => {
                         if (photosQueue.length > 0) {
                           selectPhotoItem(0);
+                          setUploadStep(3);
                           setCurrentView("review");
                         } else {
+                          setUploadStep(1);
                           setCurrentView("photos");
                         }
                       }}
-                      className="w-full py-3 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all"
+                      className="w-full py-3 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-black text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <span>Add Next Lead</span>
                       <ArrowRight className="w-4 h-4" />
@@ -3150,7 +3571,9 @@ export default function DataOperatorPage() {
 
                     <button
                       onClick={() => {
-                        const el = document.getElementById("created-leads-ledger");
+                        const el = document.getElementById(
+                          "created-leads-ledger",
+                        );
                         if (el) el.scrollIntoView({ behavior: "smooth" });
                       }}
                       className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
@@ -3162,11 +3585,13 @@ export default function DataOperatorPage() {
                 </div>
 
                 {/* Card 2: Lead Details Card (4.5 cols) */}
-                <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs flex flex-col justify-between space-y-3">
+                <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs flex flex-col justify-between space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-blue-600" />
-                      <h3 className="text-xs font-black text-slate-900">Lead Details</h3>
+                      <h3 className="text-xs font-black text-slate-900">
+                        Lead Details
+                      </h3>
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                         {lastCreatedLead.leadNumber}
                       </span>
@@ -3188,21 +3613,27 @@ export default function DataOperatorPage() {
 
                     <div className="sm:col-span-7 space-y-1.5 text-xs">
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Business Name</span>
+                        <span className="text-slate-400 font-medium">
+                          Business Name
+                        </span>
                         <span className="font-black text-slate-900 text-right">
                           {lastCreatedLead.businessName}
                         </span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Owner Name</span>
+                        <span className="text-slate-400 font-medium">
+                          Owner Name
+                        </span>
                         <span className="font-bold text-slate-800 text-right">
                           {lastCreatedLead.ownerName || "—"}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-medium">Mobile Number</span>
+                        <span className="text-slate-400 font-medium">
+                          Mobile Number
+                        </span>
                         <span className="font-black text-slate-900 flex items-center gap-1">
                           <span>{lastCreatedLead.phone}</span>
                           <CheckCircle className="w-3.5 h-3.5 text-emerald-500 inline" />
@@ -3210,38 +3641,50 @@ export default function DataOperatorPage() {
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Category</span>
+                        <span className="text-slate-400 font-medium">
+                          Category
+                        </span>
                         <span className="font-bold text-slate-800 text-right">
                           {lastCreatedLead.categoryLabel || "General"}
                         </span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Area &amp; Zone</span>
+                        <span className="text-slate-400 font-medium">
+                          Area &amp; Zone
+                        </span>
                         <span className="font-bold text-slate-800 text-right">
                           {lastCreatedLead.area} &gt; {lastCreatedLead.zone}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                        <span className="text-slate-400 font-medium">Assigned To</span>
+                        <span className="text-slate-400 font-medium">
+                          Assigned To
+                        </span>
                         <span className="font-bold text-slate-800 flex items-center gap-1">
                           <span className="w-4 h-4 rounded-full bg-rose-500 text-white font-bold text-[9px] flex items-center justify-center">
-                            {(lastCreatedLead.assignedToName || "SE").slice(0, 2).toUpperCase()}
+                            {(lastCreatedLead.assignedToName || "SE")
+                              .slice(0, 2)
+                              .toUpperCase()}
                           </span>
                           <span>{lastCreatedLead.assignedToName}</span>
                         </span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Created By</span>
+                        <span className="text-slate-400 font-medium">
+                          Created By
+                        </span>
                         <span className="font-bold text-slate-700 text-right">
                           {lastCreatedLead.createdByName}
                         </span>
                       </div>
 
                       <div className="flex justify-between">
-                        <span className="text-slate-400 font-medium">Created At</span>
+                        <span className="text-slate-400 font-medium">
+                          Created At
+                        </span>
                         <span className="font-bold text-slate-700 text-right">
                           {lastCreatedLead.createdAt}
                         </span>
@@ -3251,10 +3694,12 @@ export default function DataOperatorPage() {
                 </div>
 
                 {/* Card 3: Entry Timeline (4 cols) */}
-                <div className="lg:col-span-3 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+                <div className="lg:col-span-3 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                     <Clock className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-xs font-black text-slate-900">Entry Timeline</h3>
+                    <h3 className="text-xs font-black text-slate-900">
+                      Entry Timeline
+                    </h3>
                   </div>
 
                   <div className="space-y-3 text-xs">
@@ -3263,9 +3708,12 @@ export default function DataOperatorPage() {
                         <ImageIcon className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <div className="font-black text-slate-900">Photo Ingested</div>
+                        <div className="font-black text-slate-900">
+                          Photo Ingested
+                        </div>
                         <div className="text-[10px] text-slate-400">
-                          {lastCreatedLead.createdAt} &middot; {lastCreatedLead.photoName || "Market Photo"}
+                          {lastCreatedLead.createdAt} &middot;{" "}
+                          {lastCreatedLead.photoName || "Market Photo"}
                         </div>
                       </div>
                     </div>
@@ -3275,9 +3723,12 @@ export default function DataOperatorPage() {
                         <FileText className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <div className="font-black text-slate-900">Details Captured</div>
+                        <div className="font-black text-slate-900">
+                          Details Captured
+                        </div>
                         <div className="text-[10px] text-slate-400">
-                          {lastCreatedLead.createdAt} &middot; {lastCreatedLead.businessName}
+                          {lastCreatedLead.createdAt} &middot;{" "}
+                          {lastCreatedLead.businessName}
                         </div>
                       </div>
                     </div>
@@ -3287,7 +3738,9 @@ export default function DataOperatorPage() {
                         <CheckCircle className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <div className="font-black text-slate-900">Duplicate Check Passed</div>
+                        <div className="font-black text-slate-900">
+                          Duplicate Check Passed
+                        </div>
                         <div className="text-[10px] text-slate-400">
                           {lastCreatedLead.createdAt} &middot; Verified unique
                         </div>
@@ -3299,7 +3752,9 @@ export default function DataOperatorPage() {
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                       <div>
-                        <div className="font-black text-slate-900">Lead Created</div>
+                        <div className="font-black text-slate-900">
+                          Lead Created
+                        </div>
                         <div className="text-[10px] text-slate-400">
                           {lastCreatedLead.createdAt} &middot; Saved to DB
                         </div>
@@ -3311,9 +3766,12 @@ export default function DataOperatorPage() {
                         <Send className="w-3.5 h-3.5" />
                       </div>
                       <div>
-                        <div className="font-black text-slate-900">Assigned to Executive</div>
+                        <div className="font-black text-slate-900">
+                          Assigned to Executive
+                        </div>
                         <div className="text-[10px] text-slate-400">
-                          {lastCreatedLead.createdAt} &middot; {lastCreatedLead.assignedToName}
+                          {lastCreatedLead.createdAt} &middot;{" "}
+                          {lastCreatedLead.assignedToName}
                         </div>
                       </div>
                     </div>
@@ -3321,22 +3779,28 @@ export default function DataOperatorPage() {
                 </div>
               </div>
             ) : (
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-6 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-slate-900">My Created Leads Ledger</h3>
+                    <h3 className="text-base font-black text-slate-900">
+                      My Created Leads Ledger
+                    </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      Review, filter, and track all field leads captured and assigned through the Data Operator Hub.
+                      Review, filter, and track all field leads captured and
+                      assigned through the Data Operator Hub.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <button
-                    onClick={() => setCurrentView("photos")}
-                    className="px-4 py-2 rounded-xl bg-[#F95721] text-white font-bold text-xs hover:bg-[#e84915] transition-colors flex items-center gap-1.5"
+                    onClick={() => {
+                      setUploadStep(1);
+                      setCurrentView("photos");
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#F95721] text-white font-bold text-xs hover:bg-[#e84915] transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <UploadCloud className="w-4 h-4" />
                     <span>Upload New Photos</span>
@@ -3348,17 +3812,22 @@ export default function DataOperatorPage() {
             {/* Middle Row: Analytics (3 Cards) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
               {/* Card A: Today's Progress (4 cols) */}
-              <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-4">
+              <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-4">
                 <div className="flex items-center gap-2">
                   <ImageIcon className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-xs font-black text-slate-900">Today&apos;s Progress</h3>
+                  <h3 className="text-xs font-black text-slate-900">
+                    Today&apos;s Progress
+                  </h3>
                 </div>
 
                 <div className="grid grid-cols-12 gap-3 items-center">
                   {/* Circular Gauge */}
                   <div className="col-span-5 flex flex-col items-center justify-center">
                     <div className="relative w-24 h-24 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                      <svg
+                        className="w-full h-full transform -rotate-90"
+                        viewBox="0 0 36 36"
+                      >
                         <path
                           className="text-slate-100"
                           strokeWidth="3.5"
@@ -3386,7 +3855,14 @@ export default function DataOperatorPage() {
                       </div>
                     </div>
                     <div className="text-[10px] text-slate-400 font-semibold mt-1">
-                      Daily Target: 80 &middot; <span className="text-emerald-600 font-black">{Math.min(100, Math.round((totalLeadsCreated / 80) * 100))}%</span>
+                      Daily Target: 80 &middot;{" "}
+                      <span className="text-emerald-600 font-black">
+                        {Math.min(
+                          100,
+                          Math.round((totalLeadsCreated / 80) * 100),
+                        )}
+                        %
+                      </span>
                     </div>
                   </div>
 
@@ -3395,9 +3871,13 @@ export default function DataOperatorPage() {
                     <div className="p-2 bg-slate-50 rounded-xl">
                       <div className="flex items-center justify-between text-slate-400 text-[10px]">
                         <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
-                        <span className="text-emerald-600 font-bold">↑ +12%</span>
+                        <span className="text-emerald-600 font-bold">
+                          ↑ +12%
+                        </span>
                       </div>
-                      <div className="text-base font-black text-slate-900 mt-1">{totalPhotosReceived}</div>
+                      <div className="text-base font-black text-slate-900 mt-1">
+                        {totalPhotosReceived}
+                      </div>
                       <div className="text-[10px] text-slate-500 font-medium truncate">
                         Photos Received
                       </div>
@@ -3406,9 +3886,13 @@ export default function DataOperatorPage() {
                     <div className="p-2 bg-slate-50 rounded-xl">
                       <div className="flex items-center justify-between text-slate-400 text-[10px]">
                         <FileText className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-emerald-600 font-bold">↑ +8%</span>
+                        <span className="text-emerald-600 font-bold">
+                          ↑ +8%
+                        </span>
                       </div>
-                      <div className="text-base font-black text-slate-900 mt-1">{totalLeadsCreated}</div>
+                      <div className="text-base font-black text-slate-900 mt-1">
+                        {totalLeadsCreated}
+                      </div>
                       <div className="text-[10px] text-slate-500 font-medium truncate">
                         Leads Created
                       </div>
@@ -3417,9 +3901,13 @@ export default function DataOperatorPage() {
                     <div className="p-2 bg-slate-50 rounded-xl">
                       <div className="flex items-center justify-between text-slate-400 text-[10px]">
                         <Send className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="text-emerald-600 font-bold">↑ +10%</span>
+                        <span className="text-emerald-600 font-bold">
+                          ↑ +10%
+                        </span>
                       </div>
-                      <div className="text-base font-black text-slate-900 mt-1">{totalLeadsAssigned}</div>
+                      <div className="text-base font-black text-slate-900 mt-1">
+                        {totalLeadsAssigned}
+                      </div>
                       <div className="text-[10px] text-slate-500 font-medium truncate">
                         Leads Assigned
                       </div>
@@ -3430,7 +3918,9 @@ export default function DataOperatorPage() {
                         <Clock className="w-3.5 h-3.5 text-rose-500" />
                         <span className="text-rose-600 font-bold">↓ -5%</span>
                       </div>
-                      <div className="text-base font-black text-slate-900 mt-1">{totalPendingPhotos}</div>
+                      <div className="text-base font-black text-slate-900 mt-1">
+                        {totalPendingPhotos}
+                      </div>
                       <div className="text-[10px] text-slate-500 font-medium truncate">
                         Pending Photos
                       </div>
@@ -3440,7 +3930,7 @@ export default function DataOperatorPage() {
               </div>
 
               {/* Card B: Time Analysis (Today) (4.5 cols) */}
-              <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-blue-600" />
                   <h3 className="text-xs font-black text-slate-900">
@@ -3455,8 +3945,12 @@ export default function DataOperatorPage() {
                       <Download className="w-3.5 h-3.5 rotate-180" />
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-400">Login Time</div>
-                      <div className="text-xs font-black text-slate-900">{loginTime}</div>
+                      <div className="text-[10px] text-slate-400">
+                        Login Time
+                      </div>
+                      <div className="text-xs font-black text-slate-900">
+                        {loginTime}
+                      </div>
                     </div>
                   </div>
 
@@ -3465,8 +3959,12 @@ export default function DataOperatorPage() {
                       <Clock className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-400">Total Working Time</div>
-                      <div className="text-xs font-black text-slate-900">{workingDurationStr}</div>
+                      <div className="text-[10px] text-slate-400">
+                        Total Working Time
+                      </div>
+                      <div className="text-xs font-black text-slate-900">
+                        {workingDurationStr}
+                      </div>
                     </div>
                   </div>
 
@@ -3475,8 +3973,12 @@ export default function DataOperatorPage() {
                       <Zap className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-400">Avg. Entry Time</div>
-                      <div className="text-xs font-black text-slate-900">{avgEntryTimeStr}</div>
+                      <div className="text-[10px] text-slate-400">
+                        Avg. Entry Time
+                      </div>
+                      <div className="text-xs font-black text-slate-900">
+                        {avgEntryTimeStr}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3506,11 +4008,13 @@ export default function DataOperatorPage() {
               </div>
 
               {/* Card C: Lead Statistics (2.5 cols) */}
-              <div className="lg:col-span-3 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="lg:col-span-3 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-xs font-black text-slate-900">Lead Statistics</h3>
+                    <h3 className="text-xs font-black text-slate-900">
+                      Lead Statistics
+                    </h3>
                   </div>
                   <select className="text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5">
                     <option>Today</option>
@@ -3520,7 +4024,10 @@ export default function DataOperatorPage() {
                 <div className="flex items-center justify-between gap-3">
                   {/* Donut Chart */}
                   <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                    <svg
+                      className="w-full h-full transform -rotate-90"
+                      viewBox="0 0 36 36"
+                    >
                       <path
                         className="text-emerald-500"
                         strokeDasharray={`${leadStats.newPct}, 100`}
@@ -3562,7 +4069,9 @@ export default function DataOperatorPage() {
                   <div className="space-y-1.5 text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="text-slate-600 text-[11px]">New Leads</span>
+                      <span className="text-slate-600 text-[11px]">
+                        New Leads
+                      </span>
                       <span className="font-bold text-slate-900 text-[11px] ml-auto">
                         {leadStats.newLeads} ({leadStats.newPct}%)
                       </span>
@@ -3570,7 +4079,9 @@ export default function DataOperatorPage() {
 
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                      <span className="text-slate-600 text-[11px]">Duplicate</span>
+                      <span className="text-slate-600 text-[11px]">
+                        Duplicate
+                      </span>
                       <span className="font-bold text-slate-900 text-[11px] ml-auto">
                         {leadStats.duplicates} ({leadStats.dupPct}%)
                       </span>
@@ -3578,7 +4089,9 @@ export default function DataOperatorPage() {
 
                     <div className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                      <span className="text-slate-600 text-[11px]">Incomplete</span>
+                      <span className="text-slate-600 text-[11px]">
+                        Incomplete
+                      </span>
                       <span className="font-bold text-slate-900 text-[11px] ml-auto">
                         {leadStats.incomplete} ({leadStats.incPct}%)
                       </span>
@@ -3591,7 +4104,7 @@ export default function DataOperatorPage() {
             {/* Bottom Table: Today's Created Leads */}
             <div
               id="created-leads-ledger"
-              className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-4"
+              className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-4"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -3631,13 +4144,15 @@ export default function DataOperatorPage() {
                           new Set(
                             areas.flatMap((a) =>
                               Array.isArray(a.zones)
-                                ? a.zones.map((z) => (typeof z === "string" ? z : z.name))
-                                : []
-                            )
-                          )
+                                ? a.zones.map((z) =>
+                                    typeof z === "string" ? z : z.name,
+                                  )
+                                : [],
+                            ),
+                          ),
                         )
                       : getZonesForArea(leadsFilterArea).map((z) =>
-                          typeof z === "string" ? z : z.name
+                          typeof z === "string" ? z : z.name,
                         )
                     ).map((zName, zIdx) => (
                       <option key={zIdx} value={zName}>
@@ -3662,7 +4177,10 @@ export default function DataOperatorPage() {
                   <button
                     onClick={async () => {
                       const res = await fetchLeadsFromDb();
-                      showToast(`Synced ${res.length} leads from database!`, "success");
+                      showToast(
+                        `Synced ${res.length} leads from database!`,
+                        "success",
+                      );
                     }}
                     className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                     title="Sync leads from MongoDB"
@@ -3704,86 +4222,92 @@ export default function DataOperatorPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredRecentEntries.length > 0 ? (
                       filteredRecentEntries.map((row, idx) => (
-                      <tr
-                        key={row.id || idx}
-                        className="hover:bg-slate-50/70 transition-colors"
-                      >
-                        <td className="py-3 px-3 font-semibold text-slate-500">
-                          {idx + 1}
-                        </td>
-                        <td className="py-3 px-3 font-bold text-slate-700">
-                          {row.leadId}
-                        </td>
-                        <td className="py-3 px-3 font-extrabold text-slate-900">
-                          {row.businessName}
-                        </td>
-                        <td className="py-3 px-3 text-slate-600 font-medium">
-                          {row.area}
-                        </td>
-                        <td className="py-3 px-3 text-slate-600 font-medium">
-                          {row.zone}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                              row.categoryColor || "bg-pink-50 text-pink-700 border-pink-200"
-                            }`}
-                          >
-                            {row.categoryLabel || "General Store"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2">
+                        <tr
+                          key={row.id || idx}
+                          className="hover:bg-slate-50/70 transition-colors"
+                        >
+                          <td className="py-3 px-3 font-semibold text-slate-500">
+                            {idx + 1}
+                          </td>
+                          <td className="py-3 px-3 font-bold text-slate-700">
+                            {row.leadId}
+                          </td>
+                          <td className="py-3 px-3 font-extrabold text-slate-900">
+                            {row.businessName}
+                          </td>
+                          <td className="py-3 px-3 text-slate-600 font-medium">
+                            {row.area}
+                          </td>
+                          <td className="py-3 px-3 text-slate-600 font-medium">
+                            {row.zone}
+                          </td>
+                          <td className="py-3 px-3">
                             <span
-                              className={`w-6 h-6 rounded-full ${
-                                row.assignedToColor || "bg-rose-500"
-                              } text-white font-bold text-[10px] flex items-center justify-center shrink-0`}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                row.categoryColor ||
+                                "bg-pink-50 text-pink-700 border-pink-200"
+                              }`}
                             >
-                              {row.assignedToInitials}
+                              {row.categoryLabel || "General Store"}
                             </span>
-                            <span className="font-bold text-slate-800">
-                              {row.assignedToName}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`w-6 h-6 rounded-full ${
+                                  row.assignedToColor || "bg-rose-500"
+                                } text-white font-bold text-[10px] flex items-center justify-center shrink-0`}
+                              >
+                                {row.assignedToInitials}
+                              </span>
+                              <span className="font-bold text-slate-800">
+                                {row.assignedToName}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-slate-500 font-medium">
+                            {row.createdAt}
+                          </td>
+                          <td className="py-3 px-3 text-slate-600 font-bold text-[11px]">
+                            {row.entryTime || "3m 12s"}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                              {row.status}
                             </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-slate-500 font-medium">
-                          {row.createdAt}
-                        </td>
-                        <td className="py-3 px-3 text-slate-600 font-bold text-[11px]">
-                          {row.entryTime || "3m 12s"}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <button
-                            onClick={() => setShowPreviewModal(row)}
-                            className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 hover:scale-105 transition-transform"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={row.photoUrl}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          </button>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <button
-                            onClick={() => setShowPreviewModal(row)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="View Lead Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="py-3 px-3">
+                            <button
+                              type="button"
+                              onClick={() => setShowPreviewModal(row)}
+                              className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                              title="Click to view full photo"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={row.photoUrl}
+                                alt={row.businessName || "Photo"}
+                                className="w-full h-full object-contain"
+                              />
+                            </button>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <button
+                              onClick={() => setShowPreviewModal(row)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="View Lead Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
-                        <td colSpan={12} className="py-12 text-center text-slate-400 text-xs">
+                        <td
+                          colSpan={12}
+                          className="py-12 text-center text-slate-400 text-xs"
+                        >
                           No leads found matching your criteria.
                         </td>
                       </tr>
@@ -3801,7 +4325,7 @@ export default function DataOperatorPage() {
         {currentView === "coverage" && (
           <div className="space-y-6">
             {/* Header Banner */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
@@ -3817,7 +4341,9 @@ export default function DataOperatorPage() {
                   Area &amp; Zone Status
                 </h1>
                 <p className="text-xs text-slate-500 mt-1 font-medium">
-                  All geographical areas and sub-locality zones configured by the administrator for field photo capture and automatic sales representative dispatch.
+                  All geographical areas and sub-locality zones configured by
+                  the administrator for field photo capture and automatic sales
+                  representative dispatch.
                 </p>
               </div>
 
@@ -3848,7 +4374,7 @@ export default function DataOperatorPage() {
 
             {/* 4 Metric KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-slate-500 uppercase">
                     Configured Areas
@@ -3861,11 +4387,16 @@ export default function DataOperatorPage() {
                   {areas.length}
                 </div>
                 <div className="text-[11px] text-teal-700 font-semibold mt-1">
-                  {areas.length > 0 ? areas.map((a) => a.name).slice(0, 3).join(", ") : "No areas assigned"}
+                  {areas.length > 0
+                    ? areas
+                        .map((a) => a.name)
+                        .slice(0, 3)
+                        .join(", ")
+                    : "No areas assigned"}
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-slate-500 uppercase">
                     Active Zones
@@ -3882,7 +4413,7 @@ export default function DataOperatorPage() {
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-slate-500 uppercase">
                     Designated Reps
@@ -3895,11 +4426,17 @@ export default function DataOperatorPage() {
                   {new Set(coverageList.map((c) => c.assignedRep)).size}
                 </div>
                 <div className="text-[11px] text-purple-700 font-semibold mt-1">
-                  {Array.from(new Set(coverageList.map((c) => c.assignedRep).filter(Boolean))).slice(0, 3).join(", ") || "Active Sales Team"}
+                  {Array.from(
+                    new Set(
+                      coverageList.map((c) => c.assignedRep).filter(Boolean),
+                    ),
+                  )
+                    .slice(0, 3)
+                    .join(", ") || "Active Sales Team"}
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
+              <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-slate-500 uppercase">
                     Market Coverage
@@ -3918,7 +4455,7 @@ export default function DataOperatorPage() {
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 flex-wrap">
                 {/* Area Filter */}
                 <select
@@ -3926,7 +4463,9 @@ export default function DataOperatorPage() {
                   onChange={(e) => setCoverageFilterArea(e.target.value)}
                   className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
                 >
-                  <option value="ALL">All Territories ({areas.length || 1})</option>
+                  <option value="ALL">
+                    All Territories ({areas.length || 1})
+                  </option>
                   {areas.map((a) => (
                     <option key={a._id || a.id} value={a.name}>
                       {a.name} ({a.zones?.length || 0} Zones)
@@ -3961,7 +4500,7 @@ export default function DataOperatorPage() {
             </div>
 
             {/* Area & Zones Master Table */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden">
+            <div className="bg-white border border-slate-200/90 rounded-sm shadow-2xs overflow-hidden">
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -3971,7 +4510,8 @@ export default function DataOperatorPage() {
                     </span>
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Click &ldquo;Capture Lead&rdquo; to pre-select any zone and automatically route to the designated sales executive.
+                    Click &ldquo;Capture Lead&rdquo; to pre-select any zone and
+                    automatically route to the designated sales executive.
                   </p>
                 </div>
               </div>
@@ -3994,13 +4534,20 @@ export default function DataOperatorPage() {
                   <tbody className="divide-y divide-slate-100 font-medium">
                     {filteredCoverageList.length > 0 ? (
                       filteredCoverageList.map((item, idx) => (
-                        <tr key={`${item.area}_${item.zone}_${idx}`} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                        <tr
+                          key={`${item.area}_${item.zone}_${idx}`}
+                          className="hover:bg-slate-50/80 transition-colors"
+                        >
+                          <td className="py-3.5 px-4 font-bold text-slate-400">
+                            {idx + 1}
+                          </td>
                           <td className="py-3.5 px-4 font-bold text-slate-900">
                             <div className="flex items-center gap-2">
                               <MapPin className={`w-4 h-4 ${item.pinColor}`} />
                               <div>
-                                <span className="block text-slate-900 font-bold">{item.zone}</span>
+                                <span className="block text-slate-900 font-bold">
+                                  {item.zone}
+                                </span>
                                 {item.zoneCode && (
                                   <span className="text-[10px] font-mono text-slate-400 font-normal">
                                     CODE: {item.zoneCode}
@@ -4011,7 +4558,9 @@ export default function DataOperatorPage() {
                           </td>
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-slate-800">{item.area}</span>
+                              <span className="font-semibold text-slate-800">
+                                {item.area}
+                              </span>
                               <span className="text-[9px] font-mono font-bold text-teal-700 bg-teal-50 px-1 py-0.5 rounded border border-teal-200">
                                 {item.areaCode}
                               </span>
@@ -4065,17 +4614,26 @@ export default function DataOperatorPage() {
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => {
-                                  const repId = resolveMatchedRep(item.zone, item.areaId);
-                                  const repObj = salesReps.find((s) => (s._id || s.id) === repId);
+                                  const repId = resolveMatchedRep(
+                                    item.zone,
+                                    item.areaId,
+                                  );
+                                  const repObj = salesReps.find(
+                                    (s) => (s._id || s.id) === repId,
+                                  );
                                   setFormData((prev) => ({
                                     ...prev,
                                     area: item.area,
                                     areaId: item.areaId,
                                     zone: item.zone,
                                     assignedToId: repId,
-                                    assignedToName: repObj?.name || item.assignedRep,
+                                    assignedToName:
+                                      repObj?.name || item.assignedRep,
                                   }));
-                                  showToast(`Selected ${item.zone} (${item.area}). Ready to create lead!`, "success");
+                                  showToast(
+                                    `Selected ${item.zone} (${item.area}). Ready to create lead!`,
+                                    "success",
+                                  );
                                   setCurrentView("review");
                                 }}
                                 className="px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#F95721] font-bold text-xs border border-orange-200 transition-colors cursor-pointer"
@@ -4091,7 +4649,10 @@ export default function DataOperatorPage() {
                                     zone: item.zone,
                                     batchName: `${item.area.toUpperCase().replace(/\s+/g, "")}-${item.zone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
                                   }));
-                                  showToast(`Selected ${item.zone} (${item.area}) for photo upload`, "info");
+                                  showToast(
+                                    `Selected ${item.zone} (${item.area}) for photo upload`,
+                                    "info",
+                                  );
                                   setCurrentView("photos");
                                 }}
                                 className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
@@ -4105,8 +4666,12 @@ export default function DataOperatorPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-slate-400 text-xs">
-                          No matching zones found. Clear your search or filter to see all admin territories.
+                        <td
+                          colSpan={9}
+                          className="py-12 text-center text-slate-400 text-xs"
+                        >
+                          No matching zones found. Clear your search or filter
+                          to see all admin territories.
                         </td>
                       </tr>
                     )}
@@ -4154,7 +4719,7 @@ export default function DataOperatorPage() {
         <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl animate-scale-in border-2 border-amber-300 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-sm bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -4167,11 +4732,13 @@ export default function DataOperatorPage() {
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2 text-xs">
+            <div className="p-3.5 rounded-sm bg-amber-50/70 border border-amber-200 space-y-2 text-xs">
               {duplicateModal.matches.map((m, i) => (
                 <div key={i} className="flex justify-between items-center py-1">
                   <div>
-                    <span className="font-black text-slate-900">{m.businessName}</span>
+                    <span className="font-black text-slate-900">
+                      {m.businessName}
+                    </span>
                     <span className="text-slate-500 ml-1">({m.phone})</span>
                   </div>
                   <span className="font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-md border border-indigo-200">
@@ -4184,10 +4751,15 @@ export default function DataOperatorPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <button
                 onClick={() => {
-                  const rem = photosQueue.filter((_, idx) => idx !== currentIndex);
+                  const rem = photosQueue.filter(
+                    (_, idx) => idx !== currentIndex,
+                  );
                   setPhotosQueue(rem);
                   if (rem.length > 0) {
-                    selectPhotoItem(Math.min(currentIndex, rem.length - 1), rem);
+                    selectPhotoItem(
+                      Math.min(currentIndex, rem.length - 1),
+                      rem,
+                    );
                   }
                   setDuplicateModal({
                     show: false,
@@ -4228,7 +4800,7 @@ export default function DataOperatorPage() {
       {/* Lead Preview Details Modal */}
       {showPreviewModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl animate-scale-in space-y-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-2xl animate-scale-in space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -4246,18 +4818,157 @@ export default function DataOperatorPage() {
               </button>
             </div>
 
-            <div className="w-full h-48 rounded-2xl overflow-hidden bg-slate-900">
+            <div
+              className={`relative w-full h-80 sm:h-[420px] rounded-sm overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800 select-none ${
+                modalZoom > 1
+                  ? isPanningModal
+                    ? "cursor-grabbing"
+                    : "cursor-grab"
+                  : "cursor-zoom-in"
+              }`}
+              onMouseDown={(e) => {
+                if (modalZoom <= 1) return;
+                setIsPanningModal(true);
+                modalDragStartRef.current = {
+                  x: e.clientX - modalPan.x,
+                  y: e.clientY - modalPan.y,
+                };
+              }}
+              onMouseMove={(e) => {
+                if (!isPanningModal || modalZoom <= 1) return;
+                setModalPan({
+                  x: e.clientX - modalDragStartRef.current.x,
+                  y: e.clientY - modalDragStartRef.current.y,
+                });
+              }}
+              onMouseUp={() => setIsPanningModal(false)}
+              onMouseLeave={() => setIsPanningModal(false)}
+              onWheel={(e) => {
+                e.stopPropagation();
+                if (e.deltaY < 0) {
+                  setModalZoom((prev) =>
+                    Math.min(4, +(prev + 0.25).toFixed(2)),
+                  );
+                } else {
+                  setModalZoom((prev) => {
+                    const next = Math.max(1, +(prev - 0.25).toFixed(2));
+                    if (next === 1) setModalPan({ x: 0, y: 0 });
+                    return next;
+                  });
+                }
+              }}
+              onDoubleClick={() => {
+                if (modalZoom > 1) {
+                  setModalZoom(1);
+                  setModalPan({ x: 0, y: 0 });
+                } else {
+                  setModalZoom(2);
+                }
+              }}
+            >
+              {/* Floating Zoom & Controls Toolbar */}
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-1 shadow-lg text-white">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalZoom((prev) => {
+                      const next = Math.max(1, +(prev - 0.25).toFixed(2));
+                      if (next === 1) setModalPan({ x: 0, y: 0 });
+                      return next;
+                    });
+                  }}
+                  disabled={modalZoom <= 1}
+                  className="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                  title="Zoom Out (-)"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalZoom(1);
+                    setModalRotation(0);
+                    setModalPan({ x: 0, y: 0 });
+                  }}
+                  className="px-2 py-1 text-xs font-mono font-bold hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                  title="Reset Zoom & Rotation"
+                >
+                  {Math.round(modalZoom * 100)}%
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalZoom((prev) =>
+                      Math.min(4, +(prev + 0.25).toFixed(2)),
+                    );
+                  }}
+                  disabled={modalZoom >= 4}
+                  className="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                  title="Zoom In (+)"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+
+                <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalRotation((prev) => (prev + 90) % 360);
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Rotate 90°"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalZoom(1);
+                    setModalRotation(0);
+                    setModalPan({ x: 0, y: 0 });
+                  }}
+                  className="p-1.5 rounded hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  title="Reset to 100%"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Helpful Hint Badge */}
+              <div className="absolute bottom-2.5 left-3 z-10 pointer-events-none text-[11px] font-medium text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded backdrop-blur-xs border border-slate-800">
+                {modalZoom > 1
+                  ? "Drag to pan • Double-click to reset"
+                  : "Scroll wheel or click +/- to zoom"}
+              </div>
+
+              {/* Transformable Image */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={showPreviewModal.photoUrl}
-                alt=""
-                className="w-full h-full object-cover"
+                alt={showPreviewModal.businessName || "Photo"}
+                className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
+                style={{
+                  transform: `translate(${modalPan.x}px, ${modalPan.y}px) scale(${modalZoom}) rotate(${modalRotation}deg)`,
+                  transformOrigin: "center center",
+                }}
+                draggable={false}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-400 font-medium block">Lead ID</span>
+                <span className="text-slate-400 font-medium block">
+                  Lead ID
+                </span>
                 <span className="font-black text-slate-800">
                   {showPreviewModal.leadId}
                 </span>
@@ -4269,13 +4980,17 @@ export default function DataOperatorPage() {
                 </span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-400 font-medium block">Area &amp; Zone</span>
+                <span className="text-slate-400 font-medium block">
+                  Area &amp; Zone
+                </span>
                 <span className="font-black text-slate-800">
                   {showPreviewModal.area}, {showPreviewModal.zone}
                 </span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-400 font-medium block">Assigned To</span>
+                <span className="text-slate-400 font-medium block">
+                  Assigned To
+                </span>
                 <span className="font-black text-indigo-700">
                   {showPreviewModal.assignedToName}
                 </span>
@@ -4297,7 +5012,7 @@ export default function DataOperatorPage() {
       {/* Floating Toast Notification */}
       {toast.show && (
         <div
-          className={`fixed bottom-6 right-6 z-70 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold flex items-center gap-2 animate-bounce-in ${
+          className={`fixed bottom-6 right-6 z-70 px-4 py-3 rounded-sm shadow-xl border text-xs font-bold flex items-center gap-2 animate-bounce-in ${
             toast.type === "error"
               ? "bg-rose-900 text-white border-rose-700"
               : toast.type === "success"
