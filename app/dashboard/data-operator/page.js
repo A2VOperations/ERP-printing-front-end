@@ -54,7 +54,6 @@ import {
   Crop,
   Maximize2,
   ExternalLink,
-  Wand2,
   Edit3,
   Save,
   ShoppingBag,
@@ -65,20 +64,6 @@ import {
   CheckSquare,
   Loader2,
 } from "lucide-react";
-
-// Standard business categories
-const BUSINESS_CATEGORIES = [
-  { id: "RETAIL", label: "Retail & General Store" },
-  { id: "GARMENTS", label: "Clothing, Garments & Tailors" },
-  { id: "PROPERTIES", label: "Real Estate & Properties" },
-  { id: "PRINTING", label: "Printing, Flex & Signage" },
-  { id: "ELECTRONICS", label: "Electronics & Digital Point" },
-  { id: "SERVICES", label: "Salon, Beauty & Services" },
-  { id: "HARDWARE", label: "Hardware, Electrical & Paints" },
-  { id: "PHARMACY", label: "Pharmacy & Healthcare" },
-  { id: "FOOD", label: "Restaurant & Sweet Shop" },
-  { id: "OTHER", label: "Other Commercial Trade" },
-];
 
 // Real-time Data Operator Hub (Dynamic Data)
 
@@ -221,24 +206,6 @@ export default function DataOperatorPage() {
     remarks: "",
   });
 
-  // AI Smart Suggestions Chips for Review Screen (Screenshot 3)
-  const [smartSuggestions, setSmartSuggestions] = useState([
-    {
-      id: "visiting_card",
-      label: "Visiting Card",
-      checked: true,
-      color: "blue",
-    },
-    { id: "bill_book", label: "Bill Book", checked: true, color: "blue" },
-    { id: "flex_board", label: "Flex Board", checked: true, color: "orange" },
-    { id: "shop_board", label: "Shop Board", checked: false },
-    { id: "sticker_label", label: "Sticker / Label", checked: false },
-    { id: "pamphlet", label: "Pamphlet", checked: false },
-    { id: "menu_card", label: "Menu / Rate List", checked: false },
-    { id: "packaging", label: "Packaging", checked: false },
-    { id: "other", label: "Other", checked: false },
-  ]);
-
   // Interactive Modal States
   const [showPreviewModal, setShowPreviewModal] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -261,8 +228,13 @@ export default function DataOperatorPage() {
   const [photosQueue, setPhotosQueue] = useState(() => {
     if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("data_operator_photos_queue");
-        if (saved) return JSON.parse(saved);
+        // Clean up legacy storage if present
+        localStorage.removeItem("data_operator_photos_queue");
+        const saved = localStorage.getItem("data_operator_photos_queue_v2");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return Array.isArray(parsed) ? parsed : [];
+        }
       } catch (e) {
         console.warn("Could not load photos queue:", e);
       }
@@ -283,7 +255,7 @@ export default function DataOperatorPage() {
           uploadDate: p.uploadDate,
         }));
         localStorage.setItem(
-          "data_operator_photos_queue",
+          "data_operator_photos_queue_v2",
           JSON.stringify(serializable),
         );
       } catch (e) {
@@ -308,9 +280,13 @@ export default function DataOperatorPage() {
   const [batchAreaId, setBatchAreaId] = useState("");
   const uploadPageFileInputRef = useRef(null);
 
-  // Photo Viewer Controls
+  // Photo Viewer Controls (On-Page Review Zoom & Pan)
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [imagePan, setImagePan] = useState({ x: 0, y: 0 });
+  const [isPanningImage, setIsPanningImage] = useState(false);
+  const imageDragStartRef = useRef({ x: 0, y: 0 });
+  const imageViewerRef = useRef(null);
 
   // Extraction Form Data (Initialized cleanly without dummy placeholder strings)
   const [formData, setFormData] = useState({
@@ -836,6 +812,8 @@ export default function DataOperatorPage() {
     setCurrentIndex(index);
     setZoomLevel(1);
     setRotation(0);
+    setImagePan({ x: 0, y: 0 });
+    setIsPanningImage(false);
 
     const targetArea =
       item.areaId ||
@@ -862,23 +840,41 @@ export default function DataOperatorPage() {
     });
   };
 
+  const handleClearPhotosQueue = () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("data_operator_photos_queue");
+        localStorage.removeItem("data_operator_photos_queue_v2");
+      } catch (e) {}
+    }
+    setPhotosQueue([]);
+    setCurrentIndex(0);
+    showToast("All pending photos cleared from queue", "success");
+  };
+
+  const handleDeletePhotoFromQueue = (indexToDelete) => {
+    const updated = photosQueue.filter((_, idx) => idx !== indexToDelete);
+    setPhotosQueue(updated);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("data_operator_photos_queue_v2", JSON.stringify(updated));
+      } catch (e) {}
+    }
+    if (updated.length === 0) {
+      setCurrentIndex(0);
+    } else {
+      const nextIdx = Math.min(currentIndex, updated.length - 1);
+      selectPhotoItem(nextIdx, updated);
+    }
+    showToast("Photo removed from pending queue", "info");
+  };
+
   const handleTogglePhotoCheck = (id) => {
     setSelectedPhotosList((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, checked: !item.checked } : item,
       ),
     );
-  };
-
-  const handleToggleSuggestion = (id) => {
-    setSmartSuggestions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, checked: !s.checked } : s)),
-    );
-  };
-
-  const handleSuggestAll = () => {
-    setSmartSuggestions((prev) => prev.map((s) => ({ ...s, checked: true })));
-    showToast("Enabled all smart collateral suggestions!", "success");
   };
 
   const handleFileUpload = (e) => {
@@ -1228,6 +1224,33 @@ export default function DataOperatorPage() {
   };
 
   const activePhoto = photosQueue[currentIndex] || null;
+
+  // Stop page scrolling when mouse is over the image viewer and zoom the photo instead
+  useEffect(() => {
+    const el = imageViewerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.deltaY < 0) {
+        setZoomLevel((prev) => Math.min(4, +(prev + 0.25).toFixed(2)));
+      } else {
+        setZoomLevel((prev) => {
+          const next = Math.max(1, +(prev - 0.25).toFixed(2));
+          if (next === 1) setImagePan({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+    };
+  }, [activePhoto, currentView]);
+
   const selectedPhotosCount = selectedPhotosList.filter(
     (p) => p.checked,
   ).length;
@@ -1677,18 +1700,35 @@ export default function DataOperatorPage() {
                       <h2 className="text-xl font-black text-slate-900">
                         Market Photos
                       </h2>
-                      <span className="text-sm font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                      <span className={`text-sm font-bold px-2 py-0.5 rounded-full border ${
+                        photosQueue.length > 0
+                          ? "text-rose-600 bg-rose-50 border-rose-200"
+                          : "text-slate-500 bg-slate-100 border-slate-200"
+                      }`}>
                         {photosQueue.length} Pending
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => setCurrentView("photos")}
-                      className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
-                    >
-                      <span>View All Photos</span>
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {photosQueue.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearPhotosQueue}
+                          className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Clear all pending photos"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Clear All Pending</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setCurrentView("photos")}
+                        className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                      >
+                        <span>View All Photos</span>
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative group/carousel">
@@ -1701,12 +1741,23 @@ export default function DataOperatorPage() {
                               selectPhotoItem(idx);
                               setCurrentView("review");
                             }}
-                            className={`w-36 shrink-0 rounded-sm overflow-hidden border cursor-pointer transition-all hover:scale-102 hover:shadow-md ${
+                            className={`w-36 shrink-0 rounded-sm overflow-hidden border cursor-pointer transition-all hover:scale-102 hover:shadow-md relative ${
                               idx === 0
                                 ? "border-2 border-[#F95721] ring-2 ring-orange-500/20"
                                 : "border-slate-200"
                             }`}
                           >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePhotoFromQueue(idx);
+                              }}
+                              className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-md transition-colors z-20"
+                              title="Delete this photo"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                             <div className="relative h-28 w-full bg-slate-900">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
@@ -2108,6 +2159,24 @@ export default function DataOperatorPage() {
             {/* ========================================== */}
             {uploadStep !== 2 && (
               <div className="space-y-6 animate-fade-in">
+                {photosQueue.length > 0 && (
+                  <div className="flex items-center justify-between p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs flex-wrap gap-2">
+                    <div className="flex items-center gap-2 text-rose-800 font-semibold">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>You currently have {photosQueue.length} pending photo{photosQueue.length > 1 ? "s" : ""} waiting in the queue.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearPhotosQueue}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 text-xs shadow-xs"
+                      title="Delete all pending photos from queue"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Clear All Pending Photos</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* 3-Card Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
                   {/* Card 1: Drag & Drop Dropzone (4 cols) */}
@@ -2597,8 +2666,9 @@ export default function DataOperatorPage() {
         {/* VIEW 3: REVIEW & ASSIGN LEAD (SCREENSHOT 3)                              */}
         {/* ========================================================================= */}
         {currentView === "review" && (
-          <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full animate-fade-in pb-28">
-            {/* Header & 4-Step Stepper */}
+          <div className="flex-1 flex flex-col justify-between min-h-[calc(100vh-64px)]">
+            <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full pb-8">
+              {/* Header & 4-Step Stepper */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-sm bg-[#F95721] text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
@@ -2620,9 +2690,9 @@ export default function DataOperatorPage() {
             </div>
 
             {/* Main 3-Column Review Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
               {/* Column 1: Selected Market Photo (3 cols) */}
-              <div className="lg:col-span-3 space-y-4">
+              <div className="lg:col-span-5 space-y-4">
                 <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2637,12 +2707,13 @@ export default function DataOperatorPage() {
                         onClick={() =>
                           selectPhotoItem(Math.max(0, currentIndex - 1))
                         }
-                        className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100"
+                        disabled={photosQueue.length <= 1}
+                        className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
                       <span className="text-[11px] font-bold text-slate-600 px-1">
-                        {currentIndex + 1} / {photosQueue.length || 50}
+                        {photosQueue.length > 0 ? `${currentIndex + 1} / ${photosQueue.length}` : "0 / 0"}
                       </span>
                       <button
                         onClick={() =>
@@ -2650,7 +2721,8 @@ export default function DataOperatorPage() {
                             Math.min(photosQueue.length - 1, currentIndex + 1),
                           )
                         }
-                        className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100"
+                        disabled={photosQueue.length <= 1}
+                        className="w-6 h-6 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -2658,30 +2730,160 @@ export default function DataOperatorPage() {
                   </div>
 
                   {activePhoto ? (
-                    <div className="relative w-full h-56 rounded-xl overflow-hidden bg-slate-900">
+                    <div
+                      ref={imageViewerRef}
+                      className={`relative w-full h-[460px] lg:h-[520px] rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-800 select-none ${
+                        zoomLevel > 1
+                          ? isPanningImage
+                            ? "cursor-grabbing"
+                            : "cursor-grab"
+                          : "cursor-zoom-in"
+                      }`}
+                      onMouseDown={(e) => {
+                        if (zoomLevel <= 1) return;
+                        setIsPanningImage(true);
+                        imageDragStartRef.current = {
+                          x: e.clientX - imagePan.x,
+                          y: e.clientY - imagePan.y,
+                        };
+                      }}
+                      onMouseMove={(e) => {
+                        if (!isPanningImage || zoomLevel <= 1) return;
+                        setImagePan({
+                          x: e.clientX - imageDragStartRef.current.x,
+                          y: e.clientY - imageDragStartRef.current.y,
+                        });
+                      }}
+                      onMouseUp={() => setIsPanningImage(false)}
+                      onMouseLeave={() => setIsPanningImage(false)}
+                      onDoubleClick={() => {
+                        if (zoomLevel > 1) {
+                          setZoomLevel(1);
+                          setImagePan({ x: 0, y: 0 });
+                        } else {
+                          setZoomLevel(2);
+                        }
+                      }}
+                    >
+                      {/* Floating Zoom & Controls Toolbar on Same Page */}
+                      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-1 shadow-lg text-white">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomLevel((prev) => {
+                              const next = Math.max(1, +(prev - 0.25).toFixed(2));
+                              if (next === 1) setImagePan({ x: 0, y: 0 });
+                              return next;
+                            });
+                          }}
+                          disabled={zoomLevel <= 1}
+                          className="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                          title="Zoom Out (-)"
+                        >
+                          <ZoomOut className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomLevel(1);
+                            setRotation(0);
+                            setImagePan({ x: 0, y: 0 });
+                          }}
+                          className="px-2 py-1 text-xs font-mono font-bold hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                          title="Reset Zoom & Rotation"
+                        >
+                          {Math.round(zoomLevel * 100)}%
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomLevel((prev) =>
+                              Math.min(4, +(prev + 0.25).toFixed(2)),
+                            );
+                          }}
+                          disabled={zoomLevel >= 4}
+                          className="p-1.5 rounded hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                          title="Zoom In (+)"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+
+                        <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRotation((prev) => (prev + 90) % 360);
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+                          title="Rotate 90°"
+                        >
+                          <RotateCw className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setZoomLevel(1);
+                            setRotation(0);
+                            setImagePan({ x: 0, y: 0 });
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          title="Reset to 100%"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPreviewModal({
+                              businessName:
+                                formData.businessName || "Photo Preview",
+                              photoUrl: activePhoto.previewUrl,
+                              leadId: activePhoto.fileName || "Photo",
+                              status: "Fullscreen Inspection",
+                              area: formData.area || "",
+                              zone: formData.zone || "",
+                              assignedToName: formData.assignedToName || "",
+                            });
+                          }}
+                          className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                          title="Open Fullscreen Modal"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Helpful Hint Badge */}
+                      <div className="absolute bottom-2.5 left-3 z-10 pointer-events-none text-[11px] font-medium text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded backdrop-blur-xs border border-slate-800">
+                        {zoomLevel > 1
+                          ? "Drag to pan • Double-click to reset"
+                          : "Scroll wheel or buttons to zoom"}
+                      </div>
+
+                      {/* Transformable Image */}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={activePhoto.previewUrl}
                         alt={activePhoto ? activePhoto.fileName : "No file"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
+                        style={{
+                          transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${zoomLevel}) rotate(${rotation}deg)`,
+                          transformOrigin: "center center",
+                        }}
+                        draggable={false}
                       />
-                      <button
-                        onClick={() =>
-                          setShowPreviewModal({
-                            businessName: formData.businessName,
-                            photoUrl: activePhoto.previewUrl,
-                            leadId: activePhoto.fileName,
-                            status: "Reviewing",
-                            area: formData.area,
-                            zone: formData.zone,
-                            assignedToName: formData.assignedToName,
-                          })
-                        }
-                        className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-slate-800 text-[11px] font-bold flex items-center gap-1 shadow-sm transition-all"
-                      >
-                        <Search className="w-3.5 h-3.5" />
-                        <span>Zoom</span>
-                      </button>
                     </div>
                   ) : (
                     <div className="py-12 px-4 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center justify-center space-y-2">
@@ -2757,7 +2959,7 @@ export default function DataOperatorPage() {
               </div>
 
               {/* Column 2: Business Info, Duplicate Check, Suggested Executive, AI Suggestions (6 cols) */}
-              <div className="lg:col-span-6 space-y-4">
+              <div className="lg:col-span-5 space-y-4">
                 <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2766,13 +2968,6 @@ export default function DataOperatorPage() {
                         Business Information
                       </h3>
                     </div>
-                    <button
-                      onClick={() => showToast("Business information editable")}
-                      className="px-2.5 py-1 rounded-lg border border-blue-200 text-blue-600 font-bold text-xs flex items-center gap-1 hover:bg-blue-50 transition-colors"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3090,237 +3285,9 @@ export default function DataOperatorPage() {
                     </select>
                   </div>
                 </div>
-
-                {/* AI Smart Suggestions (Optional) */}
-                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-purple-600 text-white font-black text-xs flex items-center justify-center">
-                        A
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-black text-slate-900">
-                          AI Smart Suggestions (Optional)
-                        </h4>
-                        <p className="text-[10px] text-slate-400">
-                          Based on business type and market data
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSuggestAll}
-                      className="px-2.5 py-1 rounded-lg border border-purple-200 text-purple-600 font-bold text-[11px] flex items-center gap-1 hover:bg-purple-50 transition-colors"
-                    >
-                      <Wand2 className="w-3.5 h-3.5" />
-                      <span>Suggest All</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {smartSuggestions.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleToggleSuggestion(item.id)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                          item.checked
-                            ? item.color === "orange"
-                              ? "bg-orange-50 border-orange-300 text-orange-700"
-                              : "bg-blue-50 border-blue-300 text-blue-700"
-                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        <span
-                          className={`w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] ${
-                            item.checked
-                              ? item.color === "orange"
-                                ? "bg-orange-600 text-white"
-                                : "bg-blue-600 text-white"
-                              : "border border-slate-300"
-                          }`}
-                        >
-                          {item.checked && "✓"}
-                        </span>
-                        <span>{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
-              {/* Column 3: Lead Preview Card & Additional Actions (3 cols) */}
-              <div className="lg:col-span-3 space-y-4">
-                <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black text-slate-900">
-                      Lead Preview Card
-                    </h3>
-                    <button
-                      onClick={() => showToast("Lead preview editable")}
-                      className="px-2 py-0.5 rounded-md border border-blue-200 text-blue-600 font-bold text-[11px] flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit</span>
-                    </button>
-                  </div>
 
-                  <div className="w-full h-36 rounded-xl overflow-hidden bg-slate-900">
-                    {activePhoto && activePhoto.previewUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={activePhoto.previewUrl}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-400 text-xs font-semibold gap-1">
-                        <ImageIcon className="w-6 h-6 text-slate-500" />
-                        <span>No Photo Attached</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900">
-                      {formData.businessName}
-                    </h4>
-                    <div className="space-y-1 text-xs text-slate-600 mt-1.5">
-                      <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                        <Phone className="w-3.5 h-3.5" />
-                        <span>{formData.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>
-                          {formData.area} &gt; {formData.zone}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{formData.categoryLabel}</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="font-bold text-slate-800">
-                            {formData.assignedToName}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                          New Lead
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lead Status Stepper */}
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-700">
-                      Lead Status
-                    </div>
-                    <div className="space-y-1.5 text-[11px]">
-                      <div className="flex items-center justify-between text-slate-600">
-                        <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Photo Uploaded</span>
-                        </div>
-                        <span className="text-slate-400 text-[10px]">
-                          27 Sep, 10:02 AM
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-600">
-                        <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          <span>Details Filled</span>
-                        </div>
-                        <span className="text-slate-400 text-[10px]">
-                          27 Sep, 10:08 AM
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-600">
-                        <div className="flex items-center gap-1.5 text-orange-600 font-bold bg-orange-50 px-1 py-0.5 rounded">
-                          <span className="w-3.5 h-3.5 rounded-full bg-[#F95721] text-white flex items-center justify-center text-[9px]">
-                            !
-                          </span>
-                          <span>Ready to Assign</span>
-                        </div>
-                        <span className="text-slate-400 text-[10px]">
-                          27 Sep, 10:08 AM
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-300" />
-                          <span>Assigned to Executive</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Actions */}
-                  <div className="pt-2 border-t border-slate-100 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-700">
-                      Additional Actions
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <button
-                        onClick={() => setRotation((r) => (r + 90) % 360)}
-                        className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-1.5 font-bold text-slate-700"
-                      >
-                        <RotateCw className="w-3.5 h-3.5" />
-                        <span>Rotate Photo</span>
-                      </button>
-
-                      <button
-                        onClick={() => showToast("Photo crop tool ready")}
-                        className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-1.5 font-bold text-slate-700"
-                      >
-                        <Crop className="w-3.5 h-3.5" />
-                        <span>Crop Photo</span>
-                      </button>
-
-                      <button
-                        onClick={() => showToast("Upload replacement photo")}
-                        className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-1.5 font-bold text-slate-700"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Replace Photo</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (!activePhoto) {
-                            showToast(
-                              "No photo currently in review queue",
-                              "warning",
-                            );
-                            return;
-                          }
-                          setShowPreviewModal({
-                            businessName:
-                              formData.businessName || "Photo Preview",
-                            photoUrl: activePhoto.previewUrl,
-                            leadId: activePhoto.fileName || "Photo",
-                            status: "Fullscreen Inspection",
-                            area: formData.area || "",
-                            zone: formData.zone || "",
-                            assignedToName: formData.assignedToName || "",
-                          });
-                        }}
-                        className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-1.5 font-bold text-slate-700"
-                      >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                        <span>View Fullscreen</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Bottom Reference Section: Location Map + Nearby Businesses */}
@@ -3426,16 +3393,18 @@ export default function DataOperatorPage() {
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Bottom Fixed Action Footer Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-3.5 shadow-xl flex items-center justify-between">
+          {/* Bottom Fixed Action Footer Bar (Pinned at bottom of viewport) */}
+          <div className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-3.5 shadow-xl w-full">
+            <div className="max-w-[1600px] mx-auto w-full flex items-center justify-between gap-4">
               <button
                 type="button"
                 onClick={() => {
                   setUploadStep(2);
                   setCurrentView("photos");
                 }}
-                className="px-4 py-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-sm border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer shrink-0"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <div className="text-left leading-tight">
@@ -3446,7 +3415,19 @@ export default function DataOperatorPage() {
                 </div>
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                {photosQueue.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePhotoFromQueue(currentIndex)}
+                    className="px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
+                    title="Delete this photo from pending queue"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-600" />
+                    <span>Delete Photo</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -3479,6 +3460,7 @@ export default function DataOperatorPage() {
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   if (currentIndex < photosQueue.length - 1) {
                     selectPhotoItem(currentIndex + 1);
@@ -3487,13 +3469,14 @@ export default function DataOperatorPage() {
                     showToast("Reached end of batch", "info");
                   }
                 }}
-                className="px-4 py-2 text-xs font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1.5 transition-colors"
+                className="px-4 py-2 text-xs font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1.5 transition-colors shrink-0"
               >
                 <span>Skip &amp; Next</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
+        </div>
         )}
 
         {/* ========================================================================= */}
@@ -4464,7 +4447,7 @@ export default function DataOperatorPage() {
                   className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">
-                    All Territories ({areas.length || 1})
+                    All Territories ({areas.length})
                   </option>
                   {areas.map((a) => (
                     <option key={a._id || a.id} value={a.name}>
