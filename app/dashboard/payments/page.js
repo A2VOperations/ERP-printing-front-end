@@ -68,10 +68,20 @@ export default function PaymentsPage() {
       .catch(() => {});
 
     api
-      .get("/tenants/current", { silent: true })
+      .get("/settings", { silent: true })
       .then((res) => {
-        if (res?.data?.tenant) setCurrentTenant(res.data.tenant);
-        else if (res?.data) setCurrentTenant(res.data);
+        if (res?.data) {
+          const s = res.data;
+          setCurrentTenant({
+            name: s.companyName || "A2V PRINTING SOLUTIONS",
+            phone: s.phone || "+91 98765 43210",
+            email: s.email || "contact@a2vprinting.com",
+            gstin: s.gstin || "27AAAAA0000A1Z5",
+            branding: {
+              tagline: s.legalEntityName || "",
+            },
+          });
+        }
       })
       .catch(() => {});
   }, []);

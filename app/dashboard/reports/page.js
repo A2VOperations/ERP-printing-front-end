@@ -721,8 +721,7 @@ export default function ReportsDashboard() {
                 Enterprise Performance Dashboard
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time, tenant-isolated operational metrics derived directly
-                from CRM and ERP ledgers.
+                Real-time operational metrics derived directly from CRM and ERP ledgers.
               </p>
             </div>
 

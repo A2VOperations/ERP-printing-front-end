@@ -39,7 +39,7 @@ export default function AdminOverviewPage() {
       const stored = localStorage.getItem("userName");
       if (stored) return stored.split(" ")[0] || stored;
     }
-    return "Ravinder";
+    return "Admin";
   });
 
   const [currentUserAvatar, setCurrentUserAvatar] = useState(() => {
@@ -473,20 +473,15 @@ export default function AdminOverviewPage() {
   // Sales Pipeline Stages
   const pipelineMetrics = useMemo(() => {
     const stageLeads = leads.length;
-    const stageInt =
-      leads.filter((l) =>
-        ["INTERESTED", "QUALIFIED", "QUOTED", "WON"].includes(l.status),
-      ).length || stageLeads;
-    const stageQuote =
-      leads.filter((l) => ["QUOTED", "WON"].includes(l.status)).length ||
-      quotations.length ||
-      stageLeads;
-    const stageOrder =
-      orders.filter((o) => o.orderStatus !== "CANCELLED").length || stageLeads;
+    const stageInt = leads.filter((l) =>
+      ["INTERESTED", "QUALIFIED", "QUOTED", "WON"].includes(l.status),
+    ).length;
+    const stageQuote = leads.filter((l) => ["QUOTED", "WON"].includes(l.status)).length;
+    const stageOrder = orders.filter((o) => o.orderStatus !== "CANCELLED").length;
 
     const maxVal = Math.max(1, stageLeads, stageInt, stageQuote, stageOrder);
     const winRate =
-      stageLeads > 0 ? Math.round((stageOrder / stageLeads) * 100) : 100;
+      stageLeads > 0 ? Math.round((stageOrder / stageLeads) * 100) : 0;
 
     return {
       leads: stageLeads,
@@ -496,11 +491,13 @@ export default function AdminOverviewPage() {
       maxVal,
       winRate,
     };
-  }, [leads, quotations, orders]);
+  }, [leads, orders]);
 
   // Order Lifecycle Stages
   const orderLifecycleMetrics = useMemo(() => {
-    const prep = orders.length || 6;
+    const prep = orders.filter(
+      (o) => !o.orderStatus || ["PENDING", "CONFIRMED", "PREPARATION"].includes(o.orderStatus),
+    ).length;
     const dsgn = designProjects.filter((d) => d.status === "IN_PROGRESS").length;
     const appr = designProjects.filter(
       (d) => d.status === "CLIENT_REVIEW" || d.status === "PENDING_APPROVAL",
@@ -539,7 +536,7 @@ export default function AdminOverviewPage() {
     const total = designProjects.length;
     const unassigned = designProjects.filter(
       (d) => !d.assignedDesignerId && !d.assignedDesigner,
-    ).length || total;
+    ).length;
     const inProgress = designProjects.filter(
       (d) => d.status === "IN_PROGRESS",
     ).length;
@@ -547,9 +544,8 @@ export default function AdminOverviewPage() {
       [
         "CLIENT_REVIEW",
         "PENDING_APPROVAL",
-        "IN_PROGRESS",
       ].includes(d.status),
-    ).length > 0 ? 1 : 0;
+    ).length;
     const revisionRequested = designProjects.filter(
       (d) => d.status === "REVISION_REQUESTED",
     ).length;
@@ -566,8 +562,8 @@ export default function AdminOverviewPage() {
     ).length;
 
     const approvedRate =
-      total > 0 ? Math.round((approved / total) * 100) : 83;
-    const pendingSignoffs = pendingDesignsCount || 1;
+      total > 0 ? Math.round((approved / total) * 100) : 0;
+    const pendingSignoffs = pendingDesignsCount;
 
     return {
       total,
@@ -599,7 +595,7 @@ export default function AdminOverviewPage() {
       ["PENDING", "VERIFICATION_PENDING"].includes(p.status),
     ).length;
 
-    const designsAwaiting = pendingDesignsCount || 1;
+    const designsAwaiting = pendingDesignsCount;
     const jobsOverdue = 0;
     const jobsAwaitingRelease = readyForReleaseCount;
     const failedDeliveries = 0;
@@ -612,7 +608,7 @@ export default function AdminOverviewPage() {
     if (paymentsPending > 0) criticalCount++;
 
     return {
-      criticalCount: Math.max(1, criticalCount),
+      criticalCount,
       overdueFollowups,
       quotesAwaiting,
       paymentsPending,
@@ -883,20 +879,14 @@ export default function AdminOverviewPage() {
           hour: "numeric",
           minute: "2-digit",
         });
-        const eventCode = act.action || act.entityType || "PROOF_LINK_GENERATED";
+        const eventCode = act.action || act.entityType || "ACTIVITY_LOGGED";
         const summary =
           act.summary ||
           act.description ||
-          "Artwork proof shared with client for digital approval stamp.";
+          "Activity recorded in system.";
         const tag = act.entityId
-          ? `DesignProject #${String(act.entityId).slice(-6).toUpperCase()}`
-          : idx === 0
-            ? "DesignProject #98E36F"
-            : idx === 1
-              ? "DesignProject #99EE36F"
-              : idx === 2
-                ? "DesignProject #98E36F"
-                : "DesignProject #99EE8A2";
+          ? `${act.entityType || "Entity"} #${String(act.entityId).slice(-6).toUpperCase()}`
+          : `Event #${idx + 1}`;
 
         return {
           id: act._id || `act-${idx}`,
@@ -908,36 +898,7 @@ export default function AdminOverviewPage() {
       });
     }
 
-    return [
-      {
-        id: "act-1",
-        timeStr: "11:33 AM",
-        eventCode: "PROOF_LINK_GENERATED",
-        summary: "Artwork proof shared with client for digital approval stamp.",
-        tag: "DesignProject #98E36F",
-      },
-      {
-        id: "act-2",
-        timeStr: "11:30 AM",
-        eventCode: "PROOF_LINK_GENERATED",
-        summary: "Customer notification SMS & WhatsApp dispatched via webhook.",
-        tag: "DesignProject #99EE36F",
-      },
-      {
-        id: "act-3",
-        timeStr: "11:26 AM",
-        eventCode: "PROOF_LINK_GENERATED",
-        summary: "High-resolution vector assets compiled into preview canvas.",
-        tag: "DesignProject #98E36F",
-      },
-      {
-        id: "act-4",
-        timeStr: "11:22 AM",
-        eventCode: "PROOF_LINK_GENERATED",
-        summary: "Color profile validated for CMYK offset press.",
-        tag: "DesignProject #99EE8A2",
-      },
-    ];
+    return [];
   }, [activities]);
 
   return (
@@ -1060,10 +1021,16 @@ export default function AdminOverviewPage() {
                     <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                       <Users className="w-4 h-4" />
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <ArrowUpRight className="w-3 h-3" />
-                      +100%
-                    </span>
+                    {totalLeadsCount > 0 ? (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <ArrowUpRight className="w-3 h-3" />
+                        +100%
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                        0%
+                      </span>
+                    )}
                   </div>
                   <div className="mt-3">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -1111,10 +1078,16 @@ export default function AdminOverviewPage() {
                     <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                       <Package className="w-4 h-4" />
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <ArrowUpRight className="w-3 h-3" />
-                      +100%
-                    </span>
+                    {activeOrdersCount > 0 ? (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                        <ArrowUpRight className="w-3 h-3" />
+                        +100%
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                        0%
+                      </span>
+                    )}
                   </div>
                   <div className="mt-3">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -1156,27 +1129,39 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
-                {/* 5. DESIGNS PENDING (Highlighted Action Card) */}
-                <div className="bg-amber-50/20 rounded-2xl p-4 border-2 border-amber-300 shadow-xs flex flex-col justify-between transition-all">
+                {/* 5. DESIGNS PENDING */}
+                <div className={`rounded-2xl p-4 shadow-xs flex flex-col justify-between transition-all ${
+                  pendingDesignsCount > 0
+                    ? "bg-amber-50/20 border-2 border-amber-300"
+                    : "bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300"
+                }`}>
                   <div className="flex items-center justify-between">
                     <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                       <Palette className="w-4 h-4" />
                     </div>
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                      ! Action
-                    </span>
+                    {pendingDesignsCount > 0 ? (
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                        ! Action
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
+                        0%
+                      </span>
+                    )}
                   </div>
                   <div className="mt-3">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
                       DESIGNS PENDING
                     </span>
-                    <h3 className="text-2xl font-black text-rose-600 tracking-tight mt-0.5">
-                      {pendingDesignsCount || 1}
+                    <h3 className={`text-2xl font-black tracking-tight mt-0.5 ${
+                      pendingDesignsCount > 0 ? "text-rose-600" : "text-slate-900"
+                    }`}>
+                      {pendingDesignsCount}
                     </h3>
                   </div>
-                  <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 font-medium">
-                    <span>In client review</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span>{pendingDesignsCount > 0 ? "In client review" : "None pending"}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${pendingDesignsCount > 0 ? "bg-amber-500" : "bg-emerald-500"}`} />
                   </div>
                 </div>
 
@@ -1290,7 +1275,9 @@ export default function AdminOverviewPage() {
                         <div
                           className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
                           style={{
-                            height: `${Math.max(20, (pipelineMetrics.leads / pipelineMetrics.maxVal) * 85)}%`,
+                            height: pipelineMetrics.leads > 0
+                              ? `${Math.max(8, (pipelineMetrics.leads / pipelineMetrics.maxVal) * 85)}%`
+                              : "4px",
                           }}
                         />
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -1306,7 +1293,9 @@ export default function AdminOverviewPage() {
                         <div
                           className="w-full bg-emerald-500 rounded-t-md transition-all duration-500"
                           style={{
-                            height: `${Math.max(20, (pipelineMetrics.int / pipelineMetrics.maxVal) * 85)}%`,
+                            height: pipelineMetrics.int > 0
+                              ? `${Math.max(8, (pipelineMetrics.int / pipelineMetrics.maxVal) * 85)}%`
+                              : "4px",
                           }}
                         />
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -1322,7 +1311,9 @@ export default function AdminOverviewPage() {
                         <div
                           className="w-full bg-amber-500 rounded-t-md transition-all duration-500"
                           style={{
-                            height: `${Math.max(20, (pipelineMetrics.quote / pipelineMetrics.maxVal) * 85)}%`,
+                            height: pipelineMetrics.quote > 0
+                              ? `${Math.max(8, (pipelineMetrics.quote / pipelineMetrics.maxVal) * 85)}%`
+                              : "4px",
                           }}
                         />
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -1338,7 +1329,9 @@ export default function AdminOverviewPage() {
                         <div
                           className="w-full bg-rose-500 rounded-t-md transition-all duration-500"
                           style={{
-                            height: `${Math.max(20, (pipelineMetrics.order / pipelineMetrics.maxVal) * 85)}%`,
+                            height: pipelineMetrics.order > 0
+                              ? `${Math.max(8, (pipelineMetrics.order / pipelineMetrics.maxVal) * 85)}%`
+                              : "4px",
                           }}
                         />
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
@@ -1386,7 +1379,9 @@ export default function AdminOverviewPage() {
                         <div
                           className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
                           style={{
-                            height: `${Math.max(15, (orderLifecycleMetrics.prep / orderLifecycleMetrics.maxVal) * 85)}%`,
+                            height: orderLifecycleMetrics.prep > 0
+                              ? `${Math.max(8, (orderLifecycleMetrics.prep / orderLifecycleMetrics.maxVal) * 85)}%`
+                              : "4px",
                           }}
                         />
                         <span className="text-[9px] font-medium text-slate-400 mt-1">
@@ -1677,11 +1672,15 @@ export default function AdminOverviewPage() {
                   {/* Progress Bar Footer */}
                   <div className="mt-4 pt-3 border-t border-slate-100">
                     <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-                      <div
-                        className="h-full bg-emerald-500"
-                        style={{ width: `${designProjectStats.approvedRate}%` }}
-                      />
-                      <div className="h-full bg-amber-400 flex-1" />
+                      {designProjectStats.total > 0 ? (
+                        <>
+                          <div
+                            className="h-full bg-emerald-500"
+                            style={{ width: `${designProjectStats.approvedRate}%` }}
+                          />
+                          <div className="h-full bg-amber-400 flex-1" />
+                        </>
+                      ) : null}
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium mt-1.5">
                       <span>{designProjectStats.approvedRate}% approved rate</span>
@@ -1803,17 +1802,25 @@ export default function AdminOverviewPage() {
                 </div>
 
                 {/* CARD 4: Attention Required (Alert Style) */}
-                <div className="bg-white rounded-2xl p-4 border border-rose-200 shadow-2xs flex flex-col justify-between">
+                <div className={`bg-white rounded-2xl p-4 shadow-2xs flex flex-col justify-between border ${
+                  attentionMetrics.criticalCount > 0 ? "border-rose-200" : "border-slate-200/90"
+                }`}>
                   <div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                        <AlertTriangle className={`w-3.5 h-3.5 ${
+                          attentionMetrics.criticalCount > 0 ? "text-rose-500" : "text-slate-400"
+                        }`} />
                         <h4 className="text-xs font-bold text-slate-900">
                           Attention Required
                         </h4>
                       </div>
-                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                        {attentionMetrics.criticalCount} Critical
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        attentionMetrics.criticalCount > 0
+                          ? "text-rose-600 bg-rose-50 border-rose-200"
+                          : "text-emerald-700 bg-emerald-50 border-emerald-200"
+                      }`}>
+                        {attentionMetrics.criticalCount > 0 ? `${attentionMetrics.criticalCount} Critical` : "All Clear"}
                       </span>
                     </div>
 
@@ -1832,12 +1839,22 @@ export default function AdminOverviewPage() {
                       </div>
 
                       {/* Highlighted Designs Awaiting Row */}
-                      <div className="flex items-center justify-between bg-rose-50/80 border border-rose-200 px-2.5 py-1.5 rounded-xl">
-                        <span className="text-rose-700 font-semibold text-xs flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-sm bg-rose-500" />
+                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border ${
+                        attentionMetrics.designsAwaiting > 0
+                          ? "bg-rose-50/80 border-rose-200"
+                          : "bg-slate-50 border-slate-100"
+                      }`}>
+                        <span className={`font-semibold text-xs flex items-center gap-1.5 ${
+                          attentionMetrics.designsAwaiting > 0 ? "text-rose-700" : "text-slate-600"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-sm ${
+                            attentionMetrics.designsAwaiting > 0 ? "bg-rose-500" : "bg-slate-400"
+                          }`} />
                           Designs awaiting client approval
                         </span>
-                        <span className="font-black text-rose-700">
+                        <span className={`font-black ${
+                          attentionMetrics.designsAwaiting > 0 ? "text-rose-700" : "text-slate-700"
+                        }`}>
                           {attentionMetrics.designsAwaiting}
                         </span>
                       </div>
@@ -1864,7 +1881,11 @@ export default function AdminOverviewPage() {
                   <div className="mt-4 pt-2">
                     <button
                       onClick={() => router.push("/dashboard/designer")}
-                      className="w-full py-2 px-3 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98"
+                      className={`w-full py-2 px-3 rounded-xl text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98 ${
+                        attentionMetrics.criticalCount > 0
+                          ? "bg-[#E11D48] hover:bg-[#BE123C]"
+                          : "bg-slate-800 hover:bg-slate-900"
+                      }`}
                     >
                       <span>Resolve Design Approval</span>
                       <span>→</span>
@@ -1936,52 +1957,60 @@ export default function AdminOverviewPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                            {salesTeamMembers.map((member) => (
-                              <tr
-                                key={member.id}
-                                onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
-                                className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
-                                title={`Open ${member.name}'s Dashboard`}
-                              >
-                                <td className="py-3 pr-4">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
-                                      {member.avatarUrl ? (
-                                        <img
-                                          src={member.avatarUrl}
-                                          alt={member.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        member.initials
-                                      )}
-                                    </div>
-                                    <div>
-                                      <div className="font-bold text-slate-900">
-                                        {member.name}
-                                      </div>
-                                      <div className="text-[10px] text-slate-400">
-                                        {member.role}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                  {member.leads}
-                                </td>
-                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                  {member.orders}
-                                </td>
-                                <td className="py-3 px-3 text-right font-black text-slate-900">
-                                  ₹ {member.revenue.toLocaleString("en-IN")}
-                                </td>
-                                <td className="py-3 pl-3 text-right">
-                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    {member.conversion}%
-                                  </span>
+                            {salesTeamMembers.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="py-8 text-center text-slate-400">
+                                  No sales representatives registered yet.
                                 </td>
                               </tr>
-                            ))}
+                            ) : (
+                              salesTeamMembers.map((member) => (
+                                <tr
+                                  key={member.id}
+                                  onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
+                                  className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
+                                  title={`Open ${member.name}'s Dashboard`}
+                                >
+                                  <td className="py-3 pr-4">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
+                                        {member.avatarUrl ? (
+                                          <img
+                                            src={member.avatarUrl}
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          member.initials
+                                        )}
+                                      </div>
+                                      <div>
+                                        <div className="font-bold text-slate-900">
+                                          {member.name}
+                                        </div>
+                                        <div className="text-[10px] text-slate-400">
+                                          {member.role}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                    {member.leads}
+                                  </td>
+                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                    {member.orders}
+                                  </td>
+                                  <td className="py-3 px-3 text-right font-black text-slate-900">
+                                    ₹ {member.revenue.toLocaleString("en-IN")}
+                                  </td>
+                                  <td className="py-3 pl-3 text-right">
+                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      {member.conversion}%
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       ) : (
@@ -1996,52 +2025,60 @@ export default function AdminOverviewPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
-                            {designTeamMembers.map((member) => (
-                              <tr
-                                key={member.id}
-                                onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
-                                className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
-                                title={`Open ${member.name}'s Dashboard`}
-                              >
-                                <td className="py-3 pr-4">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
-                                      {member.avatarUrl ? (
-                                        <img
-                                          src={member.avatarUrl}
-                                          alt={member.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        member.initials
-                                      )}
-                                    </div>
-                                    <div>
-                                      <div className="font-bold text-slate-900">
-                                        {member.name}
-                                      </div>
-                                      <div className="text-[10px] text-slate-400">
-                                        {member.role}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                  {member.projects}
-                                </td>
-                                <td className="py-3 px-3 text-center font-semibold text-emerald-600">
-                                  {member.approved}
-                                </td>
-                                <td className="py-3 px-3 text-center font-semibold text-rose-600">
-                                  {member.pending}
-                                </td>
-                                <td className="py-3 pl-3 text-right">
-                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    {member.rate}%
-                                  </span>
+                            {designTeamMembers.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="py-8 text-center text-slate-400">
+                                  No designers registered yet.
                                 </td>
                               </tr>
-                            ))}
+                            ) : (
+                              designTeamMembers.map((member) => (
+                                <tr
+                                  key={member.id}
+                                  onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
+                                  className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
+                                  title={`Open ${member.name}'s Dashboard`}
+                                >
+                                  <td className="py-3 pr-4">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
+                                        {member.avatarUrl ? (
+                                          <img
+                                            src={member.avatarUrl}
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          member.initials
+                                        )}
+                                      </div>
+                                      <div>
+                                        <div className="font-bold text-slate-900">
+                                          {member.name}
+                                        </div>
+                                        <div className="text-[10px] text-slate-400">
+                                          {member.role}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                    {member.projects}
+                                  </td>
+                                  <td className="py-3 px-3 text-center font-semibold text-emerald-600">
+                                    {member.approved}
+                                  </td>
+                                  <td className="py-3 px-3 text-center font-semibold text-rose-600">
+                                    {member.pending}
+                                  </td>
+                                  <td className="py-3 pl-3 text-right">
+                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      {member.rate}%
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       )}
@@ -2050,7 +2087,7 @@ export default function AdminOverviewPage() {
 
                   <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium">
-                      Quota Attainment: 100% of monthly baseline
+                      Quota Attainment: {targetProgress?.achievementPercent !== undefined ? `${targetProgress.achievementPercent}%` : "0%"} of monthly baseline
                     </span>
                     <button
                       onClick={() => router.push("/dashboard/admin/targets")}
@@ -2081,38 +2118,46 @@ export default function AdminOverviewPage() {
 
                     {/* Activity Feed */}
                     <div className="mt-4 space-y-3">
-                      {recentActivitiesList.map((act) => (
-                        <div
-                          key={act.id}
-                          className="flex items-start justify-between gap-3 text-xs py-1"
-                        >
-                          <div className="space-y-0.5 flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {act.timeStr}
-                              </span>
-                              <span className="font-mono text-[11px] font-bold text-slate-800">
-                                {act.eventCode}
-                              </span>
-                            </div>
-                            <p className="text-slate-500 text-[11px] truncate">
-                              {act.summary}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => router.push("/dashboard/designer")}
-                            className="font-mono text-[11px] font-bold text-indigo-600 hover:text-indigo-800 shrink-0"
-                          >
-                            {act.tag}
-                          </button>
+                      {recentActivitiesList.length === 0 ? (
+                        <div className="py-8 text-center text-slate-400">
+                          <CheckCircle2 className="w-6 h-6 mx-auto mb-1 stroke-1 text-slate-300" />
+                          <p className="text-xs font-medium text-slate-500">No recent system activity</p>
+                          <p className="text-[10px] text-slate-400">New activities and audit events will appear here.</p>
                         </div>
-                      ))}
+                      ) : (
+                        recentActivitiesList.map((act) => (
+                          <div
+                            key={act.id}
+                            className="flex items-start justify-between gap-3 text-xs py-1"
+                          >
+                            <div className="space-y-0.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {act.timeStr}
+                                </span>
+                                <span className="font-mono text-[11px] font-bold text-slate-800">
+                                  {act.eventCode}
+                                </span>
+                              </div>
+                              <p className="text-slate-500 text-[11px] truncate">
+                                {act.summary}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => router.push("/dashboard/designer")}
+                              className="font-mono text-[11px] font-bold text-indigo-600 hover:text-indigo-800 shrink-0"
+                            >
+                              {act.tag}
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium">
-                      Atlas Real-time Stream: 4 events past 60m
+                      Atlas Real-time Stream: {activities.length} events past 60m
                     </span>
                     <span className="font-bold text-emerald-600 flex items-center gap-1.5 text-xs">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -2170,7 +2215,7 @@ export default function AdminOverviewPage() {
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-xs transition-colors"
                   >
                     <Palette className="w-3.5 h-3.5" />
-                    <span>View Approvals ({pendingDesignsCount || 1})</span>
+                    <span>View Approvals ({pendingDesignsCount})</span>
                   </button>
 
                   {/* Production Jobs */}

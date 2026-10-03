@@ -1013,7 +1013,7 @@ export default function DashboardPage() {
         quotaPace:
           targetRupees > 0
             ? Math.round((salesVolume / targetRupees) * 100)
-            : 100,
+            : 0,
       };
     }
 
@@ -1024,14 +1024,14 @@ export default function DashboardPage() {
 
     const activeUser = salesUsers[0] || currentUser;
     return {
-      name: activeUser?.name || userName || "Tanya",
+      name: activeUser?.name || userName || "User",
       avatar: activeUser?.avatarUrl || currentUserAvatar,
       dealsWon: ordersCount,
       revenue: totalSalesRupees,
       quotaPace:
         targetRupees > 0
           ? Math.round((totalSalesRupees / targetRupees) * 100)
-          : 100,
+          : 0,
     };
   }, [
     topPerformers,
