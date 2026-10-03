@@ -39,7 +39,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-export default function Navbar() {
+export default function Navbar({ showNotificationCenter = true } = {}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -57,6 +57,12 @@ export default function Navbar() {
     name: "A2V Printing Solutions",
     code: "",
   });
+
+  const isDataOperator =
+    showNotificationCenter === false ||
+    pathname?.startsWith("/dashboard/data-operator") ||
+    user?.role === "data_operator" ||
+    user?.role === "data-operator";
 
   // Avatar upload & management state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -207,17 +213,19 @@ export default function Navbar() {
         // Handled gracefully via localStorage cache
       });
 
-    // Fetch operational alerts summary for real-time unread badge
-    api
-      .get("/alerts/summary")
-      .then((res) => {
-        if (res?.data?.unreadAlerts !== undefined) {
-          setUnreadNotificationCount(res.data.unreadAlerts);
-        }
-      })
-      .catch(() => {
-        // Fallback or ignore if unauthorized
-      });
+    // Fetch operational alerts summary for real-time unread badge (unless Data Operator)
+    if (!isDataOperator) {
+      api
+        .get("/alerts/summary")
+        .then((res) => {
+          if (res?.data?.unreadAlerts !== undefined) {
+            setUnreadNotificationCount(res.data.unreadAlerts);
+          }
+        })
+        .catch(() => {
+          // Fallback or ignore if unauthorized
+        });
+    }
 
     // Communication message threads disabled until backend communications module is active
     // api
@@ -674,27 +682,29 @@ export default function Navbar() {
             </button>
 
             {/*Notification Center  */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowAlertCenter(true);
-                  setShowNotifications(false);
-                  setShowMessages(false);
-                  setShowUserDropdown(false);
-                }}
-                className={`p-2 rounded-xl transition-colors relative ${
-                  showAlertCenter
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "hover:bg-slate-100 text-slate-600"
-                }`}
-                title="Notification Center"
-              >
-                <Bell className="w-6 h-6" />
-                {unreadNotificationCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
-                )}
-              </button>
-            </div>
+            {!isDataOperator && (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowAlertCenter(true);
+                    setShowNotifications(false);
+                    setShowMessages(false);
+                    setShowUserDropdown(false);
+                  }}
+                  className={`p-2 rounded-xl transition-colors relative ${
+                    showAlertCenter
+                      ? "bg-indigo-50 text-indigo-600"
+                      : "hover:bg-slate-100 text-slate-600"
+                  }`}
+                  title="Notification Center"
+                >
+                  <Bell className="w-6 h-6" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* Calendar Shortcut */}
             <button
@@ -1237,11 +1247,13 @@ export default function Navbar() {
       )}
 
       {/* Operational Alerts & Exception Center Slide-Over Drawer */}
-      <AlertCenterDrawer
-        isOpen={showAlertCenter}
-        onClose={() => setShowAlertCenter(false)}
-        onCountUpdated={(count) => setUnreadNotificationCount(count)}
-      />
+      {!isDataOperator && (
+        <AlertCenterDrawer
+          isOpen={showAlertCenter}
+          onClose={() => setShowAlertCenter(false)}
+          onCountUpdated={(count) => setUnreadNotificationCount(count)}
+        />
+      )}
     </>
   );
 }

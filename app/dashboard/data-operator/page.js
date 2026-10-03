@@ -1442,7 +1442,7 @@ export default function DataOperatorPage() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
-        <Navbar />
+        <Navbar showNotificationCenter={false} />
 
         {/* ========================================================================= */}
         {/* VIEW 1: DATA OPERATOR DASHBOARD (SCREENSHOT 1)                           */}
