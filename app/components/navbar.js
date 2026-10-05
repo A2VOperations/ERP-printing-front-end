@@ -2,8 +2,9 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import AlertCenterDrawer from "./alertCenterDrawer";
@@ -37,11 +38,16 @@ import {
   Camera,
   Trash2,
   Loader2,
+  MapPin,
+  PlusCircle,
 } from "lucide-react";
 
 export default function Navbar({ showNotificationCenter = true } = {}) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentView = searchParams ? searchParams.get("view") || "" : "";
+  const currentFilter = searchParams ? searchParams.get("filter") || "" : "";
 
   // Dynamic user & tenant state
   const [user, setUser] = useState({
@@ -128,20 +134,31 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
     // Check Supabase session metadata for avatar if available
     if (supabase?.auth) {
-      supabase.auth.getSession().then(({ data }) => {
-        const sbAvatar = data?.session?.user?.user_metadata?.avatar_url;
-        if (sbAvatar) {
-          if (typeof sbAvatar === "string" && sbAvatar.startsWith("data:")) {
-            // Clean legacy base64 avatar from Supabase metadata to prevent JWT token explosion (>16KB)
-            supabase.auth.updateUser({ data: { avatar_url: null } }).catch(() => {});
-          } else {
-            setUser((prev) => ({ ...prev, avatarUrl: prev.avatarUrl || sbAvatar }));
-            if (typeof window !== "undefined" && !localStorage.getItem("userAvatar")) {
-              localStorage.setItem("userAvatar", sbAvatar);
+      supabase.auth
+        .getSession()
+        .then(({ data }) => {
+          const sbAvatar = data?.session?.user?.user_metadata?.avatar_url;
+          if (sbAvatar) {
+            if (typeof sbAvatar === "string" && sbAvatar.startsWith("data:")) {
+              // Clean legacy base64 avatar from Supabase metadata to prevent JWT token explosion (>16KB)
+              supabase.auth
+                .updateUser({ data: { avatar_url: null } })
+                .catch(() => {});
+            } else {
+              setUser((prev) => ({
+                ...prev,
+                avatarUrl: prev.avatarUrl || sbAvatar,
+              }));
+              if (
+                typeof window !== "undefined" &&
+                !localStorage.getItem("userAvatar")
+              ) {
+                localStorage.setItem("userAvatar", sbAvatar);
+              }
             }
           }
-        }
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
     // Authoritative Server-Verified Check via /auth/me
@@ -170,8 +187,12 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           else if (rawRole === "designer") roleTitle = "Graphic Designer";
           else roleTitle = rawRole.toUpperCase();
 
-          const currentCachedAvatar = typeof window !== "undefined" ? localStorage.getItem("userAvatar") : null;
-          const effectiveAvatar = u.avatarUrl || u.profileImage || currentCachedAvatar || null;
+          const currentCachedAvatar =
+            typeof window !== "undefined"
+              ? localStorage.getItem("userAvatar")
+              : null;
+          const effectiveAvatar =
+            u.avatarUrl || u.profileImage || currentCachedAvatar || null;
 
           setUser({
             id: u._id || u.id || "",
@@ -185,11 +206,19 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
           if (effectiveAvatar) {
             try {
-              const directory = JSON.parse(localStorage.getItem("crm_user_avatars") || "{}");
-              if (u.email) directory[u.email.toLowerCase().trim()] = effectiveAvatar;
-              if (fullName) directory[fullName.toLowerCase().trim()] = effectiveAvatar;
-              if (u._id || u.id) directory[(u._id || u.id).toString()] = effectiveAvatar;
-              localStorage.setItem("crm_user_avatars", JSON.stringify(directory));
+              const directory = JSON.parse(
+                localStorage.getItem("crm_user_avatars") || "{}",
+              );
+              if (u.email)
+                directory[u.email.toLowerCase().trim()] = effectiveAvatar;
+              if (fullName)
+                directory[fullName.toLowerCase().trim()] = effectiveAvatar;
+              if (u._id || u.id)
+                directory[(u._id || u.id).toString()] = effectiveAvatar;
+              localStorage.setItem(
+                "crm_user_avatars",
+                JSON.stringify(directory),
+              );
             } catch {}
           }
 
@@ -319,11 +348,13 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   // Listen for real-time avatar changes across the application
   useEffect(() => {
     const handleAvatarSync = (e) => {
-      const newUrl = e.detail?.avatarUrl !== undefined ? e.detail.avatarUrl : null;
+      const newUrl =
+        e.detail?.avatarUrl !== undefined ? e.detail.avatarUrl : null;
       setUser((prev) => ({ ...prev, avatarUrl: newUrl }));
     };
     window.addEventListener("crm:avatar-updated", handleAvatarSync);
-    return () => window.removeEventListener("crm:avatar-updated", handleAvatarSync);
+    return () =>
+      window.removeEventListener("crm:avatar-updated", handleAvatarSync);
   }, []);
 
   // Client-side image compression to smooth 256x256 Web JPEG (~20KB)
@@ -389,14 +420,21 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       setUser((prev) => ({ ...prev, avatarUrl: optimizedDataUrl }));
       localStorage.setItem("userAvatar", optimizedDataUrl);
       try {
-        const directory = JSON.parse(localStorage.getItem("crm_user_avatars") || "{}");
-        if (user.email) directory[user.email.toLowerCase().trim()] = optimizedDataUrl;
-        if (user.name) directory[user.name.toLowerCase().trim()] = optimizedDataUrl;
-        if (user.id || user._id) directory[(user.id || user._id).toString()] = optimizedDataUrl;
+        const directory = JSON.parse(
+          localStorage.getItem("crm_user_avatars") || "{}",
+        );
+        if (user.email)
+          directory[user.email.toLowerCase().trim()] = optimizedDataUrl;
+        if (user.name)
+          directory[user.name.toLowerCase().trim()] = optimizedDataUrl;
+        if (user.id || user._id)
+          directory[(user.id || user._id).toString()] = optimizedDataUrl;
         localStorage.setItem("crm_user_avatars", JSON.stringify(directory));
       } catch {}
       window.dispatchEvent(
-        new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: optimizedDataUrl, user } })
+        new CustomEvent("crm:avatar-updated", {
+          detail: { avatarUrl: optimizedDataUrl, user },
+        }),
       );
 
       // 3. Send to backend /auth/avatar (saves to Cloudinary/storage and returns hosted URL)
@@ -410,10 +448,16 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           localStorage.setItem("userAvatar", finalUrl);
 
           // Only sync clean HTTP/HTTPS hosted URLs to Supabase auth metadata (never large base64 strings)
-          if (supabase?.auth && typeof finalUrl === "string" && (finalUrl.startsWith("http://") || finalUrl.startsWith("https://"))) {
-            supabase.auth.updateUser({
-              data: { avatar_url: finalUrl },
-            }).catch(() => {});
+          if (
+            supabase?.auth &&
+            typeof finalUrl === "string" &&
+            (finalUrl.startsWith("http://") || finalUrl.startsWith("https://"))
+          ) {
+            supabase.auth
+              .updateUser({
+                data: { avatar_url: finalUrl },
+              })
+              .catch(() => {});
           }
         }
       } catch {
@@ -423,7 +467,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       console.error("Avatar upload failed:", err);
       const fallback = localStorage.getItem("userAvatar") || null;
       setUser((prev) => ({ ...prev, avatarUrl: fallback }));
-      setAvatarError(err.message || "Failed to process photo. Please try again.");
+      setAvatarError(
+        err.message || "Failed to process photo. Please try again.",
+      );
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -439,14 +485,16 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       setUser((prev) => ({ ...prev, avatarUrl: null }));
       localStorage.removeItem("userAvatar");
       window.dispatchEvent(
-        new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: null } })
+        new CustomEvent("crm:avatar-updated", { detail: { avatarUrl: null } }),
       );
 
       // 2. Clear from Supabase user metadata
       if (supabase?.auth) {
-        supabase.auth.updateUser({
-          data: { avatar_url: null },
-        }).catch(() => {});
+        supabase.auth
+          .updateUser({
+            data: { avatar_url: null },
+          })
+          .catch(() => {});
       }
 
       // 3. Notify backend API
@@ -592,9 +640,39 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       ];
     }
 
-    if (role === "data_operator") {
+    if (role.includes("data_operator") || role.includes("operator")) {
       return [
-        { name: "Home", href: "/dashboard/data-operator", icon: Home },
+        { name: "Dashboard", href: "/dashboard/data-operator", icon: Home, exact: true },
+        {
+          name: "Market Photos",
+          href: "/dashboard/data-operator?view=photos",
+          icon: Camera,
+        },
+        {
+          name: "Add New Lead",
+          href: "/dashboard/data-operator?view=review",
+          icon: PlusCircle,
+        },
+        {
+          name: "My Created Leads",
+          href: "/dashboard/data-operator?view=leads",
+          icon: CheckSquare,
+        },
+        {
+          name: "Area / Zone Status",
+          href: "/dashboard/data-operator?view=coverage",
+          icon: MapPin,
+        },
+        {
+          name: "Daily Report",
+          href: "/dashboard/data-operator?view=reports",
+          icon: BarChart3,
+        },
+        {
+          name: "Export Data",
+          href: "/dashboard/data-operator?view=export",
+          icon: FileText,
+        },
       ];
     }
 
@@ -641,15 +719,15 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
   return (
     <>
-      <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs transition-all">
+      <header className="h-14 sm:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs transition-all">
         {/* Left: Menu Toggle, Tenant Context & Interactive Search Bar */}
-        <div className="flex items-center gap-3 md:gap-4 flex-1 max-w-2xl">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 max-w-2xl min-w-0">
           <button
             onClick={() => {
               setShowMobileMenu((prev) => !prev);
               window.dispatchEvent(new CustomEvent("toggle-sidebar"));
             }}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 shrink-0"
             title="Toggle Navigation Menu"
             aria-label="Toggle Navigation Menu"
           >
@@ -659,26 +737,34 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           {/* Quick Search Launch Bar */}
           <div
             onClick={() => setShowSearchModal(true)}
-            className="relative flex-1 cursor-pointer group"
+            className="relative flex-1 cursor-pointer group min-w-0"
           >
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-600 transition-colors" />
-            <div className="w-full pl-10 pr-12 py-2 rounded-sm bg-slate-50 border border-slate-200 text-md text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100/70 select-none shadow-2xs transition-all flex items-center">
-              Search customers, leads, quotes, orders...
+            <Search className="w-4 h-4 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
+            <div className="w-full pl-8.5 sm:pl-10 pr-2.5 sm:pr-3 lg:pr-14 py-1.5 sm:py-2 rounded-xl sm:rounded-sm bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100/70 select-none shadow-2xs transition-all flex items-center justify-between">
+              <span className="truncate">
+                <span className="hidden sm:inline">
+                  Search customers, leads, quotes, orders...
+                </span>
+                <span className="sm:hidden">Search CRM...</span>
+              </span>
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs shrink-0 ml-2">
+                Ctrl K
+              </kbd>
             </div>
           </div>
         </div>
 
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
-        <div className="flex items-center gap-2 md:gap-4">
-          <div className="flex items-center gap-1.5 md:gap-2 text-slate-500">
-
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center gap-0.5 sm:gap-1.5 md:gap-2 text-slate-500">
             {/* WhatsApp / Messaging Shortcut */}
             <button
               onClick={() => router.push("/dashboard/whatsapp")}
-              className="p-2 rounded-xl hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-colors"
+              className="p-1.5 sm:p-2 rounded-xl hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-colors"
               title="WhatsApp & Omni-Channel Messaging"
+              aria-label="WhatsApp & Omni-Channel Messaging"
             >
-              <MessageSquare className="w-6 h-6" />
+              <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
             </button>
 
             {/*Notification Center  */}
@@ -691,16 +777,17 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     setShowMessages(false);
                     setShowUserDropdown(false);
                   }}
-                  className={`p-2 rounded-xl transition-colors relative ${
+                  className={`p-1.5 sm:p-2 rounded-xl transition-colors relative ${
                     showAlertCenter
                       ? "bg-indigo-50 text-indigo-600"
                       : "hover:bg-slate-100 text-slate-600"
                   }`}
                   title="Notification Center"
+                  aria-label="Notification Center"
                 >
-                  <Bell className="w-6 h-6" />
+                  <Bell className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
                   {unreadNotificationCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+                    <span className="absolute top-1 right-1 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
                   )}
                 </button>
               </div>
@@ -709,14 +796,15 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
             {/* Calendar Shortcut */}
             <button
               onClick={() => router.push("/dashboard/followups")}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors hidden sm:inline-flex"
+              className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors hidden sm:inline-flex"
               title="Calendar & Tasks"
+              aria-label="Calendar & Tasks"
             >
-              <Calendar className="w-6 h-6" />
+              <Calendar className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
             </button>
           </div>
 
-          <div className="h-6 w-px bg-slate-200" />
+          <div className="h-5 sm:h-6 w-px bg-slate-200 mx-0.5 sm:mx-1" />
 
           {/* Dynamic User Profile Pill & Dropdown */}
           <div className="relative" ref={userDropdownRef}>
@@ -726,13 +814,13 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                 setShowNotifications(false);
                 setShowMessages(false);
               }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 transition-all focus:outline-none"
+              className="flex items-center gap-1.5 sm:gap-2.5 p-1 sm:px-2.5 sm:py-1.5 md:px-3 md:py-2 rounded-xl hover:bg-slate-100 transition-all focus:outline-none"
               aria-expanded={showUserDropdown}
             >
               <div
-                className={`w-10 h-10 rounded-full ${getAvatarBg(
+                className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full ${getAvatarBg(
                   user.role,
-                )} text-white flex items-center justify-center font-bold text-md shadow-xs shrink-0 overflow-hidden border border-slate-200/80 bg-slate-100`}
+                )} text-white flex items-center justify-center font-bold text-xs sm:text-sm md:text-base shadow-xs shrink-0 overflow-hidden border border-slate-200/80 bg-slate-100`}
               >
                 {user.avatarUrl ? (
                   <img
@@ -744,17 +832,22 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                   user.initials
                 )}
               </div>
-              <div className="hidden md:block text-left">
-                <span className="text-md font-bold text-slate-900 block leading-tight truncate max-w-32.5">
+              <div className="hidden lg:block text-left">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 block leading-tight truncate max-w-28 xl:max-w-36">
                   {user.name}
                 </span>
-                <span className="text-sm text-slate-400 font-semibold flex items-center gap-1">
+                <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {user.roleDisplay}
                 </span>
               </div>
+              <div className="hidden md:block lg:hidden text-left">
+                <span className="text-xs font-bold text-slate-900 block leading-tight truncate max-w-24">
+                  {user.name?.split(" ")[0]}
+                </span>
+              </div>
               <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 hidden sm:block ${
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 transition-transform duration-200 hidden sm:block ${
                   showUserDropdown ? "rotate-180 text-blue-600" : ""
                 }`}
               />
@@ -762,7 +855,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
             {/* User Dropdown Menu */}
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-up">
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-scale-up">
                 {/* Hidden File Input for Avatar Selection */}
                 <input
                   type="file"
@@ -781,7 +874,11 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         type="button"
                         onClick={() => avatarFileInputRef.current?.click()}
                         disabled={isUploadingAvatar}
-                        title={user.avatarUrl ? "Change profile picture" : "Upload profile picture"}
+                        title={
+                          user.avatarUrl
+                            ? "Change profile picture"
+                            : "Upload profile picture"
+                        }
                         className={`w-14 h-14 rounded-full ${getAvatarBg(
                           user.role,
                         )} text-white font-black text-base flex items-center justify-center shadow-xs overflow-hidden border-2 border-white ring-1 ring-slate-200 relative transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer`}
@@ -799,7 +896,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         {/* Hover Overlay with Camera Icon */}
                         <div
                           className={`absolute inset-0 bg-slate-900/50 rounded-full flex flex-col items-center justify-center text-white transition-opacity ${
-                            isUploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                            isUploadingAvatar
+                              ? "opacity-100"
+                              : "opacity-0 group-hover:opacity-100"
                           }`}
                         >
                           {isUploadingAvatar ? (
@@ -835,7 +934,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         {user.email || "Verified User"}
                       </span>
 
-
                       {/* Profile Photo Quick Actions */}
                       <div className="mt-2 flex items-center gap-2 pt-1 border-t border-slate-200/60">
                         <button
@@ -845,7 +943,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                           className="text-[12px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Camera className="w-4 h-4" />
-                          <span>{user.avatarUrl ? "Change Photo" : "Add Photo"}</span>
+                          <span>
+                            {user.avatarUrl ? "Change Photo" : "Add Photo"}
+                          </span>
                         </button>
 
                         {user.avatarUrl && (
@@ -965,10 +1065,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
       {/* Global Search Modal (Ctrl+K / Cmd+K) */}
       {showSearchModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-start justify-center pt-16 md:pt-20 p-4 animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-up">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-start justify-center pt-10 sm:pt-16 md:pt-20 p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
             {/* Search Input Bar */}
-            <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+            <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center gap-2.5 sm:gap-3 shrink-0">
               <Search className="w-5 h-5 text-blue-600 shrink-0" />
               <input
                 type="text"
@@ -976,18 +1076,18 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                 placeholder="Search customers, leads, phone numbers, quotes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-md text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent"
+                className="w-full text-sm sm:text-base text-slate-900 placeholder-slate-400 focus:outline-none bg-transparent"
               />
               <button
                 onClick={() => setShowSearchModal(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Results Body */}
-            <div className="p-4 max-h-96 overflow-y-auto space-y-4">
+            <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-4">
               {isSearching && (
                 <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -1152,21 +1252,25 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-72 bg-[#0B1120] text-slate-300 h-full p-4 flex flex-col justify-between shadow-2xl animate-slide-right cursor-default"
+            className="w-72 max-w-[85vw] bg-[#0B1120] text-slate-300 h-full p-4 flex flex-col justify-between shadow-2xl animate-slide-right cursor-default overflow-hidden"
           >
-            <div>
+            <div className="flex flex-col min-h-0 flex-1">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-md shadow-blue-600/30">
-                    A2
+                  <div className="w-16 h-12 rounded-xl flex items-center justify-center shrink-0">
+                    <Image
+                      src="/logo/A2V  Groups Logo.png"
+                      alt="Logo"
+                      width={50}
+                      height={50}
+                      style={{ width: "auto", height: "auto" }}
+                      className="shrink-0 max-h-15"
+                    />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-white block leading-tight">
-                      {tenant.name}
-                    </span>
-                    <span className="text-[10px] text-blue-400 font-semibold">
-                      CRM & ERP
+                    <span className="text-[25px] font-bold text-white block leading-tight truncate max-w-40">
+                      A2V Prints{" "}
                     </span>
                   </div>
                 </div>
@@ -1179,67 +1283,48 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               </div>
 
               {/* Drawer Navigation Links */}
-              <div className="mt-4 space-y-1">
+              <div className="mt-4 space-y-1 overflow-y-auto pr-1 flex-1">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-2 mb-2">
                   Navigation ({user.roleDisplay})
                 </span>
                 {getMobileNavItems().map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href;
+                  let isActive = false;
+                  if (item.href.includes("?view=")) {
+                    const itemView = item.href.split("?view=")[1];
+                    isActive =
+                      pathname.startsWith("/dashboard/data-operator") &&
+                      currentView === itemView;
+                  } else if (item.href === "/dashboard/data-operator") {
+                    isActive =
+                      pathname === "/dashboard/data-operator" &&
+                      (!currentView || currentView === "dashboard");
+                  } else if (item.href.includes("?filter=")) {
+                    const itemFilter = item.href.split("?filter=")[1];
+                    isActive = currentFilter === itemFilter;
+                  } else if (item.exact || item.href === "/dashboard") {
+                    isActive = pathname === item.href && !currentView && !currentFilter;
+                  } else {
+                    isActive =
+                      pathname === item.href ||
+                      (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                  }
                   return (
                     <Link
                       key={item.name}
                       href={item.href}
                       onClick={() => setShowMobileMenu(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-3 px-3 py-3 text-sm font-semibold transition-all ${
                         isActive
                           ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                           : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span>{item.name}</span>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.name}</span>
                     </Link>
                   );
                 })}
-              </div>
-            </div>
-
-            {/* Drawer User Card */}
-            <div className="pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-8 h-8 rounded-lg ${getAvatarBg(
-                      user.role,
-                    )} text-white font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden`}
-                  >
-                    {user.avatarUrl ? (
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      user.initials
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-slate-200 block truncate">
-                      {user.name}
-                    </span>
-                    <span className="text-[10px] text-blue-400 block truncate">
-                      {user.roleDisplay}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  title="Sign out"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
               </div>
             </div>
           </div>

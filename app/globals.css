@@ -164,3 +164,89 @@ body {
   animation: progressIndeterminate 1.5s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
 }
 
+/* Celebratory Lead Creation Blast & Pop Animations */
+@keyframes celebrationPop {
+  0% {
+    transform: scale(0.2) rotate(-20deg);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.35) rotate(8deg);
+    opacity: 1;
+  }
+  55% {
+    transform: scale(0.9) rotate(-4deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-celebration-pop {
+  animation: celebrationPop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes shockwavePulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.95;
+    border-width: 4px;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.animate-shockwave-1 {
+  animation: shockwavePulse 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+.animate-shockwave-2 {
+  animation: shockwavePulse 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) 0.6s infinite;
+}
+
+@keyframes confettiBurst {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--blast-x, 30px), var(--blast-y, -40px)) scale(1.2) rotate(45deg);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(var(--blast-x, 30px), calc(var(--blast-y, -40px) + 20px)) scale(1) rotate(120deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--blast-x, 30px), calc(var(--blast-y, -40px) + 50px)) scale(0.2) rotate(240deg);
+  }
+}
+
+.animate-confetti-burst {
+  animation: confettiBurst 2.2s cubic-bezier(0.25, 0.9, 0.4, 1) infinite;
+}
+
+@keyframes ribbonFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(4deg);
+  }
+  75% {
+    transform: translateY(4px) rotate(-4deg);
+  }
+}
+
+.animate-ribbon-float {
+  animation: ribbonFloat 2s ease-in-out infinite;
+}
+

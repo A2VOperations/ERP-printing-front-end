@@ -401,9 +401,9 @@ export default function ExportDataView({
       )}
 
       {/* Grid: Left Controls (Scope & Filters) + Right Column Selector */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Section: Filters & Formats (7 Cols) */}
-        <div className="lg:col-span-7 space-y-5">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        {/* Left Section: Filters & Formats (7 Cols on desktop, stacked on tablet) */}
+        <div className="xl:col-span-7 space-y-5">
           {/* Card 1: Data Scope & Date Range */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -591,7 +591,7 @@ export default function ExportDataView({
               <span className="text-xs text-slate-400">File format standard</span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 {
                   id: "csv",
@@ -640,8 +640,8 @@ export default function ExportDataView({
           </div>
         </div>
 
-        {/* Right Section: Column Field Customizer (5 Cols) */}
-        <div className="lg:col-span-5 space-y-5">
+        {/* Right Section: Column Field Customizer (5 Cols on desktop, stacked on tablet) */}
+        <div className="xl:col-span-5 space-y-5">
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -738,8 +738,8 @@ export default function ExportDataView({
           </span>
         </div>
 
-        <div className="overflow-x-auto max-h-80">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="overflow-x-auto scrollbar-thin max-h-80">
+          <table className="w-full text-left border-collapse text-xs min-w-[650px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                 {AVAILABLE_COLUMNS.filter((c) => selectedColumnIds.includes(c.id)).map((col) => (

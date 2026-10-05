@@ -1155,9 +1155,6 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 mt-1 font-normal">
-                      Here is your verified pipeline snapshot &amp; commercial print production stream for today.
-                    </p>
                   </div>
                 </div>
 

@@ -462,7 +462,7 @@ export default function DailyReportView({
       </div>
 
       {/* KPI Cards Row (6 Cards) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5">
         {/* 1. Total Leads */}
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
@@ -549,9 +549,9 @@ export default function DailyReportView({
       </div>
 
       {/* Visual Analytics Grid: Hourly + Category + Area + Sales */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
         {/* Hourly Velocity Bar Chart (7 Cols) */}
-        <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+        <div className="xl:col-span-7 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Hourly Operating Output</h3>
@@ -586,7 +586,7 @@ export default function DailyReportView({
         </div>
 
         {/* Business Category Share (5 Cols) */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+        <div className="xl:col-span-5 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -751,17 +751,17 @@ export default function DailyReportView({
         </div>
 
         {/* Table Body */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="min-w-[800px] w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/70 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-4">Time / Lead ID</th>
-                <th className="py-3 px-4">Business & Contact</th>
-                <th className="py-3 px-4">Phone Number</th>
-                <th className="py-3 px-4">Territory / Area</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Assigned Sales Rep</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 whitespace-nowrap">Time / Lead ID</th>
+                <th className="py-3 px-4 whitespace-nowrap">Business & Contact</th>
+                <th className="py-3 px-4 whitespace-nowrap">Phone Number</th>
+                <th className="py-3 px-4 whitespace-nowrap">Territory / Area</th>
+                <th className="py-3 px-4 whitespace-nowrap">Category</th>
+                <th className="py-3 px-4 whitespace-nowrap">Assigned Sales Rep</th>
+                <th className="py-3 px-4 whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
