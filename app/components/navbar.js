@@ -695,7 +695,17 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
     // Default SALES
     return [
-      ...common,
+      {
+        name: "Sales Dashboard",
+        href: "/dashboard/sales",
+        icon: Layers,
+        exact: true,
+      },
+      {
+        name: "Reports & Analytics",
+        href: "/dashboard/reports",
+        icon: BarChart3,
+      },
       { name: "Sales Pipeline", href: "/dashboard/leads", icon: TrendingUp },
       {
         name: "Follow-ups & Calls",
@@ -985,12 +995,28 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                 {/* Navigation Links */}
                 <div className="p-2 space-y-0.5 text-xs font-medium">
                   <Link
-                    href="/dashboard"
+                    href={
+                      user.role?.includes("sales") ||
+                      user.role?.includes("employee") ||
+                      user.role?.includes("executive")
+                        ? "/dashboard/sales"
+                        : user.role === "designer"
+                          ? "/dashboard/designer"
+                          : user.role === "data_operator"
+                            ? "/dashboard/data-operator"
+                            : "/dashboard"
+                    }
                     onClick={() => setShowUserDropdown(false)}
                     className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
                   >
                     <Layers className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm">Dashboard Home</span>
+                    <span className="text-sm">
+                      {user.role?.includes("sales") ||
+                      user.role?.includes("employee") ||
+                      user.role?.includes("executive")
+                        ? "Sales Dashboard"
+                        : "Dashboard Home"}
+                    </span>
                   </Link>
 
                   <Link

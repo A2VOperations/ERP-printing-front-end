@@ -97,7 +97,24 @@ export default function Home() {
 
     const user = localStorage.getItem("user");
     if (user) {
-      router.push("/dashboard");
+      const roleNormalized = (localStorage.getItem("userRole") || "").toLowerCase();
+      const targetRoute =
+        roleNormalized.includes("sales") ||
+        roleNormalized.includes("employee") ||
+        roleNormalized.includes("executive")
+          ? "/dashboard/sales"
+          : roleNormalized.includes("designer")
+            ? "/dashboard/designer"
+            : roleNormalized.includes("admin")
+              ? "/dashboard/admin"
+              : roleNormalized.includes("manager")
+                ? "/dashboard/manager"
+                : roleNormalized.includes("data_operator") ||
+                    roleNormalized.includes("data operator") ||
+                    roleNormalized.includes("operator")
+                  ? "/dashboard/data-operator"
+                  : "/dashboard";
+      router.push(targetRoute);
       return;
     }
     const savedEmail = localStorage.getItem("crm_remembered_email");
@@ -202,17 +219,22 @@ export default function Home() {
         localStorage.setItem("userName", userName);
 
         const roleNormalized = (userRole || "").toLowerCase();
-        const targetRoute = roleNormalized.includes("designer")
-          ? "/dashboard/designer"
-          : roleNormalized.includes("admin")
-            ? "/dashboard/admin"
-            : roleNormalized.includes("manager")
-              ? "/dashboard/manager"
-              : roleNormalized.includes("data_operator") ||
-                  roleNormalized.includes("data operator") ||
-                  roleNormalized.includes("operator")
-                ? "/dashboard/data-operator"
-                : "/dashboard";
+        const targetRoute =
+          roleNormalized.includes("sales") ||
+          roleNormalized.includes("employee") ||
+          roleNormalized.includes("executive")
+            ? "/dashboard/sales"
+            : roleNormalized.includes("designer")
+              ? "/dashboard/designer"
+              : roleNormalized.includes("admin")
+                ? "/dashboard/admin"
+                : roleNormalized.includes("manager")
+                  ? "/dashboard/manager"
+                  : roleNormalized.includes("data_operator") ||
+                      roleNormalized.includes("data operator") ||
+                      roleNormalized.includes("operator")
+                    ? "/dashboard/data-operator"
+                    : "/dashboard";
 
         setTimeout(() => {
           router.push(targetRoute);

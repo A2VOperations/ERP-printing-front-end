@@ -355,6 +355,16 @@ export default function SalesDashboardPage() {
     if (typeof window !== "undefined") {
       const storedAvatar = localStorage.getItem("userAvatar");
       if (storedAvatar) setCurrentUserAvatar(storedAvatar);
+
+      const role = (localStorage.getItem("userRole") || "").toLowerCase();
+      if (role.includes("designer")) {
+        router.replace("/dashboard/designer");
+        return;
+      }
+      if (role.includes("data_operator") || role.includes("operator")) {
+        router.replace("/dashboard/data-operator");
+        return;
+      }
     }
     const handleAvatarSync = (e) => {
       const av =

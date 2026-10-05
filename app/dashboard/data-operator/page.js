@@ -57,8 +57,6 @@ import {
   Tag,
   Star,
   Compass,
-  FileSpreadsheet,
-  CheckSquare,
   Loader2,
   Hash,
 } from "lucide-react";
@@ -1074,6 +1072,7 @@ export default function DataOperatorPage() {
       assignedToId: autoRep,
       assignedToName: repObj?.name || salesReps[0]?.name || "Sales Executive",
       remark: item.remark || "",
+      shopImageUrl: item.previewUrl || item.uploadedUrl || "",
     });
   };
 
@@ -1402,6 +1401,14 @@ export default function DataOperatorPage() {
 
     setPhotosQueue(updatedQueue);
     setSelectedPhotosList(updatedSelected);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          "data_operator_photos_queue_v2",
+          JSON.stringify(updatedQueue),
+        );
+      } catch (e) {}
+    }
     setIsUploadingToCloudinary(false);
     setUploadProgressText("");
 
@@ -1471,8 +1478,13 @@ export default function DataOperatorPage() {
     const cleanPhone = formData.phone.replace(/\D/g, "");
 
     try {
-      let finalPhotoUrl = currentItem?.previewUrl || "";
+      let finalPhotoUrl =
+        formData.shopImageUrl ||
+        currentItem?.previewUrl ||
+        currentItem?.uploadedUrl ||
+        "";
 
+      // If missing or local blob, upload the real File if available
       if (
         currentItem?.file &&
         (!finalPhotoUrl || !finalPhotoUrl.startsWith("http"))
@@ -1491,6 +1503,11 @@ export default function DataOperatorPage() {
         }
       }
 
+      // Safeguard: Never save transient local blob: URLs into MongoDB
+      if (finalPhotoUrl && !finalPhotoUrl.startsWith("http")) {
+        finalPhotoUrl = "";
+      }
+
       const createdLead = await api.post("/leads", {
         businessName: formData.businessName.trim(),
         contactName: formData.ownerName.trim() || "Owner",
@@ -1501,8 +1518,21 @@ export default function DataOperatorPage() {
         businessCategory: formData.category,
         subCategory: formData.subCategory.trim(),
         shopImageUrl: finalPhotoUrl,
+        documents:
+          finalPhotoUrl && finalPhotoUrl.startsWith("http")
+            ? [
+                {
+                  title: `Shop Photo - ${formData.businessName.trim()}`,
+                  category: "PHOTO",
+                  fileUrl: finalPhotoUrl,
+                  uploadedByName: "Data Operator",
+                  uploadedAt: new Date(),
+                },
+              ]
+            : [],
         source: "DATA_OPERATOR",
         assignedToId: formData.assignedToId || undefined,
+        acceptanceStatus: formData.assignedToId ? "PENDING" : "ACCEPTED",
         notes: [
           formData.remark ? `Location: ${formData.remark}` : "",
           formData.zone ? `Zone: ${formData.zone}` : "",
@@ -1577,6 +1607,14 @@ export default function DataOperatorPage() {
         (_, idx) => idx !== currentIndex,
       );
       setPhotosQueue(remainingQueue);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            "data_operator_photos_queue_v2",
+            JSON.stringify(remainingQueue),
+          );
+        } catch (e) {}
+      }
 
       if (remainingQueue.length > 0) {
         const nextIdx = Math.min(currentIndex, remainingQueue.length - 1);

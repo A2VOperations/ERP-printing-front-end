@@ -36,12 +36,15 @@ import {
   List,
   Download,
   Headphones,
+  Inbox,
 } from "lucide-react";
 import Image from "next/image";
+import { api } from "@/lib/api";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [inboxCount, setInboxCount] = useState(0);
   const [userRole, setUserRole] = useState(() =>
     typeof window !== "undefined"
       ? (localStorage.getItem("userRole") || "admin").toLowerCase()
@@ -96,6 +99,34 @@ export default function Sidebar() {
       return () => window.removeEventListener("toggle-sidebar", handleToggle);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPendingInbox = async () => {
+      try {
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("token") || localStorage.getItem("auth_token")
+            : null;
+        if (!token) return;
+        const res = await api.get("/leads?acceptanceStatus=PENDING&limit=1");
+        if (isMounted && res?.data?.pagination) {
+          setInboxCount(res.data.pagination.totalRecords || 0);
+        }
+      } catch (e) {}
+    };
+
+    fetchPendingInbox();
+    const interval = setInterval(fetchPendingInbox, 25000);
+    const handleRefresh = () => fetchPendingInbox();
+    window.addEventListener("refresh-inbox-count", handleRefresh);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("refresh-inbox-count", handleRefresh);
+    };
+  }, []);
 
   // Determine role-based menu structures strictly matching specification
   const getNavSections = () => {
@@ -262,6 +293,7 @@ export default function Sidebar() {
         {
           title: "TEAM OPERATIONS",
           items: [
+            { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
             { name: "Leads", href: "/dashboard/leads", icon: Users },
             { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
             {
@@ -370,12 +402,6 @@ export default function Sidebar() {
           title: "MAIN",
           items: [
             {
-              name: "Dashboard",
-              href: "/dashboard",
-              icon: LayoutDashboard,
-              exact: true,
-            },
-            {
               name: "Sales Dashboard",
               href: "/dashboard/sales",
               icon: LayoutDashboard,
@@ -391,6 +417,7 @@ export default function Sidebar() {
         {
           title: "SALES",
           items: [
+            { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
             { name: "My Leads", href: "/dashboard/leads", icon: Users },
             { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
             {
@@ -469,6 +496,7 @@ export default function Sidebar() {
             href: "/dashboard/reports",
             icon: BarChart3,
           },
+          { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
           { name: "Leads", href: "/dashboard/leads", icon: Users },
           { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
           { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
@@ -637,6 +665,13 @@ export default function Sidebar() {
                     currentFilter === itemFilter;
                 } else if (item.href === "/dashboard/design") {
                   isActive = pathname === "/dashboard/design" && !currentFilter;
+                } else if (item.href === "/dashboard/leads/inbox") {
+                  isActive = pathname === "/dashboard/leads/inbox";
+                } else if (item.href === "/dashboard/leads") {
+                  isActive =
+                    pathname === "/dashboard/leads" ||
+                    (pathname.startsWith("/dashboard/leads/") &&
+                      !pathname.startsWith("/dashboard/leads/inbox"));
                 } else if (item.exact) {
                   isActive = pathname === item.href;
                 } else {
@@ -644,7 +679,9 @@ export default function Sidebar() {
                     pathname === item.href ||
                     (item.href !== "/dashboard" &&
                       pathname.startsWith(item.href) &&
-                      !item.href.includes("design"));
+                      !item.href.includes("design") &&
+                      (item.href !== "/dashboard/leads" ||
+                        !pathname.startsWith("/dashboard/leads/inbox")));
                 }
 
                 return (
@@ -664,7 +701,9 @@ export default function Sidebar() {
                       }
                     }}
                     className={`relative group flex items-center text-xs font-semibold transition-all duration-150 ${
-                      collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+                      collapsed
+                        ? "justify-center p-2.5 mx-1 rounded-lg"
+                        : "gap-3 px-3 py-2 mx-2 rounded-xl"
                     } ${
                       isActive
                         ? item.isOrange
@@ -684,10 +723,20 @@ export default function Sidebar() {
                       <span className="truncate text-base">{item.name}</span>
                     )}
 
+                    {!collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
+                      <span className="ml-auto bg-amber-400 text-slate-950 font-bold text-[11px] px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                        {inboxCount}
+                      </span>
+                    )}
+
+                    {collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+                    )}
+
                     {/* Floating Tooltip in Collapsed Mode */}
                     {collapsed && (
                       <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-                        {item.name}
+                        {item.name} {inboxCount > 0 && item.href === "/dashboard/leads/inbox" ? `(${inboxCount} new)` : ""}
                       </div>
                     )}
                   </Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/app/components/sidebar";
@@ -46,6 +46,7 @@ import {
   UserCheck,
   Send,
   Eye,
+  Image as ImageIcon,
 } from "lucide-react";
 
 const PIPELINE_STAGES = [
@@ -259,6 +260,62 @@ export default function LeadDetailPage() {
       })
       .catch(() => {});
   }, []);
+
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+
+  // Collect all photos attached by Data Operator and team, arranged by date (newest first)
+  const allLeadPhotos = useMemo(() => {
+    const list = [];
+    const seenUrls = new Set();
+
+    // 1. Direct shop image attached by Data Operator
+    if (lead?.shopImageUrl && typeof lead.shopImageUrl === "string" && lead.shopImageUrl.trim()) {
+      const url = lead.shopImageUrl.trim();
+      seenUrls.add(url);
+      list.push({
+        id: "shop-main",
+        url,
+        title: `Shop Photo - ${lead.businessName || "Client"}`,
+        date: lead.createdAt ? new Date(lead.createdAt) : new Date(),
+        uploadedBy: "Data Operator",
+        isPrimary: true,
+      });
+    }
+
+    // 2. Photos from documents collection
+    if (Array.isArray(lead?.documents)) {
+      lead.documents.forEach((doc, idx) => {
+        if (!doc?.fileUrl) return;
+        const url = doc.fileUrl.trim();
+        const isPhoto =
+          doc.category === "PHOTO" ||
+          doc.category === "CLIENT_WORK" ||
+          url.match(/\.(jpg|jpeg|png|webp|gif)($|\?)/i) ||
+          (doc.fileType && doc.fileType.startsWith("image/"));
+
+        if (isPhoto && !seenUrls.has(url)) {
+          seenUrls.add(url);
+          list.push({
+            id: doc._id || `doc-photo-${idx}`,
+            url,
+            title: doc.title || doc.fileName || `Market Photo ${idx + 1}`,
+            date: doc.uploadedAt
+              ? new Date(doc.uploadedAt)
+              : lead?.createdAt
+              ? new Date(lead.createdAt)
+              : new Date(),
+            uploadedBy: doc.uploadedByName || "Data Operator",
+            isPrimary: false,
+          });
+        }
+      });
+    }
+
+    // Sort/arrange strictly by date (newest first)
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [lead]);
+
+  const activePhoto = allLeadPhotos[activePhotoIdx] || allLeadPhotos[0] || null;
 
   const roleRaw =
     currentUser?.roleSlug ||
@@ -1433,17 +1490,82 @@ export default function LeadDetailPage() {
           )}
 
           {/* Lead Hero Profile Card */}
-          <div className="bg-white rounded-md p-5 md:p-6 border border-slate-200/90 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              {/* Left Profile Info */}
-              <div className="flex items-start gap-4">
-                <div className="w-13 h-13 rounded-md bg-indigo-50 text-indigo-700 font-black text-lg flex items-center justify-center shrink-0 border border-indigo-100">
-                  {leadInitials}
-                </div>
+          <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/90 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+              {/* Left Profile Info with Photo attached by Data Operator */}
+              <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0">
+                {/* Photo or Initials Avatar */}
+                {allLeadPhotos.length > 0 ? (
+                  <div className="flex flex-col items-center gap-2 shrink-0">
+                    <div
+                      onClick={() => setSelectedImagePreview(activePhoto?.url || allLeadPhotos[0]?.url)}
+                      className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-indigo-200/80 shadow-md group cursor-pointer bg-slate-950 shrink-0"
+                      title="Click to view full resolution"
+                    >
+                      <img
+                        src={activePhoto?.url || allLeadPhotos[0]?.url}
+                        alt={lead.businessName || "Shop Front"}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 p-2 text-center">
+                        <Eye className="w-4 h-4 text-white" />
+                        <span>View Photo</span>
+                      </div>
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
+                        <ImageIcon className="w-3 h-3 text-amber-400" />
+                        Shop Photo
+                      </span>
+                    </div>
 
-                <div className="space-y-2">
+                    {/* Date Arranged Tag & Switcher */}
+                    <div className="text-center space-y-1 w-full max-w-[130px]">
+                      <span className="text-[10px] font-semibold text-slate-500 block truncate">
+                        📅{" "}
+                        {activePhoto?.date
+                          ? new Date(activePhoto.date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "Captured Photo"}
+                      </span>
+
+                      {/* If multiple photos, allow switching */}
+                      {allLeadPhotos.length > 1 && (
+                        <div className="flex items-center justify-center gap-1.5 pt-0.5">
+                          {allLeadPhotos.map((p, idx) => (
+                            <button
+                              key={p.id || idx}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActivePhotoIdx(idx);
+                              }}
+                              className={`h-2 rounded-full transition-all cursor-pointer ${
+                                idx === activePhotoIdx
+                                  ? "bg-indigo-600 w-5"
+                                  : "bg-slate-300 hover:bg-slate-400 w-2"
+                              }`}
+                              title={`Photo ${idx + 1} (${new Date(p.date).toLocaleDateString()})`}
+                            />
+                          ))}
+                          <span className="text-[9px] font-bold text-indigo-600">
+                            {activePhotoIdx + 1}/{allLeadPhotos.length}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-indigo-50 text-indigo-700 font-black text-2xl flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs">
+                    {leadInitials}
+                  </div>
+                )}
+
+                {/* Main Information Block */}
+                <div className="space-y-2.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                       {lead.businessName || lead.contactName || "Lead Inquiry"}
                     </h1>
                     <span
@@ -1451,47 +1573,94 @@ export default function LeadDetailPage() {
                     >
                       {lead.status}
                     </span>
+                    {lead.acceptanceStatus === "PENDING" && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                        Pending Acceptance
+                      </span>
+                    )}
+                    {lead.priority === "URGENT" && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                        Urgent
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
-                    <span className="flex items-center gap-1 font-medium text-slate-700">
+                    <span className="flex items-center gap-1.5 font-semibold text-slate-800">
                       <User className="w-3.5 h-3.5 text-slate-400" />
                       {lead.contactName || "Primary Contact"}
                     </span>
 
-                    <span className="flex items-center gap-1 text-slate-700 font-mono">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    <a
+                      href={`tel:${lead.phone}`}
+                      className="flex items-center gap-1 text-slate-700 font-mono hover:text-blue-600 transition-colors font-medium"
+                      title="Click to call"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-blue-500" />
                       {lead.phone}
-                    </span>
+                    </a>
 
                     {lead.alternatePhone && (
-                      <span className="flex items-center gap-1 text-slate-500 font-mono">
+                      <a
+                        href={`tel:${lead.alternatePhone}`}
+                        className="flex items-center gap-1 text-slate-500 font-mono hover:text-blue-600 transition-colors"
+                      >
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
                         {lead.alternatePhone}
-                      </span>
+                      </a>
                     )}
 
                     {lead.email && (
-                      <span className="flex items-center gap-1 text-slate-700">
+                      <a
+                        href={`mailto:${lead.email}`}
+                        className="flex items-center gap-1 text-slate-700 hover:text-blue-600 transition-colors"
+                      >
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         {lead.email}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
+                    <span className="flex items-center gap-1 font-medium text-slate-700">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      {lead.areaId?.name
+                        ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
+                        : lead.city || lead.zone || "Territory Assigned"}
+                    </span>
+
+                    {lead.businessCategory && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[11px]">
+                          {lead.businessCategory}
+                        </span>
+                      </>
+                    )}
+
+                    {lead.subCategory && (
+                      <span className="text-slate-500 font-medium">
+                        ({lead.subCategory})
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-500 pt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                    <span>
-                      {lead.areaId?.name
-                        ? `${lead.areaId.name}, ${lead.areaId.city || "Delhi"}`
-                        : lead.city || "Territory Assigned"}
-                    </span>
-                  </div>
+                  {/* Notes / Remarks by Data Operator */}
+                  {lead.notes && (
+                    <div className="bg-amber-50/80 border border-amber-200/90 rounded-xl px-3 py-2 text-xs text-amber-950 flex items-start gap-2 mt-1">
+                      <span className="font-bold text-[10px] uppercase text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
+                        Data Operator Note
+                      </span>
+                      <p className="line-clamp-2 text-xs font-medium leading-relaxed">
+                        {lead.notes}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Right Metadata & Score */}
-              <div className="flex items-center gap-6 lg:border-l lg:border-slate-100 lg:pl-6 text-xs shrink-0 flex-wrap">
+              <div className="flex items-center gap-5 xl:border-l xl:border-slate-100 xl:pl-6 text-xs shrink-0 flex-wrap justify-between sm:justify-start">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Lead ID
@@ -1506,8 +1675,14 @@ export default function LeadDetailPage() {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Source
                   </span>
-                  <span className="font-bold text-slate-900">
-                    {lead.source || "MANUAL"}
+                  <span className="font-bold text-slate-900 flex items-center gap-1">
+                    {lead.source === "DATA_OPERATOR" ? (
+                      <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 font-bold text-[10px] border border-orange-200">
+                        DATA OPERATOR
+                      </span>
+                    ) : (
+                      lead.source || "MANUAL"
+                    )}
                   </span>
                 </div>
 
@@ -1696,6 +1871,7 @@ export default function LeadDetailPage() {
           {/* OVERVIEW TAB CONTENT */}
           {activeTab === "Overview" && (
             <div className="space-y-6 text-xs">
+
               {/* Row 1: 4 Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {/* Card 1: Lead Information */}
