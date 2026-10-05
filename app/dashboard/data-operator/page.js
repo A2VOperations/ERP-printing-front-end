@@ -60,6 +60,7 @@ import {
   FileSpreadsheet,
   CheckSquare,
   Loader2,
+  Hash,
 } from "lucide-react";
 
 // Celebration Particle Coordinates & Styling for 360° Happiness Blast
@@ -438,6 +439,26 @@ export default function DataOperatorPage() {
   // 5-Second Celebration Blast State
   const [showCelebrationBlast, setShowCelebrationBlast] = useState(false);
   const celebrationTimerRef = useRef(null);
+
+  // Serial Renaming & Drag States
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isRenamingNotification, setIsRenamingNotification] = useState(false);
+
+  // Persistent Auto-Incrementing Global Serial Counter (avoids storage & DB filename conflicts)
+  const [globalSerialCounter, setGlobalSerialCounter] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("data_operator_last_serial_index");
+        if (saved !== null) {
+          const parsed = parseInt(saved, 10);
+          if (!isNaN(parsed) && parsed >= 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return 0;
+  });
+  const [showCounterEditModal, setShowCounterEditModal] = useState(false);
+  const [customCounterInput, setCustomCounterInput] = useState("");
 
   const triggerCelebrationBlast = () => {
     setShowCelebrationBlast(false);
@@ -906,6 +927,30 @@ export default function DataOperatorPage() {
           photoUrl: l.shopImageUrl || "",
         }));
         setRecentEntries(formatted);
+
+        // Auto-detect highest existing serial from MongoDB leads to prevent storage collisions
+        let maxDbSerial = 0;
+        lList.forEach((l) => {
+          const url = l.shopImageUrl || "";
+          const match = url.match(/IMG[-_]?(\d+)/i);
+          if (match && match[1]) {
+            const num = parseInt(match[1], 10);
+            if (!isNaN(num) && num > maxDbSerial) {
+              maxDbSerial = num;
+            }
+          }
+        });
+        if (maxDbSerial > 0) {
+          setGlobalSerialCounter((prev) => {
+            const updated = Math.max(prev, maxDbSerial);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("data_operator_last_serial_index", String(updated));
+              } catch (e) {}
+            }
+            return updated;
+          });
+        }
         if (formatted.length > 0) {
           const first = formatted[0];
           setLastCreatedLead(
@@ -1044,21 +1089,143 @@ export default function DataOperatorPage() {
     showToast("All pending photos cleared from queue", "success");
   };
 
-  const handleDeletePhotoFromQueue = (indexToDelete) => {
-    const updated = photosQueue.filter((_, idx) => idx !== indexToDelete);
-    setPhotosQueue(updated);
+  // Helper: Re-sequence any list of photos preserving starting sequence offset
+  const resequencePhotoList = (list, customBase = null) => {
+    if (!list || list.length === 0) return [];
+    const baseOffset =
+      customBase !== null
+        ? customBase
+        : list[0]?.serialNumber
+          ? list[0].serialNumber - 1
+          : 0;
+
+    return list.map((item, idx) => {
+      const seq = baseOffset + idx + 1;
+      const serialTag = `IMG-${String(seq).padStart(3, "0")}`;
+      const rawName =
+        item.fileName || item.file?.name || item.originalFileName || "";
+      const ext = rawName.includes(".")
+        ? rawName.slice(rawName.lastIndexOf(".")).toLowerCase()
+        : ".jpg";
+      const serialFileName = `${serialTag}${ext}`;
+
+      let renamedFile = item.file;
+      if (item.file && typeof File !== "undefined" && item.file instanceof File) {
+        try {
+          renamedFile = new File([item.file], serialFileName, {
+            type: item.file.type,
+          });
+        } catch (e) {
+          renamedFile = item.file;
+        }
+      }
+
+      return {
+        ...item,
+        serialNumber: seq,
+        serialTag: serialTag,
+        fileName: serialFileName,
+        file: renamedFile,
+        originalFileName: item.originalFileName || rawName,
+      };
+    });
+  };
+
+  const handleResequenceAllPhotos = (forcedBase = null) => {
+    const startOffset =
+      forcedBase !== null
+        ? forcedBase
+        : selectedPhotosList[0]?.serialNumber
+          ? selectedPhotosList[0].serialNumber - 1
+          : 0;
+
+    const reseqSelected = resequencePhotoList(selectedPhotosList, startOffset);
+    setSelectedPhotosList(reseqSelected);
+
+    const reseqQueue = resequencePhotoList(photosQueue, startOffset);
+    setPhotosQueue(reseqQueue);
+
+    const endCounter = startOffset + reseqSelected.length;
+    if (endCounter > globalSerialCounter || forcedBase === 0) {
+      setGlobalSerialCounter(endCounter);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("data_operator_last_serial_index", String(endCounter));
+        } catch (e) {}
+      }
+    }
+
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem("data_operator_photos_queue_v2", JSON.stringify(updated));
+        localStorage.setItem("data_operator_photos_queue_v2", JSON.stringify(reseqQueue));
       } catch (e) {}
     }
-    if (updated.length === 0) {
+    showToast(
+      `Re-sequenced batch: ${reseqSelected[0]?.serialTag || "IMG-001"} to ${reseqSelected[reseqSelected.length - 1]?.serialTag || "IMG-..."}`,
+      "success",
+    );
+  };
+
+  const handleSetCustomCounter = (targetNum) => {
+    const num = parseInt(targetNum, 10);
+    if (!isNaN(num) && num >= 1) {
+      const newLastIndex = num - 1;
+      setGlobalSerialCounter(newLastIndex);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("data_operator_last_serial_index", String(newLastIndex));
+        } catch (e) {}
+      }
+      showToast(
+        `Next upload will now start from IMG-${String(num).padStart(3, "0")}!`,
+        "success",
+      );
+      setShowCounterEditModal(false);
+    } else {
+      showToast("Please enter a valid positive number", "error");
+    }
+  };
+
+  const handleDeletePhotoFromQueue = (indexToDelete) => {
+    const updated = photosQueue.filter((_, idx) => idx !== indexToDelete);
+    const resequenced = resequencePhotoList(updated);
+    setPhotosQueue(resequenced);
+    setSelectedPhotosList((prev) => {
+      const filtered = prev.filter((_, idx) => idx !== indexToDelete);
+      return resequencePhotoList(filtered);
+    });
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("data_operator_photos_queue_v2", JSON.stringify(resequenced));
+      } catch (e) {}
+    }
+    if (resequenced.length === 0) {
       setCurrentIndex(0);
     } else {
-      const nextIdx = Math.min(currentIndex, updated.length - 1);
-      selectPhotoItem(nextIdx, updated);
+      const nextIdx = Math.min(currentIndex, resequenced.length - 1);
+      selectPhotoItem(nextIdx, resequenced);
     }
-    showToast("Photo removed from pending queue", "info");
+    showToast("Photo removed and remaining images re-sequenced", "info");
+  };
+
+  const handleRemovePhotoFromSelected = (idToRemove) => {
+    setSelectedPhotosList((prev) => {
+      const filtered = prev.filter((item) => item.id !== idToRemove);
+      return resequencePhotoList(filtered);
+    });
+    setPhotosQueue((prev) => {
+      const filtered = prev.filter(
+        (item) => item.id !== idToRemove && `sel_${item.id}` !== idToRemove,
+      );
+      const resequenced = resequencePhotoList(filtered);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("data_operator_photos_queue_v2", JSON.stringify(resequenced));
+        } catch (e) {}
+      }
+      return resequenced;
+    });
+    showToast("Photo removed and remaining images re-sequenced", "info");
   };
 
   const handleTogglePhotoCheck = (id) => {
@@ -1069,49 +1236,100 @@ export default function DataOperatorPage() {
     );
   };
 
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  const processUploadedFiles = (files) => {
+    if (!files || files.length === 0) return;
 
-    const newItems = files.map((file, idx) => ({
-      id: `upload_${Date.now()}_${idx}`,
-      file,
-      fileName: file.name,
-      fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      previewUrl: URL.createObjectURL(file),
-      businessName: "",
-      ownerName: "",
-      phone: "",
-      alternatePhone: "",
-      category: "RETAIL",
-      subCategory: "",
-      areaId: batchAreaId,
-      zone: uploadMetadata.zone,
-      batchName: uploadMetadata.batchName,
-      capturedAt: "Just Now",
-      remark: "",
-      status: "PENDING",
-    }));
+    // Base sequence index: persists across batches, lead creations, and sessions
+    const baseIndex = globalSerialCounter;
+
+    const newItems = files.map((file, idx) => {
+      const seq = baseIndex + idx + 1;
+      const serialTag = `IMG-${String(seq).padStart(3, "0")}`;
+      const ext = file.name && file.name.includes(".")
+        ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase()
+        : ".jpg";
+      const serialFileName = `${serialTag}${ext}`;
+
+      let renamedFile = file;
+      try {
+        renamedFile = new File([file], serialFileName, { type: file.type });
+      } catch (err) {
+        console.warn("Could not create renamed File object:", err);
+      }
+
+      return {
+        id: `upload_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+        file: renamedFile,
+        originalFileName: file.name,
+        fileName: serialFileName,
+        serialNumber: seq,
+        serialTag: serialTag,
+        fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        previewUrl: URL.createObjectURL(file),
+        businessName: "",
+        ownerName: "",
+        phone: "",
+        alternatePhone: "",
+        category: "RETAIL",
+        subCategory: "",
+        areaId: batchAreaId,
+        zone: uploadMetadata.zone,
+        batchName: uploadMetadata.batchName,
+        capturedAt: "Just Now",
+        remark: "",
+        status: "PENDING",
+      };
+    });
+
+    const newCounter = baseIndex + files.length;
+    setGlobalSerialCounter(newCounter);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("data_operator_last_serial_index", String(newCounter));
+      } catch (e) {}
+    }
 
     const updated = [...photosQueue, ...newItems];
     setPhotosQueue(updated);
 
-    const newSelections = files.map((file, idx) => ({
-      id: `sel_${Date.now()}_${idx}`,
-      file,
-      fileName: file.name,
-      size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      previewUrl: URL.createObjectURL(file),
+    const newSelections = newItems.map((item) => ({
+      id: `sel_${item.id}`,
+      file: item.file,
+      originalFileName: item.originalFileName,
+      fileName: item.fileName,
+      serialNumber: item.serialNumber,
+      serialTag: item.serialTag,
+      size: item.fileSize,
+      previewUrl: item.previewUrl,
       checked: true,
       hasTag: true,
       businessName: "",
     }));
     setSelectedPhotosList((prev) => [...prev, ...newSelections]);
 
-    showToast(`Added ${newItems.length} photos! Proceeding to Step 2 to verify.`, "success");
     if (uploadPageFileInputRef.current)
       uploadPageFileInputRef.current.value = "";
+
+    // Show 1-second auto-renaming active notification badge
+    setIsRenamingNotification(true);
+    setTimeout(() => {
+      setIsRenamingNotification(false);
+    }, 2500);
+
+    const firstSerial = `IMG-${String(baseIndex + 1).padStart(3, "0")}`;
+    const lastSerial = `IMG-${String(newCounter).padStart(3, "0")}`;
+    showToast(
+      `Added ${files.length} photos (${firstSerial} → ${lastSerial})! Next upload will start at IMG-${String(newCounter + 1).padStart(3, "0")}.`,
+      "success",
+    );
+
     setUploadStep(2);
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    processUploadedFiles(files);
   };
 
   const handleUploadAllSelected = async () => {
@@ -2405,10 +2623,35 @@ export default function DataOperatorPage() {
 
                 {/* 3-Card Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-                  {/* Card 1: Drag & Drop Dropzone */}
+                  {/* Card 1: Drag & Drop Dropzone with Auto Serial Renaming */}
                   <div
                     onClick={() => uploadPageFileInputRef.current?.click()}
-                    className="md:col-span-12 xl:col-span-4 border-2 border-dashed border-blue-200 hover:border-blue-500 bg-[#f8fbff] hover:bg-blue-50/40 rounded-sm p-5 sm:p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 min-h-[220px] sm:min-h-[260px]"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOver(false);
+                      const droppedFiles = Array.from(e.dataTransfer?.files || []).filter(
+                        (f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|bmp|gif)$/i.test(f.name),
+                      );
+                      if (droppedFiles.length > 0) {
+                        processUploadedFiles(droppedFiles);
+                      }
+                    }}
+                    className={`md:col-span-12 xl:col-span-4 border-2 border-dashed rounded-sm p-5 sm:p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 min-h-[220px] sm:min-h-[260px] ${
+                      isDraggingOver
+                        ? "border-[#F95721] bg-orange-50/70 scale-[1.01]"
+                        : "border-blue-200 hover:border-blue-500 bg-[#f8fbff] hover:bg-blue-50/40"
+                    }`}
                   >
                     <input
                       ref={uploadPageFileInputRef}
@@ -2418,25 +2661,53 @@ export default function DataOperatorPage() {
                       onChange={handleFileUpload}
                       className="hidden"
                     />
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <div
+                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-colors ${
+                        isDraggingOver
+                          ? "bg-orange-100 text-[#F95721]"
+                          : "bg-blue-50 text-blue-600"
+                      }`}
+                    >
                       <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8" />
                     </div>
                     <div>
                       <div className="text-sm sm:text-base font-black text-slate-900">
-                        Drag &amp; Drop Photos Here
+                        {isDraggingOver
+                          ? "Drop images to auto-rename serial-wise!"
+                          : "Drag & Drop Photos Here"}
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        or click to select multiple images
+                        or click to select multiple images from your device
                       </div>
                     </div>
                     <div className="text-[10px] sm:text-[11px] text-slate-400 leading-relaxed">
-                      Supports: JPG, JPEG, PNG | Max size: 10MB per image
-                      <br />
-                      You can select multiple photos at once
+                      Supports: JPG, JPEG, PNG, WEBP | Max: 10MB per image
+                      <div className="mt-1 text-emerald-600 font-bold flex items-center justify-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Auto-renamed serial-wise: IMG-001, IMG-002, IMG-003...</span>
+                      </div>
+                      <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50/90 border border-blue-200/90 text-[11px] text-blue-900 shadow-2xs">
+                        <span className="font-semibold text-slate-600">Next Upload Starts At:</span>
+                        <span className="font-mono font-black text-[#F95721] bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
+                          IMG-{String(globalSerialCounter + 1).padStart(3, "0")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCustomCounterInput(String(globalSerialCounter + 1));
+                            setShowCounterEditModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 font-black underline ml-1 cursor-pointer"
+                          title="Configure or change starting number"
+                        >
+                          Change
+                        </button>
+                      </div>
                     </div>
                     <button
                       type="button"
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 transition-all mt-2 cursor-pointer"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 transition-all mt-1 cursor-pointer"
                     >
                       <FolderOpen className="w-4 h-4" />
                       <span>Select Photos</span>
@@ -2684,16 +2955,32 @@ export default function DataOperatorPage() {
                     <div className="flex items-center gap-2.5">
                       <ImageIcon className="w-5 h-5 text-blue-600 shrink-0" />
                       <div>
-                        <h2 className="text-sm font-black text-slate-900">
-                          Verify &amp; Organize Photos ({selectedPhotosList.length})
-                        </h2>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-sm font-black text-slate-900">
+                            Verify &amp; Organize Photos ({selectedPhotosList.length})
+                          </h2>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black tracking-wide flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-emerald-600" />
+                            <span>Serial Auto-Named: IMG-001 ...</span>
+                          </span>
+                        </div>
                         <p className="text-[11px] text-slate-400">
-                          Review photo clarity and zoom in before sending to Lead Entry
+                          Review photo clarity, inspect serial names, and re-sequence before sending to Lead Entry
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleResequenceAllPhotos}
+                        className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Re-number all photos sequentially from IMG-001 to the last image"
+                      >
+                        <Hash className="w-3.5 h-3.5" />
+                        <span>Re-sequence (1 to {selectedPhotosList.length || "N"})</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setUploadStep(1)}
@@ -2702,6 +2989,7 @@ export default function DataOperatorPage() {
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add More Photos</span>
                       </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -2729,13 +3017,67 @@ export default function DataOperatorPage() {
                     </div>
                   </div>
 
+                  {/* Auto Serial Renaming Notification / Status Banner */}
+                  {selectedPhotosList.length > 0 && (
+                    <div className={`rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all ${
+                      isRenamingNotification
+                        ? "bg-amber-50 border-2 border-amber-300 ring-4 ring-amber-400/20"
+                        : "bg-gradient-to-r from-blue-50/80 via-indigo-50/60 to-orange-50/60 border border-blue-200/70"
+                    }`}>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-[#F95721] text-white flex items-center justify-center shrink-0 shadow-xs">
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-slate-900 flex items-center gap-2 flex-wrap">
+                            <span>{isRenamingNotification ? "⚡ Renaming Completed!" : "Serial Numbering Active"}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-mono font-bold">
+                              Batch: {selectedPhotosList[0]?.serialTag || "IMG-001"} → {selectedPhotosList[selectedPhotosList.length - 1]?.serialTag || "IMG-..."}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
+                              Next Upload Starts At: IMG-{String(globalSerialCounter + 1).padStart(3, "0")}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500">
+                            Current {selectedPhotosList.length} photos are indexed serial-wise. Next upload batch will automatically continue from <span className="font-mono font-bold text-slate-700">IMG-{String(globalSerialCounter + 1).padStart(3, "0")}</span> to eliminate storage &amp; database conflicts.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomCounterInput(String(globalSerialCounter + 1));
+                            setShowCounterEditModal(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                          title="Configure sequence starting counter"
+                        >
+                          <SettingsIcon className="w-3 h-3 text-slate-600" />
+                          <span>Sequence Settings</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleResequenceAllPhotos()}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                          title="Reset and verify sequence from first to last in this batch"
+                        >
+                          <RefreshCw className="w-3 h-3 text-blue-600" />
+                          <span>Re-Index Batch</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Selected Photo Cards Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3.5">
                     {selectedPhotosList.length > 0 ? (
                       selectedPhotosList.map((item, idx) => (
                         <div
                           key={item.id || idx}
-                          className="border border-slate-200/90 rounded-sm overflow-hidden bg-white shadow-2xs group hover:shadow-md transition-all flex flex-col justify-between"
+                          className="border border-slate-200/90 rounded-sm overflow-hidden bg-white shadow-2xs group hover:shadow-md transition-all flex flex-col justify-between relative"
                         >
                           <div className="relative h-32 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2744,6 +3086,23 @@ export default function DataOperatorPage() {
                               alt={item.fileName}
                               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                             />
+
+                            {/* Serial Badge on Top-Left */}
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-xs text-white font-mono font-black text-[10px] border border-white/20 shadow-xs flex items-center gap-1">
+                              <span className="text-orange-400">#</span>
+                              <span>{item.serialTag || `IMG-${String(idx + 1).padStart(3, "0")}`}</span>
+                            </div>
+
+                            {/* Remove button on Top-Right */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhotoFromSelected(item.id)}
+                              className="absolute top-2 right-2 w-6 h-6 rounded-md bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xs cursor-pointer z-10"
+                              title="Remove this photo from batch & re-sequence"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() =>
@@ -2764,8 +3123,8 @@ export default function DataOperatorPage() {
                             </button>
                           </div>
 
-                          <div className="p-2.5 flex items-center justify-between text-xs bg-white">
-                            <div className="flex items-center gap-2 min-w-0">
+                          <div className="p-2.5 flex items-center justify-between text-xs bg-white gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               <button
                                 type="button"
                                 onClick={() => handleTogglePhotoCheck(item.id)}
@@ -2779,12 +3138,24 @@ export default function DataOperatorPage() {
                                   <Check className="w-3 h-3 stroke-[3]" />
                                 )}
                               </button>
-                              <div className="min-w-0">
-                                <div className="font-bold text-slate-800 text-[11px] truncate" title={item.fileName}>
-                                  {item.fileName}
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-slate-800 text-[11px] truncate flex items-center gap-1" title={item.fileName}>
+                                  <span className="text-[#F95721] font-mono text-[10px] font-black">
+                                    {item.serialTag || `IMG-${String(idx + 1).padStart(3, "0")}`}
+                                  </span>
+                                  <span className="text-slate-300">|</span>
+                                  <span className="truncate">{item.fileName}</span>
                                 </div>
-                                <div className="text-[10px] text-slate-400 font-medium">
-                                  {item.size}
+                                <div className="text-[10px] text-slate-400 font-medium truncate flex items-center gap-1.5" title={item.originalFileName || item.fileName}>
+                                  <span>{item.size}</span>
+                                  {item.originalFileName && item.originalFileName !== item.fileName && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-[9px] text-slate-400 truncate max-w-[85px]" title={item.originalFileName}>
+                                        {item.originalFileName}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -3135,12 +3506,20 @@ export default function DataOperatorPage() {
 
                   <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
                     <div className="p-2 bg-slate-50 rounded-xl">
-                      <div className="text-[10px] text-slate-400 font-medium">
-                        File Name
+                      <div className="text-[10px] text-slate-400 font-medium flex items-center justify-between">
+                        <span>Serial File Name</span>
+                        {activePhoto?.serialTag && (
+                          <span className="font-mono text-[#F95721] font-black">{activePhoto.serialTag}</span>
+                        )}
                       </div>
-                      <div className="font-bold text-slate-800 truncate">
+                      <div className="font-bold text-slate-800 truncate" title={activePhoto?.fileName}>
                         {activePhoto ? activePhoto.fileName || "—" : "—"}
                       </div>
+                      {activePhoto?.originalFileName && activePhoto.originalFileName !== activePhoto.fileName && (
+                        <div className="text-[9px] text-slate-400 truncate mt-0.5" title={`Device file: ${activePhoto.originalFileName}`}>
+                          orig: {activePhoto.originalFileName}
+                        </div>
+                      )}
                     </div>
                     <div className="p-2 bg-slate-50 rounded-xl">
                       <div className="text-[10px] text-slate-400 font-medium">
@@ -3670,22 +4049,6 @@ export default function DataOperatorPage() {
                   )}
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (currentIndex < photosQueue.length - 1) {
-                    selectPhotoItem(currentIndex + 1);
-                    showToast("Advanced to next market photo");
-                  } else {
-                    showToast("Reached end of batch", "info");
-                  }
-                }}
-                className="px-4 py-2 text-xs font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1.5 transition-colors shrink-0"
-              >
-                <span>Skip &amp; Next</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>
@@ -5077,6 +5440,88 @@ export default function DataOperatorPage() {
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sequence Counter Settings Modal */}
+      {showCounterEditModal && (
+        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#F95721] flex items-center justify-center font-bold">
+                  <Hash className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Sequence Counter Settings
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Prevents naming collisions in database &amp; cloud storage
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCounterEditModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 font-medium">Last Assigned Serial:</span>
+                <span className="font-mono font-black text-slate-800">
+                  {globalSerialCounter > 0 ? `IMG-${String(globalSerialCounter).padStart(3, "0")}` : "None (0)"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-1 border-t border-blue-200/60">
+                <span className="text-slate-600 font-medium">Next Upload Starts At:</span>
+                <span className="font-mono font-black text-[#F95721] bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
+                  IMG-{String(globalSerialCounter + 1).padStart(3, "0")}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700">
+                Set Next Starting Number
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-slate-400 text-sm pl-2">IMG-</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={customCounterInput}
+                  onChange={(e) => setCustomCounterInput(e.target.value)}
+                  placeholder={String(globalSerialCounter + 1)}
+                  className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                e.g. Enter 9 to start from IMG-009, 11 to start from IMG-011, or 1 to restart from IMG-001.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => handleSetCustomCounter(1)}
+                className="px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Reset to 1 (IMG-001)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetCustomCounter(customCounterInput || (globalSerialCounter + 1))}
+                className="px-4 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Apply Starting #
               </button>
             </div>
           </div>
