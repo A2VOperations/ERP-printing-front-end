@@ -1378,14 +1378,14 @@ export default function LeadDetailPage() {
                 onClick={() => handleOpenCreateOrderModal()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all"
               >
-                <ShoppingBag className="w-3.5 h-3.5" />+ Create / Convert Order
+                <ShoppingBag className="w-3.5 h-3.5" />Create / Convert Order
               </button>
 
               <Link
                 href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-600/25 transition-all"
               >
-                <FileText className="w-3.5 h-3.5" />+ Quotation
+                <FileText className="w-3.5 h-3.5" />Quotation
               </Link>
 
               <button
@@ -1399,7 +1399,7 @@ export default function LeadDetailPage() {
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
               >
-                <Plus className="w-3.5 h-3.5" />+ Follow-up
+                <Plus className="w-3.5 h-3.5" />Follow-up
               </button>
             </div>
           </div>
@@ -2044,7 +2044,7 @@ export default function LeadDetailPage() {
                           onClick={() => handleOpenCreateOrderModal()}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-xs"
                         >
-                          <Plus className="w-3.5 h-3.5" /> + Create Commercial
+                          <Plus className="w-3.5 h-3.5" /> Create Commercial
                           Order
                         </button>
                       </div>
@@ -2139,7 +2139,7 @@ export default function LeadDetailPage() {
                           href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs"
                         >
-                          <Plus className="w-3.5 h-3.5" /> + Create Quotation
+                          <Plus className="w-3.5 h-3.5" /> Create Quotation
                         </Link>
                       </div>
                     )}
@@ -2279,7 +2279,7 @@ export default function LeadDetailPage() {
                     onClick={() => handleOpenCreateOrderModal()}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs transition-all"
                   >
-                    <Plus className="w-4 h-4" />+ Create Commercial Order
+                    <Plus className="w-4 h-4" />Create Commercial Order
                   </button>
                 </div>
               </div>
@@ -2701,7 +2701,7 @@ export default function LeadDetailPage() {
                   href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition-all"
                 >
-                  <Plus className="w-3.5 h-3.5" />+ Create Quotation
+                  <Plus className="w-3.5 h-3.5" />Create Quotation
                 </Link>
               </div>
 
@@ -3060,7 +3060,7 @@ export default function LeadDetailPage() {
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-all"
                   >
-                    <Plus className="w-4 h-4" />+ Record Advance Payment
+                    <Plus className="w-4 h-4" />Record Advance Payment
                   </button>
                 </div>
               </div>
@@ -3757,7 +3757,7 @@ export default function LeadDetailPage() {
                     }}
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" />+ Upload File / Photo
+                    <Plus className="w-4 h-4" />Upload File / Photo
                   </button>
                 </div>
               </div>
@@ -4100,7 +4100,7 @@ export default function LeadDetailPage() {
                   onClick={() => setShowActivityModal(true)}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                 >
-                  <Plus className="w-3.5 h-3.5" />+ Log Activity
+                  <Plus className="w-3.5 h-3.5" />Log Activity
                 </button>
               </div>
 
