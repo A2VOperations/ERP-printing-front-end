@@ -45,6 +45,8 @@ import {
   Sparkles,
   Check,
   CheckCircle2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 
 export default function Navbar({ showNotificationCenter = true } = {}) {
@@ -414,41 +416,93 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     setShowMobileMenu(false);
   }, [pathname]);
 
-  // 2.5 Real-time Incoming Assigned Leads & Big Notification Bar Detection
-  const playLeadAssignedChime = useCallback(() => {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
+  // 2.5 Real-time Incoming Assigned Leads & Big Notification Bar Detection with 3s Drum Loop
+  const leadAudioRef = useRef(null);
+  const soundIntervalRef = useRef(null);
+  const soundStartTimeRef = useRef(0);
+  const [isAlertSounding, setIsAlertSounding] = useState(false);
 
-      // Note 1 (D5 - 587.33Hz)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = "sine";
-      osc1.frequency.setValueAtTime(587.33, now);
-      gain1.gain.setValueAtTime(0.15, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.35);
-
-      // Note 2 (A5 - 880Hz bell chime)
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = "sine";
-      osc2.frequency.setValueAtTime(880, now + 0.12);
-      gain2.gain.setValueAtTime(0.2, now + 0.12);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.12);
-      osc2.stop(now + 0.6);
-    } catch {
-      // Audio autoplay restrictions or unsupported
+  // Stop recurring sound, clear interval, and rewind audio immediately
+  const stopLeadSound = useCallback(() => {
+    if (soundIntervalRef.current) {
+      clearInterval(soundIntervalRef.current);
+      soundIntervalRef.current = null;
+    }
+    soundStartTimeRef.current = 0;
+    setIsAlertSounding(false);
+    if (leadAudioRef.current) {
+      try {
+        leadAudioRef.current.pause();
+        leadAudioRef.current.currentTime = 0;
+      } catch {}
     }
   }, []);
+
+  // Play incoming lead audio (WhatsApp Audio 2026-10-06 at 10.39.38 PM.mpeg / lead-alert.mpeg)
+  const playLeadAssignedSound = useCallback(() => {
+    try {
+      if (typeof window === "undefined") return;
+      if (!leadAudioRef.current) {
+        const audio = new Audio("/lead-alert.mpeg");
+        audio.preload = "auto";
+        audio.onerror = () => {
+          audio.src = "/WhatsApp%20Audio%202026-10-06%20at%2010.39.38%20PM.mpeg";
+        };
+        leadAudioRef.current = audio;
+      }
+      const audio = leadAudioRef.current;
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // If browser restricts audio before first interaction, bind one-time interaction listeners
+          const resumeAudio = () => {
+            if (leadAudioRef.current) {
+              leadAudioRef.current.play().catch(() => {});
+            }
+            window.removeEventListener("click", resumeAudio);
+            window.removeEventListener("keydown", resumeAudio);
+          };
+          window.addEventListener("click", resumeAudio, { once: true });
+          window.addEventListener("keydown", resumeAudio, { once: true });
+        });
+      }
+    } catch {
+      // Audio playback error or autoplay restriction
+    }
+  }, []);
+
+  // Starts recurring audio: plays every 3 seconds for up to 3 minutes (180s)
+  const startLeadSoundLoop = useCallback(() => {
+    stopLeadSound();
+    soundStartTimeRef.current = Date.now();
+    setIsAlertSounding(true);
+
+    // Initial audio play immediately
+    playLeadAssignedSound();
+
+    // Repeat every 3 seconds for up to 3 minutes
+    soundIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - soundStartTimeRef.current;
+      if (elapsed >= 3 * 60 * 1000) {
+        stopLeadSound();
+        return;
+      }
+      playLeadAssignedSound();
+    }, 3000);
+  }, [playLeadAssignedSound, stopLeadSound]);
+
+  // Sound loop lifecycle for incoming unaccepted leads (every 3s for up to 3 minutes)
+  useEffect(() => {
+    if (isSalesPerson && showBigNotification && incomingLeadAlert) {
+      startLeadSoundLoop();
+    } else {
+      stopLeadSound();
+    }
+    return () => {
+      stopLeadSound();
+    };
+  }, [isSalesPerson, showBigNotification, incomingLeadAlert, startLeadSoundLoop, stopLeadSound]);
 
   const fetchAssignedLeads = useCallback(async (isInitial = false) => {
     try {
@@ -529,9 +583,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         if (latest._id && latest._id !== lastNotifiedId) {
           setIncomingLeadAlert(latest);
           setShowBigNotification(true);
-          if (!isInitial) {
-            playLeadAssignedChime();
-          }
         }
       } else {
         setShowBigNotification(false);
@@ -540,7 +591,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     } catch {
       // Fail silently
     }
-  }, [isSalesPerson, playLeadAssignedChime, user?._id, user?.id]);
+  }, [isSalesPerson, user?._id, user?.id]);
 
   const hasFetchedAssignedLeadsRef = useRef(false);
 
@@ -586,7 +637,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       if (lead) {
         setIncomingLeadAlert(lead);
         setShowBigNotification(true);
-        playLeadAssignedChime();
       }
     };
 
@@ -598,24 +648,37 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       }
     };
 
+    const handleLeadAcceptedEvent = () => {
+      stopLeadSound();
+      setShowBigNotification(false);
+      setIncomingLeadAlert(null);
+    };
+
     window.addEventListener("lead-assigned", handleLeadAssignedEvent);
     window.addEventListener("refresh-inbox-count", handleRefreshCount);
+    window.addEventListener("lead-accepted", handleLeadAcceptedEvent);
 
     return () => {
       window.removeEventListener("lead-assigned", handleLeadAssignedEvent);
       window.removeEventListener("refresh-inbox-count", handleRefreshCount);
+      window.removeEventListener("lead-accepted", handleLeadAcceptedEvent);
     };
-  }, [fetchAssignedLeads, isSalesPerson, playLeadAssignedChime, user?._id, user?.id]);
+  }, [fetchAssignedLeads, isSalesPerson, stopLeadSound, user?._id, user?.id]);
 
   const handleQuickAccept = async () => {
     if (!incomingLeadAlert || isQuickAccepting) return;
     setIsQuickAccepting(true);
+    stopLeadSound();
     try {
       await api.post(`/leads/${incomingLeadAlert._id}/accept`, {});
       if (typeof window !== "undefined") {
         sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
+        window.dispatchEvent(
+          new CustomEvent("lead-accepted", { detail: { leadId: incomingLeadAlert._id } })
+        );
       }
       setShowBigNotification(false);
+      setIncomingLeadAlert(null);
       await fetchAssignedLeads(false);
       router.push(`/dashboard/leads/${incomingLeadAlert._id}`);
     } catch (err) {
@@ -626,10 +689,12 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   };
 
   const handleDismissBigNotification = () => {
+    stopLeadSound();
     if (incomingLeadAlert && typeof window !== "undefined") {
       sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
     }
     setShowBigNotification(false);
+    setIncomingLeadAlert(null);
   };
 
   // 3. Live Search Debounce
@@ -1440,9 +1505,35 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              {/* Drum Alert Sound Indicator & Mute Button */}
+              {isAlertSounding ? (
+                <button
+                  type="button"
+                  onClick={stopLeadSound}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-400/25 hover:bg-amber-400/35 border border-amber-300/50 text-amber-100 hover:text-white font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+                  title="3-second drum beat loop active (auto-stops on accept or click to mute)"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
+                  <span className="hidden sm:inline">Audio Alert (3s loop)</span>
+                  <span className="text-[10px] uppercase font-bold underline ml-0.5">Mute</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startLeadSoundLoop}
+                  className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-red-200 hover:text-white transition-colors cursor-pointer"
+                  title="Unmute lead alert sound"
+                >
+                  <VolumeX className="w-4 h-4" />
+                </button>
+              )}
+
               <Link
                 href="/dashboard/leads/inbox"
-                onClick={() => setShowBigNotification(false)}
+                onClick={() => {
+                  stopLeadSound();
+                  setShowBigNotification(false);
+                }}
                 className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-red-50 text-red-700 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.02]"
               >
                 <span>Review in Lead Inbox ({assignedInboxCount})</span>

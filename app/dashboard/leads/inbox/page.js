@@ -102,6 +102,7 @@ export default function LeadInboxPage() {
         const next = prev.filter((item) => item._id !== lead._id);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+          window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
         }
         return next;
       });
@@ -132,6 +133,7 @@ export default function LeadInboxPage() {
         const next = prev.filter((item) => item._id !== lead._id);
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+          window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
         }
         return next;
       });
