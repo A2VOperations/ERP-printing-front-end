@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -46,6 +46,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [inboxCount, setInboxCount] = useState(0);
+  const lastInboxFetchRef = useRef(0);
   const [userRole, setUserRole] = useState(() => {
     if (typeof window !== "undefined") {
       let r = localStorage.getItem("userRole");
@@ -135,6 +136,8 @@ export default function Sidebar() {
     }
   }, [pathname]);
 
+  const hasFetchedInboxRef = useRef(false);
+
   useEffect(() => {
     let isMounted = true;
     const fetchPendingInbox = async () => {
@@ -151,7 +154,7 @@ export default function Sidebar() {
           return;
         }
 
-        const res = await api.get("/leads?acceptanceStatus=PENDING&limit=1");
+        const res = await api.get("/leads?acceptanceStatus=PENDING&limit=1", { silent: true });
         if (isMounted && res?.data?.pagination) {
           setInboxCount(res.data.pagination.totalRecords || 0);
         } else if (isMounted && Array.isArray(res?.data)) {
@@ -160,8 +163,11 @@ export default function Sidebar() {
       } catch (e) {}
     };
 
-    fetchPendingInbox();
-    const interval = setInterval(fetchPendingInbox, 10000);
+    if (!hasFetchedInboxRef.current && isSalesPerson) {
+      hasFetchedInboxRef.current = true;
+      fetchPendingInbox();
+    }
+
     const handleRefresh = (e) => {
       if (!isSalesPerson) {
         setInboxCount(0);
@@ -169,8 +175,6 @@ export default function Sidebar() {
       }
       if (e?.detail?.count !== undefined) {
         setInboxCount(Number(e.detail.count) || 0);
-      } else {
-        fetchPendingInbox();
       }
     };
     window.addEventListener("refresh-inbox-count", handleRefresh);
@@ -178,7 +182,6 @@ export default function Sidebar() {
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
       window.removeEventListener("refresh-inbox-count", handleRefresh);
       window.removeEventListener("lead-assigned", handleRefresh);
     };

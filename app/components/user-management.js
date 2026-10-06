@@ -24,11 +24,6 @@ export default function UserManagement({ user: currentUser }) {
 
   useEffect(() => {
     fetchUsers(true);
-    // Poll every 10 seconds for real-time online/offline status updates
-    const interval = setInterval(() => {
-      fetchUsers(false);
-    }, 10000);
-    return () => clearInterval(interval);
   }, [currentUser?.id, currentUser?._id, currentUser?.email]);
 
   const fetchUsers = async (showLoading = true) => {

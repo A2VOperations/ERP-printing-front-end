@@ -134,6 +134,122 @@ const STATUS_OPTIONS = [
   },
 ];
 
+/**
+ * Returns customized background, border, and badge styles matching status specifications:
+ * - New leads: gray
+ * - Contacted: blue
+ * - Interested: orange
+ * - Proposal sent: purple
+ * - Negotiation: dark orange
+ * - Order won: green
+ * - Deal lost / order lost: red
+ */
+export function getLeadStatusStyle(rawStatus) {
+  const s = String(rawStatus || "NEW").trim().toUpperCase().replace(/[\s-]+/g, "_");
+
+  // 1. New leads: Gray (darker)
+  if (s === "NEW" || s === "NEW_LEAD" || s === "PENDING") {
+    return {
+      rowBg: "bg-slate-200/90 hover:bg-slate-300/80",
+      expandedBg: "bg-slate-200",
+      gridBg: "bg-slate-200/90 border-slate-400 hover:border-slate-500",
+      accentBar: "bg-slate-600",
+      borderL: "border-l-4 border-l-slate-600",
+      badgeBg: "bg-slate-300 text-slate-800 border-slate-400",
+      label: "New Lead",
+    };
+  }
+
+  // 2. Contacted: Blue (darker)
+  if (s === "CONTACTED" || s === "CALL_ANSWERED" || s === "IN_COMMUNICATION") {
+    return {
+      rowBg: "bg-blue-100/90 hover:bg-blue-200/80",
+      expandedBg: "bg-blue-200/60",
+      gridBg: "bg-blue-100/90 border-blue-300 hover:border-blue-400",
+      accentBar: "bg-blue-600",
+      borderL: "border-l-4 border-l-blue-600",
+      badgeBg: "bg-blue-200 text-blue-900 border-blue-300",
+      label: "Contacted",
+    };
+  }
+
+  // 3. Interested: Orange (darker)
+  if (s === "INTERESTED") {
+    return {
+      rowBg: "bg-amber-100/95 hover:bg-amber-200/85",
+      expandedBg: "bg-amber-200/60",
+      gridBg: "bg-amber-100/90 border-amber-300 hover:border-amber-400",
+      accentBar: "bg-amber-600",
+      borderL: "border-l-4 border-l-amber-600",
+      badgeBg: "bg-amber-200 text-amber-900 border-amber-300",
+      label: "Interested",
+    };
+  }
+
+  // 4. Proposal sent: Purple (darker)
+  if (s === "QUOTATION_SENT" || s === "PROPOSAL_SENT" || s === "QUOTATION" || s === "PROPOSAL") {
+    return {
+      rowBg: "bg-purple-100/90 hover:bg-purple-200/80",
+      expandedBg: "bg-purple-200/60",
+      gridBg: "bg-purple-100/90 border-purple-300 hover:border-purple-400",
+      accentBar: "bg-purple-600",
+      borderL: "border-l-4 border-l-purple-600",
+      badgeBg: "bg-purple-200 text-purple-900 border-purple-300",
+      label: "Proposal Sent",
+    };
+  }
+
+  // 5. Negotiation: Dark Orange (darker)
+  if (s === "NEGOTIATION" || s === "NEGOTIATING") {
+    return {
+      rowBg: "bg-orange-200/90 hover:bg-orange-300/85",
+      expandedBg: "bg-orange-200",
+      gridBg: "bg-orange-200/90 border-orange-400 hover:border-orange-500",
+      accentBar: "bg-orange-700",
+      borderL: "border-l-4 border-l-orange-700",
+      badgeBg: "bg-orange-300 text-orange-950 border-orange-500",
+      label: "Negotiation",
+    };
+  }
+
+  // 6. Order won: Green (darker)
+  if (s === "WON" || s === "ORDER_WON" || s === "CONVERTED") {
+    return {
+      rowBg: "bg-emerald-100/90 hover:bg-emerald-200/85",
+      expandedBg: "bg-emerald-200/60",
+      gridBg: "bg-emerald-100/90 border-emerald-300 hover:border-emerald-400",
+      accentBar: "bg-emerald-600",
+      borderL: "border-l-4 border-l-emerald-600",
+      badgeBg: "bg-emerald-200 text-emerald-900 border-emerald-300",
+      label: "Order Won",
+    };
+  }
+
+  // 7. Deal lost / order lost: Red (darker)
+  if (s === "LOST" || s === "DEAL_LOST" || s === "ORDER_LOST" || s === "CANCELLED" || s === "DROPPED") {
+    return {
+      rowBg: "bg-rose-100/90 hover:bg-rose-200/85",
+      expandedBg: "bg-rose-200/60",
+      gridBg: "bg-rose-100/90 border-rose-300 hover:border-rose-400",
+      accentBar: "bg-rose-600",
+      borderL: "border-l-4 border-l-rose-600",
+      badgeBg: "bg-rose-200 text-rose-900 border-rose-300",
+      label: "Deal Lost",
+    };
+  }
+
+  // Fallback -> Gray
+  return {
+    rowBg: "bg-slate-200/90 hover:bg-slate-300/80",
+    expandedBg: "bg-slate-200",
+    gridBg: "bg-slate-200/90 border-slate-400 hover:border-slate-500",
+    accentBar: "bg-slate-500",
+    borderL: "border-l-4 border-l-slate-500",
+    badgeBg: "bg-slate-200 text-slate-800 border-slate-300",
+    label: "Lead",
+  };
+}
+
 export default function LeadsDashboardPage() {
   const router = useRouter();
 
@@ -1554,6 +1670,32 @@ export default function LeadsDashboardPage() {
                 </button>
               </div>
 
+              {/* Status Color Coding Legend Strip */}
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold text-slate-700 py-1 px-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Status Colors:</span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 border border-slate-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-slate-600"></span> New (Gray)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-blue-600"></span> Contacted (Blue)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-amber-600"></span> Interested (Orange)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 border border-purple-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-purple-600"></span> Proposal Sent (Purple)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-200 text-orange-950 border border-orange-500 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-orange-700"></span> Negotiation (Dark Orange)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Order Won (Green)
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 border border-rose-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-rose-600"></span> Deal / Order Lost (Red)
+                </span>
+              </div>
+
               {/* View Rendering: Grid vs List vs Board */}
               {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1568,6 +1710,7 @@ export default function LeadsDashboardPage() {
                       const isTopTicket = lead._id === highestValueLeadId;
                       const isHotDeal = lead._id === hotDealLeadId;
                       const scoreMeta = getLeadScoreMeta(lead);
+                      const statusStyle = getLeadStatusStyle(lead.status);
 
                       const companyName =
                         lead.companyName ||
@@ -1596,7 +1739,7 @@ export default function LeadsDashboardPage() {
                       return (
                         <div
                           key={lead._id}
-                          className="bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between"
+                          className={`rounded-2xl border shadow-xs hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between ${statusStyle.gridBg}`}
                         >
                           {/* Corner Ribbons */}
                           {isTopTicket && (
@@ -1973,7 +2116,7 @@ export default function LeadsDashboardPage() {
                           </div>
 
                           {/* Full-width bottom colored stage bar */}
-                          <div className="w-full h-1 bg-emerald-500" />
+                          <div className={`w-full h-1.5 ${statusStyle.accentBar}`} />
                         </div>
                       );
                     })
@@ -2021,6 +2164,7 @@ export default function LeadsDashboardPage() {
                             Number(lead.estimatedBudget) ||
                             0;
                           const isExpanded = expandedLeadId === lead._id;
+                          const statusStyle = getLeadStatusStyle(lead.status);
                           const statusCfg =
                             STATUS_OPTIONS.find(
                               (s) => s.id === (lead.status || "NEW"),
@@ -2060,12 +2204,12 @@ export default function LeadsDashboardPage() {
                               <tr
                                 className={`transition-colors ${
                                   isExpanded
-                                    ? "bg-indigo-50/30"
-                                    : "hover:bg-slate-50/80"
+                                    ? statusStyle.expandedBg
+                                    : statusStyle.rowBg
                                 }`}
                               >
                                 {/* Expand chevron */}
-                                <td className="px-3 py-3.5 text-center">
+                                <td className={`px-3 py-3.5 text-center ${statusStyle.borderL}`}>
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2460,8 +2604,8 @@ export default function LeadsDashboardPage() {
 
                               {/* INLINE EXPANDED DETAILS DRAWER */}
                               {isExpanded && (
-                                <tr className="bg-gradient-to-b from-indigo-50/40 via-slate-50/70 to-slate-50 border-b-2 border-indigo-200/80">
-                                  <td colSpan={10} className="p-4 md:p-5">
+                                <tr className={`border-b-2 border-slate-300 ${statusStyle.expandedBg}`}>
+                                  <td colSpan={10} className={`p-4 md:p-5 ${statusStyle.borderL}`}>
                                     <div className="space-y-4">
                                       {/* Top Bar of Drawer: Identity & Pipeline fast switcher */}
                                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-indigo-100">

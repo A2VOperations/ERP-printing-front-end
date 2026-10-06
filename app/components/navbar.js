@@ -542,6 +542,8 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
   }, [isSalesPerson, playLeadAssignedChime, user?._id, user?.id]);
 
+  const hasFetchedAssignedLeadsRef = useRef(false);
+
   useEffect(() => {
     // If not strictly sales (e.g. data_operator or admin), do not poll or register assignment alerts
     if (!isSalesPerson) {
@@ -552,12 +554,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       return;
     }
 
-    fetchAssignedLeads(true);
-
-    // Poll every 10 seconds only for salespersons to get real-time assigned leads
-    const interval = setInterval(() => {
-      fetchAssignedLeads(false);
-    }, 10000);
+    if (!hasFetchedAssignedLeadsRef.current) {
+      hasFetchedAssignedLeadsRef.current = true;
+      fetchAssignedLeads(true);
+    }
 
     const handleLeadAssignedEvent = (e) => {
       if (!isSalesPerson) return;
@@ -588,7 +588,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         setShowBigNotification(true);
         playLeadAssignedChime();
       }
-      fetchAssignedLeads(false);
     };
 
     const handleRefreshCount = (e) => {
@@ -596,8 +595,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
       if (e?.detail?.count !== undefined) {
         setAssignedInboxCount(Number(e.detail.count) || 0);
-      } else {
-        fetchAssignedLeads(false);
       }
     };
 
@@ -605,11 +602,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     window.addEventListener("refresh-inbox-count", handleRefreshCount);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("lead-assigned", handleLeadAssignedEvent);
       window.removeEventListener("refresh-inbox-count", handleRefreshCount);
     };
-  }, [fetchAssignedLeads, isSalesPerson, playLeadAssignedChime, user?.id]);
+  }, [fetchAssignedLeads, isSalesPerson, playLeadAssignedChime, user?._id, user?.id]);
 
   const handleQuickAccept = async () => {
     if (!incomingLeadAlert || isQuickAccepting) return;
