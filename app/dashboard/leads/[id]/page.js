@@ -789,6 +789,23 @@ export default function LeadDetailPage() {
     }
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && lead) {
+      const sp = new URLSearchParams(window.location.search);
+      const tabParam = sp.get("tab");
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+      if (sp.get("openOrder") === "true") {
+        handleOpenCreateOrderModal();
+      } else if (sp.get("openPayment") === "true") {
+        setShowPaymentModal(true);
+      } else if (sp.get("openDoc") === "true") {
+        setShowUploadDocModal(true);
+      }
+    }
+  }, [lead]);
+
   // Quotation Lifecycle Handlers
   const handleApproveQuotationDiscount = async (quotationId) => {
     try {

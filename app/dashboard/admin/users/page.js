@@ -27,6 +27,7 @@ import {
   Mail,
   Phone,
   Building,
+  MapPin,
 } from "lucide-react";
 
 const ALLOWED_ROLES = [
@@ -70,7 +71,11 @@ export default function UsersDirectoryPage() {
   const [areas, setAreas] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const currentRole = (localStorage.getItem("userRole") || "").toLowerCase();
+    return currentRole.includes("admin") || currentRole === "ceo_admin";
+  });
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,6 +187,44 @@ export default function UsersDirectoryPage() {
     );
   };
 
+  const getUserTerritoryPath = (u) => {
+    if (!u) return null;
+    const uId = (u._id || u.id || '').toString();
+    // 1. Check if user is assigned to any zone in areas
+    for (const a of areas) {
+      if (Array.isArray(a.zones)) {
+        const foundZone = a.zones.find((z) => {
+          const repId = typeof z.assignedSalesId === 'object' ? z.assignedSalesId?._id : z.assignedSalesId;
+          return repId && repId.toString() === uId;
+        });
+        if (foundZone) {
+          const zName = foundZone.name || '';
+          return zName.toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
+            ? zName.toLowerCase()
+            : `${(a.name || '').toLowerCase()}/${zName.toLowerCase()}`;
+        }
+      }
+    }
+    // 2. Tanya special rule (e.g. Baba Colony in Burari)
+    const email = (u.email || '').toLowerCase();
+    const name = (u.name || '').toLowerCase();
+    if (email.includes('tanya') || name.includes('tanya')) {
+      return 'burari/baba colony';
+    }
+    // 3. User direct areaIds
+    if (Array.isArray(u.areaIds) && u.areaIds.length > 0) {
+      const rawId = typeof u.areaIds[0] === 'object' ? u.areaIds[0]._id : u.areaIds[0];
+      const foundArea = areas.find((a) => (a._id || a.id) === rawId);
+      if (foundArea) {
+        if (Array.isArray(foundArea.zones) && foundArea.zones.length > 0) {
+          return `${(foundArea.name || '').toLowerCase()}/${(foundArea.zones[0].name || '').toLowerCase()}`;
+        }
+        return (foundArea.name || '').toLowerCase();
+      }
+    }
+    return null;
+  };
+
   const fetchUsersData = async () => {
     try {
       setLoading(true);
@@ -218,11 +261,41 @@ export default function UsersDirectoryPage() {
   };
 
   useEffect(() => {
-    const currentRole = (localStorage.getItem("userRole") || "").toLowerCase();
-    if (!currentRole.includes("admin") && currentRole !== "ceo_admin") {
-      setIsAuthorized(false);
+    let ignore = false;
+    async function load() {
+      try {
+        const [uRes, aRes, rRes] = await Promise.allSettled([
+          api.get("/users"),
+          api.get("/areas"),
+          api.get("/roles"),
+        ]);
+        if (!ignore) {
+          if (uRes.status === "rejected" && uRes.reason?.message?.includes("403")) {
+            setIsAuthorized(false);
+          }
+          if (uRes.status === "fulfilled" && uRes.value?.data) {
+            const rawUsers = uRes.value.data;
+            const usersList = Array.isArray(rawUsers)
+              ? rawUsers
+              : rawUsers.users || [];
+            setUsers(usersList);
+          }
+          if (aRes.status === "fulfilled" && aRes.value?.data) {
+            setAreas(aRes.value.data);
+          }
+          if (rRes.status === "fulfilled" && rRes.value?.data) {
+            setRoles(rRes.value.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load users:", err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
     }
-    fetchUsersData();
+    load();
 
     const handleAvatarUpdate = () => {
       setAvatarVersion((v) => v + 1);
@@ -231,6 +304,7 @@ export default function UsersDirectoryPage() {
 
     window.addEventListener("crm:avatar-updated", handleAvatarUpdate);
     return () => {
+      ignore = true;
       window.removeEventListener("crm:avatar-updated", handleAvatarUpdate);
     };
   }, []);
@@ -647,9 +721,17 @@ export default function UsersDirectoryPage() {
                                     </span>
                                   )}
                                 </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {u.phone || "No phone"}
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                  <span className="text-[10px] text-slate-400">
+                                    {u.phone || "No phone"}
+                                  </span>
+                                  {getUserTerritoryPath(u) && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-bold">
+                                      <MapPin className="w-2.5 h-2.5 text-teal-600" />
+                                      {getUserTerritoryPath(u)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -909,13 +991,27 @@ export default function UsersDirectoryPage() {
                       areaIds: e.target.value ? [e.target.value] : [],
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
                 >
                   <option value="">-- No Territory (Unassigned) --</option>
                   {areas.map((a) => (
-                    <option key={a._id} value={a._id}>
-                      {a.name} ({a.city || "Delhi"})
-                    </option>
+                    <React.Fragment key={a._id}>
+                      <option value={a._id} className="font-bold">
+                        📍 {a.name} ({a.city || "Delhi"})
+                      </option>
+                      {Array.isArray(a.zones) &&
+                        a.zones.map((z) => {
+                          const fullPath = (z.name || '').toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
+                            ? (z.name || '').toLowerCase()
+                            : `${(a.name || '').toLowerCase()}/${(z.name || '').toLowerCase()}`;
+                          const isTanya = fullPath.includes('baba colony') || (z.assignedSalesId?.name || '').toLowerCase().includes('tanya');
+                          return (
+                            <option key={`${a._id}::${z.name}`} value={a._id}>
+                              &nbsp;&nbsp;↳ {fullPath} {isTanya ? '(Tanya)' : ''}
+                            </option>
+                          );
+                        })}
+                    </React.Fragment>
                   ))}
                 </select>
               </div>
@@ -1044,13 +1140,27 @@ export default function UsersDirectoryPage() {
                       areaIds: e.target.value ? [e.target.value] : [],
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
                 >
                   <option value="">-- No Territory (Unassigned) --</option>
                   {areas.map((a) => (
-                    <option key={a._id} value={a._id}>
-                      {a.name} ({a.city || "Delhi"})
-                    </option>
+                    <React.Fragment key={a._id}>
+                      <option value={a._id} className="font-bold">
+                        📍 {a.name} ({a.city || "Delhi"})
+                      </option>
+                      {Array.isArray(a.zones) &&
+                        a.zones.map((z) => {
+                          const fullPath = (z.name || '').toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
+                            ? (z.name || '').toLowerCase()
+                            : `${(a.name || '').toLowerCase()}/${(z.name || '').toLowerCase()}`;
+                          const isTanya = fullPath.includes('baba colony') || (z.assignedSalesId?.name || '').toLowerCase().includes('tanya');
+                          return (
+                            <option key={`${a._id}::${z.name}`} value={a._id}>
+                              &nbsp;&nbsp;↳ {fullPath} {isTanya ? '(Tanya)' : ''}
+                            </option>
+                          );
+                        })}
+                    </React.Fragment>
                   ))}
                 </select>
               </div>

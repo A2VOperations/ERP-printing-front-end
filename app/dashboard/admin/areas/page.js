@@ -103,13 +103,47 @@ export default function AreasTerritoriesPage() {
     };
   }, []);
 
+  const handleApplyBurariBabaTemplate = () => {
+    const tanyaUser = assignableUsers.find(
+      (u) =>
+        (u.name || '').toLowerCase().includes('tanya') ||
+        (u.email || '').toLowerCase().includes('tanya')
+    );
+    setNewArea({
+      name: 'Burari',
+      code: 'BURA',
+      city: 'Delhi NCR',
+      state: 'Delhi',
+      managerId: '',
+      zones: [
+        {
+          name: 'Baba colony',
+          code: 'BABA',
+          assignedSalesId: tanyaUser?._id || null,
+          assignedSalesUser: tanyaUser ? { name: tanyaUser.name, email: tanyaUser.email } : null,
+        },
+        {
+          name: 'Sant nagar',
+          code: 'SANT',
+          assignedSalesId: null,
+        },
+      ],
+    });
+    setIsCodeManual(true);
+  };
+
   const handleAddZoneToNew = () => {
     if (!createZoneInput.trim()) return;
-    const repUser = assignableUsers.find((u) => u._id === createZoneRep);
+    let repId = createZoneRep;
+    if (!repId && createZoneInput.toLowerCase().includes('baba')) {
+      const tanya = assignableUsers.find((u) => (u.name || '').toLowerCase().includes('tanya') || (u.email || '').toLowerCase().includes('tanya'));
+      if (tanya) repId = tanya._id;
+    }
+    const repUser = assignableUsers.find((u) => u._id === repId);
     const newZoneItem = {
       name: createZoneInput.trim(),
       code: createZoneInput.trim().slice(0, 4).toUpperCase(),
-      assignedSalesId: createZoneRep || null,
+      assignedSalesId: repId || null,
       assignedSalesUser: repUser ? { name: repUser.name, email: repUser.email } : null,
     };
     setNewArea((prev) => ({
@@ -129,11 +163,16 @@ export default function AreasTerritoriesPage() {
 
   const handleAddZoneToEdit = () => {
     if (!editZoneInput.trim() || !selectedArea) return;
-    const repUser = assignableUsers.find((u) => u._id === editZoneRep);
+    let repId = editZoneRep;
+    if (!repId && editZoneInput.toLowerCase().includes('baba')) {
+      const tanya = assignableUsers.find((u) => (u.name || '').toLowerCase().includes('tanya') || (u.email || '').toLowerCase().includes('tanya'));
+      if (tanya) repId = tanya._id;
+    }
+    const repUser = assignableUsers.find((u) => u._id === repId);
     const newZoneItem = {
       name: editZoneInput.trim(),
       code: editZoneInput.trim().slice(0, 4).toUpperCase(),
-      assignedSalesId: editZoneRep || null,
+      assignedSalesId: repId || null,
       assignedSalesUser: repUser ? { name: repUser.name, email: repUser.email } : null,
     };
     setSelectedArea((prev) => ({
@@ -377,10 +416,24 @@ export default function AreasTerritoriesPage() {
                       <tr key={a._id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 font-bold text-slate-900">
                           <div className="flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs">
+                            <span className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
                               {a.name?.slice(0, 2).toUpperCase()}
                             </span>
-                            <span>{a.name}</span>
+                            <div>
+                              <div className="text-slate-900 font-bold">{a.name}</div>
+                              {Array.isArray(a.zones) && a.zones.length > 0 && (
+                                <div className="text-[10px] text-teal-700 font-mono font-medium">
+                                  {a.zones
+                                    .map((z) => {
+                                      const zName = z.name || '';
+                                      return zName.toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
+                                        ? zName.toLowerCase()
+                                        : `${(a.name || '').toLowerCase()}/${zName.toLowerCase()}`;
+                                    })
+                                    .join(' • ')}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="py-3.5 font-mono text-[11px] text-teal-700 font-bold">{a.code || 'TERR'}</td>
@@ -391,16 +444,26 @@ export default function AreasTerritoriesPage() {
                               {Array.isArray(a.zones) && a.zones.length > 0 ? (
                                 a.zones.map((z, zIdx) => {
                                   const repName = z.assignedSalesId?.name || (typeof z.assignedSalesId === 'string' ? z.assignedSalesId : '');
+                                  const territoryPath = (z.name || '').toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
+                                    ? (z.name || '').toLowerCase()
+                                    : `${(a.name || '').toLowerCase()}/${(z.name || '').toLowerCase()}`;
+                                  const isTanya = repName.toLowerCase().includes('tanya') || territoryPath.includes('baba colony');
                                   return (
                                     <span
                                       key={z._id || zIdx}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 border border-slate-200 hover:border-teal-200 transition-colors"
+                                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                                        isTanya
+                                          ? 'bg-teal-50 border-teal-300 text-teal-900 font-semibold shadow-2xs'
+                                          : 'bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-teal-800 border-slate-200 hover:border-teal-200'
+                                      }`}
                                       title={repName ? `Assigned to: ${repName}` : 'Unassigned'}
                                     >
                                       <Compass className="w-3 h-3 text-teal-600" />
-                                      <span className="font-semibold">{z.name}</span>
+                                      <span className="font-mono">{territoryPath}</span>
                                       {repName && (
-                                        <span className="text-[9px] text-teal-600 bg-teal-100/60 px-1 py-0.2 rounded font-normal">
+                                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-normal ${
+                                          isTanya ? 'bg-teal-600 text-white font-semibold' : 'text-teal-600 bg-teal-100/60'
+                                        }`}>
                                           {repName}
                                         </span>
                                       )}
@@ -428,26 +491,34 @@ export default function AreasTerritoriesPage() {
 
                             {/* Inline Quick Add Zone Input */}
                             {quickZoneAreaId === a._id && (
-                              <div className="flex items-center gap-1.5 pt-1 animate-scale-up">
-                                <input
-                                  type="text"
-                                  placeholder="Zone name (e.g. Baba Colony)"
-                                  value={quickZoneName}
-                                  onChange={(e) => setQuickZoneName(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleQuickAddZone(a._id);
-                                    }
-                                  }}
-                                  className="px-2 py-1 text-[11px] rounded-lg border border-teal-300 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 w-36"
-                                  autoFocus
-                                />
-                                <select
-                                  value={quickZoneRep}
-                                  onChange={(e) => setQuickZoneRep(e.target.value)}
-                                  className="px-1.5 py-1 text-[10px] rounded-lg border border-slate-200 bg-white focus:outline-none"
-                                >
+                              <div className="flex flex-col gap-1 pt-1 animate-scale-up">
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    placeholder="Zone name (e.g. Baba Colony)"
+                                    value={quickZoneName}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setQuickZoneName(val);
+                                      if (val.toLowerCase().includes('baba') && !quickZoneRep) {
+                                        const tanya = assignableUsers.find((u) => (u.name || '').toLowerCase().includes('tanya') || (u.email || '').toLowerCase().includes('tanya'));
+                                        if (tanya) setQuickZoneRep(tanya._id);
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        handleQuickAddZone(a._id);
+                                      }
+                                    }}
+                                    className="px-2 py-1 text-[11px] rounded-lg border border-teal-300 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 w-36"
+                                    autoFocus
+                                  />
+                                  <select
+                                    value={quickZoneRep}
+                                    onChange={(e) => setQuickZoneRep(e.target.value)}
+                                    className="px-1.5 py-1 text-[10px] rounded-lg border border-slate-200 bg-white focus:outline-none"
+                                  >
                                   <option value="">Rep (Optional)</option>
                                   {assignableUsers.map((u) => (
                                     <option key={u._id} value={u._id}>{u.name}</option>
@@ -467,7 +538,13 @@ export default function AreasTerritoriesPage() {
                                   ✕
                                 </button>
                               </div>
-                            )}
+                              {quickZoneName.trim() && (
+                                <div className="text-[10px] text-teal-700 font-mono pl-1">
+                                  Preview: {(a.name || '').toLowerCase()}/{quickZoneName.trim().toLowerCase()}
+                                </div>
+                              )}
+                            </div>
+                          )}
                           </div>
                         </td>
                         <td className="py-3.5 text-slate-600">
@@ -570,13 +647,33 @@ export default function AreasTerritoriesPage() {
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">✕</button>
             </div>
 
+            {/* Quick Template Preset for burari/baba colony */}
+            <div className="p-3 bg-gradient-to-r from-teal-50 via-emerald-50 to-teal-50 rounded-2xl border border-teal-200/80 flex items-center justify-between gap-3 shadow-2xs">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                  <span>Preset: <strong className="font-mono text-teal-700">burari/baba colony</strong></span>
+                </div>
+                <p className="text-[10px] text-teal-700/90 mt-0.5 truncate">
+                  Configures Burari territory with Baba Colony assigned to Tanya
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyBurariBabaTemplate}
+                className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shadow-xs cursor-pointer shrink-0 transition-transform active:scale-95"
+              >
+                Use Template
+              </button>
+            </div>
+
             <form onSubmit={handleCreateArea} className="space-y-4 text-xs">
               <div>
                 <label className="text-slate-700 font-semibold block mb-1">Area / Territory Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Burari, Rohini, Civil Lines"
+                  placeholder="e.g. Burari, burari/baba colony, Rohini"
                   value={newArea.name}
                   onChange={(e) => {
                     const name = e.target.value;
@@ -663,39 +760,53 @@ export default function AreasTerritoriesPage() {
                   Data operators will select from these zones when capturing leads. You can also assign a dedicated sales executive to each zone!
                 </p>
 
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter zone name (e.g. Baba Colony, Sector 3)"
-                    value={createZoneInput}
-                    onChange={(e) => setCreateZoneInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddZoneToNew();
-                      }
-                    }}
-                    className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-teal-500"
-                  />
-                  <select
-                    value={createZoneRep}
-                    onChange={(e) => setCreateZoneRep(e.target.value)}
-                    className="w-36 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-[11px] focus:outline-none"
-                  >
-                    <option value="">Assign Rep</option>
-                    {assignableUsers.map((u) => (
-                      <option key={u._id} value={u._id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleAddZoneToNew}
-                    className="px-3 py-1.5 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 cursor-pointer"
-                  >
-                    Add
-                  </button>
+                <div className="space-y-1">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter zone name (e.g. Baba Colony, Sector 3)"
+                      value={createZoneInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCreateZoneInput(val);
+                        if (val.toLowerCase().includes('baba') && !createZoneRep) {
+                          const tanya = assignableUsers.find((u) => (u.name || '').toLowerCase().includes('tanya') || (u.email || '').toLowerCase().includes('tanya'));
+                          if (tanya) setCreateZoneRep(tanya._id);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddZoneToNew();
+                        }
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-teal-500"
+                    />
+                    <select
+                      value={createZoneRep}
+                      onChange={(e) => setCreateZoneRep(e.target.value)}
+                      className="w-36 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-[11px] focus:outline-none"
+                    >
+                      <option value="">Assign Rep</option>
+                      {assignableUsers.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAddZoneToNew}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {createZoneInput.trim() && (
+                    <div className="text-[10px] text-teal-700 font-mono pl-1">
+                      Preview: {(newArea.name || 'burari').toLowerCase()}/{createZoneInput.trim().toLowerCase()}
+                    </div>
+                  )}
                 </div>
 
                 {/* List of Added Zones */}
@@ -703,15 +814,25 @@ export default function AreasTerritoriesPage() {
                   {(newArea.zones || []).length > 0 ? (
                     newArea.zones.map((z, idx) => {
                       const repUser = assignableUsers.find((u) => u._id === z.assignedSalesId);
+                      const fullPath = (z.name || '').toLowerCase().startsWith((newArea.name || '').toLowerCase() + '/')
+                        ? (z.name || '').toLowerCase()
+                        : `${(newArea.name || 'burari').toLowerCase()}/${(z.name || '').toLowerCase()}`;
+                      const isTanya = repUser?.name?.toLowerCase()?.includes('tanya') || fullPath.includes('baba colony');
                       return (
                         <span
                           key={idx}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 text-xs border border-teal-200 font-medium"
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                            isTanya
+                              ? 'bg-teal-50 text-teal-900 border-teal-300 font-semibold shadow-2xs'
+                              : 'bg-teal-50 text-teal-800 border-teal-200'
+                          }`}
                         >
                           <CheckCircle2 className="w-3 h-3 text-teal-600" />
-                          <span>{z.name}</span>
+                          <span className="font-mono">{fullPath}</span>
                           {repUser && (
-                            <span className="text-[10px] text-teal-600 font-normal">
+                            <span className={`text-[10px] px-1 py-0.2 rounded font-normal ${
+                              isTanya ? 'bg-teal-600 text-white' : 'text-teal-600'
+                            }`}>
                               ({repUser.name})
                             </span>
                           )}
@@ -840,39 +961,53 @@ export default function AreasTerritoriesPage() {
                   </span>
                 </div>
 
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add new zone (e.g. Baba Colony)"
-                    value={editZoneInput}
-                    onChange={(e) => setEditZoneInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddZoneToEdit();
-                      }
-                    }}
-                    className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-teal-500"
-                  />
-                  <select
-                    value={editZoneRep}
-                    onChange={(e) => setEditZoneRep(e.target.value)}
-                    className="w-36 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-[11px] focus:outline-none"
-                  >
-                    <option value="">Assign Rep</option>
-                    {assignableUsers.map((u) => (
-                      <option key={u._id} value={u._id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleAddZoneToEdit}
-                    className="px-3 py-1.5 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 cursor-pointer"
-                  >
-                    Add
-                  </button>
+                <div className="space-y-1">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Add new zone (e.g. Baba Colony)"
+                      value={editZoneInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditZoneInput(val);
+                        if (val.toLowerCase().includes('baba') && !editZoneRep) {
+                          const tanya = assignableUsers.find((u) => (u.name || '').toLowerCase().includes('tanya') || (u.email || '').toLowerCase().includes('tanya'));
+                          if (tanya) setEditZoneRep(tanya._id);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddZoneToEdit();
+                        }
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-teal-500"
+                    />
+                    <select
+                      value={editZoneRep}
+                      onChange={(e) => setEditZoneRep(e.target.value)}
+                      className="w-36 px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-[11px] focus:outline-none"
+                    >
+                      <option value="">Assign Rep</option>
+                      {assignableUsers.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAddZoneToEdit}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 text-white font-semibold hover:bg-teal-700 cursor-pointer"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {editZoneInput.trim() && (
+                    <div className="text-[10px] text-teal-700 font-mono pl-1">
+                      Preview: {(selectedArea.name || 'burari').toLowerCase()}/{editZoneInput.trim().toLowerCase()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto">
@@ -880,15 +1015,25 @@ export default function AreasTerritoriesPage() {
                     selectedArea.zones.map((z, idx) => {
                       const repId = typeof z.assignedSalesId === 'object' ? z.assignedSalesId?._id : z.assignedSalesId;
                       const repUser = assignableUsers.find((u) => u._id === repId) || (typeof z.assignedSalesId === 'object' ? z.assignedSalesId : null);
+                      const fullPath = (z.name || '').toLowerCase().startsWith((selectedArea.name || '').toLowerCase() + '/')
+                        ? (z.name || '').toLowerCase()
+                        : `${(selectedArea.name || 'burari').toLowerCase()}/${(z.name || '').toLowerCase()}`;
+                      const isTanya = repUser?.name?.toLowerCase()?.includes('tanya') || fullPath.includes('baba colony');
                       return (
                         <span
                           key={z._id || idx}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 text-xs border border-teal-200 font-medium"
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                            isTanya
+                              ? 'bg-teal-50 text-teal-900 border-teal-300 font-semibold shadow-2xs'
+                              : 'bg-teal-50 text-teal-800 border-teal-200'
+                          }`}
                         >
                           <Compass className="w-3 h-3 text-teal-600" />
-                          <span>{z.name}</span>
+                          <span className="font-mono">{fullPath}</span>
                           {repUser?.name && (
-                            <span className="text-[10px] text-teal-600 font-normal">
+                            <span className={`text-[10px] px-1 py-0.2 rounded font-normal ${
+                              isTanya ? 'bg-teal-600 text-white' : 'text-teal-600'
+                            }`}>
                               ({repUser.name})
                             </span>
                           )}
