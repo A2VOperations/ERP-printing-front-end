@@ -416,11 +416,101 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     setShowMobileMenu(false);
   }, [pathname]);
 
-  // 2.5 Real-time Incoming Assigned Leads & Big Notification Bar Detection with 3s Drum Loop
+  // 2.5 Real-time Incoming Assigned Leads & Mobile/Tablet Resilient Sound Engine
+  const audioCtxRef = useRef(null);
+  const audioBufferRef = useRef(null);
+  const activeSourceNodeRef = useRef(null);
   const leadAudioRef = useRef(null);
   const soundIntervalRef = useRef(null);
   const soundStartTimeRef = useRef(0);
   const [isAlertSounding, setIsAlertSounding] = useState(false);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+
+  // Unlocks audio hardware for Mobile Safari (iOS), Android Chrome, tablet browsers
+  const unlockAudioContext = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+          audioCtxRef.current = new AudioCtx();
+        }
+        if (audioCtxRef.current.state === "suspended") {
+          audioCtxRef.current.resume().catch(() => {});
+        }
+        // Play an inaudible 1-sample buffer to satisfy iOS audio session activation
+        const silentBuf = audioCtxRef.current.createBuffer(1, 1, 22050);
+        const src = audioCtxRef.current.createBufferSource();
+        src.buffer = silentBuf;
+        src.connect(audioCtxRef.current.destination);
+        src.start(0);
+      }
+
+      if (!leadAudioRef.current && typeof Audio !== "undefined") {
+        const audio = new Audio("/lead-alert.mp3");
+        audio.preload = "auto";
+        audio.setAttribute("playsinline", "true");
+        audio.setAttribute("webkit-playsinline", "true");
+        leadAudioRef.current = audio;
+      }
+      if (leadAudioRef.current) {
+        leadAudioRef.current.load();
+      }
+
+      setNeedsUserInteraction(false);
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  // Pre-load audio on mount and bind unlock handlers for mobile devices
+  useEffect(() => {
+    let isCancelled = false;
+    const preloadBuffer = async () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+          audioCtxRef.current = new AudioCtx();
+        }
+        const resp = await fetch("/lead-alert.mp3");
+        if (!resp.ok) return;
+        const arrayBuf = await resp.arrayBuffer();
+        if (isCancelled) return;
+        audioCtxRef.current.decodeAudioData(
+          arrayBuf,
+          (buf) => {
+            if (!isCancelled) {
+              audioBufferRef.current = buf;
+            }
+          },
+          () => {}
+        );
+      } catch {}
+    };
+    preloadBuffer();
+
+    // Global listener to unlock mobile/tablet audio on first touch or tap anywhere
+    const handleFirstUserGesture = () => {
+      unlockAudioContext();
+      window.removeEventListener("touchstart", handleFirstUserGesture);
+      window.removeEventListener("touchend", handleFirstUserGesture);
+      window.removeEventListener("pointerdown", handleFirstUserGesture);
+      window.removeEventListener("click", handleFirstUserGesture);
+    };
+
+    window.addEventListener("touchstart", handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener("touchend", handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener("pointerdown", handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener("click", handleFirstUserGesture, { once: true, passive: true });
+
+    return () => {
+      isCancelled = true;
+      window.removeEventListener("touchstart", handleFirstUserGesture);
+      window.removeEventListener("touchend", handleFirstUserGesture);
+      window.removeEventListener("pointerdown", handleFirstUserGesture);
+      window.removeEventListener("click", handleFirstUserGesture);
+    };
+  }, [unlockAudioContext]);
 
   // Stop recurring sound, clear interval, and rewind audio immediately
   const stopLeadSound = useCallback(() => {
@@ -430,6 +520,17 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
     soundStartTimeRef.current = 0;
     setIsAlertSounding(false);
+
+    // Stop Web Audio node if playing
+    if (activeSourceNodeRef.current) {
+      try {
+        activeSourceNodeRef.current.stop();
+        activeSourceNodeRef.current.disconnect();
+      } catch {}
+      activeSourceNodeRef.current = null;
+    }
+
+    // Stop HTML5 Audio if playing
     if (leadAudioRef.current) {
       try {
         leadAudioRef.current.pause();
@@ -438,39 +539,87 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
   }, []);
 
-  // Play incoming lead audio (WhatsApp Audio 2026-10-06 at 10.39.38 PM.mpeg / lead-alert.mpeg)
+  // Play incoming lead audio across desktop, mobile Safari, Chrome, and tablets
   const playLeadAssignedSound = useCallback(() => {
     try {
       if (typeof window === "undefined") return;
+
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+          audioCtxRef.current = new AudioCtx();
+        }
+        if (audioCtxRef.current.state === "suspended") {
+          audioCtxRef.current.resume().catch(() => {});
+        }
+      }
+
+      // Priority 1: Web Audio API Buffer playback (bypasses mobile media element lockouts)
+      if (audioCtxRef.current && audioBufferRef.current) {
+        try {
+          const ctx = audioCtxRef.current;
+          if (ctx.state === "running") {
+            const srcNode = ctx.createBufferSource();
+            srcNode.buffer = audioBufferRef.current;
+            srcNode.connect(ctx.destination);
+            srcNode.start(0);
+            activeSourceNodeRef.current = srcNode;
+            srcNode.onended = () => {
+              if (activeSourceNodeRef.current === srcNode) {
+                activeSourceNodeRef.current = null;
+              }
+            };
+            setNeedsUserInteraction(false);
+            return;
+          }
+        } catch {
+          // Fall through to HTML5 Audio Element
+        }
+      }
+
+      // Priority 2: HTML5 Audio Element with mobile playsinline attributes
       if (!leadAudioRef.current) {
-        const audio = new Audio("/lead-alert.mpeg");
+        const audio = new Audio("/lead-alert.mp3");
         audio.preload = "auto";
+        audio.setAttribute("playsinline", "true");
+        audio.setAttribute("webkit-playsinline", "true");
         audio.onerror = () => {
-          audio.src = "/WhatsApp%20Audio%202026-10-06%20at%2010.39.38%20PM.mpeg";
+          audio.src = "/lead-alert.mpeg";
         };
         leadAudioRef.current = audio;
       }
+
       const audio = leadAudioRef.current;
       audio.currentTime = 0;
       const playPromise = audio.play();
+
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // If browser restricts audio before first interaction, bind one-time interaction listeners
-          const resumeAudio = () => {
-            if (leadAudioRef.current) {
-              leadAudioRef.current.play().catch(() => {});
-            }
-            window.removeEventListener("click", resumeAudio);
-            window.removeEventListener("keydown", resumeAudio);
-          };
-          window.addEventListener("click", resumeAudio, { once: true });
-          window.addEventListener("keydown", resumeAudio, { once: true });
-        });
+        playPromise
+          .then(() => {
+            setNeedsUserInteraction(false);
+          })
+          .catch(() => {
+            // Mobile browser blocked programmatic autoplay before screen tap
+            setNeedsUserInteraction(true);
+            const resumeAudio = () => {
+              unlockAudioContext();
+              if (leadAudioRef.current) {
+                leadAudioRef.current.play().catch(() => {});
+              }
+              setNeedsUserInteraction(false);
+              window.removeEventListener("touchstart", resumeAudio);
+              window.removeEventListener("pointerdown", resumeAudio);
+              window.removeEventListener("click", resumeAudio);
+            };
+            window.addEventListener("touchstart", resumeAudio, { once: true, passive: true });
+            window.addEventListener("pointerdown", resumeAudio, { once: true, passive: true });
+            window.addEventListener("click", resumeAudio, { once: true, passive: true });
+          });
       }
     } catch {
       // Audio playback error or autoplay restriction
     }
-  }, []);
+  }, [unlockAudioContext]);
 
   // Starts recurring audio: plays every 3 seconds for up to 3 minutes (180s)
   const startLeadSoundLoop = useCallback(() => {
@@ -1470,7 +1619,16 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
       {/* Big Notification Bar for Incoming Assigned Lead in Top Nav Bar (Sales Only) */}
       {isSalesPerson && showBigNotification && incomingLeadAlert && (
-        <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-xl border-b-2 border-red-400/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all animate-slide-down sticky top-14 sm:top-16 z-29">
+        <div
+          onClick={() => {
+            unlockAudioContext();
+            if (needsUserInteraction) {
+              playLeadAssignedSound();
+              setNeedsUserInteraction(false);
+            }
+          }}
+          className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-xl border-b-2 border-red-400/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all animate-slide-down sticky top-14 sm:top-16 z-29"
+        >
           <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
             {/* Left: Big Icon + Beacon + Lead Details */}
             <div className="flex items-center gap-3 min-w-0">
@@ -1505,13 +1663,31 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-              {/* Drum Alert Sound Indicator & Mute Button */}
-              {isAlertSounding ? (
+              {/* Mobile/Tablet Tap to Enable Sound Button if browser policy blocked silent autoplay */}
+              {needsUserInteraction ? (
                 <button
                   type="button"
-                  onClick={stopLeadSound}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    unlockAudioContext();
+                    playLeadAssignedSound();
+                    setNeedsUserInteraction(false);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg animate-bounce"
+                  title="Mobile browser requires a tap to enable audio"
+                >
+                  <Volume2 className="w-4 h-4 text-slate-950 shrink-0" />
+                  <span>🔊 Tap for Sound</span>
+                </button>
+              ) : isAlertSounding ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    stopLeadSound();
+                  }}
                   className="px-2.5 py-1.5 rounded-xl bg-amber-400/25 hover:bg-amber-400/35 border border-amber-300/50 text-amber-100 hover:text-white font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
-                  title="3-second drum beat loop active (auto-stops on accept or click to mute)"
+                  title="3-second loop active (auto-stops on accept or click to mute)"
                 >
                   <Volume2 className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
                   <span className="hidden sm:inline">Audio Alert (3s loop)</span>
@@ -1520,7 +1696,11 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               ) : (
                 <button
                   type="button"
-                  onClick={startLeadSoundLoop}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    unlockAudioContext();
+                    startLeadSoundLoop();
+                  }}
                   className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-red-200 hover:text-white transition-colors cursor-pointer"
                   title="Unmute lead alert sound"
                 >
