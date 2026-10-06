@@ -424,7 +424,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   const soundIntervalRef = useRef(null);
   const soundStartTimeRef = useRef(0);
   const [isAlertSounding, setIsAlertSounding] = useState(false);
-  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
 
   // Unlocks audio hardware for Mobile Safari (iOS), Android Chrome, tablet browsers
   const unlockAudioContext = useCallback(() => {
@@ -455,8 +454,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       if (leadAudioRef.current) {
         leadAudioRef.current.load();
       }
-
-      setNeedsUserInteraction(false);
     } catch {
       // Ignore
     }
@@ -569,7 +566,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                 activeSourceNodeRef.current = null;
               }
             };
-            setNeedsUserInteraction(false);
             return;
           }
         } catch {
@@ -595,18 +591,13 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
       if (playPromise !== undefined) {
         playPromise
-          .then(() => {
-            setNeedsUserInteraction(false);
-          })
           .catch(() => {
             // Mobile browser blocked programmatic autoplay before screen tap
-            setNeedsUserInteraction(true);
             const resumeAudio = () => {
               unlockAudioContext();
               if (leadAudioRef.current) {
                 leadAudioRef.current.play().catch(() => {});
               }
-              setNeedsUserInteraction(false);
               window.removeEventListener("touchstart", resumeAudio);
               window.removeEventListener("pointerdown", resumeAudio);
               window.removeEventListener("click", resumeAudio);
@@ -1622,10 +1613,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         <div
           onClick={() => {
             unlockAudioContext();
-            if (needsUserInteraction) {
-              playLeadAssignedSound();
-              setNeedsUserInteraction(false);
-            }
           }}
           className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-xl border-b-2 border-red-400/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all animate-slide-down sticky top-14 sm:top-16 z-29"
         >
@@ -1663,23 +1650,8 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-              {/* Mobile/Tablet Tap to Enable Sound Button if browser policy blocked silent autoplay */}
-              {needsUserInteraction ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    unlockAudioContext();
-                    playLeadAssignedSound();
-                    setNeedsUserInteraction(false);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-lg animate-bounce"
-                  title="Mobile browser requires a tap to enable audio"
-                >
-                  <Volume2 className="w-4 h-4 text-slate-950 shrink-0" />
-                  <span>🔊 Tap for Sound</span>
-                </button>
-              ) : isAlertSounding ? (
+              {/* Mute / Unmute Sound Button */}
+              {isAlertSounding ? (
                 <button
                   type="button"
                   onClick={(e) => {
@@ -1687,7 +1659,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     stopLeadSound();
                   }}
                   className="px-2.5 py-1.5 rounded-xl bg-amber-400/25 hover:bg-amber-400/35 border border-amber-300/50 text-amber-100 hover:text-white font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
-                  title="3-second loop active (auto-stops on accept or click to mute)"
+                  title="Click to Mute alert sound"
                 >
                   <Volume2 className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
                   <span className="hidden sm:inline">Audio Alert (3s loop)</span>
@@ -1701,10 +1673,11 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     unlockAudioContext();
                     startLeadSoundLoop();
                   }}
-                  className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-red-200 hover:text-white transition-colors cursor-pointer"
-                  title="Unmute lead alert sound"
+                  className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-red-100 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  title="Click to Unmute alert sound"
                 >
-                  <VolumeX className="w-4 h-4" />
+                  <VolumeX className="w-3.5 h-3.5" />
+                  <span>Unmute</span>
                 </button>
               )}
 
