@@ -6,6 +6,7 @@ import Link from "next/link";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import { normalizeRole } from "@/lib/rbacGuard";
 import {
   Flame,
   Hourglass,
@@ -110,12 +111,21 @@ export default function LeadsDashboardPage() {
         if (storedUser) setCurrentUser(JSON.parse(storedUser));
       } catch (e) {}
 
+      const currentStoredRole = (
+        typeof window !== "undefined"
+          ? localStorage.getItem("userRole") || ""
+          : ""
+      ).toLowerCase();
+      const isSales = normalizeRole(currentStoredRole) === "sales" && !currentStoredRole.includes("admin") && !currentStoredRole.includes("operator");
+
       const [leadsRes, flwRes, usersRes, meRes, inboxRes] = await Promise.allSettled([
         api.get("/leads?limit=100"),
         api.get("/followups?limit=100"),
         api.get("/users"),
         api.get("/auth/me"),
-        api.get("/leads?acceptanceStatus=PENDING&limit=1"),
+        isSales
+          ? api.get("/leads?acceptanceStatus=PENDING&assignedToId=my&limit=1")
+          : Promise.resolve({ data: null }),
       ]);
 
       if (leadsRes.status === "fulfilled") {
@@ -123,8 +133,10 @@ export default function LeadsDashboardPage() {
         const arr = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
         setLeads(arr);
       }
-      if (inboxRes.status === "fulfilled" && inboxRes.value?.data?.pagination) {
+      if (isSales && inboxRes.status === "fulfilled" && inboxRes.value?.data?.pagination) {
         setPendingInboxCount(inboxRes.value.data.pagination.totalRecords || 0);
+      } else {
+        setPendingInboxCount(0);
       }
       if (flwRes.status === "fulfilled") {
         const raw = flwRes.value?.data;
@@ -777,8 +789,8 @@ export default function LeadsDashboardPage() {
             </div>
           </div>
 
-          {/* Inbox Alert Banner when pending leads exist */}
-          {pendingInboxCount > 0 && (
+          {/* Inbox Alert Banner when pending leads exist (Sales Only) */}
+          {normalizeRole(currentUser?.role || (typeof window !== "undefined" ? localStorage.getItem("userRole") : "")) === "sales" && pendingInboxCount > 0 && (
             <div className="bg-gradient-to-r from-red-600/10 via-rose-600/5 to-white border border-red-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fade-in">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white flex items-center justify-center shrink-0 font-bold shadow-md shadow-red-500/30">

@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { api } from "@/lib/api";
+import { normalizeRole } from "@/lib/rbacGuard";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -50,6 +51,26 @@ export default function Sidebar() {
       ? (localStorage.getItem("userRole") || "admin").toLowerCase()
       : "admin"
   );
+  const isDataOperator =
+    pathname?.startsWith("/dashboard/data-operator") ||
+    normalizeRole(userRole) === "data_operator" ||
+    userRole.includes("operator");
+
+  const isAdminOrManager =
+    pathname?.startsWith("/dashboard/admin") ||
+    pathname?.startsWith("/dashboard/manager") ||
+    normalizeRole(userRole) === "admin" ||
+    normalizeRole(userRole) === "manager" ||
+    userRole.includes("admin") ||
+    userRole.includes("manager");
+
+  // Strictly ONLY a true sales representative on sales-related workflows
+  const isSalesPerson =
+    !isDataOperator &&
+    !isAdminOrManager &&
+    normalizeRole(userRole) === "sales" &&
+    !pathname?.startsWith("/dashboard/designer");
+
   const [currentUser] = useState(() => {
     if (typeof window !== "undefined") {
       try {
@@ -109,7 +130,13 @@ export default function Sidebar() {
             ? localStorage.getItem("token") || localStorage.getItem("auth_token")
             : null;
         if (!token) return;
-        const res = await api.get("/leads?acceptanceStatus=PENDING&limit=1");
+
+        if (!isSalesPerson) {
+          if (isMounted) setInboxCount(0);
+          return;
+        }
+
+        const res = await api.get("/leads?acceptanceStatus=PENDING&assignedToId=my&limit=1");
         if (isMounted && res?.data?.pagination) {
           setInboxCount(res.data.pagination.totalRecords || 0);
         }
@@ -119,6 +146,10 @@ export default function Sidebar() {
     fetchPendingInbox();
     const interval = setInterval(fetchPendingInbox, 12000);
     const handleRefresh = (e) => {
+      if (!isSalesPerson) {
+        setInboxCount(0);
+        return;
+      }
       if (e?.detail?.count !== undefined) {
         setInboxCount(Number(e.detail.count) || 0);
       } else {
@@ -134,7 +165,7 @@ export default function Sidebar() {
       window.removeEventListener("refresh-inbox-count", handleRefresh);
       window.removeEventListener("lead-assigned", handleRefresh);
     };
-  }, []);
+  }, [isSalesPerson]);
 
   // Determine role-based menu structures strictly matching specification
   const getNavSections = () => {
@@ -731,7 +762,7 @@ export default function Sidebar() {
                       <span className="truncate text-base">{item.name}</span>
                     )}
 
-                    {!collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
+                    {!collapsed && item.href === "/dashboard/leads/inbox" && isSalesPerson && inboxCount > 0 && (
                       <span
                         className="ml-auto inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
                         title={`${inboxCount} lead${inboxCount > 1 ? "s" : ""} assigned to you`}
@@ -741,7 +772,7 @@ export default function Sidebar() {
                       </span>
                     )}
 
-                    {collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
+                    {collapsed && item.href === "/dashboard/leads/inbox" && isSalesPerson && inboxCount > 0 && (
                       <>
                         <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full animate-ping ring-2 ring-white" />
                         <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full ring-2 ring-slate-900 flex items-center justify-center text-[8px] font-black text-white">
@@ -754,7 +785,7 @@ export default function Sidebar() {
                     {collapsed && (
                       <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
                         <span>{item.name}</span>
-                        {inboxCount > 0 && item.href === "/dashboard/leads/inbox" && (
+                        {inboxCount > 0 && isSalesPerson && item.href === "/dashboard/leads/inbox" && (
                           <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
                             {inboxCount} assigned
                           </span>

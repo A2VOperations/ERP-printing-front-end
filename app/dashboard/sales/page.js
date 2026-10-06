@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import { normalizeRole } from "@/lib/rbacGuard";
 import {
   Users,
   Clock,
@@ -275,7 +276,7 @@ export default function SalesDashboardPage() {
         ),
         api.get("/discount-approvals?status=PENDING&limit=50"),
         api.get(`/targets/leaderboard?timeframe=${tfParam}`),
-        api.get("/leads?acceptanceStatus=PENDING&limit=50"),
+        api.get("/leads?acceptanceStatus=PENDING&assignedToId=my&limit=50"),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
@@ -327,7 +328,12 @@ export default function SalesDashboardPage() {
           : approvalsRes.value.data?.items || [];
         setPendingApprovals(rawApprovals);
       }
-      if (inboxRes.status === "fulfilled" && inboxRes.value?.data) {
+      const activeRole = normalizeRole(
+        (typeof window !== "undefined"
+          ? localStorage.getItem("userRole")
+          : "") || ""
+      );
+      if (activeRole === "sales" && inboxRes.status === "fulfilled" && inboxRes.value?.data) {
         const rawInbox = inboxRes.value.data;
         const count =
           rawInbox?.pagination?.totalRecords !== undefined
@@ -336,6 +342,8 @@ export default function SalesDashboardPage() {
             ? rawInbox.length
             : rawInbox?.leads?.length || 0;
         setPendingInboxCount(count);
+      } else {
+        setPendingInboxCount(0);
       }
       if (leaderRes.status === "fulfilled" && leaderRes.value?.data) {
         const rawLeader = leaderRes.value.data;
@@ -937,8 +945,8 @@ export default function SalesDashboardPage() {
             </div>
           </div>
 
-          {/* Incoming Assigned Leads Alert Banner in Sales Dashboard */}
-          {pendingInboxCount > 0 && (
+          {/* Incoming Assigned Leads Alert Banner in Sales Dashboard (Sales Only) */}
+          {normalizeRole(typeof window !== "undefined" ? localStorage.getItem("userRole") : "") === "sales" && pendingInboxCount > 0 && (
             <div className="bg-gradient-to-r from-red-600/10 via-rose-600/5 to-white border border-red-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fade-in">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white flex items-center justify-center shrink-0 font-bold shadow-md shadow-red-500/30">
