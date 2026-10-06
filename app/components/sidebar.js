@@ -56,7 +56,8 @@ export default function Sidebar() {
         } catch {}
       }
       if (!r) {
-        if (pathname?.startsWith("/dashboard/data-operator")) r = "data_operator";
+        if (pathname?.startsWith("/dashboard/data-operator"))
+          r = "data_operator";
         else if (pathname?.startsWith("/dashboard/admin")) r = "admin";
         else if (pathname?.startsWith("/dashboard/manager")) r = "manager";
         else r = "sales";
@@ -98,12 +99,12 @@ export default function Sidebar() {
   const [currentFilter, setCurrentFilter] = useState(() =>
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("filter") || ""
-      : ""
+      : "",
   );
   const [currentView, setCurrentView] = useState(() =>
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search).get("view") || ""
-      : ""
+      : "",
   );
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem("sidebar_collapsed") === "true"
-      : false
+      : false,
   );
 
   useEffect(() => {
@@ -140,7 +141,8 @@ export default function Sidebar() {
       try {
         const token =
           typeof window !== "undefined"
-            ? localStorage.getItem("token") || localStorage.getItem("auth_token")
+            ? localStorage.getItem("token") ||
+              localStorage.getItem("auth_token")
             : null;
         if (!token) return;
 
@@ -347,7 +349,12 @@ export default function Sidebar() {
         {
           title: "TEAM OPERATIONS",
           items: [
-            { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
+            {
+              name: "Lead Inbox",
+              href: "/dashboard/leads/inbox",
+              icon: Inbox,
+              exact: true,
+            },
             { name: "Leads", href: "/dashboard/leads", icon: Users },
             { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
             {
@@ -471,7 +478,12 @@ export default function Sidebar() {
         {
           title: "SALES",
           items: [
-            { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
+            {
+              name: "Lead Inbox",
+              href: "/dashboard/leads/inbox",
+              icon: Inbox,
+              exact: true,
+            },
             { name: "My Leads", href: "/dashboard/leads", icon: Users },
             { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
             {
@@ -550,7 +562,12 @@ export default function Sidebar() {
             href: "/dashboard/reports",
             icon: BarChart3,
           },
-          { name: "Lead Inbox", href: "/dashboard/leads/inbox", icon: Inbox, exact: true },
+          {
+            name: "Lead Inbox",
+            href: "/dashboard/leads/inbox",
+            icon: Inbox,
+            exact: true,
+          },
           { name: "Leads", href: "/dashboard/leads", icon: Users },
           { name: "Follow-ups", href: "/dashboard/followups", icon: Clock },
           { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
@@ -777,34 +794,42 @@ export default function Sidebar() {
                       <span className="truncate text-base">{item.name}</span>
                     )}
 
-                    {!collapsed && item.href === "/dashboard/leads/inbox" && isSalesPerson && inboxCount > 0 && (
-                      <span
-                        className="ml-auto inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
-                        title={`${inboxCount} lead${inboxCount > 1 ? "s" : ""} assigned to you`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
-                        <span>{inboxCount}</span>
-                      </span>
-                    )}
-
-                    {collapsed && item.href === "/dashboard/leads/inbox" && isSalesPerson && inboxCount > 0 && (
-                      <>
-                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full animate-ping ring-2 ring-white" />
-                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full ring-2 ring-slate-900 flex items-center justify-center text-[8px] font-black text-white">
-                          {inboxCount > 9 ? "9+" : inboxCount}
+                    {!collapsed &&
+                      item.href === "/dashboard/leads/inbox" &&
+                      isSalesPerson &&
+                      inboxCount > 0 && (
+                        <span
+                          className="ml-auto inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
+                          title={`${inboxCount} lead${inboxCount > 1 ? "s" : ""} assigned to you`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                          <span>{inboxCount}</span>
                         </span>
-                      </>
-                    )}
+                      )}
+
+                    {collapsed &&
+                      item.href === "/dashboard/leads/inbox" &&
+                      isSalesPerson &&
+                      inboxCount > 0 && (
+                        <>
+                          <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full animate-ping ring-2 ring-white" />
+                          <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full ring-2 ring-slate-900 flex items-center justify-center text-[8px] font-black text-white">
+                            {inboxCount > 9 ? "9+" : inboxCount}
+                          </span>
+                        </>
+                      )}
 
                     {/* Floating Tooltip in Collapsed Mode */}
                     {collapsed && (
                       <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
                         <span>{item.name}</span>
-                        {inboxCount > 0 && isSalesPerson && item.href === "/dashboard/leads/inbox" && (
-                          <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
-                            {inboxCount} assigned
-                          </span>
-                        )}
+                        {inboxCount > 0 &&
+                          isSalesPerson &&
+                          item.href === "/dashboard/leads/inbox" && (
+                            <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
+                              {inboxCount} assigned
+                            </span>
+                          )}
                       </div>
                     )}
                   </Link>
