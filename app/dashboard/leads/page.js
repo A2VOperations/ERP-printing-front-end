@@ -2327,8 +2327,8 @@ export default function LeadsDashboardPage() {
                                         </div>
 
                                         {/* Fast Pipeline Switcher Bar */}
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                          <span className="text-[12px] uppercase font-bold text-slate-400 mr-1">
                                             Stage:
                                           </span>
                                           {STATUS_OPTIONS.map((st) => {
@@ -2344,7 +2344,7 @@ export default function LeadsDashboardPage() {
                                                     st.id,
                                                   )
                                                 }
-                                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                                                className={`px-2.5 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer border ${
                                                   isCurrent
                                                     ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                                                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
