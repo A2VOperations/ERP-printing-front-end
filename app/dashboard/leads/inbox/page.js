@@ -75,7 +75,7 @@ export default function LeadInboxPage() {
 
       // Trigger sidebar badge update
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("refresh-inbox-count"));
+        window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: list.length } }));
       }
     } catch (err) {
       console.error("Failed to load lead inbox:", err);
@@ -98,13 +98,14 @@ export default function LeadInboxPage() {
       await api.post(`/leads/${lead._id}/accept`, {});
       
       // Update local state
-      setLeads((prev) => prev.filter((item) => item._id !== lead._id));
+      setLeads((prev) => {
+        const next = prev.filter((item) => item._id !== lead._id);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+        }
+        return next;
+      });
       setAcceptedLead(lead);
-
-      // Trigger sidebar badge refresh
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("refresh-inbox-count"));
-      }
 
       showToast(`🎉 "${lead.businessName || lead.contactName || "Lead"}" accepted and transferred to My Leads!`, "success");
     } catch (err) {
@@ -127,12 +128,14 @@ export default function LeadInboxPage() {
         reason: declineModal.reason.trim() || "Declined from Lead Inbox",
       });
 
-      setLeads((prev) => prev.filter((item) => item._id !== lead._id));
+      setLeads((prev) => {
+        const next = prev.filter((item) => item._id !== lead._id);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+        }
+        return next;
+      });
       setDeclineModal({ show: false, lead: null, reason: "" });
-
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("refresh-inbox-count"));
-      }
 
       showToast(`Lead declined.`, "info");
     } catch (err) {
@@ -233,7 +236,8 @@ export default function LeadInboxPage() {
                       <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
                         Lead Acceptance Inbox
                         {leads.length > 0 && (
-                          <span className="bg-amber-400 text-slate-950 font-black text-xs px-2.5 py-0.5 rounded-full shadow-sm">
+                          <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-xs px-2.5 py-0.5 rounded-full shadow-md shadow-red-500/40 border border-red-400/40 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
                             {leads.length} Pending
                           </span>
                         )}

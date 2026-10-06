@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -40,6 +40,10 @@ import {
   Loader2,
   MapPin,
   PlusCircle,
+  Inbox,
+  Sparkles,
+  Check,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function Navbar({ showNotificationCenter = true } = {}) {
@@ -93,10 +97,19 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   const [threads, setThreads] = useState([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
+  // Incoming Assigned Leads State & Notification Bar
+  const [assignedInboxCount, setAssignedInboxCount] = useState(0);
+  const [assignedLeads, setAssignedLeads] = useState([]);
+  const [showAssignedLeadsPopup, setShowAssignedLeadsPopup] = useState(false);
+  const [showBigNotification, setShowBigNotification] = useState(false);
+  const [incomingLeadAlert, setIncomingLeadAlert] = useState(null);
+  const [isQuickAccepting, setIsQuickAccepting] = useState(false);
+
   // Refs for click-outside detection
   const userDropdownRef = useRef(null);
   const notificationsRef = useRef(null);
   const messagesRef = useRef(null);
+  const assignedLeadsRef = useRef(null);
 
   // 1. Initial Local State & Server-Verified Identity Sync
   useEffect(() => {
@@ -308,6 +321,12 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       if (messagesRef.current && !messagesRef.current.contains(e.target)) {
         setShowMessages(false);
       }
+      if (
+        assignedLeadsRef.current &&
+        !assignedLeadsRef.current.contains(e.target)
+      ) {
+        setShowAssignedLeadsPopup(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -318,6 +337,155 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   useEffect(() => {
     setShowMobileMenu(false);
   }, [pathname]);
+
+  // 2.5 Real-time Incoming Assigned Leads & Big Notification Bar Detection
+  const playLeadAssignedChime = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      // Note 1 (D5 - 587.33Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(587.33, now);
+      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Note 2 (A5 - 880Hz bell chime)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(880, now + 0.12);
+      gain2.gain.setValueAtTime(0.2, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.6);
+    } catch {
+      // Audio autoplay restrictions or unsupported
+    }
+  }, []);
+
+  const fetchAssignedLeads = useCallback(async (isInitial = false) => {
+    try {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("token") || localStorage.getItem("auth_token")
+          : null;
+      if (!token) return;
+
+      const res = await api.get(
+        "/leads?acceptanceStatus=PENDING&limit=10&sortBy=createdAt&sortOrder=desc",
+        { silent: true }
+      );
+      const raw = res?.data;
+      const list = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
+      const total =
+        raw?.pagination?.totalRecords !== undefined
+          ? raw.pagination.totalRecords
+          : list.length;
+
+      setAssignedInboxCount(total);
+      setAssignedLeads(list);
+
+      // Synchronize badge with sidebar
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("refresh-inbox-count", { detail: { count: total } })
+        );
+      }
+
+      if (list.length > 0) {
+        const latest = list[0];
+        const lastNotifiedId =
+          typeof window !== "undefined"
+            ? sessionStorage.getItem("crm_last_notified_lead_id")
+            : null;
+
+        // If a new lead is assigned that hasn't been acknowledged in this session
+        if (latest._id && latest._id !== lastNotifiedId) {
+          setIncomingLeadAlert(latest);
+          setShowBigNotification(true);
+          if (!isInitial) {
+            playLeadAssignedChime();
+          }
+        }
+      } else {
+        setShowBigNotification(false);
+        setIncomingLeadAlert(null);
+      }
+    } catch {
+      // Fail silently
+    }
+  }, [playLeadAssignedChime]);
+
+  useEffect(() => {
+    fetchAssignedLeads(true);
+
+    // Poll every 10 seconds for real-time lead assignments
+    const interval = setInterval(() => {
+      fetchAssignedLeads(false);
+    }, 10000);
+
+    const handleLeadAssignedEvent = (e) => {
+      if (e?.detail?.lead) {
+        setIncomingLeadAlert(e.detail.lead);
+        setShowBigNotification(true);
+        playLeadAssignedChime();
+      }
+      fetchAssignedLeads(false);
+    };
+
+    const handleRefreshCount = (e) => {
+      if (e?.detail?.count !== undefined) {
+        setAssignedInboxCount(Number(e.detail.count) || 0);
+      } else {
+        fetchAssignedLeads(false);
+      }
+    };
+
+    window.addEventListener("lead-assigned", handleLeadAssignedEvent);
+    window.addEventListener("refresh-inbox-count", handleRefreshCount);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("lead-assigned", handleLeadAssignedEvent);
+      window.removeEventListener("refresh-inbox-count", handleRefreshCount);
+    };
+  }, [fetchAssignedLeads, playLeadAssignedChime]);
+
+  const handleQuickAccept = async () => {
+    if (!incomingLeadAlert || isQuickAccepting) return;
+    setIsQuickAccepting(true);
+    try {
+      await api.post(`/leads/${incomingLeadAlert._id}/accept`, {});
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
+      }
+      setShowBigNotification(false);
+      await fetchAssignedLeads(false);
+      router.push(`/dashboard/leads/${incomingLeadAlert._id}`);
+    } catch (err) {
+      console.error("Failed to accept lead:", err);
+    } finally {
+      setIsQuickAccepting(false);
+    }
+  };
+
+  const handleDismissBigNotification = () => {
+    if (incomingLeadAlert && typeof window !== "undefined") {
+      sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
+    }
+    setShowBigNotification(false);
+  };
 
   // 3. Live Search Debounce
   useEffect(() => {
@@ -767,6 +935,118 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           <div className="flex items-center gap-0.5 sm:gap-1.5 md:gap-2 text-slate-500">
+            {/* Red Message Popup & Button in the Top Right Corner for Incoming Assigned Leads */}
+            {assignedInboxCount > 0 && (
+              <div className="relative" ref={assignedLeadsRef}>
+                <button
+                  onClick={() => {
+                    setShowAssignedLeadsPopup((prev) => !prev);
+                    setShowUserDropdown(false);
+                    setShowNotifications(false);
+                    setShowMessages(false);
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-xs shadow-md shadow-red-500/30 hover:shadow-red-500/50 transition-all cursor-pointer border border-red-400/50 animate-pulse focus:outline-none"
+                  title={`${assignedInboxCount} incoming lead${assignedInboxCount > 1 ? "s" : ""} assigned to you`}
+                  aria-label="Assigned Leads Notifications"
+                >
+                  <Inbox className="w-4 h-4 text-white shrink-0" />
+                  <span className="hidden sm:inline">
+                    {assignedInboxCount} {assignedInboxCount === 1 ? "Lead" : "Leads"} Assigned
+                  </span>
+                  <span className="sm:hidden font-black">{assignedInboxCount}</span>
+                  <span className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
+                </button>
+
+                {/* Red Message Popup Dropdown in Top Right Corner */}
+                {showAssignedLeadsPopup && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-scale-up">
+                    {/* Red Header */}
+                    <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 p-3.5 text-white flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                          <Inbox className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold leading-tight flex items-center gap-1.5">
+                            <span>Assigned Leads Inbox</span>
+                            <span className="bg-white text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                              {assignedInboxCount} NEW
+                            </span>
+                          </h4>
+                          <p className="text-[10px] text-red-100 font-medium">
+                            Incoming leads waiting for your review &amp; acceptance
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowAssignedLeadsPopup(false)}
+                        className="text-red-200 hover:text-white p-1 rounded-lg hover:bg-white/10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Lead List Preview */}
+                    <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 p-1">
+                      {assignedLeads.length > 0 ? (
+                        assignedLeads.slice(0, 5).map((ld) => (
+                          <div
+                            key={ld._id}
+                            className="p-2.5 hover:bg-red-50/50 rounded-xl transition-colors space-y-1"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="font-bold text-xs text-slate-900 block truncate">
+                                  {ld.businessName || ld.contactName || "New Lead"}
+                                </span>
+                                <span className="text-[11px] text-slate-500 block truncate">
+                                  {ld.contactName && ld.businessName ? `${ld.contactName} • ` : ""}{ld.phone || ld.email || "No phone"}
+                                </span>
+                              </div>
+                              <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                                PENDING
+                              </span>
+                            </div>
+                            {ld.requirement && (
+                              <p className="text-[11px] text-slate-600 font-medium line-clamp-1 bg-slate-50 px-2 py-0.5 rounded-md">
+                                {ld.requirement}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                              <span>{ld.source === "DATA_OPERATOR" ? "From Data Operator" : "Assigned Lead"}</span>
+                              <Link
+                                href="/dashboard/leads/inbox"
+                                onClick={() => setShowAssignedLeadsPopup(false)}
+                                className="text-red-600 hover:text-red-700 font-bold flex items-center gap-0.5"
+                              >
+                                Accept in Inbox →
+                              </Link>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-500 font-medium">
+                          No pending assigned leads.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer Link to Inbox */}
+                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <Link
+                        href="/dashboard/leads/inbox"
+                        onClick={() => setShowAssignedLeadsPopup(false)}
+                        className="w-full text-center py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>Open Lead Inbox ({assignedInboxCount})</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* WhatsApp / Messaging Shortcut */}
             <button
               onClick={() => router.push("/dashboard/whatsapp")}
@@ -796,7 +1076,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                   aria-label="Notification Center"
                 >
                   <Bell className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
-                  {unreadNotificationCount > 0 && (
+                  {(unreadNotificationCount > 0 || assignedInboxCount > 0) && (
                     <span className="absolute top-1 right-1 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
                   )}
                 </button>
@@ -1088,6 +1368,76 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           </div>
         </div>
       </header>
+
+      {/* Big Notification Bar for Incoming Assigned Lead in Top Nav Bar */}
+      {showBigNotification && incomingLeadAlert && (
+        <div className="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-xl border-b-2 border-red-400/80 px-3 sm:px-6 py-2.5 sm:py-3 transition-all animate-slide-down sticky top-14 sm:top-16 z-29">
+          <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+            {/* Left: Big Icon + Beacon + Lead Details */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0 shadow-inner">
+                <Inbox className="w-5 h-5 text-white animate-bounce" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping shrink-0" />
+                    NEW LEAD ASSIGNED TO YOU
+                  </span>
+                  <span className="text-xs text-red-100 font-semibold hidden xs:inline">
+                    • Action Required: Review &amp; Accept
+                  </span>
+                  {assignedInboxCount > 1 && (
+                    <span className="bg-red-950/40 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-300/30">
+                      {assignedInboxCount} total waiting in Inbox
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm sm:text-base font-extrabold tracking-tight text-white mt-0.5 truncate">
+                  {incomingLeadAlert.businessName || incomingLeadAlert.contactName || "New Assigned Lead"}
+                  {incomingLeadAlert.contactName && incomingLeadAlert.businessName
+                    ? ` (${incomingLeadAlert.contactName})`
+                    : ""}
+                  {incomingLeadAlert.phone ? ` • ${incomingLeadAlert.phone}` : ""}
+                </h4>
+                {incomingLeadAlert.requirement && (
+                  <p className="text-xs text-red-100/90 font-medium truncate max-w-2xl hidden sm:block">
+                    Requirement: {incomingLeadAlert.requirement}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <Link
+                href="/dashboard/leads/inbox"
+                onClick={() => setShowBigNotification(false)}
+                className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-red-50 text-red-700 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.02]"
+              >
+                <span>Review in Lead Inbox ({assignedInboxCount})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <button
+                onClick={handleQuickAccept}
+                disabled={isQuickAccepting}
+                className="px-3 py-1.5 sm:py-2 rounded-xl bg-red-950/40 hover:bg-red-950/60 border border-white/30 text-white font-bold text-xs transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                title="Quick Accept Lead"
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-300" />
+                <span>{isQuickAccepting ? "Accepting..." : "Quick Accept"}</span>
+              </button>
+              <button
+                onClick={handleDismissBigNotification}
+                className="p-1.5 rounded-lg text-red-200 hover:text-white hover:bg-white/10 transition-colors ml-1 cursor-pointer"
+                title="Dismiss Notification Bar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Search Modal (Ctrl+K / Cmd+K) */}
       {showSearchModal && (

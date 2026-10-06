@@ -189,6 +189,7 @@ export default function SalesDashboardPage() {
   const [payments, setPayments] = useState([]);
   const [designProjects, setDesignProjects] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [pendingInboxCount, setPendingInboxCount] = useState(0);
   const [targetProgress, setTargetProgress] = useState(null);
   const [topPerformers, setTopPerformers] = useState([]);
 
@@ -261,6 +262,7 @@ export default function SalesDashboardPage() {
         targetRes,
         approvalsRes,
         leaderRes,
+        inboxRes,
       ] = await Promise.allSettled([
         api.get("/leads?limit=200"),
         api.get("/followups?limit=200"),
@@ -273,6 +275,7 @@ export default function SalesDashboardPage() {
         ),
         api.get("/discount-approvals?status=PENDING&limit=50"),
         api.get(`/targets/leaderboard?timeframe=${tfParam}`),
+        api.get("/leads?acceptanceStatus=PENDING&limit=50"),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
@@ -324,6 +327,16 @@ export default function SalesDashboardPage() {
           : approvalsRes.value.data?.items || [];
         setPendingApprovals(rawApprovals);
       }
+      if (inboxRes.status === "fulfilled" && inboxRes.value?.data) {
+        const rawInbox = inboxRes.value.data;
+        const count =
+          rawInbox?.pagination?.totalRecords !== undefined
+            ? rawInbox.pagination.totalRecords
+            : Array.isArray(rawInbox)
+            ? rawInbox.length
+            : rawInbox?.leads?.length || 0;
+        setPendingInboxCount(count);
+      }
       if (leaderRes.status === "fulfilled" && leaderRes.value?.data) {
         const rawLeader = leaderRes.value.data;
         const list = Array.isArray(rawLeader)
@@ -373,10 +386,23 @@ export default function SalesDashboardPage() {
     };
     window.addEventListener("crm:avatar-updated", handleAvatarSync);
 
+    const handleCountSync = (e) => {
+      if (e?.detail?.count !== undefined) {
+        setPendingInboxCount(Number(e.detail.count) || 0);
+      } else {
+        loadSalesData();
+      }
+    };
+    window.addEventListener("refresh-inbox-count", handleCountSync);
+    window.addEventListener("lead-assigned", handleCountSync);
+
     loadSalesData();
 
-    return () =>
+    return () => {
       window.removeEventListener("crm:avatar-updated", handleAvatarSync);
+      window.removeEventListener("refresh-inbox-count", handleCountSync);
+      window.removeEventListener("lead-assigned", handleCountSync);
+    };
   }, [loadSalesData]);
 
   // Timeframe date bounds
@@ -906,10 +932,39 @@ export default function SalesDashboardPage() {
                 href="/dashboard/leads"
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
               >
-                <Plus className="w-3.5 h-3.5" />+ Add Lead
+                <Plus className="w-3.5 h-3.5" />Add Lead
               </Link>
             </div>
           </div>
+
+          {/* Incoming Assigned Leads Alert Banner in Sales Dashboard */}
+          {pendingInboxCount > 0 && (
+            <div className="bg-gradient-to-r from-red-600/10 via-rose-600/5 to-white border border-red-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white flex items-center justify-center shrink-0 font-bold shadow-md shadow-red-500/30">
+                  <Inbox className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-red-950 flex items-center gap-2">
+                    <span>You have {pendingInboxCount} incoming lead{pendingInboxCount > 1 ? "s" : ""} assigned in your Lead Inbox!</span>
+                    <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                      ACTION REQUIRED
+                    </span>
+                  </h4>
+                  <p className="text-xs text-red-800 font-medium">
+                    Assigned to you. Review details and accept them to transfer into your active pipeline.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/dashboard/leads/inbox"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md shadow-red-500/25 transition-all shrink-0 cursor-pointer"
+              >
+                <span>Review &amp; Accept in Inbox</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
 
           {/* ROW 1: 5 Top Sparkline KPI Cards with Live Data */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">

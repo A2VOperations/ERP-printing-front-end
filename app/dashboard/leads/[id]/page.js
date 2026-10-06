@@ -349,9 +349,14 @@ export default function LeadDetailPage() {
     try {
       setActionLoading(true);
       await api.patch(`/leads/${lead._id}/assign`, {
+        assignedToId: reassignTargetId || null,
         targetUserId: reassignTargetId || null,
         notes: reassignNotes,
       });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("lead-assigned", { detail: { lead, targetUserId: reassignTargetId } }));
+        window.dispatchEvent(new Event("refresh-inbox-count"));
+      }
       setShowReassignModal(false);
       setReassignTargetId("");
       setReassignNotes("");

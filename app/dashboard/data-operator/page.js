@@ -1603,6 +1603,24 @@ export default function DataOperatorPage() {
         photoUrl: finalPhotoUrl,
       });
 
+      if (typeof window !== "undefined" && formData.assignedToId) {
+        window.dispatchEvent(
+          new CustomEvent("lead-assigned", {
+            detail: {
+              lead: createdLead?.data || {
+                businessName: formData.businessName.trim(),
+                contactName: formData.ownerName.trim(),
+                phone: cleanPhone,
+                requirement: formData.category,
+                areaName: formData.area,
+              },
+              targetUserId: formData.assignedToId,
+            },
+          })
+        );
+        window.dispatchEvent(new Event("refresh-inbox-count"));
+      }
+
       const remainingQueue = photosQueue.filter(
         (_, idx) => idx !== currentIndex,
       );

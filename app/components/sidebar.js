@@ -117,14 +117,22 @@ export default function Sidebar() {
     };
 
     fetchPendingInbox();
-    const interval = setInterval(fetchPendingInbox, 25000);
-    const handleRefresh = () => fetchPendingInbox();
+    const interval = setInterval(fetchPendingInbox, 12000);
+    const handleRefresh = (e) => {
+      if (e?.detail?.count !== undefined) {
+        setInboxCount(Number(e.detail.count) || 0);
+      } else {
+        fetchPendingInbox();
+      }
+    };
     window.addEventListener("refresh-inbox-count", handleRefresh);
+    window.addEventListener("lead-assigned", handleRefresh);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
       window.removeEventListener("refresh-inbox-count", handleRefresh);
+      window.removeEventListener("lead-assigned", handleRefresh);
     };
   }, []);
 
@@ -724,19 +732,33 @@ export default function Sidebar() {
                     )}
 
                     {!collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
-                      <span className="ml-auto bg-amber-400 text-slate-950 font-bold text-[11px] px-2 py-0.5 rounded-full shadow-sm animate-pulse">
-                        {inboxCount}
+                      <span
+                        className="ml-auto inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
+                        title={`${inboxCount} lead${inboxCount > 1 ? "s" : ""} assigned to you`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                        <span>{inboxCount}</span>
                       </span>
                     )}
 
                     {collapsed && item.href === "/dashboard/leads/inbox" && inboxCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full animate-ping" />
+                      <>
+                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full animate-ping ring-2 ring-white" />
+                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-600 rounded-full ring-2 ring-slate-900 flex items-center justify-center text-[8px] font-black text-white">
+                          {inboxCount > 9 ? "9+" : inboxCount}
+                        </span>
+                      </>
                     )}
 
                     {/* Floating Tooltip in Collapsed Mode */}
                     {collapsed && (
-                      <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg shadow-xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
-                        {item.name} {inboxCount > 0 && item.href === "/dashboard/leads/inbox" ? `(${inboxCount} new)` : ""}
+                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 flex items-center gap-2">
+                        <span>{item.name}</span>
+                        {inboxCount > 0 && item.href === "/dashboard/leads/inbox" && (
+                          <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-xs">
+                            {inboxCount} assigned
+                          </span>
+                        )}
                       </div>
                     )}
                   </Link>
