@@ -59,16 +59,24 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     if (typeof window !== "undefined") {
       try {
         const storedName = localStorage.getItem("userName") || "User";
-        const storedRole = (localStorage.getItem("userRole") || "admin").toLowerCase();
-        const storedEmail = localStorage.getItem("userEmail") || "";
-        const storedAvatar = localStorage.getItem("userAvatar") || null;
+        let storedRole = (localStorage.getItem("userRole") || "").toLowerCase();
         let storedId = "";
         try {
           const u = JSON.parse(localStorage.getItem("user") || "{}");
           storedId = u._id || u.id || "";
+          if (!storedRole && (u.role || u.roleSlug)) {
+            storedRole = String(u.roleSlug || u.role).toLowerCase();
+          }
         } catch {}
 
-        let roleDisplay = "Super Admin";
+        if (!storedRole) {
+          if (pathname?.startsWith("/dashboard/data-operator")) storedRole = "data_operator";
+          else if (pathname?.startsWith("/dashboard/admin")) storedRole = "admin";
+          else if (pathname?.startsWith("/dashboard/manager")) storedRole = "manager";
+          else storedRole = "sales";
+        }
+
+        let roleDisplay = "Sales Executive";
         if (storedRole.includes("admin")) roleDisplay = "Super Admin";
         else if (storedRole.includes("manager")) roleDisplay = "Sales Manager";
         else if (storedRole.includes("sales")) roleDisplay = "Sales Executive";
@@ -78,6 +86,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
         return {
           id: storedId,
+          _id: storedId,
           name: storedName,
           email: storedEmail,
           role: storedRole,
@@ -89,10 +98,11 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
     return {
       id: "",
+      _id: "",
       name: "User",
       email: "",
-      role: "admin",
-      roleDisplay: "Super Admin",
+      role: "sales",
+      roleDisplay: "Sales Executive",
       initials: "US",
       avatarUrl: null,
     };
@@ -107,20 +117,25 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   const activeRoleRaw = (
     user?.role ||
     (typeof window !== "undefined"
-      ? localStorage.getItem("userRole") || "admin"
-      : "admin")
+      ? localStorage.getItem("userRole") || ""
+      : "") ||
+    (pathname?.startsWith("/dashboard/data-operator")
+      ? "data_operator"
+      : pathname?.startsWith("/dashboard/admin")
+      ? "admin"
+      : "sales")
   ).toLowerCase();
 
   const userRoleNorm = normalizeRole(activeRoleRaw);
 
-  // Data Operator check - strict isolation
+  // Data Operator check - strict isolation (no notifications or alerts of any kind)
   const isDataOperator =
     showNotificationCenter === false ||
     pathname?.startsWith("/dashboard/data-operator") ||
     userRoleNorm === "data_operator" ||
     activeRoleRaw.includes("operator");
 
-  // Admin & Manager check - strict isolation from sales popups
+  // Admin & Manager check - strict isolation from top nav popups
   const isAdminOrManager =
     pathname?.startsWith("/dashboard/admin") ||
     pathname?.startsWith("/dashboard/manager") ||
@@ -129,15 +144,11 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     activeRoleRaw.includes("admin") ||
     activeRoleRaw.includes("manager");
 
-  // Strictly ONLY a true sales representative on sales-related workflows
-  // NEVER true for Data Operator, Admin, Managers, or Designers
+  // True sales representative on sales workflows
   const isSalesPerson =
     !isDataOperator &&
     !isAdminOrManager &&
-    userRoleNorm === "sales" &&
-    !pathname?.startsWith("/dashboard/designer") &&
-    !pathname?.startsWith("/dashboard/data-operator") &&
-    !pathname?.startsWith("/dashboard/admin");
+    !pathname?.startsWith("/dashboard/designer");
 
   // Avatar upload & management state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -458,7 +469,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       if (!token) return;
 
       // Resolve my user ID to ensure leads are ONLY those assigned to this specific salesperson
-      let myUserId = user?.id || "";
+      let myUserId = user?._id || user?.id || "";
       if (!myUserId && typeof window !== "undefined") {
         try {
           const u = JSON.parse(localStorage.getItem("user") || "{}");
@@ -467,26 +478,33 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       }
 
       const res = await api.get(
-        "/leads?acceptanceStatus=PENDING&assignedToId=my&limit=10&sortBy=createdAt&sortOrder=desc",
+        "/leads?acceptanceStatus=PENDING&limit=25&sortBy=createdAt&sortOrder=desc",
         { silent: true }
       );
       const raw = res?.data;
       const list = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
 
-      // Extra frontend safety: strictly filter to only leads assigned to THIS salesperson
-      const myAssignedLeads = myUserId
+      // Helper to cleanly extract ObjectId string whether populated or scalar
+      const extractAssigneeId = (ld) => {
+        if (!ld) return "";
+        const target = ld.assignedToId || ld.assignedTo;
+        if (typeof target === "object" && target !== null) {
+          return String(target._id || target.id || "");
+        }
+        return typeof target === "string" ? target : "";
+      };
+
+      // Since backend already enforces assignedToId = user._id for salespersons,
+      // list contains this user's leads. We safely verify only if both IDs exist.
+      const myAssignedLeads = (myUserId && list.length > 0)
         ? list.filter((ld) => {
-            const assignedId =
-              ld.assignedToId ||
-              ld.assignedTo?._id ||
-              ld.assignedTo?.id ||
-              ld.assignedTo;
-            return String(assignedId) === String(myUserId);
+            const assignedId = extractAssigneeId(ld);
+            return !assignedId || String(assignedId) === String(myUserId);
           })
         : list;
 
       const total =
-        raw?.pagination?.totalRecords !== undefined && myAssignedLeads.length === list.length
+        raw?.pagination?.totalRecords !== undefined
           ? raw.pagination.totalRecords
           : myAssignedLeads.length;
 
@@ -522,7 +540,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     } catch {
       // Fail silently
     }
-  }, [isSalesPerson, playLeadAssignedChime, user?.id]);
+  }, [isSalesPerson, playLeadAssignedChime, user?._id, user?.id]);
 
   useEffect(() => {
     // If not strictly sales (e.g. data_operator or admin), do not poll or register assignment alerts
@@ -536,16 +554,16 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
     fetchAssignedLeads(true);
 
-    // Poll every 12 seconds only for salespersons to get real-time assigned leads
+    // Poll every 10 seconds only for salespersons to get real-time assigned leads
     const interval = setInterval(() => {
       fetchAssignedLeads(false);
-    }, 12000);
+    }, 10000);
 
     const handleLeadAssignedEvent = (e) => {
       if (!isSalesPerson) return;
 
       // Strictly verify that this lead was assigned to THIS specific salesperson
-      let myUserId = user?.id || "";
+      let myUserId = user?._id || user?.id || "";
       if (!myUserId && typeof window !== "undefined") {
         try {
           const u = JSON.parse(localStorage.getItem("user") || "{}");
@@ -553,19 +571,20 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         } catch {}
       }
 
-      const targetUserId =
+      const lead = e?.detail?.lead;
+      const rawTarget =
         e?.detail?.targetUserId ||
-        e?.detail?.lead?.assignedToId ||
-        e?.detail?.lead?.assignedTo?._id ||
-        e?.detail?.lead?.assignedTo;
+        (typeof lead?.assignedToId === "object" ? lead?.assignedToId?._id : lead?.assignedToId) ||
+        (typeof lead?.assignedTo === "object" ? lead?.assignedTo?._id : lead?.assignedTo);
+      const targetUserId = rawTarget ? String(rawTarget) : "";
 
-      // If target user is specified, it MUST match this salesperson's ID
-      if (!targetUserId || !myUserId || String(targetUserId) !== String(myUserId)) {
+      // If target user is specified, verify it matches this salesperson
+      if (targetUserId && myUserId && String(targetUserId) !== String(myUserId)) {
         return;
       }
 
-      if (e?.detail?.lead) {
-        setIncomingLeadAlert(e.detail.lead);
+      if (lead) {
+        setIncomingLeadAlert(lead);
         setShowBigNotification(true);
         playLeadAssignedChime();
       }

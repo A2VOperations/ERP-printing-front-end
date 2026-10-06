@@ -46,11 +46,25 @@ export default function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [inboxCount, setInboxCount] = useState(0);
-  const [userRole, setUserRole] = useState(() =>
-    typeof window !== "undefined"
-      ? (localStorage.getItem("userRole") || "admin").toLowerCase()
-      : "admin"
-  );
+  const [userRole, setUserRole] = useState(() => {
+    if (typeof window !== "undefined") {
+      let r = localStorage.getItem("userRole");
+      if (!r) {
+        try {
+          const u = JSON.parse(localStorage.getItem("user") || "{}");
+          r = u.roleSlug || u.role || "";
+        } catch {}
+      }
+      if (!r) {
+        if (pathname?.startsWith("/dashboard/data-operator")) r = "data_operator";
+        else if (pathname?.startsWith("/dashboard/admin")) r = "admin";
+        else if (pathname?.startsWith("/dashboard/manager")) r = "manager";
+        else r = "sales";
+      }
+      return r.toLowerCase();
+    }
+    return "sales";
+  });
   const isDataOperator =
     pathname?.startsWith("/dashboard/data-operator") ||
     normalizeRole(userRole) === "data_operator" ||
@@ -68,7 +82,6 @@ export default function Sidebar() {
   const isSalesPerson =
     !isDataOperator &&
     !isAdminOrManager &&
-    normalizeRole(userRole) === "sales" &&
     !pathname?.startsWith("/dashboard/designer");
 
   const [currentUser] = useState(() => {
@@ -136,15 +149,17 @@ export default function Sidebar() {
           return;
         }
 
-        const res = await api.get("/leads?acceptanceStatus=PENDING&assignedToId=my&limit=1");
+        const res = await api.get("/leads?acceptanceStatus=PENDING&limit=1");
         if (isMounted && res?.data?.pagination) {
           setInboxCount(res.data.pagination.totalRecords || 0);
+        } else if (isMounted && Array.isArray(res?.data)) {
+          setInboxCount(res.data.length);
         }
       } catch (e) {}
     };
 
     fetchPendingInbox();
-    const interval = setInterval(fetchPendingInbox, 12000);
+    const interval = setInterval(fetchPendingInbox, 10000);
     const handleRefresh = (e) => {
       if (!isSalesPerson) {
         setInboxCount(0);
