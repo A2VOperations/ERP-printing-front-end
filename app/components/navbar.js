@@ -1084,117 +1084,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           <div className="flex items-center gap-0.5 sm:gap-1.5 md:gap-2 text-slate-500">
-            {/* Red Message Popup & Button in the Top Right Corner for Incoming Assigned Leads (Sales Only) */}
-            {isSalesPerson && assignedInboxCount > 0 && (
-              <div className="relative" ref={assignedLeadsRef}>
-                <button
-                  onClick={() => {
-                    setShowAssignedLeadsPopup((prev) => !prev);
-                    setShowUserDropdown(false);
-                    setShowNotifications(false);
-                    setShowMessages(false);
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-xs shadow-md shadow-red-500/30 hover:shadow-red-500/50 transition-all cursor-pointer border border-red-400/50 animate-pulse focus:outline-none"
-                  title={`${assignedInboxCount} incoming lead${assignedInboxCount > 1 ? "s" : ""} assigned to you`}
-                  aria-label="Assigned Leads Notifications"
-                >
-                  <Inbox className="w-4 h-4 text-white shrink-0" />
-                  <span className="hidden sm:inline">
-                    {assignedInboxCount} {assignedInboxCount === 1 ? "Lead" : "Leads"} Assigned
-                  </span>
-                  <span className="sm:hidden font-black">{assignedInboxCount}</span>
-                  <span className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
-                </button>
-
-                {/* Red Message Popup Dropdown in Top Right Corner */}
-                {showAssignedLeadsPopup && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden z-50 animate-scale-up">
-                    {/* Red Header */}
-                    <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 p-3.5 text-white flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                          <Inbox className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold leading-tight flex items-center gap-1.5">
-                            <span>Assigned Leads Inbox</span>
-                            <span className="bg-white text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                              {assignedInboxCount} NEW
-                            </span>
-                          </h4>
-                          <p className="text-[10px] text-red-100 font-medium">
-                            Incoming leads waiting for your review &amp; acceptance
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowAssignedLeadsPopup(false)}
-                        className="text-red-200 hover:text-white p-1 rounded-lg hover:bg-white/10"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Lead List Preview */}
-                    <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 p-1">
-                      {assignedLeads.length > 0 ? (
-                        assignedLeads.slice(0, 5).map((ld) => (
-                          <div
-                            key={ld._id}
-                            className="p-2.5 hover:bg-red-50/50 rounded-xl transition-colors space-y-1"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <span className="font-bold text-xs text-slate-900 block truncate">
-                                  {ld.businessName || ld.contactName || "New Lead"}
-                                </span>
-                                <span className="text-[11px] text-slate-500 block truncate">
-                                  {ld.contactName && ld.businessName ? `${ld.contactName} • ` : ""}{ld.phone || ld.email || "No phone"}
-                                </span>
-                              </div>
-                              <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0">
-                                PENDING
-                              </span>
-                            </div>
-                            {ld.requirement && (
-                              <p className="text-[11px] text-slate-600 font-medium line-clamp-1 bg-slate-50 px-2 py-0.5 rounded-md">
-                                {ld.requirement}
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                              <span>{ld.source === "DATA_OPERATOR" ? "From Data Operator" : "Assigned Lead"}</span>
-                              <Link
-                                href="/dashboard/leads/inbox"
-                                onClick={() => setShowAssignedLeadsPopup(false)}
-                                className="text-red-600 hover:text-red-700 font-bold flex items-center gap-0.5"
-                              >
-                                Accept in Inbox →
-                              </Link>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-xs text-slate-500 font-medium">
-                          No pending assigned leads.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Footer Link to Inbox */}
-                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <Link
-                        href="/dashboard/leads/inbox"
-                        onClick={() => setShowAssignedLeadsPopup(false)}
-                        className="w-full text-center py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <span>Open Lead Inbox ({assignedInboxCount})</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* WhatsApp / Messaging Shortcut */}
             <button
@@ -1529,10 +1418,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="bg-white text-red-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full tracking-wider shadow-xs flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping shrink-0" />
-                    NEW LEAD ASSIGNED TO YOU
-                  </span>
                   <span className="text-xs text-red-100 font-semibold hidden xs:inline">
                     • Action Required: Review &amp; Accept
                   </span>
