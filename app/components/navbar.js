@@ -781,11 +781,12 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     };
 
     const handleRefreshCount = (e) => {
-      if (!isSalesPerson) return;
-
-      if (e?.detail?.count !== undefined) {
-        setAssignedInboxCount(Number(e.detail.count) || 0);
-      }
+      setTimeout(() => {
+        if (!isSalesPerson) return;
+        if (e?.detail?.count !== undefined) {
+          setAssignedInboxCount(Number(e.detail.count) || 0);
+        }
+      }, 0);
     };
 
     const handleLeadAcceptedEvent = () => {

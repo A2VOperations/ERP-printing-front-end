@@ -75,7 +75,9 @@ export default function LeadInboxPage() {
 
       // Trigger sidebar badge update
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: list.length } }));
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: list.length } }));
+        }, 0);
       }
     } catch (err) {
       console.error("Failed to load lead inbox:", err);
@@ -98,14 +100,13 @@ export default function LeadInboxPage() {
       await api.post(`/leads/${lead._id}/accept`, {});
       
       // Update local state
-      setLeads((prev) => {
-        const next = prev.filter((item) => item._id !== lead._id);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+      setLeads((prev) => prev.filter((item) => item._id !== lead._id));
+      if (typeof window !== "undefined") {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: Math.max(0, leads.length - 1) } }));
           window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
-        }
-        return next;
-      });
+        }, 0);
+      }
       setAcceptedLead(lead);
 
       showToast(`🎉 "${lead.businessName || lead.contactName || "Lead"}" accepted and transferred to My Leads!`, "success");
@@ -129,14 +130,13 @@ export default function LeadInboxPage() {
         reason: declineModal.reason.trim() || "Declined from Lead Inbox",
       });
 
-      setLeads((prev) => {
-        const next = prev.filter((item) => item._id !== lead._id);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: next.length } }));
+      setLeads((prev) => prev.filter((item) => item._id !== lead._id));
+      if (typeof window !== "undefined") {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: Math.max(0, leads.length - 1) } }));
           window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
-        }
-        return next;
-      });
+        }, 0);
+      }
       setDeclineModal({ show: false, lead: null, reason: "" });
 
       showToast(`Lead declined.`, "info");

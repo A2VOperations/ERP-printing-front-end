@@ -168,13 +168,16 @@ export default function Sidebar() {
     }
 
     const handleRefresh = (e) => {
-      if (!isSalesPerson) {
-        setInboxCount(0);
-        return;
-      }
-      if (e?.detail?.count !== undefined) {
-        setInboxCount(Number(e.detail.count) || 0);
-      }
+      setTimeout(() => {
+        if (!isMounted) return;
+        if (!isSalesPerson) {
+          setInboxCount(0);
+          return;
+        }
+        if (e?.detail?.count !== undefined) {
+          setInboxCount(Number(e.detail.count) || 0);
+        }
+      }, 0);
     };
     window.addEventListener("refresh-inbox-count", handleRefresh);
     window.addEventListener("lead-assigned", handleRefresh);
