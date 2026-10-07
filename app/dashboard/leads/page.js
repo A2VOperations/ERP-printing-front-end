@@ -255,7 +255,10 @@ export default function LeadsDashboardPage() {
 
   // Active Tab & View Mode
   const [activeTab, setActiveTab] = useState("ALL");
-  const [viewMode, setViewMode] = useState("list"); // 'grid' | 'list'
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) return "grid";
+    return "list";
+  }); // 'grid' | 'list'
   const [sortBy, setSortBy] = useState("value_desc"); // 'value_desc' | 'value_asc' | 'date_desc' | 'name_asc'
   const [timeframe, setTimeframe] = useState("This Month");
   const [searchQuery, setSearchQuery] = useState("");
@@ -787,24 +790,24 @@ export default function LeadsDashboardPage() {
   // Requirement pill styling
   const renderRequirementBadge = (reqStr) => {
     if (!reqStr)
-      return <span className="text-slate-500 font-medium">Standard Print</span>;
+      return <span className="text-slate-500 font-medium whitespace-nowrap">Standard Print</span>;
     const lower = reqStr.toLowerCase();
 
     if (lower.includes("flex") || lower.includes("menu")) {
       return (
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">
           {reqStr}
         </span>
       );
     }
     if (lower.includes("brochure")) {
       return (
-        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap">
           {reqStr}
         </span>
       );
     }
-    return <span className="text-slate-700 font-medium">{reqStr}</span>;
+    return <span className="text-slate-700 font-medium whitespace-nowrap">{reqStr}</span>;
   };
 
   // Filtered & Sorted Leads
@@ -1417,15 +1420,15 @@ export default function LeadsDashboardPage() {
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <Navbar />
 
-        <div className="p-6 md:p-8 space-y-6 max-w-[1600px] mx-auto w-full">
+        <div className="p-3.5 sm:p-5 md:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto w-full">
           {/* Header & Main Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                   Leads Dashboard
                 </h1>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   {computedMetrics.conversionRate}% Won Today
                 </span>
@@ -1436,21 +1439,21 @@ export default function LeadsDashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto">
               <button
                 onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
+                className="flex-1 sm:flex-initial justify-center flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5 text-slate-500" />
-                Import Leads
+                <span>Import Leads</span>
               </button>
 
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all cursor-pointer"
+                className="flex-1 sm:flex-initial justify-center flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold shadow-sm shadow-indigo-600/25 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                Add Lead
+                <span>Add Lead</span>
               </button>
             </div>
           </div>
@@ -1495,117 +1498,116 @@ export default function LeadsDashboardPage() {
             )}
 
           {/* 6 Top Metric Cards with Accent Lines */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
             {/* 1. Total Leads */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-sky-400 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-sky-400 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   Total Leads
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-                  <User className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <User className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900">
                 {computedMetrics.total}
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
-                <Clock className="w-3 h-3 text-slate-400" />
-                <span>{overviewMetrics.new} new this month</span>
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">
+                <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                <span className="truncate">{overviewMetrics.new} new this month</span>
               </div>
             </div>
 
             {/* 2. Hot Leads */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-rose-500 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-rose-500 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   Hot Leads
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center">
-                  <Flame className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                  <Flame className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900">
                 {computedMetrics.hotCount}
               </div>
-              <div className="text-[11px] font-bold text-rose-600">
+              <div className="text-[10px] sm:text-[11px] font-bold text-rose-600 truncate">
                 {computedMetrics.total > 0
-                  ? `${Math.round((computedMetrics.hotCount / computedMetrics.total) * 100)}% of pipeline`
-                  : "0% of pipeline"}
+                  ? `${Math.round((computedMetrics.hotCount / computedMetrics.total) * 100)}% pipeline`
+                  : "0% pipeline"}
               </div>
             </div>
 
             {/* 3. In Cooking */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-amber-400 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-amber-400 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   In Cooking
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
-                  <Hourglass className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
+                  <Hourglass className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900">
                 {computedMetrics.inCooking}
               </div>
-              <div className="text-[11px] font-medium text-slate-500">
+              <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">
                 Active discussions
               </div>
             </div>
 
             {/* 4. High Ticket */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-purple-500 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-purple-500 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   High Ticket
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <Star className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Star className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900">
                 {computedMetrics.highTicketCount}
               </div>
-              <div className="text-[11px] font-bold text-purple-600">
-                ₹{computedMetrics.highTicketTotalVal.toLocaleString("en-IN")}{" "}
-                pipeline
+              <div className="text-[10px] sm:text-[11px] font-bold text-purple-600 truncate">
+                ₹{computedMetrics.highTicketTotalVal.toLocaleString("en-IN")}
               </div>
             </div>
 
             {/* 5. Won Leads */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-emerald-500 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-emerald-500 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   Won Leads
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900">
                 {computedMetrics.won}
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600">
-                <TrendingUp className="w-3 h-3" />
-                <span>{computedMetrics.conversionRate}% conversion</span>
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-600 truncate">
+                <TrendingUp className="w-3 h-3 shrink-0" />
+                <span>{computedMetrics.conversionRate}% won</span>
               </div>
             </div>
 
             {/* 6. Total Value */}
-            <div className="bg-white p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-teal-500 shadow-xs space-y-2">
+            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/90 border-t-4 border-t-teal-500 shadow-xs space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-600">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 truncate">
                   Total Value
                 </span>
-                <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
-                  <IndianRupee className="w-3.5 h-3.5" />
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                  <IndianRupee className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">
                 ₹{computedMetrics.totalExpectedVal.toLocaleString("en-IN")}
               </div>
-              <div className="text-[11px] font-medium text-slate-500">
-                Avg ₹{computedMetrics.avgPerLead.toLocaleString("en-IN")}/lead
+              <div className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">
+                Avg ₹{computedMetrics.avgPerLead.toLocaleString("en-IN")}
               </div>
             </div>
           </div>
@@ -1613,7 +1615,7 @@ export default function LeadsDashboardPage() {
           {/* Filter Pills Bar & View Controls */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
             {/* Left Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 text-xs scrollbar-none -mx-1 px-1">
               {TABS.map((tab) => {
                 const count = computedMetrics[tab.countKey] || 0;
                 const isActive = activeTab === tab.id;
@@ -1623,7 +1625,7 @@ export default function LeadsDashboardPage() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className="px-4 py-1.5 rounded-full font-bold text-xs bg-[#4F46E5] text-white shadow-xs whitespace-nowrap cursor-pointer transition-all"
+                      className="px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs bg-[#4F46E5] text-white shadow-xs whitespace-nowrap cursor-pointer transition-all shrink-0"
                     >
                       {tab.label} {count}
                     </button>
@@ -1634,7 +1636,7 @@ export default function LeadsDashboardPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className="px-3.5 py-1.5 rounded-full font-medium text-xs bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1.5 cursor-pointer transition-all"
+                    className="px-3 sm:px-3.5 py-1.5 rounded-full font-medium text-xs bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90 hover:bg-slate-50 whitespace-nowrap flex items-center gap-1.5 cursor-pointer transition-all shrink-0"
                   >
                     <span className={`w-2 h-2 rounded-full ${tab.dotColor}`} />
                     <span>{tab.label}</span>
@@ -1645,30 +1647,32 @@ export default function LeadsDashboardPage() {
             </div>
 
             {/* Right Controls: Views, Filters, Sort */}
-            <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
+            <div className="flex items-center gap-2 justify-between sm:justify-end w-full lg:w-auto flex-wrap sm:flex-nowrap shrink-0">
               {/* View Switcher */}
               <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-xl shadow-xs">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold ${
                     viewMode === "grid"
                       ? "bg-slate-100 text-indigo-600"
                       : "text-slate-400 hover:text-slate-600"
                   }`}
-                  title="Grid View"
+                  title="Grid / Card View"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="text-[11px] hidden sm:inline">Cards</span>
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold ${
                     viewMode === "list"
                       ? "bg-slate-100 text-indigo-600"
                       : "text-slate-400 hover:text-slate-600"
                   }`}
-                  title="List View"
+                  title="List / Table View"
                 >
                   <List className="w-3.5 h-3.5" />
+                  <span className="text-[11px] hidden sm:inline">Table</span>
                 </button>
               </div>
 
@@ -1715,7 +1719,7 @@ export default function LeadsDashboardPage() {
               {/* Lead Number & Date Filtration Bar */}
               <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 {/* Search / Lead Number Input */}
-                <div className="relative flex-1 min-w-[280px]">
+                <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
@@ -1764,7 +1768,7 @@ export default function LeadsDashboardPage() {
                   </div>
 
                   {/* Quick Date Presets */}
-                  <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-600">
+                  <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-600 overflow-x-auto max-w-full scrollbar-none">
                     {[
                       { id: "ALL", label: "All Dates" },
                       { id: "TODAY", label: "Today" },
@@ -1783,7 +1787,7 @@ export default function LeadsDashboardPage() {
                             setDateFilter("");
                             setDatePreset(p.id === "ALL" ? "" : p.id);
                           }}
-                          className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-xs ${
+                          className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-xs shrink-0 ${
                             isSelected
                               ? "bg-white text-indigo-700 shadow-2xs font-bold"
                               : "text-slate-600 hover:text-slate-900"
@@ -1876,7 +1880,7 @@ export default function LeadsDashboardPage() {
 
               {/* View Rendering: Grid vs List vs Board */}
               {viewMode === "grid" && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
                   {filteredLeads.length > 0 ? (
                     filteredLeads.map((lead) => {
                       const expVal =
@@ -2312,7 +2316,7 @@ export default function LeadsDashboardPage() {
                       );
                     })
                   ) : (
-                    <div className="col-span-2 py-16 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
+                    <div className="col-span-full py-16 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
                       No leads matching current filters.
                     </div>
                   )}
@@ -2322,28 +2326,28 @@ export default function LeadsDashboardPage() {
               {/* List View */}
               {viewMode === "list" && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-xs">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold">
+                  <div className="overflow-x-auto scrollbar-thin">
+                    <table className="w-full text-left text-xs min-w-[1100px]">
+                      <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold whitespace-nowrap">
                         <tr>
-                          <th className="px-3 py-3.5 w-9 text-center"></th>
-                          <th className="px-4 py-3.5 min-w-[240px]">
+                          <th className="px-3 py-3.5 w-9 text-center shrink-0"></th>
+                          <th className="px-4 py-3.5 min-w-[220px] whitespace-nowrap">
                             Lead / Company
                           </th>
-                          <th className="px-3 py-3.5 min-w-[130px]">Contact</th>
-                          <th className="px-3 py-3.5">Source</th>
-                          <th className="px-3 py-3.5 min-w-[150px]">
+                          <th className="px-3 py-3.5 min-w-[130px] whitespace-nowrap">Contact</th>
+                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">Source</th>
+                          <th className="px-3 py-3.5 min-w-[150px] whitespace-nowrap">
                             Requirement
                           </th>
-                          <th className="px-3 py-3.5 min-w-[110px]">
+                          <th className="px-3 py-3.5 min-w-[120px] whitespace-nowrap">
                             Expected Value
                           </th>
-                          <th className="px-3 py-3.5 min-w-[140px]">
+                          <th className="px-3 py-3.5 min-w-[140px] whitespace-nowrap">
                             Next Follow-up
                           </th>
-                          <th className="px-3 py-3.5">Assigned To</th>
-                          <th className="px-3 py-3.5 min-w-[140px]">Status</th>
-                          <th className="px-4 py-3.5 text-right min-w-[180px]">
+                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">Assigned To</th>
+                          <th className="px-3 py-3.5 min-w-[140px] whitespace-nowrap">Status</th>
+                          <th className="px-4 py-3.5 text-right min-w-[170px] whitespace-nowrap">
                             Quick Actions
                           </th>
                         </tr>
@@ -2484,9 +2488,9 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Contact info & Direct Call/WhatsApp */}
-                                <td className="px-3 py-3.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div className="space-y-1">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
                                       <span className="font-mono font-semibold text-slate-800 text-[13px]">
                                         {lead.phone || "-"}
                                       </span>
@@ -2512,9 +2516,9 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Source */}
-                                <td className="px-3 py-3.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
                                   <span
-                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                    className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap ${
                                       (
                                         lead.source || "GOOGLE"
                                       ).toUpperCase() === "REFERRAL"
@@ -2538,11 +2542,11 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Requirement */}
-                                <td className="px-3 py-3.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div>
                                     {renderRequirementBadge(lead.requirement)}
                                     {lead.printingRequirement?.quantity && (
-                                      <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">
+                                      <span className="text-[10px] text-slate-400 block mt-0.5 font-medium whitespace-nowrap">
                                         Qty: {lead.printingRequirement.quantity}{" "}
                                         {lead.printingRequirement.unit || "PCS"}
                                       </span>
@@ -2551,17 +2555,17 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Expected Value */}
-                                <td className="px-3 py-3.5">
-                                  <div className="font-black text-slate-900 text-lg">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
+                                  <div className="font-black text-slate-900 text-base sm:text-lg whitespace-nowrap">
                                     ₹{val.toLocaleString("en-IN")}
                                   </div>
                                 </td>
 
                                 {/* Next Follow-up */}
-                                <td className="px-3 py-3.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
                                   {flwInfo ? (
                                     <div
-                                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${
+                                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border whitespace-nowrap ${
                                         flwInfo.isOverdue
                                           ? "bg-rose-50 text-rose-700 border-rose-200"
                                           : flwInfo.isToday
@@ -2581,7 +2585,7 @@ export default function LeadsDashboardPage() {
                                         setSelectedLead(lead);
                                         setShowFollowupModal(true);
                                       }}
-                                      className="text-indigo-600 hover:text-indigo-800 text-[11px] font-semibold hover:underline cursor-pointer flex items-center gap-1"
+                                      className="text-indigo-600 hover:text-indigo-800 text-[11px] font-semibold hover:underline cursor-pointer flex items-center gap-1 whitespace-nowrap"
                                     >
                                       <Plus className="w-3 h-3" />
                                       <span>Schedule</span>
@@ -2590,8 +2594,8 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Assigned To */}
-                                <td className="px-3 py-3.5">
-                                  <div className="flex items-center gap-1.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
+                                  <div className="flex items-center gap-1.5 whitespace-nowrap">
                                     <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[9px] flex items-center justify-center shrink-0">
                                       {(lead.assignedToId?.name || "Tanya")
                                         .slice(0, 1)
@@ -2604,7 +2608,7 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Interactive Status Selector Pill */}
-                                <td className="px-3 py-3.5">
+                                <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div
                                     className="relative inline-block"
                                     onClick={(e) => e.stopPropagation()}
@@ -2681,8 +2685,8 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Quick Actions Toolbar */}
-                                <td className="px-4 py-3.5 text-right">
-                                  <div className="flex items-center justify-end gap-1">
+                                <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                  <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                     {/* Call Button */}
                                     <button
                                       type="button"
@@ -3166,7 +3170,7 @@ export default function LeadsDashboardPage() {
       {/* CREATE LEAD MODAL */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-lg p-4 sm:p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900">
                 Add New Lead
@@ -3180,7 +3184,7 @@ export default function LeadsDashboardPage() {
             </div>
 
             <form onSubmit={handleCreateLead} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
                     Customer Name *
@@ -3212,7 +3216,7 @@ export default function LeadsDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
                     Phone Number *
@@ -3259,7 +3263,7 @@ export default function LeadsDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
                     Lead Source
@@ -3855,7 +3859,7 @@ export default function LeadsDashboardPage() {
       {/* QUICK EDIT LEAD MODAL */}
       {quickEditLead && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-lg p-4 sm:p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Edit className="w-4 h-4 text-indigo-600" />
@@ -3873,7 +3877,7 @@ export default function LeadsDashboardPage() {
               onSubmit={handleSaveQuickEdit}
               className="space-y-3.5 text-xs"
             >
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
                     Contact Name *
@@ -3909,7 +3913,7 @@ export default function LeadsDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
                     Phone *
