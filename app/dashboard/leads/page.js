@@ -2455,9 +2455,6 @@ export default function LeadsDashboardPage() {
                                     })()}
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
-                                          {lead.leadNumber || `#${lead._id?.slice(-6).toUpperCase()}`}
-                                        </span>
                                         <Link
                                           href={`/dashboard/leads/${lead._id}`}
                                           className="font-bold text-slate-900 hover:text-indigo-600 truncate text-[13px] leading-tight"
@@ -2481,30 +2478,6 @@ export default function LeadsDashboardPage() {
                                             lead.contactName ||
                                             "Owner"}
                                         </span>
-                                        {lead.createdAt && (
-                                          <>
-                                            <span className="text-slate-300">
-                                              •
-                                            </span>
-                                            <span className="text-slate-500 text-[10px] font-medium">
-                                              {new Date(lead.createdAt).toLocaleDateString("en-IN", {
-                                                day: "2-digit",
-                                                month: "short",
-                                                year: "numeric",
-                                              })}
-                                            </span>
-                                          </>
-                                        )}
-                                        {areaText && (
-                                          <>
-                                            <span className="text-slate-300">
-                                              •
-                                            </span>
-                                            <span className="inline-flex items-center gap-0.5  px-1.5 py-0.2 rounded font-mono text-[12px] font-bold">
-                                              {areaText}
-                                            </span>
-                                          </>
-                                        )}
                                       </div>
                                     </div>
                                   </div>

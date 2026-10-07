@@ -1,1 +1,1 @@
-export { default } from '../leadboard/page';
+export { default } from "../leadboard/page";

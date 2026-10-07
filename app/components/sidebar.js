@@ -242,23 +242,6 @@ export default function Sidebar() {
             },
           ],
         },
-        {
-          title: "| REPORTS",
-          items: [
-            {
-              name: "Daily Report",
-              href: "/dashboard/data-operator?view=reports",
-              icon: BarChart3,
-              isOrange: true,
-            },
-            {
-              name: "Export Data",
-              href: "/dashboard/data-operator?view=export",
-              icon: Download,
-              isOrange: true,
-            },
-          ],
-        },
       ];
     }
 
@@ -273,11 +256,6 @@ export default function Sidebar() {
               href: "/dashboard/designer",
               icon: Home,
               exact: true,
-            },
-            {
-              name: "Design Analytics",
-              href: "/dashboard/reports",
-              icon: BarChart3,
             },
           ],
         },
@@ -343,11 +321,6 @@ export default function Sidebar() {
               href: "/dashboard/manager",
               icon: LayoutDashboard,
               exact: true,
-            },
-            {
-              name: "Analytics & Reports",
-              href: "/dashboard/reports",
-              icon: BarChart3,
             },
           ],
         },
@@ -473,11 +446,6 @@ export default function Sidebar() {
               icon: LayoutDashboard,
               exact: true,
             },
-            {
-              name: "Sales Analytics",
-              href: "/dashboard/reports",
-              icon: BarChart3,
-            },
           ],
         },
         {
@@ -535,13 +503,7 @@ export default function Sidebar() {
               icon: Award,
             },
           ],
-        },
-        {
-          title: "OTHER",
-          items: [
-            { name: "Documents", href: "/dashboard/documents", icon: Folder },
-          ],
-        },
+        }
       ];
     }
 
@@ -561,11 +523,6 @@ export default function Sidebar() {
             href: "/dashboard/admin",
             icon: LayoutDashboard,
             exact: true,
-          },
-          {
-            name: "Analytics & Reports",
-            href: "/dashboard/reports",
-            icon: BarChart3,
           },
           {
             name: "Lead Inbox",
@@ -748,6 +705,8 @@ export default function Sidebar() {
                     pathname === "/dashboard/leads" ||
                     (pathname.startsWith("/dashboard/leads/") &&
                       !pathname.startsWith("/dashboard/leads/inbox"));
+                } else if (item.href === "/dashboard/sales") {
+                  isActive = pathname === "/dashboard/sales" || pathname === "/dashboard";
                 } else if (item.exact) {
                   isActive = pathname === item.href;
                 } else {

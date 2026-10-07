@@ -1651,37 +1651,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-              {/* Mute / Unmute Sound Button */}
-              {isAlertSounding ? (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    stopLeadSound();
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-amber-400/25 hover:bg-amber-400/35 border border-amber-300/50 text-amber-100 hover:text-white font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
-                  title="Click to Mute alert sound"
-                >
-                  <Volume2 className="w-3.5 h-3.5 text-amber-300 animate-bounce" />
-                  <span className="hidden sm:inline">Audio Alert (3s loop)</span>
-                  <span className="text-[10px] uppercase font-bold underline ml-0.5">Mute</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    unlockAudioContext();
-                    startLeadSoundLoop();
-                  }}
-                  className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-red-100 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                  title="Click to Unmute alert sound"
-                >
-                  <VolumeX className="w-3.5 h-3.5" />
-                  <span>Unmute</span>
-                </button>
-              )}
-
               <Link
                 href="/dashboard/leads/inbox"
                 onClick={() => {
