@@ -1310,22 +1310,22 @@ export default function LeadDetailPage() {
   const getStatusBadgeStyle = (st) => {
     switch (st) {
       case "NEW":
-        return "bg-orange-50 text-orange-700 border-orange-200";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "CONTACTED":
-        return "bg-indigo-50 text-indigo-700 border-indigo-200";
+        return "bg-yellow-50 text-yellow-800 border-yellow-200";
       case "INTERESTED":
-        return "bg-purple-50 text-purple-700 border-purple-200";
+        return "bg-[#f5ede4] text-[#6d4c33] border-[#d7c4b0]";
       case "QUOTATION_SENT":
-        return "bg-cyan-50 text-cyan-700 border-cyan-200";
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "NEGOTIATION":
-        return "bg-amber-50 text-amber-700 border-amber-200";
+        return "bg-orange-100 text-orange-900 border-orange-300";
       case "WON":
         return "bg-emerald-100 text-emerald-800 border-emerald-300 font-black";
       case "LOST":
       case "NOT_INTERESTED":
         return "bg-rose-50 text-rose-700 border-rose-200";
       default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-blue-50 text-blue-700 border-blue-200";
     }
   };
 

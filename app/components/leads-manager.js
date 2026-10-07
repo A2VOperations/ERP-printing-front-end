@@ -926,22 +926,32 @@ export default function LeadsManager({
       case "Accepted":
         return "bg-sky-500";
       case "New":
-        return "bg-emerald-500";
+        return "bg-blue-500";
       case "Contacted":
       case "In Progress":
-        return "bg-indigo-500";
+        return "bg-yellow-500";
       case "Follow-up":
       case "Follow-up Required":
         return "bg-purple-500";
+      case "QUOTATION_SENT":
+      case "Proposal Sent":
+        return "bg-purple-500";
+      case "NEGOTIATION":
+      case "Negotiation":
+        return "bg-orange-600";
       case "Interested":
+        return "bg-[#8d6748]";
       case "Converted":
-        return "bg-green-500";
+      case "Won":
+        return "bg-emerald-500";
       case "No Answer":
+      case "Lost":
+      case "Deal Lost":
         return "bg-rose-500";
       case "Recycled":
         return "bg-amber-500";
       default:
-        return "bg-slate-400";
+        return "bg-blue-400";
     }
   };
 
@@ -965,25 +975,27 @@ export default function LeadsManager({
         };
       case "New":
         return {
-          topBar: "bg-emerald-500",
-          border: "border-emerald-200/90",
-          cardBg: "bg-gradient-to-b from-emerald-50/40 via-white to-white",
-          glow: "hover:border-emerald-400 hover:shadow-emerald-500/10",
+          topBar: "bg-blue-500",
+          border: "border-blue-200/90",
+          cardBg: "bg-gradient-to-b from-blue-50/40 via-white to-white",
+          glow: "hover:border-blue-400 hover:shadow-blue-500/10",
         };
       case "Contacted":
         return {
-          topBar: "bg-indigo-500",
-          border: "border-indigo-200/90",
-          cardBg: "bg-gradient-to-b from-indigo-50/40 via-white to-white",
-          glow: "hover:border-indigo-400 hover:shadow-indigo-500/10",
+          topBar: "bg-yellow-500",
+          border: "border-yellow-200/90",
+          cardBg: "bg-gradient-to-b from-yellow-50/40 via-white to-white",
+          glow: "hover:border-yellow-400 hover:shadow-yellow-500/10",
         };
       case "In Progress":
         return {
-          topBar: "bg-cyan-500",
-          border: "border-cyan-200/90",
-          cardBg: "bg-gradient-to-b from-cyan-50/40 via-white to-white",
-          glow: "hover:border-cyan-400 hover:shadow-cyan-500/10",
+          topBar: "bg-yellow-500",
+          border: "border-yellow-200/90",
+          cardBg: "bg-gradient-to-b from-yellow-50/40 via-white to-white",
+          glow: "hover:border-yellow-400 hover:shadow-yellow-500/10",
         };
+      case "QUOTATION_SENT":
+      case "Proposal Sent":
       case "Follow-up":
       case "Follow-up Required":
         return {
@@ -992,14 +1004,31 @@ export default function LeadsManager({
           cardBg: "bg-gradient-to-b from-purple-50/40 via-white to-white",
           glow: "hover:border-purple-400 hover:shadow-purple-500/10",
         };
-      case "Interested":
-      case "Converted":
+      case "Negotiation":
+      case "NEGOTIATION":
         return {
-          topBar: "bg-green-500",
-          border: "border-green-200/90",
-          cardBg: "bg-gradient-to-b from-green-50/40 via-white to-white",
-          glow: "hover:border-green-400 hover:shadow-green-500/10",
+          topBar: "bg-orange-600",
+          border: "border-orange-200/90",
+          cardBg: "bg-gradient-to-b from-orange-50/40 via-white to-white",
+          glow: "hover:border-orange-400 hover:shadow-orange-500/10",
         };
+      case "Interested":
+        return {
+          topBar: "bg-[#8d6748]",
+          border: "border-[#d7c4b0]/90",
+          cardBg: "bg-gradient-to-b from-[#f5ede4]/40 via-white to-white",
+          glow: "hover:border-[#b09678] hover:shadow-[#8d6748]/10",
+        };
+      case "Converted":
+      case "Won":
+        return {
+          topBar: "bg-emerald-500",
+          border: "border-emerald-200/90",
+          cardBg: "bg-gradient-to-b from-emerald-50/40 via-white to-white",
+          glow: "hover:border-emerald-400 hover:shadow-emerald-500/10",
+        };
+      case "Lost":
+      case "Deal Lost":
       case "No Answer":
         return {
           topBar: "bg-rose-500",
@@ -1016,18 +1045,18 @@ export default function LeadsManager({
         };
       default:
         return {
-          topBar: "bg-slate-400",
-          border: "border-slate-200",
+          topBar: "bg-blue-400",
+          border: "border-blue-200",
           cardBg: "bg-white",
-          glow: "hover:border-slate-300",
+          glow: "hover:border-blue-400 hover:shadow-blue-500/10",
         };
     }
   };
 
   // Rendering Status Badges with visual status lead indication
   const renderStatusBadge = (status) => {
-    let styles = "bg-slate-100 text-slate-700 border-slate-200/80";
-    let dotColor = "bg-slate-400";
+    let styles = "bg-blue-50 text-blue-700 border-blue-200/80";
+    let dotColor = "bg-blue-500";
     let Icon = Sparkles;
 
     const normalized = (status || "Incoming").trim();
@@ -1042,38 +1071,45 @@ export default function LeadsManager({
         "bg-sky-50 text-sky-700 border-sky-200/70 ring-1 ring-sky-500/10";
       dotColor = "bg-sky-500";
       Icon = CheckCircle2;
-    } else if (normalized === "Contacted") {
+    } else if (normalized === "Contacted" || normalized === "In Progress") {
       styles =
-        "bg-indigo-50 text-indigo-700 border-indigo-200/70 ring-1 ring-indigo-500/10";
-      dotColor = "bg-indigo-500";
-      Icon = Clock;
-    } else if (normalized === "In Progress") {
-      styles =
-        "bg-cyan-50 text-cyan-700 border-cyan-200/70 ring-1 ring-cyan-500/10";
-      dotColor = "bg-cyan-500";
+        "bg-yellow-50 text-yellow-800 border-yellow-200/70 ring-1 ring-yellow-500/10";
+      dotColor = "bg-yellow-500";
       Icon = Clock;
     } else if (normalized === "New") {
       styles =
-        "bg-emerald-50 text-emerald-700 border-emerald-200/70 ring-1 ring-emerald-500/10";
-      dotColor = "bg-emerald-500";
+        "bg-blue-50 text-blue-700 border-blue-200/70 ring-1 ring-blue-500/10";
+      dotColor = "bg-blue-500";
       Icon = Sparkles;
     } else if (
       normalized === "Follow-up Required" ||
-      normalized === "Follow-up"
+      normalized === "Follow-up" ||
+      normalized === "QUOTATION_SENT" ||
+      normalized === "Proposal Sent"
     ) {
       styles =
         "bg-purple-50 text-purple-700 border-purple-200/70 ring-1 ring-purple-500/10";
       dotColor = "bg-purple-500";
       Icon = AlertCircle;
-    } else if (normalized === "Interested" || normalized === "Converted") {
+    } else if (normalized === "Negotiation" || normalized === "NEGOTIATION") {
       styles =
-        "bg-green-50 text-green-700 border-green-200/70 ring-1 ring-green-500/10";
-      dotColor = "bg-green-500";
+        "bg-orange-100 text-orange-900 border-orange-300/80 ring-1 ring-orange-600/10";
+      dotColor = "bg-orange-600";
+      Icon = Clock;
+    } else if (normalized === "Interested") {
+      styles =
+        "bg-[#f5ede4] text-[#6d4c33] border-[#d7c4b0]/70 ring-1 ring-[#8d6748]/10";
+      dotColor = "bg-[#8d6748]";
+      Icon = Sparkles;
+    } else if (normalized === "Converted" || normalized === "Won") {
+      styles =
+        "bg-emerald-50 text-emerald-800 border-emerald-200/70 ring-1 ring-emerald-500/10";
+      dotColor = "bg-emerald-500";
       Icon = CheckCircle2;
-    } else if (normalized === "Not Interested" || normalized === "Closed") {
+    } else if (normalized === "Not Interested" || normalized === "Closed" || normalized === "Lost" || normalized === "Deal Lost") {
       styles =
-        "bg-slate-100 text-slate-600 border-slate-200/70 ring-1 ring-slate-500/10";
-      dotColor = "bg-slate-400";
+        "bg-rose-50 text-rose-700 border-rose-200/70 ring-1 ring-rose-500/10";
+      dotColor = "bg-rose-500";
       Icon = XCircle;
     } else if (normalized === "No Answer") {
       styles =

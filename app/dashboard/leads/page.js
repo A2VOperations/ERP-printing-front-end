@@ -52,24 +52,24 @@ import {
 
 const TABS = [
   { id: "ALL", label: "All Leads", countKey: "total", color: "bg-indigo-600" },
-  { id: "NEW", label: "New", countKey: "new", dotColor: "bg-slate-400" },
+  { id: "NEW", label: "New", countKey: "new", dotColor: "bg-blue-500" },
   {
     id: "CONTACTED",
     label: "Contacted",
     countKey: "contacted",
-    dotColor: "bg-orange-500",
+    dotColor: "bg-yellow-500",
   },
   {
     id: "QUOTATION_SENT",
     label: "Proposal Sent",
     countKey: "proposal",
-    dotColor: "bg-amber-500",
+    dotColor: "bg-purple-500",
   },
   {
     id: "NEGOTIATION",
     label: "Negotiation",
     countKey: "negotiation",
-    dotColor: "bg-purple-500",
+    dotColor: "bg-orange-600",
   },
   { id: "WON", label: "Won", countKey: "won", dotColor: "bg-emerald-500" },
   { id: "LOST", label: "Lost", countKey: "lost", dotColor: "bg-rose-500" },
@@ -79,26 +79,26 @@ const STATUS_OPTIONS = [
   {
     id: "NEW",
     label: "New Lead",
-    bg: "bg-slate-100",
-    text: "text-slate-700",
-    border: "border-slate-200",
-    dot: "bg-slate-400",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+    dot: "bg-blue-500",
   },
   {
     id: "CONTACTED",
     label: "Contacted",
-    bg: "bg-orange-50",
-    text: "text-orange-700",
-    border: "border-orange-200",
-    dot: "bg-orange-500",
+    bg: "bg-yellow-50",
+    text: "text-yellow-800",
+    border: "border-yellow-200",
+    dot: "bg-yellow-500",
   },
   {
     id: "INTERESTED",
     label: "Interested",
-    bg: "bg-amber-50",
-    text: "text-amber-800",
-    border: "border-amber-200",
-    dot: "bg-amber-500",
+    bg: "bg-[#f5ede4]",
+    text: "text-[#6d4c33]",
+    border: "border-[#d7c4b0]",
+    dot: "bg-[#8d6748]",
   },
   {
     id: "QUOTATION_SENT",
@@ -111,10 +111,10 @@ const STATUS_OPTIONS = [
   {
     id: "NEGOTIATION",
     label: "Negotiation",
-    bg: "bg-orange-50",
-    text: "text-orange-800",
-    border: "border-orange-200",
-    dot: "bg-orange-500",
+    bg: "bg-orange-100",
+    text: "text-orange-900",
+    border: "border-orange-300",
+    dot: "bg-orange-600",
   },
   {
     id: "WON",
@@ -136,9 +136,9 @@ const STATUS_OPTIONS = [
 
 /**
  * Returns customized background, border, and badge styles matching status specifications:
- * - New leads: gray
- * - Contacted: blue
- * - Interested: orange
+ * - New leads: blue
+ * - Contacted: yellow
+ * - Interested: brown
  * - Proposal sent: purple
  * - Negotiation: dark orange
  * - Order won: green
@@ -147,46 +147,46 @@ const STATUS_OPTIONS = [
 export function getLeadStatusStyle(rawStatus) {
   const s = String(rawStatus || "NEW").trim().toUpperCase().replace(/[\s-]+/g, "_");
 
-  // 1. New leads: Gray (darker)
+  // 1. New leads: Blue
   if (s === "NEW" || s === "NEW_LEAD" || s === "PENDING") {
     return {
-      rowBg: "bg-slate-200/90 hover:bg-slate-300/80",
-      expandedBg: "bg-slate-200",
-      gridBg: "bg-slate-200/90 border-slate-400 hover:border-slate-500",
-      accentBar: "bg-slate-600",
-      borderL: "border-l-4 border-l-slate-600",
-      badgeBg: "bg-slate-300 text-slate-800 border-slate-400",
+      rowBg: "bg-blue-100/90 hover:bg-blue-200/85",
+      expandedBg: "bg-blue-200/60",
+      gridBg: "bg-blue-100/90 border-blue-300 hover:border-blue-400",
+      accentBar: "bg-blue-600",
+      borderL: "border-l-4 border-l-blue-600",
+      badgeBg: "bg-blue-200 text-blue-900 border-blue-300",
       label: "New Lead",
     };
   }
 
-  // 2. Contacted: Blue (darker)
+  // 2. Contacted: Yellow
   if (s === "CONTACTED" || s === "CALL_ANSWERED" || s === "IN_COMMUNICATION") {
     return {
-      rowBg: "bg-orange-100/90 hover:bg-orange-200/80",
-      expandedBg: "bg-orange-200/60",
-      gridBg: "bg-orange-100/90 border-orange-300 hover:border-orange-400",
-      accentBar: "bg-[#F95721]",
-      borderL: "border-l-4 border-l-[#F95721]",
-      badgeBg: "bg-orange-200 text-orange-950 border-orange-300",
+      rowBg: "bg-yellow-100/90 hover:bg-yellow-200/85",
+      expandedBg: "bg-yellow-200/60",
+      gridBg: "bg-yellow-100/90 border-yellow-300 hover:border-yellow-400",
+      accentBar: "bg-yellow-500",
+      borderL: "border-l-4 border-l-yellow-500",
+      badgeBg: "bg-yellow-200 text-yellow-950 border-yellow-300",
       label: "Contacted",
     };
   }
 
-  // 3. Interested: Orange (darker)
+  // 3. Interested: Brown
   if (s === "INTERESTED") {
     return {
-      rowBg: "bg-amber-100/95 hover:bg-amber-200/85",
-      expandedBg: "bg-amber-200/60",
-      gridBg: "bg-amber-100/90 border-amber-300 hover:border-amber-400",
-      accentBar: "bg-amber-600",
-      borderL: "border-l-4 border-l-amber-600",
-      badgeBg: "bg-amber-200 text-amber-900 border-amber-300",
+      rowBg: "bg-[#f4ebe1] hover:bg-[#eae0d2]",
+      expandedBg: "bg-[#ebdcc9]/70",
+      gridBg: "bg-[#f4ebe1] border-[#cbb59d] hover:border-[#b09678]",
+      accentBar: "bg-[#8d6748]",
+      borderL: "border-l-4 border-l-[#8d6748]",
+      badgeBg: "bg-[#ebdcc9] text-[#5c3a21] border-[#cbb59d]",
       label: "Interested",
     };
   }
 
-  // 4. Proposal sent: Purple (darker)
+  // 4. Proposal sent: Purple
   if (s === "QUOTATION_SENT" || s === "PROPOSAL_SENT" || s === "QUOTATION" || s === "PROPOSAL") {
     return {
       rowBg: "bg-purple-100/90 hover:bg-purple-200/80",
@@ -199,7 +199,7 @@ export function getLeadStatusStyle(rawStatus) {
     };
   }
 
-  // 5. Negotiation: Dark Orange (darker)
+  // 5. Negotiation: Dark Orange
   if (s === "NEGOTIATION" || s === "NEGOTIATING") {
     return {
       rowBg: "bg-orange-200/90 hover:bg-orange-300/85",
@@ -212,7 +212,7 @@ export function getLeadStatusStyle(rawStatus) {
     };
   }
 
-  // 6. Order won: Green (darker)
+  // 6. Order won: Green
   if (s === "WON" || s === "ORDER_WON" || s === "CONVERTED") {
     return {
       rowBg: "bg-emerald-100/90 hover:bg-emerald-200/85",
@@ -225,7 +225,7 @@ export function getLeadStatusStyle(rawStatus) {
     };
   }
 
-  // 7. Deal lost / order lost: Red (darker)
+  // 7. Deal lost / order lost: Red
   if (s === "LOST" || s === "DEAL_LOST" || s === "ORDER_LOST" || s === "CANCELLED" || s === "DROPPED") {
     return {
       rowBg: "bg-rose-100/90 hover:bg-rose-200/85",
@@ -238,14 +238,14 @@ export function getLeadStatusStyle(rawStatus) {
     };
   }
 
-  // Fallback -> Gray
+  // Fallback -> Blue
   return {
-    rowBg: "bg-slate-200/90 hover:bg-slate-300/80",
-    expandedBg: "bg-slate-200",
-    gridBg: "bg-slate-200/90 border-slate-400 hover:border-slate-500",
-    accentBar: "bg-slate-500",
-    borderL: "border-l-4 border-l-slate-500",
-    badgeBg: "bg-slate-200 text-slate-800 border-slate-300",
+    rowBg: "bg-blue-100/90 hover:bg-blue-200/85",
+    expandedBg: "bg-blue-200/60",
+    gridBg: "bg-blue-100/90 border-blue-300 hover:border-blue-400",
+    accentBar: "bg-blue-600",
+    borderL: "border-l-4 border-l-blue-600",
+    badgeBg: "bg-blue-200 text-blue-900 border-blue-300",
     label: "Lead",
   };
 }
@@ -1673,14 +1673,14 @@ export default function LeadsDashboardPage() {
               {/* Status Color Coding Legend Strip */}
               <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold text-slate-700 py-1 px-1">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Status Colors:</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 border border-slate-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-slate-600"></span> New (Gray)
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-blue-600"></span> New (Blue)
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-100 text-orange-950 border border-orange-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-[#F95721]"></span> Contacted (Orange)
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-yellow-100 text-yellow-950 border border-yellow-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Contacted (Yellow)
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-amber-600"></span> Interested (Orange)
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ebdcc9] text-[#5c3a21] border border-[#cbb59d] font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-[#8d6748]"></span> Interested (Brown)
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 border border-purple-400 font-bold text-[10px]">
                   <span className="w-2 h-2 rounded-full bg-purple-600"></span> Proposal Sent (Purple)
@@ -1689,10 +1689,10 @@ export default function LeadsDashboardPage() {
                   <span className="w-2 h-2 rounded-full bg-orange-700"></span> Negotiation (Dark Orange)
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Order Won (Green)
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Won (Green)
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 border border-rose-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-rose-600"></span> Deal / Order Lost (Red)
+                  <span className="w-2 h-2 rounded-full bg-rose-600"></span> Lost (Red)
                 </span>
               </div>
 
