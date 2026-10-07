@@ -713,7 +713,7 @@ export default function ReportsDashboard() {
           {/* 1. HEADER & PERIOD TOOLBAR */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#F95721] mb-1">
                 <BarChart3 className="w-4 h-4" />
                 <span>Executive Analytics & Reporting Foundation</span>
               </div>
@@ -740,7 +740,7 @@ export default function ReportsDashboard() {
                   onClick={() => handlePeriodChange(item.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
                     period === item.id
-                      ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/25 font-bold"
+                      ? "bg-[#F95721] text-white border-[#F95721] shadow-sm shadow-orange-500/25 font-bold"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-xs"
                   }`}
                 >
@@ -755,7 +755,7 @@ export default function ReportsDashboard() {
                 title="Refresh Data"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -764,7 +764,7 @@ export default function ReportsDashboard() {
           {/* Custom Date Range Picker Popover */}
           {isCustomOpen && (
             <div className="p-4 rounded-md bg-white border border-slate-200 shadow-lg flex flex-wrap items-center gap-3 text-xs">
-              <Calendar className="w-4 h-4 text-blue-600" />
+              <Calendar className="w-4 h-4 text-[#F95721]" />
               <span className="font-semibold text-slate-800">
                 Select Date Range:
               </span>
@@ -774,7 +774,7 @@ export default function ReportsDashboard() {
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="bg-white border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs focus:border-blue-500 outline-none shadow-xs"
+                  className="bg-white border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs focus:border-[#F95721] outline-none shadow-xs"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -783,12 +783,12 @@ export default function ReportsDashboard() {
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="bg-white border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs focus:border-blue-500 outline-none shadow-xs"
+                  className="bg-white border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs focus:border-[#F95721] outline-none shadow-xs"
                 />
               </div>
               <button
                 onClick={applyCustomRange}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs transition"
+                className="px-3.5 py-1.5 bg-[#F95721] hover:bg-[#e84915] text-white font-bold rounded-xl shadow-xs transition"
               >
                 Apply Range
               </button>
@@ -822,13 +822,13 @@ export default function ReportsDashboard() {
             {/* KPI 1: Sales / Orders Value */}
             <Link
               href="/dashboard/orders"
-              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-blue-500/50 hover:shadow-sm transition"
+              className="group p-5 rounded-md bg-white border border-slate-200 shadow-xs hover:border-[#F95721]/50 hover:shadow-sm transition"
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Total Sales Value
                 </span>
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition">
+                <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center border border-orange-100 group-hover:scale-105 transition">
                   <DollarSign className="w-4 h-4" />
                 </div>
               </div>
@@ -842,7 +842,7 @@ export default function ReportsDashboard() {
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1 font-medium">
                   <span>{kpis?.orders?.totalOrders || 0} Confirmed Orders</span>
-                  <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition" />
+                  <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-[#F95721] transition" />
                 </p>
               </div>
             </Link>
@@ -1093,7 +1093,7 @@ export default function ReportsDashboard() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`py-3 px-3.5 border-b-2 transition flex items-center gap-2 shrink-0 ${
                       active
-                        ? "border-blue-600 text-blue-600 bg-blue-50/50 font-extrabold"
+                        ? "border-[#F95721] text-[#F95721] bg-orange-50/50 font-extrabold"
                         : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
                     }`}
                   >
@@ -1109,14 +1109,14 @@ export default function ReportsDashboard() {
             {/* Left: Saved Views Controls */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold pl-1">
-                <Bookmark className="w-3.5 h-3.5 text-blue-600" />
+                <Bookmark className="w-3.5 h-3.5 text-[#F95721]" />
                 <span>Saved Views:</span>
               </div>
 
               <select
                 value={selectedViewId}
                 onChange={(e) => handleSelectView(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-800 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:border-blue-500 outline-none cursor-pointer"
+                className="bg-slate-50 border border-slate-300 text-slate-800 text-xs font-medium rounded-xl px-2.5 py-1.5 focus:border-[#F95721] outline-none cursor-pointer"
               >
                 <option value="">Default System View</option>
                 {savedViews.map((v) => (
@@ -1129,7 +1129,7 @@ export default function ReportsDashboard() {
               <button
                 type="button"
                 onClick={() => setIsSaveViewModalOpen(true)}
-                className="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                className="px-2.5 py-1.5 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
                 title="Save current filters as a named view"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -1205,7 +1205,7 @@ export default function ReportsDashboard() {
                 className="flex-1 sm:flex-initial px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
               >
                 <Download
-                  className={`w-3.5 h-3.5 ${exportLoading === "csv" ? "animate-bounce text-blue-600" : "text-slate-600"}`}
+                  className={`w-3.5 h-3.5 ${exportLoading === "csv" ? "animate-bounce text-[#F95721]" : "text-slate-600"}`}
                 />
                 <span>
                   {exportLoading === "csv" ? "Exporting CSV..." : "Export CSV"}
@@ -1276,7 +1276,7 @@ export default function ReportsDashboard() {
               <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Bookmark className="w-4 h-4 text-blue-600" />
+                    <Bookmark className="w-4 h-4 text-[#F95721]" />
                     Save Report View
                   </h3>
                   <button
@@ -1298,7 +1298,7 @@ export default function ReportsDashboard() {
                       placeholder="e.g. Q3 Pipeline or Monthly Invoiced"
                       value={newViewName}
                       onChange={(e) => setNewViewName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-blue-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-[#F95721] outline-none"
                     />
                   </div>
 
@@ -1322,7 +1322,7 @@ export default function ReportsDashboard() {
                       type="checkbox"
                       checked={newViewIsDefault}
                       onChange={(e) => setNewViewIsDefault(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      className="rounded text-[#F95721] focus:ring-orange-500"
                     />
                     <span>Set as my default view for this report</span>
                   </label>
@@ -1337,7 +1337,7 @@ export default function ReportsDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold shadow-xs transition"
+                      className="px-4 py-1.5 rounded-xl bg-[#F95721] text-white hover:bg-[#e84915] text-xs font-bold shadow-xs transition"
                     >
                       Save View
                     </button>
@@ -1353,7 +1353,7 @@ export default function ReportsDashboard() {
               <div className="bg-white rounded-md shadow-xl border border-slate-200 p-6 max-w-sm w-full space-y-4 animate-in fade-in zoom-in duration-150">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Edit3 className="w-4 h-4 text-blue-600" />
+                    <Edit3 className="w-4 h-4 text-[#F95721]" />
                     Edit Saved View
                   </h3>
                   <button
@@ -1374,7 +1374,7 @@ export default function ReportsDashboard() {
                       required
                       value={editViewName}
                       onChange={(e) => setEditViewName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-blue-500 outline-none"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-[#F95721] outline-none"
                     />
                   </div>
 
@@ -1385,7 +1385,7 @@ export default function ReportsDashboard() {
                       onChange={(e) =>
                         setEditViewUpdateFilters(e.target.checked)
                       }
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      className="rounded text-[#F95721] focus:ring-orange-500"
                     />
                     <span>
                       Update view with current filters & date range ({period})
@@ -1397,7 +1397,7 @@ export default function ReportsDashboard() {
                       type="checkbox"
                       checked={editViewIsDefault}
                       onChange={(e) => setEditViewIsDefault(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      className="rounded text-[#F95721] focus:ring-orange-500"
                     />
                     <span>Set as my default view for this report</span>
                   </label>
@@ -1412,7 +1412,7 @@ export default function ReportsDashboard() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-bold shadow-xs transition"
+                      className="px-4 py-1.5 rounded-xl bg-[#F95721] text-white hover:bg-[#e84915] text-xs font-bold shadow-xs transition"
                     >
                       Update View
                     </button>
@@ -1878,7 +1878,7 @@ export default function ReportsDashboard() {
                               className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                                 s.deliveryMode === "INTERNAL_TEAM"
                                   ? "bg-purple-100 text-purple-700"
-                                  : "bg-blue-100 text-blue-700"
+                                  : "bg-orange-100 text-orange-700"
                               }`}
                             >
                               {s.deliveryMode === "INTERNAL_TEAM"
@@ -2060,7 +2060,7 @@ export default function ReportsDashboard() {
                                         ? "bg-rose-100 text-rose-700"
                                         : r.status === "SKIPPED"
                                           ? "bg-slate-100 text-slate-700"
-                                          : "bg-blue-100 text-blue-700"
+                                          : "bg-orange-100 text-orange-700"
                                 }`}
                               >
                                 {r.status}
@@ -2174,7 +2174,7 @@ export default function ReportsDashboard() {
                                       ? "bg-rose-100 text-rose-700"
                                       : d.status === "SKIPPED"
                                         ? "bg-slate-100 text-slate-700"
-                                        : "bg-blue-100 text-blue-700"
+                                        : "bg-orange-100 text-orange-700"
                                 }`}
                               >
                                 {d.status}
@@ -2262,7 +2262,7 @@ export default function ReportsDashboard() {
                 {/* Quotations & Orders Funnel */}
                 <div className="p-6 rounded-md bg-white border border-slate-200 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
+                    <FileText className="w-4 h-4 text-[#F95721]" />
                     <span>Commercial Conversion Summary</span>
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -2387,7 +2387,7 @@ export default function ReportsDashboard() {
                               <td className="py-2.5 px-4 text-center text-emerald-600 font-bold">
                                 {src.wonCount}
                               </td>
-                              <td className="py-2.5 px-4 text-right font-mono font-bold text-blue-600">
+                              <td className="py-2.5 px-4 text-right font-mono font-bold text-[#F95721]">
                                 {src.conversionRatePercent}%
                               </td>
                             </tr>
@@ -2418,11 +2418,11 @@ export default function ReportsDashboard() {
                         )}
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/60">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                    <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-200/60">
+                      <div className="text-[10px] font-bold text-orange-700 uppercase">
                         31 - 60 Days
                       </div>
-                      <div className="text-lg font-black text-blue-800 mt-1">
+                      <div className="text-lg font-black text-orange-800 mt-1">
                         {formatPaise(
                           financials?.ageingBuckets?.bucket31To60DaysPaise || 0,
                         )}
@@ -2511,11 +2511,11 @@ export default function ReportsDashboard() {
                         {orders?.summary?.totalOrders || 0}
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                      <div className="text-[10px] font-bold text-blue-700">
+                    <div className="p-3.5 rounded-xl bg-orange-50/50 border border-orange-200 text-center">
+                      <div className="text-[10px] font-bold text-orange-700">
                         ACTIVE IN PIPELINE
                       </div>
-                      <div className="text-lg font-black text-blue-800 mt-1">
+                      <div className="text-lg font-black text-orange-800 mt-1">
                         {orders?.summary?.activeOrders || 0}
                       </div>
                     </div>
@@ -2603,11 +2603,11 @@ export default function ReportsDashboard() {
                         {quotations?.summary?.totalQuotations || 0}
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                    <div className="p-3.5 rounded-xl bg-orange-50/50 border border-orange-200">
+                      <div className="text-[10px] font-bold text-orange-700 uppercase">
                         Open / Sent
                       </div>
-                      <div className="text-lg font-black text-blue-800 mt-1">
+                      <div className="text-lg font-black text-orange-800 mt-1">
                         {quotations?.summary?.openQuotations || 0}
                       </div>
                     </div>
@@ -2648,11 +2648,11 @@ export default function ReportsDashboard() {
                         {design?.summary?.assigned || 0}
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                      <div className="text-[10px] font-bold text-blue-700">
+                    <div className="p-3.5 rounded-xl bg-orange-50/50 border border-orange-200 text-center">
+                      <div className="text-[10px] font-bold text-orange-700">
                         IN PROGRESS
                       </div>
-                      <div className="text-lg font-black text-blue-800 mt-1">
+                      <div className="text-lg font-black text-orange-800 mt-1">
                         {design?.summary?.inProgress || 0}
                       </div>
                     </div>
@@ -2766,11 +2766,11 @@ export default function ReportsDashboard() {
                           {production?.summary?.readyForRelease || 0}
                         </div>
                       </div>
-                      <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 text-center">
-                        <div className="text-[10px] font-bold text-blue-700">
+                      <div className="p-3.5 rounded-xl bg-orange-50/50 border border-orange-200 text-center">
+                        <div className="text-[10px] font-bold text-orange-700">
                           SENT
                         </div>
-                        <div className="text-lg font-black text-blue-800 mt-1">
+                        <div className="text-lg font-black text-orange-800 mt-1">
                           {production?.summary?.sentForProduction || 0}
                         </div>
                       </div>
@@ -2879,11 +2879,11 @@ export default function ReportsDashboard() {
                         {followups?.summary?.dueToday || 0}
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200">
-                      <div className="text-[10px] font-bold text-blue-700 uppercase">
+                    <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200">
+                      <div className="text-[10px] font-bold text-orange-700 uppercase">
                         UPCOMING
                       </div>
-                      <div className="text-2xl font-black text-blue-700 mt-1">
+                      <div className="text-2xl font-black text-orange-700 mt-1">
                         {followups?.summary?.upcoming || 0}
                       </div>
                     </div>

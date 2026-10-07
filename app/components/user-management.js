@@ -228,12 +228,12 @@ export default function UserManagement({ user: currentUser }) {
   // Helper to choose initials avatar background color
   const getAvatarBg = (name = "User") => {
     const colors = [
-      "bg-blue-100 text-blue-600 border-blue-200/50",
+      "bg-orange-100 text-[#F95721] border-orange-200/50",
       "bg-emerald-100 text-emerald-600 border-emerald-200/50",
       "bg-indigo-100 text-indigo-600 border-indigo-200/50",
       "bg-purple-100 text-purple-600 border-purple-200/50",
       "bg-pink-100 text-pink-600 border-pink-200/50",
-      "bg-blue-100 text-blue-600 border-blue-200/50",
+      "bg-orange-100 text-[#F95721] border-orange-200/50",
     ];
     let sum = 0;
     for (let i = 0; i < name.length; i++) {

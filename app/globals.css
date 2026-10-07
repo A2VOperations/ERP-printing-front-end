@@ -5,8 +5,8 @@
   --foreground: #0f172a;
   --card: #ffffff;
   --card-border: #e2e8f0;
-  --accent: #2563eb;
-  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent: #F95721;
+  --accent-glow: rgba(249, 87, 33, 0.2);
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -37,7 +37,7 @@ body {
 
 .glass-panel-hover:hover {
   background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(249, 87, 33, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px 0 var(--accent-glow);
 }

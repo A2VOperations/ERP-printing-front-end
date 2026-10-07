@@ -954,7 +954,7 @@ export default function AdminOverviewPage() {
                     className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors"
                   >
                     <RefreshCw
-                      className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`}
+                      className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#F95721]" : ""}`}
                     />
                   </button>
 
@@ -1018,7 +1018,7 @@ export default function AdminOverviewPage() {
                 {/* 1. TOTAL LEADS */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
                   <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center">
                       <Users className="w-4 h-4" />
                     </div>
                     {totalLeadsCount > 0 ? (
@@ -1099,7 +1099,7 @@ export default function AdminOverviewPage() {
                   </div>
                   <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                     <span>{ordersInProductionCount} in production</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                   </div>
                 </div>
 
@@ -1395,7 +1395,7 @@ export default function AdminOverviewPage() {
                           {orderLifecycleMetrics.dsgn}
                         </span>
                         <div
-                          className="w-full bg-blue-400/30 rounded-t-md"
+                          className="w-full bg-orange-400/30 rounded-t-md"
                           style={{
                             height: orderLifecycleMetrics.dsgn > 0 ? "30%" : "4px",
                           }}
@@ -1630,7 +1630,7 @@ export default function AdminOverviewPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">In Progress</span>
-                        <span className="font-bold text-blue-600">
+                        <span className="font-bold text-[#F95721]">
                           {designProjectStats.inProgress}
                         </span>
                       </div>
@@ -2306,7 +2306,7 @@ export default function AdminOverviewPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -2323,7 +2323,7 @@ export default function AdminOverviewPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, phone: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -2337,7 +2337,7 @@ export default function AdminOverviewPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, email: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -2354,7 +2354,7 @@ export default function AdminOverviewPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, companyName: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -2368,7 +2368,7 @@ export default function AdminOverviewPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, estimatedValue: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -2382,7 +2382,7 @@ export default function AdminOverviewPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, source: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 >
                   <option value="WALK_IN">Walk In</option>
                   <option value="PHONE_CALL">Phone Call</option>
@@ -2405,7 +2405,7 @@ export default function AdminOverviewPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, requirement: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -2418,7 +2418,7 @@ export default function AdminOverviewPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, assignedToId: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 >
                   <option value="">Unassigned</option>
                   {users.map((u) => (
@@ -2442,7 +2442,7 @@ export default function AdminOverviewPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, nextFollowUp: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -2460,8 +2460,8 @@ export default function AdminOverviewPage() {
                   disabled={creatingLead}
                   className={`px-5 py-2 rounded-xl text-white font-semibold shadow-md flex items-center justify-center gap-2 transition-all ${
                     creatingLead
-                      ? "bg-blue-400 cursor-not-allowed opacity-90 shadow-none"
-                      : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-95"
+                      ? "bg-orange-400 cursor-not-allowed opacity-90 shadow-none"
+                      : "bg-[#F95721] hover:bg-[#e84915] shadow-orange-500/20 active:scale-95"
                   }`}
                 >
                   {creatingLead ? (

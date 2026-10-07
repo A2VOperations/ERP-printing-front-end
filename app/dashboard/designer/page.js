@@ -312,7 +312,7 @@ export default function DesignerDashboardPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#F95721]" : "text-slate-500"}`}
                 />
                 Refresh Data
               </button>
@@ -340,7 +340,7 @@ export default function DesignerDashboardPage() {
                     {newAssignmentsCount}
                   </div>
                 </div>
-                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <FileCheck className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -352,7 +352,7 @@ export default function DesignerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/design?filter=NEW"
-                  className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5"
+                  className="text-[10px] font-bold text-[#F95721] hover:underline block mt-0.5"
                 >
                   View Assignments →
                 </Link>
@@ -380,7 +380,7 @@ export default function DesignerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/design?filter=DUE"
-                  className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5"
+                  className="text-[10px] font-bold text-[#F95721] hover:underline block mt-0.5"
                 >
                   View Today&apos;s List →
                 </Link>
@@ -408,7 +408,7 @@ export default function DesignerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/design?filter=DUE"
-                  className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5"
+                  className="text-[10px] font-bold text-[#F95721] hover:underline block mt-0.5"
                 >
                   View Overdue →
                 </Link>
@@ -466,7 +466,7 @@ export default function DesignerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/design?filter=REVISION"
-                  className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5"
+                  className="text-[10px] font-bold text-[#F95721] hover:underline block mt-0.5"
                 >
                   View Revisions →
                 </Link>
@@ -494,7 +494,7 @@ export default function DesignerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/design?filter=PRODUCTION_READY"
-                  className="text-[10px] font-bold text-blue-600 hover:underline block mt-0.5"
+                  className="text-[10px] font-bold text-[#F95721] hover:underline block mt-0.5"
                 >
                   View Production Ready →
                 </Link>
@@ -512,7 +512,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All Projects →
                 </Link>
@@ -520,7 +520,7 @@ export default function DesignerDashboardPage() {
 
               <div className="flex items-center gap-4 py-2">
                 {/* Donut Simulation */}
-                <div className="relative w-24 h-24 rounded-full border-8 border-blue-500 border-t-purple-500 border-r-amber-400 border-b-emerald-500 flex items-center justify-center shrink-0">
+                <div className="relative w-24 h-24 rounded-full border-8 border-[#F95721] border-t-purple-500 border-r-amber-400 border-b-emerald-500 flex items-center justify-center shrink-0">
                   <div className="text-center">
                     <span className="text-base font-black text-slate-900 block leading-tight">
                       {totalProjects}
@@ -535,7 +535,7 @@ export default function DesignerDashboardPage() {
                 <div className="space-y-1 text-[11px] flex-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="w-2 h-2 rounded-full bg-orange-500" />
                       <span className="text-slate-600">In Design</span>
                     </div>
                     <strong className="text-slate-900">{inDesignCount}</strong>
@@ -588,7 +588,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All Projects →
                 </Link>
@@ -611,7 +611,7 @@ export default function DesignerDashboardPage() {
                       <div className="min-w-0 flex-1">
                         <Link
                           href="/dashboard/design"
-                          className="text-slate-900 text-[11px] font-bold block truncate hover:text-blue-600"
+                          className="text-slate-900 text-[11px] font-bold block truncate hover:text-[#F95721]"
                         >
                           {p.projectNumber || "DSN"}: {p.title}
                         </Link>
@@ -639,7 +639,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Calendar →
                 </Link>
@@ -664,11 +664,11 @@ export default function DesignerDashboardPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-blue-600 font-semibold">
+                    <div className="flex items-center gap-1.5 text-[#F95721] font-semibold">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>Due This Week</span>
                     </div>
-                    <strong className="text-blue-600">
+                    <strong className="text-[#F95721]">
                       {dueThisWeekCount}
                     </strong>
                   </div>
@@ -829,7 +829,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design?filter=CLIENT_REVIEW"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All →
                 </Link>
@@ -859,7 +859,7 @@ export default function DesignerDashboardPage() {
                     ) : (
                       clientReviewList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
-                          <td className="py-2 font-bold font-mono text-blue-600">
+                          <td className="py-2 font-bold font-mono text-[#F95721]">
                             <Link href="/dashboard/design">
                               {p.projectNumber || "DSN"}
                             </Link>
@@ -900,9 +900,9 @@ export default function DesignerDashboardPage() {
                 {/* 1. My Projects */}
                 <Link
                   href="/dashboard/design"
-                  className="p-3 rounded-xl bg-blue-50/70 hover:bg-blue-100 border border-blue-100 flex flex-col items-center gap-1 transition-colors"
+                  className="p-3 rounded-xl bg-orange-50/70 hover:bg-orange-100 border border-orange-100 flex flex-col items-center gap-1 transition-colors"
                 >
-                  <Folder className="w-4 h-4 text-blue-600" />
+                  <Folder className="w-4 h-4 text-[#F95721]" />
                   <span className="font-bold text-slate-800 text-[10px]">
                     My Projects
                   </span>
@@ -965,7 +965,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All →
                 </Link>
@@ -996,7 +996,7 @@ export default function DesignerDashboardPage() {
                     ) : (
                       recentlyUpdatedList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
-                          <td className="py-2.5 font-bold font-mono text-blue-600">
+                          <td className="py-2.5 font-bold font-mono text-[#F95721]">
                             <Link href="/dashboard/design">
                               {p.projectNumber || "DSN"}
                             </Link>
@@ -1023,7 +1023,7 @@ export default function DesignerDashboardPage() {
                                       ? "bg-purple-50 text-purple-700 border border-purple-200"
                                       : p.status === "REVISION_REQUESTED"
                                         ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                        : "bg-blue-50 text-blue-700 border border-blue-200"
+                                        : "bg-orange-50 text-orange-700 border border-orange-200"
                               }`}
                             >
                               {p.status}
@@ -1048,7 +1048,7 @@ export default function DesignerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/design?filter=REVISION"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All →
                 </Link>
@@ -1079,7 +1079,7 @@ export default function DesignerDashboardPage() {
                     ) : (
                       recentRevisionsList.map((p) => (
                         <tr key={p._id} className="hover:bg-slate-50">
-                          <td className="py-2.5 font-bold font-mono text-blue-600">
+                          <td className="py-2.5 font-bold font-mono text-[#F95721]">
                             <Link href="/dashboard/design">
                               {p.projectNumber || "DSN"}
                             </Link>

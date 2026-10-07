@@ -70,7 +70,7 @@ export default function OrdersView({ user }) {
 
   const getOrderStatusBadge = (status) => {
     const map = {
-      CONFIRMED: "bg-blue-100 text-blue-800 border-blue-300",
+      CONFIRMED: "bg-orange-100 text-orange-800 border-orange-300",
       AWAITING_ADVANCE:
         "bg-amber-100 text-amber-800 border-amber-300 animate-pulse",
       COMMERCIALLY_CLEARED:

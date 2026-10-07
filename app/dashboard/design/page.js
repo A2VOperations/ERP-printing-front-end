@@ -55,8 +55,8 @@ const COLUMNS = [
   {
     id: "IN_PROGRESS",
     label: "In Design",
-    color: "border-blue-400",
-    badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+    color: "border-orange-400",
+    badgeColor: "bg-orange-50 text-orange-700 border-orange-200",
   },
   {
     id: "CLIENT_REVIEW",
@@ -904,7 +904,7 @@ function DesignStudioContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-                <Palette className="w-6 h-6 text-blue-600" />
+                <Palette className="w-6 h-6 text-[#F95721]" />
                 {currentConfig.title}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -927,7 +927,7 @@ function DesignStudioContent() {
                 title="Refresh Board"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -952,7 +952,7 @@ function DesignStudioContent() {
                 }}
                 className={`px-3 py-1.5 rounded-xl font-semibold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
                   isSelected
-                    ? "bg-blue-600 text-white shadow-xs"
+                    ? "bg-[#F95721] text-white shadow-xs"
                     : "bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200/80"
                 }`}
               >
@@ -974,9 +974,9 @@ function DesignStudioContent() {
 
         {/* Active Filter Indicator Banner */}
         {activeFilter !== "ALL" && (
-          <div className="mx-6 mt-3 px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs text-blue-700">
+          <div className="mx-6 mt-3 px-4 py-2.5 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between text-xs text-orange-700">
             <div className="flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#F95721] animate-pulse" />
               <span>
                 Filtered by <strong>{currentConfig.badge}</strong> — Showing{" "}
                 <strong>{filteredProjects.length}</strong> project
@@ -985,7 +985,7 @@ function DesignStudioContent() {
             </div>
             <Link
               href="/dashboard/design"
-              className="px-2.5 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[11px] border border-blue-300 transition-all flex items-center gap-1"
+              className="px-2.5 py-1 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold text-[11px] border border-orange-300 transition-all flex items-center gap-1"
             >
               Clear Filter <X className="w-3 h-3" />
             </Link>
@@ -994,9 +994,9 @@ function DesignStudioContent() {
 
         {/* Sales View-Only Notification Banner */}
         {isSalesRole && (
-          <div className="mx-6 mt-3 p-3.5 rounded-xl bg-blue-50/90 border border-blue-200 flex items-center justify-between text-xs text-blue-900 shadow-2xs">
+          <div className="mx-6 mt-3 p-3.5 rounded-xl bg-orange-50/90 border border-orange-200 flex items-center justify-between text-xs text-orange-950 shadow-2xs">
             <div className="flex items-center gap-2.5">
-              <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+              <Eye className="w-4 h-4 text-[#F95721] shrink-0" />
               <div>
                 <span className="font-bold">Sales Project Status Monitor:</span>{" "}
                 <span>
@@ -1007,7 +1007,7 @@ function DesignStudioContent() {
                 </span>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-md bg-blue-200/70 text-blue-900 font-extrabold text-[10px] uppercase tracking-wide shrink-0">
+            <span className="px-2.5 py-1 rounded-md bg-orange-200/70 text-orange-950 font-extrabold text-[10px] uppercase tracking-wide shrink-0">
               View Only
             </span>
           </div>
@@ -1042,7 +1042,7 @@ function DesignStudioContent() {
                 placeholder="Search project #, title or customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-1 focus:ring-blue-600/20 shadow-2xs transition-all"
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#F95721] focus:bg-white focus:ring-1 focus:ring-orange-500/20 shadow-2xs transition-all"
               />
             </div>
           </div>
@@ -1054,7 +1054,7 @@ function DesignStudioContent() {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-blue-600 focus:bg-white shadow-2xs cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-[#F95721] focus:bg-white shadow-2xs cursor-pointer"
             >
               <option value="ALL">All Priorities</option>
               <option value="URGENT">Urgent Only</option>
@@ -1069,7 +1069,7 @@ function DesignStudioContent() {
             <select
               value={modeFilter}
               onChange={(e) => setModeFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-blue-600 focus:bg-white shadow-2xs cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 focus:outline-none focus:border-[#F95721] focus:bg-white shadow-2xs cursor-pointer"
             >
               <option value="ALL">All Modes</option>
               <option value="DESIGN_REQUIRED">Creative Studio</option>
@@ -1082,7 +1082,7 @@ function DesignStudioContent() {
         <div className="p-6 flex-1 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center h-80 text-sm text-slate-500">
-              <RefreshCw className="w-6 h-6 animate-spin mr-2.5 text-blue-600" />
+              <RefreshCw className="w-6 h-6 animate-spin mr-2.5 text-[#F95721]" />
               Loading Design Projects...
             </div>
           ) : (
@@ -1109,7 +1109,7 @@ function DesignStudioContent() {
                                   : col.id === "CLIENT_REVIEW"
                                     ? "bg-purple-500"
                                     : col.id === "IN_PROGRESS"
-                                      ? "bg-blue-500"
+                                      ? "bg-orange-500"
                                       : "bg-amber-500"
                           }`}
                         />
@@ -1143,12 +1143,12 @@ function DesignStudioContent() {
                               className={`p-3.5 rounded-xl bg-white border transition-all cursor-pointer shadow-xs hover:shadow-md group relative ${
                                 isOverdue
                                   ? "border-rose-300 hover:border-rose-400 bg-rose-50/40"
-                                  : "border-slate-200 hover:border-blue-500 hover:bg-white"
+                                  : "border-slate-200 hover:border-[#F95721] hover:bg-white"
                               }`}
                             >
                               {/* Top Bar: Project ID & Priority */}
                               <div className="flex items-center justify-between gap-1 mb-1.5">
-                                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                <span className="text-[10px] font-mono font-bold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
                                   {p.projectNumber || "DSN"}
                                 </span>
                                 <div className="flex items-center gap-1">
@@ -1173,7 +1173,7 @@ function DesignStudioContent() {
                               </div>
 
                               {/* Customer & Title */}
-                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                              <h4 className="text-xs font-bold text-slate-900 group-hover:text-[#F95721] transition-colors line-clamp-1">
                                 {getCustDisplayName(p)}
                               </h4>
                               <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
@@ -1191,7 +1191,7 @@ function DesignStudioContent() {
                                   {p.briefAttachments &&
                                   p.briefAttachments.length > 0 ? (
                                     <span
-                                      className="flex items-center gap-0.5 text-blue-600 font-semibold"
+                                      className="flex items-center gap-0.5 text-[#F95721] font-semibold"
                                       title="Files attached during hand-off"
                                     >
                                       <Paperclip className="w-3 h-3" />
@@ -1236,12 +1236,12 @@ function DesignStudioContent() {
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-                  <Palette className="w-5 h-5 text-blue-600" />
+                <div className="w-11 h-11 rounded-md bg-orange-50 border border-orange-200 flex items-center justify-center shrink-0">
+                  <Palette className="w-5 h-5 text-[#F95721]" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200">
                       {selectedProject.projectNumber}
                     </span>
                     <h3 className="text-base font-bold text-slate-900">
@@ -1257,7 +1257,7 @@ function DesignStudioContent() {
                               ? "bg-rose-50 text-rose-700 border border-rose-200"
                               : selectedProject.status === "CLIENT_REVIEW"
                                 ? "bg-purple-50 text-purple-700 border border-purple-200"
-                                : "bg-blue-50 text-blue-700 border border-blue-200"
+                                : "bg-orange-50 text-orange-700 border border-orange-200"
                       }`}
                     >
                       {selectedProject.status}
@@ -1288,7 +1288,7 @@ function DesignStudioContent() {
                   selectedProject.status === "ASSIGNED") ? (
                   <button
                     onClick={handleStartDesign}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5" />
                     Start Design
@@ -1372,7 +1372,7 @@ function DesignStudioContent() {
                 onClick={() => setActiveTab("brief")}
                 className={`py-3 font-bold border-b-2 flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                   activeTab === "brief"
-                    ? "border-blue-600 text-blue-600"
+                    ? "border-[#F95721] text-[#F95721]"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -1380,7 +1380,7 @@ function DesignStudioContent() {
                 Brief &amp; Specs
                 {selectedProject.briefAttachments &&
                 selectedProject.briefAttachments.length > 0 ? (
-                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-100 text-blue-700 font-mono">
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-orange-100 text-orange-700 font-mono">
                     {selectedProject.briefAttachments.length}
                   </span>
                 ) : null}
@@ -1390,7 +1390,7 @@ function DesignStudioContent() {
                 onClick={() => setActiveTab("assets")}
                 className={`py-3 font-bold border-b-2 flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                   activeTab === "assets"
-                    ? "border-blue-600 text-blue-600"
+                    ? "border-[#F95721] text-[#F95721]"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -1402,7 +1402,7 @@ function DesignStudioContent() {
                 onClick={() => setActiveTab("versions")}
                 className={`py-3 font-bold border-b-2 flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                   activeTab === "versions"
-                    ? "border-blue-600 text-blue-600"
+                    ? "border-[#F95721] text-[#F95721]"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -1431,7 +1431,7 @@ function DesignStudioContent() {
                 onClick={() => setActiveTab("approval")}
                 className={`py-3 font-bold border-b-2 flex items-center gap-2 transition-all shrink-0 cursor-pointer ${
                   activeTab === "approval"
-                    ? "border-blue-600 text-blue-600"
+                    ? "border-[#F95721] text-[#F95721]"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -1514,7 +1514,7 @@ function DesignStudioContent() {
                       <div>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                           <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-blue-600" />
+                            <Layers className="w-4 h-4 text-[#F95721]" />
                             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                               7-Point Technical Production Brief (Step 12)
                             </h4>
@@ -1528,7 +1528,7 @@ function DesignStudioContent() {
                             <button
                               type="button"
                               onClick={handleOpenEditSpecs}
-                              className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                              className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                               Edit Specs / Brief
@@ -1545,10 +1545,10 @@ function DesignStudioContent() {
                           {/* 1. Size / Dimensions */}
                           <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">
+                              <span className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">
                                 1. Size
                               </span>
-                              <span className="text-[9px] px-1 rounded bg-blue-50 text-blue-700 font-mono border border-blue-200">
+                              <span className="text-[9px] px-1 rounded bg-orange-50 text-orange-700 font-mono border border-orange-200">
                                 DIMENSIONS
                               </span>
                             </div>
@@ -1726,7 +1726,7 @@ function DesignStudioContent() {
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                            <Paperclip className="w-4 h-4 text-blue-600" />
+                            <Paperclip className="w-4 h-4 text-[#F95721]" />
                             Client Files Attached in Handoff (
                             {selectedProject.briefAttachments?.length || 0})
                           </h4>
@@ -1757,7 +1757,7 @@ function DesignStudioContent() {
                                     href={att.fileUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="group p-3 rounded-xl bg-white border border-slate-200 hover:border-blue-400 hover:bg-blue-50/20 flex flex-col justify-between transition-all shadow-2xs"
+                                    className="group p-3 rounded-xl bg-white border border-slate-200 hover:border-orange-400 hover:bg-orange-50/20 flex flex-col justify-between transition-all shadow-2xs"
                                   >
                                     <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-200 mb-2 flex items-center justify-center">
                                       {isImg ? (
@@ -1767,7 +1767,7 @@ function DesignStudioContent() {
                                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                         />
                                       ) : (
-                                        <FileCode className="w-8 h-8 text-blue-500" />
+                                        <FileCode className="w-8 h-8 text-orange-500" />
                                       )}
                                     </div>
                                     <div>
@@ -1775,7 +1775,7 @@ function DesignStudioContent() {
                                         {att.fileName ||
                                           `Attachment #${idx + 1}`}
                                       </span>
-                                      <span className="text-[10px] text-blue-600 group-hover:underline flex items-center gap-1 mt-0.5 font-medium">
+                                      <span className="text-[10px] text-[#F95721] group-hover:underline flex items-center gap-1 mt-0.5 font-medium">
                                         View / Download{" "}
                                         <Download className="w-2.5 h-2.5" />
                                       </span>
@@ -1797,7 +1797,7 @@ function DesignStudioContent() {
                   {isSalesRole ? (
                     <div className="p-4 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
                       <div className="flex items-center gap-2.5">
-                        <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+                        <Eye className="w-4 h-4 text-[#F95721] shrink-0" />
                         <div>
                           <strong className="block text-slate-900">
                             Artwork &amp; Proof Files (Read Only)
@@ -1821,7 +1821,7 @@ function DesignStudioContent() {
                     >
                       <div className="flex items-center justify-between">
                         <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                          <Upload className="w-4 h-4 text-blue-600" />
+                          <Upload className="w-4 h-4 text-[#F95721]" />
                           Upload Artwork Asset to Cloudinary
                         </h4>
                         <span className="text-[10px] text-slate-500">
@@ -1858,10 +1858,10 @@ function DesignStudioContent() {
                         onClick={() => fileInputRef.current?.click()}
                         className={`relative border-2 border-dashed rounded-2xl p-5 text-center transition-all cursor-pointer select-none ${
                           isDragging
-                            ? "border-blue-500 bg-blue-50/70 ring-4 ring-blue-100 scale-[1.01]"
+                            ? "border-[#F95721] bg-orange-50/70 ring-4 ring-orange-100 scale-[1.01]"
                             : uploadFile
                               ? "border-emerald-400 bg-emerald-50/30 hover:bg-emerald-50/50"
-                              : "border-slate-300 hover:border-blue-400 bg-white hover:bg-blue-50/20"
+                              : "border-slate-300 hover:border-orange-400 bg-white hover:bg-orange-50/20"
                         }`}
                       >
                         <input
@@ -1906,14 +1906,14 @@ function DesignStudioContent() {
                             <div
                               className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-colors ${
                                 isDragging
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-blue-100 text-blue-600"
+                                  ? "bg-[#F95721] text-white"
+                                  : "bg-orange-100 text-[#F95721]"
                               }`}
                             >
                               <Upload className="w-5 h-5" />
                             </div>
                             <p className="text-xs font-bold text-slate-700">
-                              <span className="text-blue-600 hover:underline">Click to browse</span> or drag and drop artwork file
+                              <span className="text-[#F95721] hover:underline">Click to browse</span> or drag and drop artwork file
                             </p>
                             <p className="text-[11px] text-slate-400 mt-1">
                               PDF, PNG, JPG, TIFF, PSD, AI up to 50MB
@@ -1930,7 +1930,7 @@ function DesignStudioContent() {
                           <select
                             value={uploadCategory}
                             onChange={(e) => setUploadCategory(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                           >
                             <option value="PROOF">
                               PROOF (Client Review Artwork)
@@ -1955,7 +1955,7 @@ function DesignStudioContent() {
                           <button
                             type="submit"
                             disabled={uploadingAsset || !uploadFile}
-                            className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                            className="w-full py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                           >
                             <Upload className="w-4 h-4" />
                             {uploadingAsset
@@ -1996,7 +1996,7 @@ function DesignStudioContent() {
                           return (
                             <div
                               key={asset._id}
-                              className="p-3 rounded-xl bg-white border border-slate-200 hover:border-blue-400 shadow-2xs flex flex-col justify-between transition-all"
+                              className="p-3 rounded-xl bg-white border border-slate-200 hover:border-orange-400 shadow-2xs flex flex-col justify-between transition-all"
                             >
                               <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-200 mb-2 flex items-center justify-center">
                                 {isImg ? (
@@ -2006,7 +2006,7 @@ function DesignStudioContent() {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <FileCode className="w-8 h-8 text-blue-500" />
+                                  <FileCode className="w-8 h-8 text-orange-500" />
                                 )}
                                 <span className="absolute top-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800/80 text-white">
                                   {asset.category}
@@ -2029,7 +2029,7 @@ function DesignStudioContent() {
                                     href={asset.fileUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 font-semibold"
+                                    className="text-[10px] text-[#F95721] hover:underline flex items-center gap-1 font-semibold"
                                   >
                                     View{" "}
                                     <ExternalLink className="w-2.5 h-2.5" />
@@ -2499,7 +2499,7 @@ function DesignStudioContent() {
 
                     {/* Final Current End Banner */}
                     {selectedProject.status === "PRODUCTION_LOCKED" ? (
-                      <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 space-y-2.5">
+                      <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-orange-50 border border-cyan-200 space-y-2.5">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex items-center gap-2 text-cyan-800 font-bold text-xs">
                             <CheckCircle2 className="w-4 h-4 text-cyan-600" />
@@ -2543,7 +2543,7 @@ function DesignStudioContent() {
                           <div className="pt-2 flex justify-end border-t border-cyan-200">
                             <button
                               onClick={handleHandoffToProduction}
-                              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                              className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                             >
                               <Printer className="w-4 h-4" />
                               <span>
@@ -2665,7 +2665,7 @@ function DesignStudioContent() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-60 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-2xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto text-slate-800">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5 text-blue-600">
+              <div className="flex items-center gap-2.5 text-[#F95721]">
                 <Layers className="w-5 h-5" />
                 <h3 className="text-base font-bold text-slate-900">
                   Edit 7-Point Technical Production Brief
@@ -2690,7 +2690,7 @@ function DesignStudioContent() {
             <form onSubmit={handleSaveSpecs} className="space-y-4 text-xs">
               {/* 1. Dimensions & Quantity */}
               <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3">
-                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-[#F95721] uppercase tracking-wider block">
                   1. Dimensions &amp; Quantity
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -2709,7 +2709,7 @@ function DesignStudioContent() {
                           width: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -2728,7 +2728,7 @@ function DesignStudioContent() {
                           height: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -2744,7 +2744,7 @@ function DesignStudioContent() {
                           dimensionUnit: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     >
                       <option value="inch">Inches (in)</option>
                       <option value="mm">Millimeter (mm)</option>
@@ -2769,7 +2769,7 @@ function DesignStudioContent() {
                           quantity: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
                 </div>
@@ -3067,7 +3067,7 @@ function DesignStudioContent() {
                 <button
                   type="submit"
                   disabled={savingSpecs}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {savingSpecs ? "Saving..." : "Save & Sync Specifications"}
                 </button>
@@ -3157,7 +3157,7 @@ export default function DesignStudioPage() {
       fallback={
         <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-slate-500 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-[#F95721] animate-ping" />
             Loading Design Studio...
           </div>
         </div>

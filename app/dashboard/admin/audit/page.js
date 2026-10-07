@@ -114,7 +114,7 @@ export default function AuditLogsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <History className="w-6 h-6 text-blue-600" />
+                <History className="w-6 h-6 text-[#F95721]" />
                 System Audit & Security Logs
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -131,7 +131,7 @@ export default function AuditLogsPage() {
                 title="Refresh"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -149,7 +149,7 @@ export default function AuditLogsPage() {
                 placeholder="Filter by actor email (e.g. admin@)..."
                 value={userEmailSearch}
                 onChange={(e) => setUserEmailSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-xs"
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F95721] shadow-xs"
               />
             </form>
 
@@ -231,7 +231,7 @@ export default function AuditLogsPage() {
                                   ? "bg-rose-50 text-rose-700 border-rose-200"
                                   : item.action === "OVERRIDE"
                                     ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                                    : "bg-orange-50 text-orange-700 border-orange-200"
                             }`}
                           >
                             {item.action || "UPDATE"}
@@ -246,7 +246,7 @@ export default function AuditLogsPage() {
                         <td className="py-3.5 text-right">
                           <button
                             onClick={() => setSelectedLog(item)}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors"
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-[#F95721] transition-colors"
                             title="View Diff Metadata"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -334,7 +334,7 @@ export default function AuditLogsPage() {
                 </div>
                 <div>
                   <span className="text-slate-400 block mb-0.5">Action</span>
-                  <span className="font-bold text-blue-600">
+                  <span className="font-bold text-[#F95721]">
                     {selectedLog.action}
                   </span>
                 </div>

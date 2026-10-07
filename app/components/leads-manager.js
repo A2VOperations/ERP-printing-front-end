@@ -921,7 +921,7 @@ export default function LeadsManager({
   const getStatusDotColor = (status) => {
     switch (status) {
       case "Incoming":
-        return "bg-blue-500";
+        return "bg-orange-500";
       case "Active":
       case "Accepted":
         return "bg-sky-500";
@@ -950,10 +950,10 @@ export default function LeadsManager({
     switch (s) {
       case "Incoming":
         return {
-          topBar: "bg-blue-500",
-          border: "border-blue-200/90",
-          cardBg: "bg-gradient-to-b from-blue-50/40 via-white to-white",
-          glow: "hover:border-blue-400 hover:shadow-blue-500/10",
+          topBar: "bg-orange-500",
+          border: "border-orange-200/90",
+          cardBg: "bg-gradient-to-b from-orange-50/40 via-white to-white",
+          glow: "hover:border-orange-400 hover:shadow-orange-500/10",
         };
       case "Active":
       case "Accepted":
@@ -1034,8 +1034,8 @@ export default function LeadsManager({
 
     if (normalized === "Incoming") {
       styles =
-        "bg-blue-50 text-blue-700 border-blue-200/80 ring-1 ring-blue-500/10";
-      dotColor = "bg-blue-500 animate-pulse";
+        "bg-orange-50 text-orange-700 border-orange-200/80 ring-1 ring-orange-500/10";
+      dotColor = "bg-orange-500 animate-pulse";
       Icon = Sparkles;
     } else if (normalized === "Active" || normalized === "Accepted") {
       styles =
@@ -1196,7 +1196,7 @@ export default function LeadsManager({
             e.stopPropagation();
             if (handleAcceptLead) handleAcceptLead(lead.id || lead._id);
           }}
-          className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-500 hover:bg-[#e84915] active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-all cursor-pointer"
         >
           <CheckCircle2 className="w-3.5 h-3.5" />
           <span>Accept Lead</span>
@@ -1240,7 +1240,7 @@ export default function LeadsManager({
           <span
             className={`inline-flex items-center gap-1 font-mono text-xs font-bold px-2 py-0.5 rounded-md border ${
               isPending
-                ? "text-blue-700 bg-blue-50 border-blue-200/70"
+                ? "text-orange-700 bg-orange-50 border-orange-200/70"
                 : "text-slate-600 bg-slate-100 border-slate-200"
             }`}
           >
@@ -2484,7 +2484,7 @@ export default function LeadsManager({
                           {/* Schedule Follow-Up Button */}
                           <button
                             onClick={() => handleOpenScheduleFollowUp(lead)}
-                            className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg border border-blue-200/70 transition-all cursor-pointer shadow-2xs"
+                            className="p-1.5 bg-orange-50 text-[#F95721] hover:bg-[#e84915] hover:text-white rounded-lg border border-orange-200/70 transition-all cursor-pointer shadow-2xs"
                             title="Schedule Follow-Up Task"
                           >
                             <Calendar className="w-3.5 h-3.5" />
@@ -2604,9 +2604,9 @@ export default function LeadsManager({
                         </span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between bg-blue-50/80 border border-blue-200/80 p-2 rounded-xl text-xs">
-                        <div className="flex items-center gap-1 text-blue-800 font-bold">
-                          <Sparkles className="w-3 h-3 text-blue-600 animate-pulse" />
+                      <div className="flex items-center justify-between bg-orange-50/80 border border-orange-200/80 p-2 rounded-xl text-xs">
+                        <div className="flex items-center gap-1 text-orange-800 font-bold">
+                          <Sparkles className="w-3 h-3 text-[#F95721] animate-pulse" />
                           <span>Incoming</span>
                         </div>
                         <button
@@ -2614,7 +2614,7 @@ export default function LeadsManager({
                             handleAcceptLead &&
                             handleAcceptLead(lead.id || lead._id)
                           }
-                          className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-[11px] rounded-lg shadow-xs cursor-pointer transition-all flex items-center gap-1"
+                          className="px-2.5 py-1 bg-orange-500 hover:bg-[#e84915] active:scale-95 text-white font-bold text-[11px] rounded-lg shadow-xs cursor-pointer transition-all flex items-center gap-1"
                         >
                           <CheckCircle2 className="w-3 h-3" />
                           <span>Accept Lead</span>
@@ -2641,7 +2641,7 @@ export default function LeadsManager({
                         <div
                           className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${
                             (Number(lead.balanceAmount) || 0) > 0
-                              ? "text-blue-700 bg-blue-50/80 border-blue-200/60"
+                              ? "text-orange-700 bg-orange-50/80 border-orange-200/60"
                               : "text-slate-600 bg-slate-100 border-slate-200"
                           }`}
                         >
@@ -2755,7 +2755,7 @@ export default function LeadsManager({
                     </button>
                     <button
                       onClick={() => handleOpenScheduleFollowUp(lead)}
-                      className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl border border-blue-200/70 transition-all cursor-pointer"
+                      className="p-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl border border-orange-200/70 transition-all cursor-pointer"
                       title="Schedule Follow-Up Task"
                     >
                       <Calendar className="w-4 h-4" />
@@ -2808,7 +2808,7 @@ export default function LeadsManager({
               {/* Premium Gradient Header */}
               <div className="bg-linear-to-r from-slate-900 via-slate-850 to-slate-900 text-white p-4 sm:p-6 flex items-start justify-between border-b border-slate-800 shadow-md">
                 <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-md bg-linear-to-tr from-sky-600 to-blue-500 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-lg shadow-sky-500/25 border border-sky-400/30 shrink-0">
+                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-md bg-linear-to-tr from-sky-600 to-[#FF7043] text-white flex items-center justify-center font-black text-base sm:text-lg shadow-lg shadow-sky-500/25 border border-sky-400/30 shrink-0">
                     {(quickViewLead.name || "L").substring(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -2889,11 +2889,11 @@ export default function LeadsManager({
                           ).toLocaleString("en-IN")}
                         </span>
                       </div>
-                      <div className="bg-blue-500/10 border border-blue-500/20 p-2 sm:p-2.5 rounded-xl">
-                        <span className="text-[9px] uppercase font-bold text-blue-400 block tracking-wider">
+                      <div className="bg-orange-500/10 border border-orange-500/20 p-2 sm:p-2.5 rounded-xl">
+                        <span className="text-[9px] uppercase font-bold text-orange-400 block tracking-wider">
                           Balance
                         </span>
-                        <span className="text-xs font-mono font-black text-blue-300 mt-0.5 block truncate">
+                        <span className="text-xs font-mono font-black text-orange-300 mt-0.5 block truncate">
                           ₹
                           {(
                             Number(quickViewLead.balanceAmount) || 0
@@ -3011,8 +3011,8 @@ export default function LeadsManager({
                           <span>{quickViewLead.handledBy}</span>
                         </span>
                       ) : (
-                        <span className="font-black text-blue-600 text-xs flex items-center gap-1.5 mt-0.5">
-                          <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse shrink-0" />
+                        <span className="font-black text-[#F95721] text-xs flex items-center gap-1.5 mt-0.5">
+                          <Sparkles className="w-3.5 h-3.5 text-orange-500 animate-pulse shrink-0" />
                           <span>Unassigned / Incoming</span>
                         </span>
                       )}
@@ -3026,10 +3026,10 @@ export default function LeadsManager({
                     <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                       Call Remarks
                     </h4>
-                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-md flex flex-col gap-2.5 shadow-2xs">
+                    <div className="bg-orange-50/80 border border-orange-200/80 p-4 rounded-md flex flex-col gap-2.5 shadow-2xs">
                       {quickViewLead.remark && (
                         <div>
-                          <span className="text-[10px] text-blue-800 font-bold uppercase block tracking-wider">
+                          <span className="text-[10px] text-orange-800 font-bold uppercase block tracking-wider">
                             Primary Remark
                           </span>
                           <p className="font-semibold text-slate-800 text-xs mt-0.5">
@@ -3041,11 +3041,11 @@ export default function LeadsManager({
                         <div
                           className={
                             quickViewLead.remark
-                              ? "border-t border-blue-200/60 pt-2"
+                              ? "border-t border-orange-200/60 pt-2"
                               : ""
                           }
                         >
-                          <span className="text-[10px] text-blue-800 font-bold uppercase block tracking-wider">
+                          <span className="text-[10px] text-orange-800 font-bold uppercase block tracking-wider">
                             Follow-up Remark
                           </span>
                           <p className="font-semibold text-slate-800 text-xs mt-0.5">
@@ -3219,7 +3219,7 @@ export default function LeadsManager({
                               : h.action === "FORWARDED"
                                 ? "indigo"
                                 : h.action === "ACCEPTED"
-                                  ? "blue"
+                                  ? "orange"
                                   : "slate",
                         });
                       });
@@ -3297,9 +3297,9 @@ export default function LeadsManager({
                             );
                           } else if (item.type === "ACCEPTED") {
                             badgeBg =
-                              "bg-blue-50 text-blue-700 border-blue-200";
+                              "bg-orange-50 text-orange-700 border-orange-200";
                             icon = (
-                              <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                              <CheckCircle2 className="w-3 h-3 text-[#F95721]" />
                             );
                           } else if (item.type === "UPDATED") {
                             badgeBg =
@@ -3368,9 +3368,9 @@ export default function LeadsManager({
               <div className="bg-white/95 backdrop-blur-md border-t border-slate-200/80 p-3.5 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0 shadow-lg">
                 <button
                   onClick={() => handleOpenScheduleFollowUp(quickViewLead)}
-                  className="px-3.5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-xs rounded-xl border border-blue-200/80 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs flex-1 sm:flex-initial"
+                  className="px-3.5 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 font-extrabold text-xs rounded-xl border border-orange-200/80 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs flex-1 sm:flex-initial"
                 >
-                  <Calendar className="w-4 h-4 text-blue-600" />
+                  <Calendar className="w-4 h-4 text-[#F95721]" />
                   <span>Schedule Follow-Up</span>
                 </button>
                 {!quickViewLead.handledBy ? (
@@ -3384,7 +3384,7 @@ export default function LeadsManager({
                         status: "Active",
                       }));
                     }}
-                    className="px-4 py-2.5 bg-linear-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
+                    className="px-4 py-2.5 bg-linear-to-r from-[#F95721] to-orange-500 hover:from-[#F95721] hover:to-orange-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 flex-1 sm:flex-initial"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Accept Lead Now</span>
@@ -3874,7 +3874,7 @@ export default function LeadsManager({
                           }))
                         }
                         placeholder="e.g. 25000"
-                        className="w-full h-10 rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all bg-white font-mono"
+                        className="w-full h-10 rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#F95721] focus:ring-2 focus:ring-orange-500/10 outline-none transition-all bg-white font-mono"
                       />
                     </div>
                   </div>
@@ -4829,7 +4829,7 @@ export default function LeadsManager({
           <div className="fixed inset-0 z-99999 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
             <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-md overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="p-4 sm:p-6 bg-linear-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+              <div className="p-4 sm:p-6 bg-linear-to-r from-[#F95721] to-indigo-600 text-white flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="p-2 sm:p-2.5 bg-white/20 backdrop-blur-md rounded-md shrink-0">
                     <Calendar className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
@@ -4838,7 +4838,7 @@ export default function LeadsManager({
                     <h3 className="font-extrabold text-sm sm:text-base leading-snug truncate">
                       Schedule Follow-Up
                     </h3>
-                    <p className="text-xs text-blue-100 font-medium truncate">
+                    <p className="text-xs text-orange-100 font-medium truncate">
                       Add a follow-up task for{" "}
                       {scheduleFollowUpModal.lead?.name || "Client"}
                     </p>
@@ -4855,17 +4855,17 @@ export default function LeadsManager({
               {/* Modal Body */}
               <div className="p-4 sm:p-6 space-y-4 text-xs font-semibold text-slate-700">
                 {/* Client Info Banner */}
-                <div className="bg-blue-50/60 border border-blue-100 rounded-md p-3.5 flex items-center justify-between flex-wrap gap-2">
+                <div className="bg-orange-50/60 border border-orange-100 rounded-md p-3.5 flex items-center justify-between flex-wrap gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-slate-900 text-sm truncate">
                       {scheduleFollowUpModal.lead?.name}
                     </div>
-                    <div className="text-[11px] text-blue-700 font-medium font-mono truncate">
+                    <div className="text-[11px] text-orange-700 font-medium font-mono truncate">
                       {scheduleFollowUpModal.lead?.phone} •{" "}
                       {scheduleFollowUpModal.lead?.businessName || "Client"}
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-lg shrink-0">
+                  <span className="px-2.5 py-1 bg-orange-100 text-orange-800 text-[10px] font-bold rounded-lg shrink-0">
                     {scheduleFollowUpModal.lead?.status || "Active"}
                   </span>
                 </div>
@@ -4873,7 +4873,7 @@ export default function LeadsManager({
                 {/* Follow-Up Date & Time Input */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-blue-600" />
+                    <Clock className="w-3.5 h-3.5 text-[#F95721]" />
                     <span>Follow-Up Date & Time</span>
                     <span className="text-rose-500">*</span>
                   </label>
@@ -4886,14 +4886,14 @@ export default function LeadsManager({
                         scheduledAt: e.target.value,
                       }))
                     }
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] transition-all cursor-pointer"
                   />
                 </div>
 
                 {/* Follow-Up Description / Note */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    <FileText className="w-3.5 h-3.5 text-[#F95721]" />
                     <span>Follow-Up Task / Note</span>
                   </label>
                   <textarea
@@ -4906,7 +4906,7 @@ export default function LeadsManager({
                       }))
                     }
                     placeholder="Enter discussion topics, call agenda, or reminders..."
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] transition-all resize-none"
                   />
                 </div>
               </div>
@@ -4927,7 +4927,7 @@ export default function LeadsManager({
                     scheduleFollowUpModal.isSubmitting
                   }
                   onClick={handleConfirmScheduleFollowUp}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-[#F95721] hover:bg-[#e84915] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md shadow-orange-500/20 transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   {scheduleFollowUpModal.isSubmitting ? (
                     <>

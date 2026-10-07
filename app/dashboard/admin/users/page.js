@@ -592,7 +592,7 @@ export default function UsersDirectoryPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Users className="w-6 h-6 text-blue-600" />
+                <Users className="w-6 h-6 text-[#F95721]" />
                 Users Directory & Access Management
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -609,13 +609,13 @@ export default function UsersDirectoryPage() {
                 title="Refresh"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
 
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 Create New User
@@ -632,7 +632,7 @@ export default function UsersDirectoryPage() {
                 placeholder="Search user by name, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-xs"
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F95721] shadow-xs"
               />
             </div>
 
@@ -695,7 +695,7 @@ export default function UsersDirectoryPage() {
                         >
                           <td className="py-3.5">
                             <div className="flex items-center gap-3">
-                              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-50 to-indigo-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
                                 {userAvatar ? (
                                   <img
                                     src={userAvatar}
@@ -716,7 +716,7 @@ export default function UsersDirectoryPage() {
                                 <span className="font-bold text-slate-900 block flex items-center gap-1.5">
                                   {u.name}
                                   {isSelf && (
-                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[9px] font-bold border border-blue-200">
+                                    <span className="px-1.5 py-0.5 rounded-md bg-orange-50 text-[#F95721] text-[9px] font-bold border border-orange-200">
                                       You
                                     </span>
                                   )}
@@ -748,7 +748,7 @@ export default function UsersDirectoryPage() {
                                         ? "bg-pink-50 text-pink-700 border-pink-200"
                                         : roleSlug === "data_operator"
                                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                          : "bg-blue-50 text-blue-700 border-blue-200"
+                                          : "bg-orange-50 text-orange-700 border-orange-200"
                                 }`}
                               >
                                 {roleSlug.replace("_", " ").toUpperCase()}
@@ -804,7 +804,7 @@ export default function UsersDirectoryPage() {
                                   });
                                   setShowEditModal(true);
                                 }}
-                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors"
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-orange-50 text-slate-600 hover:text-[#F95721] transition-colors"
                                 title="Edit User"
                               >
                                 <Edit className="w-3.5 h-3.5" />
@@ -907,7 +907,7 @@ export default function UsersDirectoryPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -923,7 +923,7 @@ export default function UsersDirectoryPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, email: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -939,7 +939,7 @@ export default function UsersDirectoryPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, password: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -953,7 +953,7 @@ export default function UsersDirectoryPage() {
                     onChange={(e) =>
                       setNewUser({ ...newUser, roleSlug: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-semibold"
                   >
                     {ALLOWED_ROLES.map((r) => (
                       <option key={r.slug} value={r.slug}>
@@ -974,7 +974,7 @@ export default function UsersDirectoryPage() {
                     onChange={(e) =>
                       setNewUser({ ...newUser, phone: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -991,7 +991,7 @@ export default function UsersDirectoryPage() {
                       areaIds: e.target.value ? [e.target.value] : [],
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-medium"
                 >
                   <option value="">-- No Territory (Unassigned) --</option>
                   {areas.map((a) => (
@@ -1026,7 +1026,7 @@ export default function UsersDirectoryPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md shadow-orange-500/20"
                 >
                   Create User
                 </button>
@@ -1042,7 +1042,7 @@ export default function UsersDirectoryPage() {
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-50 to-indigo-100 text-orange-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden border border-slate-200 shadow-xs">
                   {resolveUserAvatar(selectedUser) ? (
                     <img
                       src={resolveUserAvatar(selectedUser)}
@@ -1081,7 +1081,7 @@ export default function UsersDirectoryPage() {
                   onChange={(e) =>
                     setSelectedUser({ ...selectedUser, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1095,7 +1095,7 @@ export default function UsersDirectoryPage() {
                   onChange={(e) =>
                     setSelectedUser({ ...selectedUser, phone: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1111,7 +1111,7 @@ export default function UsersDirectoryPage() {
                       newRoleSlug: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-semibold"
                 >
                   {ALLOWED_ROLES.map((r) => (
                     <option key={r.slug} value={r.slug}>
@@ -1140,7 +1140,7 @@ export default function UsersDirectoryPage() {
                       areaIds: e.target.value ? [e.target.value] : [],
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-medium"
                 >
                   <option value="">-- No Territory (Unassigned) --</option>
                   {areas.map((a) => (
@@ -1182,7 +1182,7 @@ export default function UsersDirectoryPage() {
                       newPassword: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1196,7 +1196,7 @@ export default function UsersDirectoryPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md shadow-orange-500/20"
                 >
                   Save Changes
                 </button>
@@ -1255,7 +1255,7 @@ export default function UsersDirectoryPage() {
                   placeholder="Enter new password (min 6 characters)"
                   value={newPasswordInput}
                   onChange={(e) => setNewPasswordInput(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1320,7 +1320,7 @@ export default function UsersDirectoryPage() {
             {/* Modal Header */}
             <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-blue-100 text-indigo-600 flex items-center justify-center font-bold shrink-0 overflow-hidden border border-indigo-200/60 shadow-xs text-xs">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-orange-100 text-indigo-600 flex items-center justify-center font-bold shrink-0 overflow-hidden border border-indigo-200/60 shadow-xs text-xs">
                   {resolveUserAvatar(permissionsUser) ? (
                     <img
                       src={resolveUserAvatar(permissionsUser)}
@@ -1378,7 +1378,7 @@ export default function UsersDirectoryPage() {
                         onClick={() => setHasCustomPermissions(false)}
                         className={`px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all ${
                           !hasCustomPermissions
-                            ? "bg-blue-600 text-white shadow-xs"
+                            ? "bg-[#F95721] text-white shadow-xs"
                             : "text-slate-600 hover:bg-slate-100"
                         }`}
                       >
@@ -1410,15 +1410,15 @@ export default function UsersDirectoryPage() {
 
                   {/* Notice when Role Defaults active */}
                   {!hasCustomPermissions ? (
-                    <div className="p-4 rounded-md bg-blue-50/70 border border-blue-100 text-blue-900 space-y-2">
+                    <div className="p-4 rounded-md bg-orange-50/70 border border-orange-100 text-orange-950 space-y-2">
                       <div className="flex items-center gap-2 font-bold text-xs">
-                        <Check className="w-4 h-4 text-blue-600" />
+                        <Check className="w-4 h-4 text-[#F95721]" />
                         <span>
                           Currently Inheriting Role Permissions (
                           {permissionsUser.roleSlug || permissionsUser.role})
                         </span>
                       </div>
-                      <p className="text-[11px] text-blue-700 leading-relaxed">
+                      <p className="text-[11px] text-orange-700 leading-relaxed">
                         This user automatically receives all permission updates
                         made to the &quot;
                         {permissionsUser.roleSlug || permissionsUser.role}&quot;

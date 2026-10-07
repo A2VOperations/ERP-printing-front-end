@@ -369,9 +369,9 @@ export default function ManagerDashboardPage() {
         actor: q.customerSnapshot?.displayName || q.customerName || "Customer",
         text: `Quotation ${q.quotationNumber || "Offer"} generated for ₹${(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.total || 0).toLocaleString("en-IN")}`,
         badge: q.status || "DRAFT",
-        badgeColor: "bg-blue-50 text-blue-700",
+        badgeColor: "bg-orange-50 text-orange-700",
         icon: FileText,
-        iconBg: "bg-blue-50 text-blue-600",
+        iconBg: "bg-orange-50 text-[#F95721]",
       });
     });
     return list;
@@ -389,7 +389,7 @@ export default function ManagerDashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-100 uppercase tracking-wider">
                   MANAGER WORKSPACE
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
@@ -412,7 +412,7 @@ export default function ManagerDashboardPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#F95721]" : "text-slate-500"}`}
                 />
                 Refresh Data
               </button>
@@ -440,7 +440,7 @@ export default function ManagerDashboardPage() {
                     {newTeamLeads}
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
@@ -450,7 +450,7 @@ export default function ManagerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/leads?status=NEW"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Leads →
                 </Link>
@@ -480,7 +480,7 @@ export default function ManagerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/followups"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Follow-ups →
                 </Link>
@@ -526,7 +526,7 @@ export default function ManagerDashboardPage() {
                     {activeOrdersCount}
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <ShoppingBag className="w-4 h-4" />
                 </div>
               </div>
@@ -536,7 +536,7 @@ export default function ManagerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/orders"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Orders →
                 </Link>
@@ -567,7 +567,7 @@ export default function ManagerDashboardPage() {
                 </span>
                 <Link
                   href="/dashboard/receivables"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Receivables →
                 </Link>
@@ -585,7 +585,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/leads"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Pipeline →
                 </Link>
@@ -596,7 +596,7 @@ export default function ManagerDashboardPage() {
                 {/* New */}
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 flex-1">
-                    <div className="w-24 bg-blue-500 text-white text-[10px] font-bold py-1 px-2 rounded-md text-center">
+                    <div className="w-24 bg-orange-500 text-white text-[10px] font-bold py-1 px-2 rounded-md text-center">
                       {pipelineCounts.new}
                     </div>
                     <span className="font-semibold text-slate-700 text-[11px]">
@@ -702,7 +702,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/followups"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All Activities →
                 </Link>
@@ -757,7 +757,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/performance"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Performance →
                 </Link>
@@ -860,7 +860,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/leads"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All →
                 </Link>
@@ -946,9 +946,9 @@ export default function ManagerDashboardPage() {
                 </div>
 
                 {/* 4. Active Design Jobs */}
-                <div className="flex items-center justify-between p-2 rounded-xl bg-blue-50/50 border border-blue-100">
+                <div className="flex items-center justify-between p-2 rounded-xl bg-orange-50/50 border border-orange-100">
                   <div className="flex items-center gap-2">
-                    <Palette className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    <Palette className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                     <div>
                       <strong className="text-slate-900 text-[11px] block">
                         {designDueCount} Active Design Projects
@@ -959,12 +959,12 @@ export default function ManagerDashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-blue-500 text-white font-bold text-[9px] flex items-center justify-center">
+                    <span className="w-4 h-4 rounded-full bg-orange-500 text-white font-bold text-[9px] flex items-center justify-center">
                       {designDueCount}
                     </span>
                     <Link
                       href="/dashboard/design"
-                      className="px-2 py-0.5 rounded-lg bg-white border border-blue-200 text-blue-700 font-bold text-[10px] hover:bg-blue-50"
+                      className="px-2 py-0.5 rounded-lg bg-white border border-orange-200 text-orange-700 font-bold text-[10px] hover:bg-orange-50"
                     >
                       Queue
                     </Link>
@@ -1034,7 +1034,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/manager/team"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View Team →
                 </Link>
@@ -1084,7 +1084,7 @@ export default function ManagerDashboardPage() {
                         return (
                           <tr key={member._id} className="hover:bg-slate-50">
                             <td className="py-2 flex items-center gap-1.5">
-                              <div className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-[#F95721] text-white font-bold text-[9px] flex items-center justify-center">
                                 {(member.name || "TM")
                                   .slice(0, 2)
                                   .toUpperCase()}
@@ -1140,9 +1140,9 @@ export default function ManagerDashboardPage() {
                 {/* 1. Assign Lead */}
                 <Link
                   href="/dashboard/leads"
-                  className="p-2.5 rounded-xl bg-blue-50/70 hover:bg-blue-100 border border-blue-100 flex items-center gap-2.5 transition-colors"
+                  className="p-2.5 rounded-xl bg-orange-50/70 hover:bg-orange-100 border border-orange-100 flex items-center gap-2.5 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#F95721] text-white flex items-center justify-center shrink-0">
                     <UserPlus className="w-3.5 h-3.5" />
                   </div>
                   <div>
@@ -1276,7 +1276,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/leads"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All Leads →
                 </Link>
@@ -1316,7 +1316,7 @@ export default function ManagerDashboardPage() {
                                 l.status === "WON"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                   : l.status === "NEW"
-                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                    ? "bg-orange-50 text-orange-700 border border-orange-200"
                                     : "bg-teal-50 text-teal-700 border border-teal-200"
                               }`}
                             >
@@ -1353,7 +1353,7 @@ export default function ManagerDashboardPage() {
                 </h3>
                 <Link
                   href="/dashboard/manager/approvals"
-                  className="text-[11px] font-bold text-blue-600 hover:underline"
+                  className="text-[11px] font-bold text-[#F95721] hover:underline"
                 >
                   View All →
                 </Link>
@@ -1375,7 +1375,7 @@ export default function ManagerDashboardPage() {
                     {approvals.length > 0 ? (
                       approvals.slice(0, 5).map((appr) => (
                         <tr key={appr._id} className="hover:bg-slate-50">
-                          <td className="py-2.5 font-bold font-mono text-blue-600">
+                          <td className="py-2.5 font-bold font-mono text-[#F95721]">
                             {appr.quotationId?.quotationNumber ||
                               appr.quotationNumber ||
                               "QTN"}

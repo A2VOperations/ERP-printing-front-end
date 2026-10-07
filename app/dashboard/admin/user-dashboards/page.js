@@ -52,8 +52,8 @@ import {
 const ROLE_COLORS = {
   admin: "bg-purple-50 text-purple-700 border-purple-200",
   super_admin: "bg-purple-50 text-purple-700 border-purple-200",
-  manager: "bg-blue-50 text-blue-700 border-blue-200",
-  sales_manager: "bg-blue-50 text-blue-700 border-blue-200",
+  manager: "bg-orange-50 text-orange-700 border-orange-200",
+  sales_manager: "bg-orange-50 text-orange-700 border-orange-200",
   sales: "bg-emerald-50 text-emerald-700 border-emerald-200",
   employee: "bg-emerald-50 text-emerald-700 border-emerald-200",
   executive: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -647,7 +647,7 @@ export default function AdminUserDashboardsPage() {
           <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
             {/* Background ambient decorative circles */}
             <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -718,7 +718,7 @@ export default function AdminUserDashboardsPage() {
 
               <div className="bg-white/5 rounded-xl p-3 border border-white/5">
                 <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-blue-400" />
+                  <Briefcase className="w-3.5 h-3.5 text-orange-400" />
                   Assigned Leads
                 </div>
                 <div className="mt-1 text-xl sm:text-2xl font-black text-white">
@@ -1401,10 +1401,10 @@ export default function AdminUserDashboardsPage() {
                       </div>
 
                       {/* 2. Active Artwork in Progress & Review */}
-                      <div className="bg-white rounded-2xl p-5 border border-blue-200 shadow-xs">
-                        <div className="flex items-center justify-between text-blue-700 text-xs font-bold uppercase tracking-wider mb-2">
+                      <div className="bg-white rounded-2xl p-5 border border-orange-200 shadow-xs">
+                        <div className="flex items-center justify-between text-orange-700 text-xs font-bold uppercase tracking-wider mb-2">
                           <span>Active Design Queue</span>
-                          <Clock className="w-4 h-4 text-blue-600" />
+                          <Clock className="w-4 h-4 text-[#F95721]" />
                         </div>
                         <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
                           {selectedUserDashboard.kpi.designStats?.activeProjects ?? 0}
@@ -1412,10 +1412,10 @@ export default function AdminUserDashboardsPage() {
                             In Pipeline
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-blue-50">
+                        <div className="flex items-center justify-between text-xs text-slate-500 mt-2 pt-2 border-t border-orange-50">
                           <span>
                             Client Review:{" "}
-                            <strong className="text-blue-700 font-bold">
+                            <strong className="text-orange-700 font-bold">
                               {selectedUserDashboard.kpi.designStats?.inReviewCount ?? 0}
                             </strong>
                           </span>
@@ -1530,7 +1530,7 @@ export default function AdminUserDashboardsPage() {
                       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
                           <span>Follow-ups Schedule</span>
-                          <Clock className="w-4 h-4 text-blue-600" />
+                          <Clock className="w-4 h-4 text-[#F95721]" />
                         </div>
                         <div className="text-2xl font-black text-slate-900 flex items-center gap-2">
                           {selectedUserDashboard.kpi.todayFollowupsCount}
@@ -1731,7 +1731,7 @@ export default function AdminUserDashboardsPage() {
                                       p.status === "IN_REVIEW"
                                     )
                                       statusColor =
-                                        "bg-blue-50 text-blue-700 border-blue-200";
+                                        "bg-orange-50 text-orange-700 border-orange-200";
                                     else if (p.status === "IN_PROGRESS")
                                       statusColor =
                                         "bg-amber-50 text-amber-700 border-amber-200";
@@ -1899,7 +1899,7 @@ export default function AdminUserDashboardsPage() {
                         </div>
 
                         {/* Quick Studio Workflow Action Banner */}
-                        <div className="p-4 rounded-2xl bg-linear-to-r from-purple-50 via-indigo-50 to-blue-50 border border-indigo-100 flex items-center justify-between gap-4 flex-wrap">
+                        <div className="p-4 rounded-2xl bg-linear-to-r from-purple-50 via-indigo-50 to-orange-50 border border-indigo-100 flex items-center justify-between gap-4 flex-wrap">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-600/20">
                               <Palette className="w-5 h-5" />
@@ -1928,7 +1928,7 @@ export default function AdminUserDashboardsPage() {
                         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-blue-600" />
+                              <Clock className="w-4 h-4 text-[#F95721]" />
                               Scheduled Follow-ups for{" "}
                               {selectedUserDashboard.user.name.split(" ")[0]}
                             </h3>
@@ -1978,7 +1978,7 @@ export default function AdminUserDashboardsPage() {
                                           new Date(f.dueAt || f.scheduledAt) <
                                           new Date()
                                             ? "bg-rose-50 text-rose-600 border border-rose-200"
-                                            : "bg-blue-50 text-blue-700 border border-blue-200"
+                                            : "bg-orange-50 text-orange-700 border border-orange-200"
                                         }`}
                                       >
                                         {new Date(
@@ -2189,7 +2189,7 @@ export default function AdminUserDashboardsPage() {
                                         new Date(f.dueAt || f.scheduledAt) <
                                         new Date()
                                           ? "bg-rose-50 text-rose-600 border border-rose-200"
-                                          : "bg-blue-50 text-blue-700 border border-blue-200"
+                                          : "bg-orange-50 text-orange-700 border border-orange-200"
                                       }`}
                                     >
                                       {new Date(
@@ -2504,7 +2504,7 @@ export default function AdminUserDashboardsPage() {
                                   p.status === "IN_REVIEW"
                                 )
                                   statusColor =
-                                    "bg-blue-50 text-blue-700 border-blue-200";
+                                    "bg-orange-50 text-orange-700 border-orange-200";
                                 else if (p.status === "IN_PROGRESS")
                                   statusColor =
                                     "bg-amber-50 text-amber-700 border-amber-200";

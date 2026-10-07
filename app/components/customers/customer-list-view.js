@@ -142,7 +142,7 @@ export default function CustomerListView({ user }) {
       case "VIP":
         return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       case "PROSPECT":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
       case "ARCHIVED":
         return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
       case "CREDIT_BLOCKED":
@@ -158,7 +158,7 @@ export default function CustomerListView({ user }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900/60 p-6 rounded-md border border-zinc-800 backdrop-blur-xl shadow-xl">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-600/10 rounded-xl text-blue-400 border border-blue-500/20">
+            <div className="p-2.5 bg-[#F95721]/10 rounded-xl text-orange-400 border border-orange-500/20">
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -210,7 +210,7 @@ export default function CustomerListView({ user }) {
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-blue-600/20"
+            className="px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-orange-500/20"
           >
             <svg
               className="w-4 h-4"
@@ -251,7 +251,7 @@ export default function CustomerListView({ user }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by customer name, company, phone number (+91), email, or CUS-..."
-            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 text-sm backdrop-blur-md"
+            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-[#F95721] text-sm backdrop-blur-md"
           />
         </div>
 
@@ -259,7 +259,7 @@ export default function CustomerListView({ user }) {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl text-zinc-200 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl text-zinc-200 text-sm focus:outline-none focus:border-[#F95721]"
           >
             <option value="all">All Customer Statuses</option>
             <option value="PROSPECT">Prospect</option>
@@ -326,7 +326,7 @@ export default function CustomerListView({ user }) {
                     onClick={() => router.push(`/dashboard/customers/${c._id}`)}
                     className="hover:bg-zinc-800/40 transition cursor-pointer group"
                   >
-                    <td className="py-3.5 px-4 font-mono text-xs font-semibold text-blue-400 group-hover:text-blue-300">
+                    <td className="py-3.5 px-4 font-mono text-xs font-semibold text-orange-400 group-hover:text-orange-300">
                       {c.customerNumber}
                     </td>
                     <td className="py-3.5 px-4">
@@ -380,7 +380,7 @@ export default function CustomerListView({ user }) {
                             e.stopPropagation();
                             router.push(`/dashboard/customers/${c._id}`);
                           }}
-                          className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 hover:border-blue-600 rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#F95721]/10 hover:bg-[#e84915] text-orange-400 hover:text-white border border-orange-500/20 hover:border-[#F95721] rounded-lg text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer"
                         >
                           <span>View Profile</span>
                           <svg
@@ -444,7 +444,7 @@ export default function CustomerListView({ user }) {
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <svg
-                  className="w-5 h-5 text-blue-400"
+                  className="w-5 h-5 text-orange-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -481,7 +481,7 @@ export default function CustomerListView({ user }) {
                       phone: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -499,7 +499,7 @@ export default function CustomerListView({ user }) {
                       email: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -517,14 +517,14 @@ export default function CustomerListView({ user }) {
                       companyName: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 bg-zinc-800/80 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isCheckingDuplicate}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50"
+                className="w-full py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white font-medium text-sm rounded-xl shadow-lg shadow-orange-500/20 transition disabled:opacity-50"
               >
                 {isCheckingDuplicate
                   ? "Checking Duplicate Database..."
@@ -570,7 +570,7 @@ export default function CustomerListView({ user }) {
                               `/dashboard/customers/${duplicateResult.exactPhoneMatch._id}`,
                             )
                           }
-                          className="mt-2 text-blue-400 hover:underline font-medium inline-block"
+                          className="mt-2 text-orange-400 hover:underline font-medium inline-block"
                         >
                           Open Customer Profile →
                         </button>
@@ -608,7 +608,7 @@ export default function CustomerListView({ user }) {
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <svg
-                  className="w-5 h-5 text-blue-400"
+                  className="w-5 h-5 text-orange-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -650,7 +650,7 @@ export default function CustomerListView({ user }) {
                       setFormData({ ...formData, displayName: e.target.value })
                     }
                     placeholder="e.g. Apex Corporation"
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -665,7 +665,7 @@ export default function CustomerListView({ user }) {
                       setFormData({ ...formData, companyName: e.target.value })
                     }
                     placeholder="e.g. Apex Prints & Packaging Ltd"
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -681,7 +681,7 @@ export default function CustomerListView({ user }) {
                       setFormData({ ...formData, phone: e.target.value })
                     }
                     placeholder="e.g. 9820012345"
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -696,7 +696,7 @@ export default function CustomerListView({ user }) {
                       setFormData({ ...formData, email: e.target.value })
                     }
                     placeholder="e.g. contact@apex.com"
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -714,7 +714,7 @@ export default function CustomerListView({ user }) {
                       })
                     }
                     placeholder="e.g. 27AAAAA0000A1Z5"
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500 font-mono uppercase"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721] font-mono uppercase"
                   />
                 </div>
 
@@ -727,7 +727,7 @@ export default function CustomerListView({ user }) {
                     onChange={(e) =>
                       setFormData({ ...formData, status: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                   >
                     <option value="PROSPECT">Prospect (Inquiry)</option>
                     <option value="ACTIVE">Active Account</option>
@@ -807,7 +807,7 @@ export default function CustomerListView({ user }) {
                     setFormData({ ...formData, profileNotes: e.target.value })
                   }
                   placeholder="Printing preferences, typical order volumes, special instructions..."
-                  className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -822,7 +822,7 @@ export default function CustomerListView({ user }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50"
+                  className="px-5 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-sm font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition disabled:opacity-50"
                 >
                   {isSubmitting ? "Creating Profile..." : "Save Customer"}
                 </button>

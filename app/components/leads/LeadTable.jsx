@@ -13,7 +13,7 @@ export default function LeadTable({
   if (loading) {
     return (
       <div className="py-20 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-3"></div>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#F95721] mb-3"></div>
         <p className="text-zinc-400 text-sm">Loading lead pipeline...</p>
       </div>
     );
@@ -31,7 +31,7 @@ export default function LeadTable({
   const getStatusColor = (status) => {
     switch (status) {
       case "NEW":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        return "bg-orange-500/10 text-orange-400 border-orange-500/20";
       case "CONTACTED":
         return "bg-sky-500/10 text-sky-400 border-sky-500/20";
       case "INTERESTED":
@@ -71,14 +71,14 @@ export default function LeadTable({
               onClick={() => onLeadSelect && onLeadSelect(lead)}
               className="hover:bg-zinc-800/40 transition cursor-pointer group"
             >
-              <td className="py-3.5 px-4 font-mono text-xs font-bold text-blue-400 group-hover:text-blue-300">
+              <td className="py-3.5 px-4 font-mono text-xs font-bold text-orange-400 group-hover:text-orange-300">
                 {lead.leadNumber || "LEAD-NEW"}
               </td>
               <td className="py-3.5 px-4">
                 <div className="font-semibold text-white flex items-center gap-2">
                   <span>{lead.contactName || lead.name}</span>
                   {lead.customerId && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded">
+                    <span className="px-1.5 py-0.5 text-[10px] font-mono bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded">
                       Linked
                     </span>
                   )}

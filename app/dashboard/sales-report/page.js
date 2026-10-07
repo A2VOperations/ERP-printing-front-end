@@ -342,7 +342,7 @@ export default function SalesReportPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
+                <BarChart3 className="w-6 h-6 text-[#F95721]" />
                 Sales Report
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -356,7 +356,7 @@ export default function SalesReportPage() {
                 <select
                   value={timeframe}
                   onChange={(e) => setTimeframe(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 pr-7 rounded-xl focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer"
+                  className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 pr-7 rounded-xl focus:outline-none focus:border-[#F95721] shadow-xs cursor-pointer"
                 >
                   <option value="This Month">This Month</option>
                   <option value="Last Month">Last Month</option>
@@ -378,7 +378,7 @@ export default function SalesReportPage() {
                 title="Refresh Report"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
                 <span>Refresh</span>
               </button>
@@ -393,7 +393,7 @@ export default function SalesReportPage() {
                 <span className="text-[11px] font-semibold text-slate-500">
                   Total Quotation Value
                 </span>
-                <div className="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center">
                   <FileText className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -404,7 +404,7 @@ export default function SalesReportPage() {
                     "en-IN",
                   )}
                 </div>
-                <div className="text-[10px] font-bold text-blue-600 mt-0.5">
+                <div className="text-[10px] font-bold text-[#F95721] mt-0.5">
                   {filteredQuotations.length} quotations generated
                 </div>
               </div>
@@ -622,7 +622,7 @@ export default function SalesReportPage() {
                         <div key={exec.userId || idx} className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                              <div className="w-6 h-6 rounded-full bg-[#F95721] text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                                 {idx + 1}
                               </div>
                               <p className="font-bold text-slate-900 leading-tight text-[11px] truncate">
@@ -673,9 +673,9 @@ export default function SalesReportPage() {
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2 text-xs">
-                  <FileText className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-blue-800 leading-tight">
+                <div className="p-2.5 rounded-xl bg-orange-50/80 border border-orange-100 flex items-start gap-2 text-xs">
+                  <FileText className="w-4 h-4 text-[#F95721] shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-orange-800 leading-tight">
                     <span className="font-bold">
                       {filteredQuotations.length}
                     </span>{" "}

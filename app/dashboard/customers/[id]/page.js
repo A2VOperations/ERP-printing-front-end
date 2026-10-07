@@ -48,7 +48,7 @@ export default function CustomerDetailPage() {
   };
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 antialiased overflow-hidden selection:bg-blue-600 selection:text-white">
+    <div className="flex h-screen bg-zinc-950 text-zinc-100 antialiased overflow-hidden selection:bg-[#F95721] selection:text-white">
       <Sidebar
         activeTab="customers"
         setActiveTab={(tab) => {

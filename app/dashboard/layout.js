@@ -73,7 +73,7 @@ export default function DashboardSecurityLayout({ children }) {
     return (
       <div className="flex bg-[#F8FAFC] min-h-screen items-center justify-center font-sans antialiased">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-2 border-[#F95721] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-slate-400 font-medium">Verifying authorization...</p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function DashboardSecurityLayout({ children }) {
     return (
       <div className="flex bg-[#F8FAFC] min-h-screen items-center justify-center font-sans">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-2 border-[#F95721] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-slate-500 font-semibold">Redirecting to login...</p>
         </div>
       </div>

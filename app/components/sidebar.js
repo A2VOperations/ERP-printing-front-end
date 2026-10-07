@@ -46,7 +46,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [inboxCount, setInboxCount] = useState(0);
-  const lastInboxFetchRef = useRef(0);
   const [userRole, setUserRole] = useState(() => {
     if (typeof window !== "undefined") {
       let r = localStorage.getItem("userRole");
@@ -779,10 +778,7 @@ export default function Sidebar() {
                         ? "justify-center p-2.5 mx-1 rounded-lg"
                         : "gap-3 px-3 py-2 mx-2 rounded-xl"
                     } ${
-                      isActive
-                        ? item.isOrange
-                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
-                          : "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                      isActive ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
                         : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                     }`}
                   >
@@ -802,7 +798,7 @@ export default function Sidebar() {
                       isSalesPerson &&
                       inboxCount > 0 && (
                         <span
-                          className="ml-auto inline-flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
+                          className="ml-auto inline-flex items-center gap-1.5 bg-linear-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
                           title={`${inboxCount} lead${inboxCount > 1 ? "s" : ""} assigned to you`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />

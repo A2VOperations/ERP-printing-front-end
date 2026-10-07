@@ -106,7 +106,7 @@ function CelebrationConfettiCanvas({ active }) {
     const height = (canvas.height = rect.height || 280);
 
     const colors = [
-      "#F95721", "#10B981", "#F59E0B", "#3B82F6",
+      "#F95721", "#10B981", "#F59E0B", "#F95721",
       "#EC4899", "#8B5CF6", "#EAB308", "#06B6D4", "#EF4444"
     ];
 
@@ -906,7 +906,7 @@ export default function DataOperatorPage() {
           area: l.areaId?.name || l.area || "General Area",
           zone: l.zone || "General Zone",
           categoryLabel: l.businessCategory || "General Store",
-          categoryColor: "bg-blue-50 text-blue-700 border-blue-200",
+          categoryColor: "bg-orange-50 text-orange-700 border-orange-200",
           assignedToName: l.assignedToId?.name || "Unassigned",
           assignedToInitials: (l.assignedToId?.name || "UN")
             .slice(0, 2)
@@ -1563,7 +1563,7 @@ export default function DataOperatorPage() {
         area: formData.area || areas[0]?.name || "—",
         zone: formData.zone || "—",
         categoryLabel: formData.categoryLabel || "General",
-        categoryColor: "bg-blue-50 text-blue-700 border-blue-200",
+        categoryColor: "bg-orange-50 text-orange-700 border-orange-200",
         assignedToName: repName,
         assignedToInitials: initials,
         assignedToColor: "bg-indigo-600",
@@ -1995,7 +1995,7 @@ export default function DataOperatorPage() {
             {/* Top Metric Cards (5 Cards) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5">
               <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center">
                   <ImageIcon className="w-5 h-5" />
                 </div>
                 <div className="mt-3 flex flex-col justify-center items-center">
@@ -2119,9 +2119,9 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={() => setCurrentView("photos")}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
+                className="bg-white border border-slate-200/90 hover:border-orange-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
               >
-                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-sm bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <FolderOpen className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
@@ -2136,9 +2136,9 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={() => setCurrentView("leads")}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
+                className="bg-white border border-slate-200/90 hover:border-orange-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
               >
-                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-sm bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <FileText className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
@@ -2153,9 +2153,9 @@ export default function DataOperatorPage() {
 
               <button
                 onClick={handleExportData}
-                className="bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
+                className="bg-white border border-slate-200/90 hover:border-orange-400 hover:shadow-xs rounded-sm p-4 transition-all flex items-center gap-3.5 text-left group min-w-0"
               >
-                <div className="w-11 h-11 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-sm bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                   <Download className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
@@ -2203,7 +2203,7 @@ export default function DataOperatorPage() {
                       )}
                       <button
                         onClick={() => setCurrentView("photos")}
-                        className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                        className="text-md font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1 transition-colors"
                       >
                         <span>View All Photos</span>
                         <ArrowRight className="w-5 h-5" />
@@ -2266,7 +2266,7 @@ export default function DataOperatorPage() {
                       </div>
                     ) : (
                       <div className="py-8 px-4 text-center border-2 border-dashed border-slate-200 rounded-sm bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center">
                           <ImageIcon className="w-6 h-6" />
                         </div>
                         <div className="text-md font-bold text-slate-800">
@@ -2291,14 +2291,14 @@ export default function DataOperatorPage() {
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
-                      <FileText className="w-5 h-5 text-blue-600" />
+                      <FileText className="w-5 h-5 text-[#F95721]" />
                       <h2 className="text-xl font-black text-slate-900">
                         Recent Entries
                       </h2>
                     </div>
                     <button
                       onClick={() => setCurrentView("leads")}
-                      className="text-base font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                      className="text-base font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1 transition-colors"
                     >
                       <span>View All</span>
                       <ArrowRight className="w-5 h-5" />
@@ -2364,7 +2364,7 @@ export default function DataOperatorPage() {
                                 <button
                                   type="button"
                                   onClick={() => setShowPreviewModal(row)}
-                                  className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                                  className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-[#F95721] hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
                                   title="Click to view full photo"
                                 >
                                   {row.photoUrl ? (
@@ -2382,7 +2382,7 @@ export default function DataOperatorPage() {
                               <td className="py-3 px-3 text-right whitespace-nowrap">
                                 <button
                                   onClick={() => setShowPreviewModal(row)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#F95721] hover:bg-orange-50 transition-colors cursor-pointer"
                                   title="View Lead Details"
                                 >
                                   <Eye className="w-4 h-4" />
@@ -2428,7 +2428,7 @@ export default function DataOperatorPage() {
                     </div>
                     <button
                       onClick={() => setCurrentView("coverage")}
-                      className="text-md font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-md font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <span>Full Status</span>
                       <ArrowRight className="w-4 h-4" />
@@ -2552,7 +2552,7 @@ export default function DataOperatorPage() {
                     </div>
 
                     <div className="p-3.5 rounded-sm bg-slate-50/80 border border-slate-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-sm bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-sm bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
@@ -2696,7 +2696,7 @@ export default function DataOperatorPage() {
                     className={`md:col-span-12 xl:col-span-4 border-2 border-dashed rounded-sm p-5 sm:p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-3 min-h-[220px] sm:min-h-[260px] ${
                       isDraggingOver
                         ? "border-[#F95721] bg-orange-50/70 scale-[1.01]"
-                        : "border-blue-200 hover:border-blue-500 bg-[#f8fbff] hover:bg-blue-50/40"
+                        : "border-orange-200 hover:border-[#F95721] bg-[#f8fbff] hover:bg-orange-50/40"
                     }`}
                   >
                     <input
@@ -2711,7 +2711,7 @@ export default function DataOperatorPage() {
                       className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-colors ${
                         isDraggingOver
                           ? "bg-orange-100 text-[#F95721]"
-                          : "bg-blue-50 text-blue-600"
+                          : "bg-orange-50 text-[#F95721]"
                       }`}
                     >
                       <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8" />
@@ -2732,7 +2732,7 @@ export default function DataOperatorPage() {
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Auto-renamed serial-wise: IMG-001, IMG-002, IMG-003...</span>
                       </div>
-                      <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50/90 border border-blue-200/90 text-[11px] text-blue-900 shadow-2xs">
+                      <div className="mt-2.5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-50/90 border border-orange-200/90 text-[11px] text-orange-950 shadow-2xs">
                         <span className="font-semibold text-slate-600">Next Upload Starts At:</span>
                         <span className="font-mono font-black text-[#F95721] bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
                           IMG-{String(globalSerialCounter + 1).padStart(3, "0")}
@@ -2744,7 +2744,7 @@ export default function DataOperatorPage() {
                             setCustomCounterInput(String(globalSerialCounter + 1));
                             setShowCounterEditModal(true);
                           }}
-                          className="text-blue-600 hover:text-blue-800 font-black underline ml-1 cursor-pointer"
+                          className="text-[#F95721] hover:text-orange-800 font-black underline ml-1 cursor-pointer"
                           title="Configure or change starting number"
                         >
                           Change
@@ -2778,7 +2778,7 @@ export default function DataOperatorPage() {
                                 visitDate: e.target.value,
                               })
                             }
-                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721]"
                           />
                         </div>
                       </div>
@@ -2807,7 +2807,7 @@ export default function DataOperatorPage() {
                               if (areaObj)
                                 setBatchAreaId(areaObj._id || areaObj.id);
                             }}
-                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721] cursor-pointer"
                           >
                             {areas.length > 0 ? (
                               areas.map((a) => (
@@ -2839,7 +2839,7 @@ export default function DataOperatorPage() {
                               batchName: `${uploadMetadata.area.toUpperCase().replace(/\s+/g, "")}-${newZone.toUpperCase().replace(/\s+/g, "")}-270925-01`,
                             });
                           }}
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721] cursor-pointer"
                         >
                           {getZonesForArea(uploadMetadata.area).map((z, idx) => {
                             const zName = typeof z === "string" ? z : z.name;
@@ -2866,7 +2866,7 @@ export default function DataOperatorPage() {
                             batchName: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
 
@@ -2886,7 +2886,7 @@ export default function DataOperatorPage() {
                               remarks: e.target.value,
                             })
                           }
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                         />
                       </div>
                     </div>
@@ -2905,7 +2905,7 @@ export default function DataOperatorPage() {
                       <div className="space-y-2.5 text-xs">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-slate-600">
-                            <ImageIcon className="w-4 h-4 text-blue-500" />
+                            <ImageIcon className="w-4 h-4 text-orange-500" />
                             <span className="font-semibold">Photos Selected</span>
                           </div>
                           <span className="text-sm font-black text-slate-900">
@@ -2999,7 +2999,7 @@ export default function DataOperatorPage() {
                 <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-4">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-slate-100">
                     <div className="flex items-center gap-2.5">
-                      <ImageIcon className="w-5 h-5 text-blue-600 shrink-0" />
+                      <ImageIcon className="w-5 h-5 text-[#F95721] shrink-0" />
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <h2 className="text-sm font-black text-slate-900">
@@ -3030,7 +3030,7 @@ export default function DataOperatorPage() {
                       <button
                         type="button"
                         onClick={() => setUploadStep(1)}
-                        className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 text-blue-600 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-orange-200 bg-orange-50/50 hover:bg-orange-50 text-[#F95721] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add More Photos</span>
@@ -3068,7 +3068,7 @@ export default function DataOperatorPage() {
                     <div className={`rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all ${
                       isRenamingNotification
                         ? "bg-amber-50 border-2 border-amber-300 ring-4 ring-amber-400/20"
-                        : "bg-gradient-to-r from-blue-50/80 via-indigo-50/60 to-orange-50/60 border border-blue-200/70"
+                        : "bg-gradient-to-r from-orange-50/80 via-indigo-50/60 to-orange-50/60 border border-orange-200/70"
                     }`}>
                       <div className="flex items-center gap-2.5">
                         <div className="w-7 h-7 rounded-lg bg-[#F95721] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -3077,7 +3077,7 @@ export default function DataOperatorPage() {
                         <div>
                           <div className="text-xs font-black text-slate-900 flex items-center gap-2 flex-wrap">
                             <span>{isRenamingNotification ? "⚡ Renaming Completed!" : "Serial Numbering Active"}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-mono font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 text-[10px] font-mono font-bold">
                               Batch: {selectedPhotosList[0]?.serialTag || "IMG-001"} → {selectedPhotosList[selectedPhotosList.length - 1]?.serialTag || "IMG-..."}
                             </span>
                             <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
@@ -3097,7 +3097,7 @@ export default function DataOperatorPage() {
                             setCustomCounterInput(String(globalSerialCounter + 1));
                             setShowCounterEditModal(true);
                           }}
-                          className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-orange-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                           title="Configure sequence starting counter"
                         >
                           <SettingsIcon className="w-3 h-3 text-slate-600" />
@@ -3107,10 +3107,10 @@ export default function DataOperatorPage() {
                         <button
                           type="button"
                           onClick={() => handleResequenceAllPhotos()}
-                          className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-blue-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+                          className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-orange-400 text-slate-700 font-bold text-xs flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
                           title="Reset and verify sequence from first to last in this batch"
                         >
-                          <RefreshCw className="w-3 h-3 text-blue-600" />
+                          <RefreshCw className="w-3 h-3 text-[#F95721]" />
                           <span>Re-Index Batch</span>
                         </button>
                       </div>
@@ -3211,7 +3211,7 @@ export default function DataOperatorPage() {
                             </div>
 
                             {item.hasTag && (
-                              <span className="w-3 h-3 text-blue-500 shrink-0" title="Geotagged">
+                              <span className="w-3 h-3 text-orange-500 shrink-0" title="Geotagged">
                                 📍
                               </span>
                             )}
@@ -3329,7 +3329,7 @@ export default function DataOperatorPage() {
                 <div className="bg-white border border-slate-200/90 rounded-sm p-4 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-blue-600" />
+                      <ImageIcon className="w-4 h-4 text-[#F95721]" />
                       <h3 className="text-xs font-black text-slate-900">
                         Selected Market Photo
                       </h3>
@@ -3617,7 +3617,7 @@ export default function DataOperatorPage() {
                 <div className="bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
+                      <FileText className="w-4 h-4 text-[#F95721]" />
                       <h3 className="text-sm font-black text-slate-900">
                         Business Information
                       </h3>
@@ -3638,7 +3638,7 @@ export default function DataOperatorPage() {
                             businessName: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
 
@@ -3655,7 +3655,7 @@ export default function DataOperatorPage() {
                             ownerName: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
 
@@ -3671,7 +3671,7 @@ export default function DataOperatorPage() {
                           onChange={(e) =>
                             setFormData({ ...formData, phone: e.target.value })
                           }
-                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-black text-slate-900 focus:outline-none focus:border-blue-500"
+                          className="w-full pl-3 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-black text-slate-900 focus:outline-none focus:border-[#F95721]"
                         />
                         <CheckCircle className="w-4 h-4 text-emerald-500 absolute right-2.5 top-1/2 -translate-y-1/2" />
                       </div>
@@ -3690,7 +3690,7 @@ export default function DataOperatorPage() {
                             alternatePhone: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
 
@@ -3709,7 +3709,7 @@ export default function DataOperatorPage() {
                               categoryLabel: e.target.value,
                             })
                           }
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721]"
                         />
                       </div>
                     </div>
@@ -3727,7 +3727,7 @@ export default function DataOperatorPage() {
                             subCategory: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
 
@@ -3770,7 +3770,7 @@ export default function DataOperatorPage() {
                                 "Sales Executive",
                             });
                           }}
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721] cursor-pointer"
                         >
                           {areas.length > 0 ? (
                             areas.map((a) => (
@@ -3812,7 +3812,7 @@ export default function DataOperatorPage() {
                                 "Sales Executive",
                             });
                           }}
-                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#F95721] cursor-pointer"
                         >
                           {getZonesForArea(formData.area).map((z, idx) => {
                             const zName = typeof z === "string" ? z : z.name;
@@ -3839,7 +3839,7 @@ export default function DataOperatorPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, remark: e.target.value })
                         }
-                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
                     <div className="text-right text-[10px] text-slate-400 font-medium mt-1">
@@ -3928,7 +3928,7 @@ export default function DataOperatorPage() {
                             "Sales Executive",
                         });
                       }}
-                      className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                      className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#F95721]"
                     >
                       <option value="">-- Select Sales Executive --</option>
                       {salesReps.map((r) => (
@@ -4007,7 +4007,7 @@ export default function DataOperatorPage() {
                     onClick={() =>
                       showToast("Showing all same-street businesses")
                     }
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    className="text-xs font-bold text-[#F95721] hover:text-[#e84915] flex items-center gap-1"
                   >
                     <span>View All</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -4267,7 +4267,7 @@ export default function DataOperatorPage() {
                     ) : (
                       /* Static decorative dots when resting */
                       <div className="pointer-events-none">
-                        <span className="absolute -top-1 -left-2 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        <span className="absolute -top-1 -left-2 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                         <span className="absolute -top-1 -right-2 w-2.5 h-2.5 rounded-full bg-amber-400" />
                         <span className="absolute -bottom-1 -left-3 w-2 h-2 rounded-full bg-rose-400" />
                         <span className="absolute -bottom-2 -right-2 w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
@@ -4330,7 +4330,7 @@ export default function DataOperatorPage() {
                 <div className="md:col-span-1 xl:col-span-5 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs flex flex-col justify-between space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-600" />
+                      <FileText className="w-4 h-4 text-[#F95721]" />
                       <h3 className="text-xs font-black text-slate-900">
                         Lead Details
                       </h3>
@@ -4442,7 +4442,7 @@ export default function DataOperatorPage() {
                 {/* Card 3: Entry Timeline */}
                 <div className="md:col-span-2 xl:col-span-3 bg-white border border-slate-200/90 rounded-sm p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                   <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-[#F95721]" />
                     <h3 className="text-xs font-black text-slate-900">
                       Entry Timeline
                     </h3>
@@ -4450,7 +4450,7 @@ export default function DataOperatorPage() {
 
                   <div className="space-y-3 text-xs">
                     <div className="flex items-start gap-2.5">
-                      <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-6 h-6 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0 mt-0.5">
                         <ImageIcon className="w-3.5 h-3.5" />
                       </div>
                       <div>
@@ -4535,7 +4535,7 @@ export default function DataOperatorPage() {
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                  <FileText className="w-5 h-5 text-[#F95721] shrink-0" />
                   <h3 className="text-sm font-black text-slate-900">
                     {leadsFilterDate ? "Created Leads" : "Today's Created Leads"}
                   </h3>
@@ -4543,7 +4543,7 @@ export default function DataOperatorPage() {
                     {filteredRecentEntries.length} {filteredRecentEntries.length === 1 ? "lead" : "leads"}
                   </span>
                   {leadsFilterDate && (
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-full">
                       <span>
                         📅{" "}
                         {new Date(leadsFilterDate + "T00:00:00").toLocaleDateString(
@@ -4554,7 +4554,7 @@ export default function DataOperatorPage() {
                       <button
                         type="button"
                         onClick={() => setLeadsFilterDate("")}
-                        className="text-blue-400 hover:text-blue-700 cursor-pointer"
+                        className="text-orange-400 hover:text-[#e84915] cursor-pointer"
                         title="Clear date filter"
                       >
                         ✕
@@ -4565,8 +4565,8 @@ export default function DataOperatorPage() {
 
                 <div className="flex items-center gap-2.5 flex-wrap">
                   {/* Date Filter Input */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all shadow-2xs">
-                    <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-2.5 py-1.5 focus-within:border-[#F95721] focus-within:ring-2 focus-within:ring-orange-100 transition-all shadow-2xs">
+                    <Calendar className="w-3.5 h-3.5 text-[#F95721] shrink-0" />
                     <input
                       type="date"
                       value={leadsFilterDate}
@@ -4593,7 +4593,7 @@ export default function DataOperatorPage() {
                           const d = String(today.getDate()).padStart(2, "0");
                           setLeadsFilterDate(`${y}-${m}-${d}`);
                         }}
-                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 px-1 py-0.5 rounded-md hover:bg-blue-50 transition-colors cursor-pointer"
+                        className="text-[10px] font-bold text-[#F95721] hover:text-[#e84915] px-1 py-0.5 rounded-md hover:bg-orange-50 transition-colors cursor-pointer"
                         title="Quick filter for Today"
                       >
                         Today
@@ -4678,7 +4678,7 @@ export default function DataOperatorPage() {
                   {/* Export Excel */}
                   <button
                     onClick={handleExportData}
-                    className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-blue-600 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-[#F95721] font-bold text-xs flex items-center gap-1.5 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export Excel</span>
@@ -4766,7 +4766,7 @@ export default function DataOperatorPage() {
                             <button
                               type="button"
                               onClick={() => setShowPreviewModal(row)}
-                              className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
+                              className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-[#F95721] hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
                               title="Click to view full photo"
                             >
                               {row.photoUrl ? (
@@ -4784,7 +4784,7 @@ export default function DataOperatorPage() {
                           <td className="py-3 px-3 text-right whitespace-nowrap">
                             <button
                               onClick={() => setShowPreviewModal(row)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-[#F95721] hover:bg-orange-50 transition-colors"
                               title="View Lead Details"
                             >
                               <Eye className="w-4 h-4" />
@@ -4815,7 +4815,7 @@ export default function DataOperatorPage() {
                               <button
                                 type="button"
                                 onClick={() => setLeadsFilterDate("")}
-                                className="text-xs font-bold text-blue-600 hover:underline cursor-pointer mt-1"
+                                className="text-xs font-bold text-[#F95721] hover:underline cursor-pointer mt-1"
                               >
                                 Clear date filter
                               </button>
@@ -4871,7 +4871,7 @@ export default function DataOperatorPage() {
                   onClick={() => setCurrentView("photos")}
                   className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
+                  <ImageIcon className="w-3.5 h-3.5 text-[#F95721]" />
                   <span>Upload Photos</span>
                 </button>
                 <button
@@ -4913,14 +4913,14 @@ export default function DataOperatorPage() {
                   <span className="text-[11px] font-bold text-slate-500 uppercase">
                     Active Zones
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center">
                     <Compass className="w-4 h-4" />
                   </div>
                 </div>
                 <div className="text-2xl font-black text-slate-900">
                   {coverageList.length}
                 </div>
-                <div className="text-[11px] text-blue-700 font-semibold mt-1">
+                <div className="text-[11px] text-orange-700 font-semibold mt-1">
                   100% Configured by Admin
                 </div>
               </div>
@@ -5555,14 +5555,14 @@ export default function DataOperatorPage() {
               </button>
             </div>
 
-            <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-2 text-xs">
+            <div className="p-3.5 bg-orange-50/70 border border-orange-200 rounded-2xl space-y-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-600 font-medium">Last Assigned Serial:</span>
                 <span className="font-mono font-black text-slate-800">
                   {globalSerialCounter > 0 ? `IMG-${String(globalSerialCounter).padStart(3, "0")}` : "None (0)"}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-1 border-t border-blue-200/60">
+              <div className="flex justify-between items-center pt-1 border-t border-orange-200/60">
                 <span className="text-slate-600 font-medium">Next Upload Starts At:</span>
                 <span className="font-mono font-black text-[#F95721] bg-white px-2 py-0.5 rounded-md border border-orange-200 shadow-2xs">
                   IMG-{String(globalSerialCounter + 1).padStart(3, "0")}
@@ -5582,7 +5582,7 @@ export default function DataOperatorPage() {
                   value={customCounterInput}
                   onChange={(e) => setCustomCounterInput(e.target.value)}
                   placeholder={String(globalSerialCounter + 1)}
-                  className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-500"
+                  className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
               <p className="text-[11px] text-slate-400">
@@ -5618,7 +5618,7 @@ export default function DataOperatorPage() {
               ? "bg-rose-900 text-white border-rose-700"
               : toast.type === "success"
                 ? "bg-slate-900 text-white border-slate-700"
-                : "bg-blue-900 text-white border-blue-700"
+                : "bg-[#0F172A] text-white border-[#e84915]"
           }`}
         >
           {toast.type === "success" ? (
@@ -5626,7 +5626,7 @@ export default function DataOperatorPage() {
           ) : toast.type === "error" ? (
             <AlertTriangle className="w-4 h-4 text-rose-400" />
           ) : (
-            <Sparkles className="w-4 h-4 text-blue-400" />
+            <Sparkles className="w-4 h-4 text-orange-400" />
           )}
           <span>{toast.message}</span>
         </div>

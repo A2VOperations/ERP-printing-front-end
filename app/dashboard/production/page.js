@@ -212,7 +212,7 @@ export default function ProductionDashboardPage() {
         );
       case "SENT_FOR_PRODUCTION":
         return (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
             SENT TO PARTNER
           </span>
         );
@@ -342,7 +342,7 @@ export default function ProductionDashboardPage() {
               {canManage && (
                 <button
                   onClick={openHandoffModal}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Initialize Production Job</span>
@@ -353,9 +353,9 @@ export default function ProductionDashboardPage() {
 
           {/* Role Access Notice */}
           {isViewOnly && (
-            <div className="p-3.5 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-between text-xs text-blue-800">
+            <div className="p-3.5 rounded-md bg-orange-50 border border-orange-200 flex items-center justify-between text-xs text-orange-800">
               <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-[#F95721] shrink-0" />
                 <span>
                   <strong>View-Only Access Mode:</strong> Signed in as{" "}
                   <span className="uppercase font-bold text-slate-900">
@@ -382,7 +382,7 @@ export default function ProductionDashboardPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                 Sent to Production
               </span>
-              <p className="text-xl font-black text-blue-600 mt-1">{mSent}</p>
+              <p className="text-xl font-black text-[#F95721] mt-1">{mSent}</p>
               <span className="text-[9px] text-slate-400">
                 Awaiting production start
               </span>
@@ -501,7 +501,7 @@ export default function ProductionDashboardPage() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === tab.key
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-[#F95721] text-white shadow-xs"
                       : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-2xs"
                   }`}
                 >
@@ -517,7 +517,7 @@ export default function ProductionDashboardPage() {
                 placeholder="Search job #, customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 shadow-2xs transition-colors"
+                className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#F95721] shadow-2xs transition-colors"
               />
             </div>
           </div>
@@ -544,7 +544,7 @@ export default function ProductionDashboardPage() {
                         colSpan="7"
                         className="py-12 text-center text-slate-500"
                       >
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#F95721]" />
                         <span>Loading production jobs...</span>
                       </td>
                     </tr>
@@ -565,7 +565,7 @@ export default function ProductionDashboardPage() {
                         {canManage && (
                           <button
                             onClick={openHandoffModal}
-                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                           >
                             <Plus className="w-4 h-4" />
                             <span>Initialize Production Job</span>
@@ -600,7 +600,7 @@ export default function ProductionDashboardPage() {
                           <td className="py-3 px-4">
                             <Link
                               href={`/dashboard/production/jobs/${job._id}`}
-                              className="font-bold text-slate-900 hover:text-blue-600 flex items-center gap-1.5"
+                              className="font-bold text-slate-900 hover:text-[#F95721] flex items-center gap-1.5"
                             >
                               <span>{job.productionJobNumber}</span>
                             </Link>
@@ -709,7 +709,7 @@ export default function ProductionDashboardPage() {
                     Please open{" "}
                     <Link
                       href="/dashboard/design"
-                      className="text-blue-600 underline font-semibold"
+                      className="text-[#F95721] underline font-semibold"
                     >
                       Design Studio
                     </Link>{" "}
@@ -726,7 +726,7 @@ export default function ProductionDashboardPage() {
                 </label>
                 {loadingOrders ? (
                   <div className="p-4 text-center text-xs text-slate-500">
-                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-blue-600" />
+                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-[#F95721]" />
                     Fetching eligible orders...
                   </div>
                 ) : ordersAwaitingProduction.length === 0 ? (
@@ -752,15 +752,15 @@ export default function ProductionDashboardPage() {
                           onClick={() => handleSelectOrder(order)}
                           className={`p-3 rounded-xl border cursor-pointer transition-all text-xs ${
                             isSelected
-                              ? "bg-blue-50/80 border-blue-400 text-slate-900 shadow-2xs"
+                              ? "bg-orange-50/80 border-orange-400 text-slate-900 shadow-2xs"
                               : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/70"
                           }`}
                         >
                           <div className="flex justify-between items-center font-bold">
-                            <span className="text-sm text-blue-700">
+                            <span className="text-sm text-orange-700">
                               {order.orderNumber}
                             </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700">
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700">
                               {order.orderStatus}
                             </span>
                           </div>
@@ -804,7 +804,7 @@ export default function ProductionDashboardPage() {
                       <select
                         value={selectedOrderItemId}
                         onChange={(e) => setSelectedOrderItemId(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                       >
                         {selectedOrder.items.map((item, idx) => (
                           <option key={item._id} value={item._id}>
@@ -824,7 +824,7 @@ export default function ProductionDashboardPage() {
                       <select
                         value={handoffPriority}
                         onChange={(e) => setHandoffPriority(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                       >
                         <option value="NORMAL">NORMAL (Standard)</option>
                         <option value="HIGH">HIGH (Priority)</option>
@@ -841,7 +841,7 @@ export default function ProductionDashboardPage() {
                         type="date"
                         value={handoffDueDate}
                         onChange={(e) => setHandoffDueDate(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                       />
                     </div>
                   </div>
@@ -859,7 +859,7 @@ export default function ProductionDashboardPage() {
                 <button
                   type="submit"
                   disabled={!selectedOrder || handoffSubmitting}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
                 >
                   {handoffSubmitting && (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />

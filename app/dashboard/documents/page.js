@@ -78,7 +78,7 @@ export default function DocumentsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Folder className="w-6 h-6 text-blue-600" />
+                <Folder className="w-6 h-6 text-[#F95721]" />
                 Documents & Artwork Repository
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -93,12 +93,12 @@ export default function DocumentsPage() {
                 className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-xs"
                 title="Refresh"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#F95721]' : ''}`} />
               </button>
 
               <button
                 onClick={() => router.push('/dashboard/design')}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
               >
                 <Upload className="w-4 h-4" />
                 Go to Design Studio
@@ -115,7 +115,7 @@ export default function DocumentsPage() {
                 placeholder="Search documents and artwork..."
                 value={searchDoc}
                 onChange={(e) => setSearchDoc(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F95721]"
               />
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function DocumentsPage() {
                         </td>
                         <td className="py-3 text-slate-600">{doc.client}</td>
                         <td className="py-3">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                             {doc.category}
                           </span>
                         </td>
@@ -155,7 +155,7 @@ export default function DocumentsPage() {
                         <td className="py-3 text-right">
                           <button
                             onClick={() => router.push('/dashboard/design')}
-                            className="text-blue-600 font-bold hover:underline"
+                            className="text-[#F95721] font-bold hover:underline"
                           >
                             Open in Studio →
                           </button>

@@ -424,7 +424,7 @@ function WhatsAppCommunicationContent() {
           <div className="bg-white p-5 md:p-6 rounded-md border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center font-bold">
                   <MessageCircle className="w-5 h-5" />
                 </div>
                 <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
@@ -463,7 +463,7 @@ function WhatsAppCommunicationContent() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search customer, company or phone number..."
-                      className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
+                      className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] transition"
                     />
                     {searchQuery && (
                       <button
@@ -485,7 +485,7 @@ function WhatsAppCommunicationContent() {
                         key={`${item.type}-${item._id}`}
                         type="button"
                         onClick={() => handleSelectCustomer(item)}
-                        className="w-full p-2.5 text-left hover:bg-blue-50/60 transition flex items-center justify-between text-xs cursor-pointer"
+                        className="w-full p-2.5 text-left hover:bg-orange-50/60 transition flex items-center justify-between text-xs cursor-pointer"
                       >
                         <div className="min-w-0 pr-2">
                           <p className="font-bold text-slate-800 truncate">
@@ -584,7 +584,7 @@ function WhatsAppCommunicationContent() {
                         value={manualPhone}
                         onChange={(e) => setManualPhone(e.target.value)}
                         placeholder="e.g. +91 98765 43210 or 9876543210"
-                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-mono focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721]"
                       />
                     </div>
                   </div>
@@ -606,7 +606,7 @@ function WhatsAppCommunicationContent() {
                       value={quoteNo}
                       onChange={(e) => setQuoteNo(e.target.value)}
                       placeholder="e.g. QT-9021"
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono focus:border-blue-600"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono focus:border-[#F95721]"
                     />
                   </div>
                   <div>
@@ -618,7 +618,7 @@ function WhatsAppCommunicationContent() {
                       value={orderNo}
                       onChange={(e) => setOrderNo(e.target.value)}
                       placeholder="e.g. ORD-894"
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono focus:border-blue-600"
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono focus:border-[#F95721]"
                     />
                   </div>
                 </div>
@@ -642,7 +642,7 @@ function WhatsAppCommunicationContent() {
                       setSelectedTemplate(tpl);
                       refreshMessageFromTemplate(tpl);
                     }}
-                    className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                    className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721]"
                   >
                     {MESSAGE_TEMPLATES.map((tpl) => (
                       <option key={tpl.id} value={tpl.id}>
@@ -683,7 +683,7 @@ function WhatsAppCommunicationContent() {
                       }
                     }}
                     placeholder="Write your customer message here..."
-                    className="w-full p-3.5 text-xs bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-sans"
+                    className="w-full p-3.5 text-xs bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] font-sans"
                   />
                   <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
                     <span>
@@ -711,7 +711,7 @@ function WhatsAppCommunicationContent() {
                       href={lastOpenedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-blue-700 font-bold hover:underline"
+                      className="inline-flex items-center gap-1.5 text-orange-700 font-bold hover:underline"
                     >
                       <span>Click here to open WhatsApp directly</span>
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -735,7 +735,7 @@ function WhatsAppCommunicationContent() {
                   <button
                     type="button"
                     onClick={handleOpenWhatsAppChat}
-                    className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                    className="w-full py-3 px-4 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>Open WhatsApp Chat</span>
@@ -773,7 +773,7 @@ function WhatsAppCommunicationContent() {
                     <select
                       value={noteType}
                       onChange={(e) => setNoteType(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721]"
                     >
                       <option value="WhatsApp">WhatsApp</option>
                       <option value="Call">Call</option>
@@ -791,7 +791,7 @@ function WhatsAppCommunicationContent() {
                       type="datetime-local"
                       value={nextFollowupDate}
                       onChange={(e) => setNextFollowupDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721]"
                     />
                   </div>
                 </div>
@@ -805,7 +805,7 @@ function WhatsAppCommunicationContent() {
                     value={conversationNote}
                     onChange={(e) => setConversationNote(e.target.value)}
                     placeholder="Enter key customer feedback, next steps, or order requirements discussed..."
-                    className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                    className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl leading-relaxed text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721]"
                   />
                 </div>
 
@@ -839,7 +839,7 @@ export default function WhatsAppPage() {
     <Suspense
       fallback={
         <div className="flex h-screen bg-[#F8FAFC] items-center justify-center">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#F95721] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >

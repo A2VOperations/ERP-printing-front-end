@@ -218,7 +218,7 @@ export default function RolesPermissionsPage() {
       case "TEAM":
         return "bg-purple-50 text-purple-700 border-purple-200 font-bold";
       case "AREA":
-        return "bg-blue-50 text-blue-700 border-blue-200 font-bold";
+        return "bg-orange-50 text-orange-700 border-orange-200 font-bold";
       case "OWN":
         return "bg-amber-50 text-amber-700 border-amber-200 font-bold";
       default:
@@ -261,7 +261,7 @@ export default function RolesPermissionsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-blue-600" />
+                <ShieldCheck className="w-6 h-6 text-[#F95721]" />
                 Roles & Permissions Policy Matrix
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -278,7 +278,7 @@ export default function RolesPermissionsPage() {
                 title="Refresh from server"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -298,7 +298,7 @@ export default function RolesPermissionsPage() {
                   onClick={() => setSelectedRoleSlug(slug)}
                   className={`p-4 rounded-md border text-left transition-all ${
                     isSelected
-                      ? "bg-blue-50/90 border-blue-400 text-blue-900 shadow-sm ring-1 ring-blue-400/30"
+                      ? "bg-orange-50/90 border-orange-400 text-orange-950 shadow-sm ring-1 ring-orange-400/30"
                       : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700 shadow-xs"
                   }`}
                 >
@@ -307,7 +307,7 @@ export default function RolesPermissionsPage() {
                       {slug.toUpperCase()}
                     </span>
                     {slug === "admin" && (
-                      <Lock className="w-3.5 h-3.5 text-blue-600" />
+                      <Lock className="w-3.5 h-3.5 text-[#F95721]" />
                     )}
                   </div>
                   <h4 className="font-extrabold text-sm mt-0.5 text-slate-900">
@@ -342,7 +342,7 @@ export default function RolesPermissionsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>Permission Matrix for</span>
-                <span className="text-blue-600 font-extrabold">
+                <span className="text-[#F95721] font-extrabold">
                   {activeRole?.name || selectedRoleSlug.toUpperCase()}
                 </span>
               </h3>
@@ -353,7 +353,7 @@ export default function RolesPermissionsPage() {
                 <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold">
                   TEAM
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 font-bold">
                   AREA
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-bold">

@@ -653,8 +653,8 @@ export default function DashboardPage() {
         {
           id: 2,
           name: "2. Contacted & Briefed",
-          dotColor: "bg-blue-500",
-          barColor: "bg-blue-500",
+          dotColor: "bg-orange-500",
+          barColor: "bg-orange-500",
           count: stage2Count,
           textRight: `${cvr2}% cvr   ${stage2Count} Deals`,
           percent:
@@ -1070,7 +1070,7 @@ export default function DashboardPage() {
             <>
               {/* Admin Perspective / User Switcher Banner */}
               {isManagerOrAdmin && (
-                <div className="bg-gradient-to-r from-indigo-900/5 via-blue-900/5 to-slate-900/5 border border-indigo-200/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+                <div className="bg-gradient-to-r from-indigo-900/5 via-orange-950/5 to-slate-900/5 border border-indigo-200/80 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
                       <Users className="w-4 h-4" />
@@ -1242,7 +1242,7 @@ export default function DashboardPage() {
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                       LEADS ASSIGNED
                     </span>
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-100/60 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] border border-orange-100/60 flex items-center justify-center">
                       <UserPlus className="w-4 h-4" />
                     </div>
                   </div>
@@ -1251,7 +1251,7 @@ export default function DashboardPage() {
                       <h3 className="text-2xl font-black text-slate-900 tracking-tight">
                         {displayLeadsCount}
                       </h3>
-                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-200/60">
+                      <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-orange-50 text-[#F95721] border border-orange-200/60">
                         {qualifiedLeadsCount === displayLeadsCount && displayLeadsCount > 0 ? "All Qualified" : `${qualifiedLeadsCount} Qualified`}
                       </span>
                     </div>
@@ -1264,7 +1264,7 @@ export default function DashboardPage() {
                       {leadSourcesText}
                     </span>
                     <svg className="w-16 h-6 shrink-0" viewBox="0 0 70 24" fill="none">
-                      <path d="M2 18 Q 20 14, 35 16 T 68 8" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" />
+                      <path d="M2 18 Q 20 14, 35 16 T 68 8" stroke="#F95721" strokeWidth="2.5" strokeLinecap="round" />
                     </svg>
                   </div>
                 </div>
@@ -1581,7 +1581,7 @@ export default function DashboardPage() {
                             <span className="text-xs text-slate-400 font-mono font-medium shrink-0 pt-0.5">
                               {act.timeStr}
                             </span>
-                            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                            <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0 mt-1.5" />
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold text-slate-800 leading-snug">
                                 {act.title}
@@ -1625,13 +1625,13 @@ export default function DashboardPage() {
                       {/* 1. New Lead */}
                       <button
                         onClick={() => setShowAddLeadModal(true)}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/80 hover:bg-blue-50/70 border border-slate-200/70 hover:border-blue-200 transition-all text-left group"
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50/80 hover:bg-orange-50/70 border border-slate-200/70 hover:border-orange-200 transition-all text-left group"
                       >
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] border border-orange-100 flex items-center justify-center shrink-0 group-hover:bg-[#e84915] group-hover:text-white transition-colors">
                           <UserPlus className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-slate-800 block group-hover:text-blue-600">
+                          <span className="text-xs font-bold text-slate-800 block group-hover:text-[#F95721]">
                             New Lead
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono block">
@@ -1848,7 +1848,7 @@ export default function DashboardPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, name: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1865,7 +1865,7 @@ export default function DashboardPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, phone: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -1879,7 +1879,7 @@ export default function DashboardPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, companyName: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -1894,7 +1894,7 @@ export default function DashboardPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, source: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-[#F95721]"
                   >
                     <option value="WALK_IN">Walk-In / Store Visit</option>
                     <option value="PHONE_CALL">Phone Call</option>
@@ -1924,7 +1924,7 @@ export default function DashboardPage() {
                         estimatedValue: Number(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                 </div>
               </div>
@@ -1940,7 +1940,7 @@ export default function DashboardPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, requirement: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -1948,7 +1948,7 @@ export default function DashboardPage() {
                 <label className="text-slate-700 font-semibold block mb-1 flex items-center justify-between">
                   <span>Assign To</span>
                   {!isManagerOrAdmin && (
-                    <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-1">
+                    <span className="text-[10px] text-[#F95721] font-semibold flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Auto-assigned to you
                     </span>
                   )}
@@ -1959,7 +1959,7 @@ export default function DashboardPage() {
                     onChange={(e) =>
                       setNewLead({ ...newLead, assignedToId: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   >
                     <option value="">Unassigned</option>
                     {users.map((u) => (
@@ -1971,7 +1971,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between">
                     <div className="flex items-center gap-2 truncate">
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-[#F95721] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
                         {(currentUser?.name || userName || "ME")
                           .slice(0, 2)
                           .toUpperCase()}
@@ -2000,7 +2000,7 @@ export default function DashboardPage() {
                   onChange={(e) =>
                     setNewLead({ ...newLead, nextFollowUp: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -2018,8 +2018,8 @@ export default function DashboardPage() {
                   disabled={creatingLead}
                   className={`px-5 py-2 rounded-xl text-white font-semibold shadow-md flex items-center justify-center gap-2 transition-all ${
                     creatingLead
-                      ? "bg-blue-400 cursor-not-allowed opacity-90 shadow-none"
-                      : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-95"
+                      ? "bg-orange-400 cursor-not-allowed opacity-90 shadow-none"
+                      : "bg-[#F95721] hover:bg-[#e84915] shadow-orange-500/20 active:scale-95"
                   }`}
                 >
                   {creatingLead ? (

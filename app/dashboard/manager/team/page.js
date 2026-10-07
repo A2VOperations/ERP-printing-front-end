@@ -112,7 +112,7 @@ export default function MyTeamPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 uppercase tracking-wide">
                   Team Operations
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
@@ -134,7 +134,7 @@ export default function MyTeamPage() {
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all self-start sm:self-auto"
             >
               <RefreshCw
-                className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#F95721]" : "text-slate-500"}`}
               />
               Refresh
             </button>
@@ -149,7 +149,7 @@ export default function MyTeamPage() {
                 placeholder="Search team member by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
               />
             </div>
 
@@ -183,7 +183,7 @@ export default function MyTeamPage() {
                         colSpan={9}
                         className="py-12 text-center text-slate-400 text-xs"
                       >
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-blue-600" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-[#F95721]" />
                         Loading team roster...
                       </td>
                     </tr>
@@ -227,7 +227,7 @@ export default function MyTeamPage() {
                         >
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-xl bg-[#F95721] text-white font-bold text-xs flex items-center justify-center">
                                 {(member.name || "TM")
                                   .slice(0, 2)
                                   .toUpperCase()}
@@ -294,7 +294,7 @@ export default function MyTeamPage() {
                           <td className="py-3 px-4 text-right">
                             <Link
                               href={`/dashboard/manager/team/${member._id}`}
-                              className="px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] border border-blue-200"
+                              className="px-3 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-[11px] border border-orange-200"
                             >
                               Inspect Member →
                             </Link>

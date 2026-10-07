@@ -115,7 +115,7 @@ export default function TeamMemberDetailPage() {
         <main className="flex-1 flex flex-col min-w-0">
           <Navbar />
           <div className="p-16 text-center text-slate-400 text-xs my-auto">
-            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-blue-600" />
+            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-[#F95721]" />
             Loading representative profile...
           </div>
         </main>
@@ -138,7 +138,7 @@ export default function TeamMemberDetailPage() {
             </h3>
             <Link
               href="/dashboard/manager/team"
-              className="inline-block px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold"
+              className="inline-block px-4 py-2 rounded-xl bg-[#F95721] text-white text-xs font-semibold"
             >
               Back to Team Directory
             </Link>
@@ -195,7 +195,7 @@ export default function TeamMemberDetailPage() {
           <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-xs space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-md bg-blue-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-blue-500/20">
+                <div className="w-14 h-14 rounded-md bg-[#F95721] text-white font-black text-lg flex items-center justify-center shadow-md shadow-orange-500/20">
                   {(member.name || "TM").slice(0, 2).toUpperCase()}
                 </div>
                 <div>
@@ -245,8 +245,8 @@ export default function TeamMemberDetailPage() {
 
             {/* Performance KPIs Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div className="p-4 rounded-md bg-blue-50/70 border border-blue-100 space-y-1">
-                <span className="text-blue-700 font-semibold block">
+              <div className="p-4 rounded-md bg-orange-50/70 border border-orange-100 space-y-1">
+                <span className="text-orange-700 font-semibold block">
                   Active Leads
                 </span>
                 <span className="font-black text-slate-900 text-xl">

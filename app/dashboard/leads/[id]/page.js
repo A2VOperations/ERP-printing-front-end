@@ -1310,7 +1310,7 @@ export default function LeadDetailPage() {
   const getStatusBadgeStyle = (st) => {
     switch (st) {
       case "NEW":
-        return "bg-blue-50 text-blue-700 border-blue-200";
+        return "bg-orange-50 text-orange-700 border-orange-200";
       case "CONTACTED":
         return "bg-indigo-50 text-indigo-700 border-indigo-200";
       case "INTERESTED":
@@ -1420,7 +1420,7 @@ export default function LeadDetailPage() {
 
               <Link
                 href={`/dashboard/communication?leadId=${leadId}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-xs transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-xs transition-all"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 Communication Hub
@@ -1476,7 +1476,7 @@ export default function LeadDetailPage() {
                   });
                   setShowFollowupModal(true);
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />Follow-up
               </button>
@@ -1615,17 +1615,17 @@ export default function LeadDetailPage() {
 
                     <a
                       href={`tel:${lead.phone}`}
-                      className="flex items-center gap-1 text-slate-700 font-mono hover:text-blue-600 transition-colors font-medium"
+                      className="flex items-center gap-1 text-slate-700 font-mono hover:text-[#F95721] transition-colors font-medium"
                       title="Click to call"
                     >
-                      <Phone className="w-3.5 h-3.5 text-blue-500" />
+                      <Phone className="w-3.5 h-3.5 text-orange-500" />
                       {lead.phone}
                     </a>
 
                     {lead.alternatePhone && (
                       <a
                         href={`tel:${lead.alternatePhone}`}
-                        className="flex items-center gap-1 text-slate-500 font-mono hover:text-blue-600 transition-colors"
+                        className="flex items-center gap-1 text-slate-500 font-mono hover:text-[#F95721] transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
                         {lead.alternatePhone}
@@ -1635,7 +1635,7 @@ export default function LeadDetailPage() {
                     {lead.email && (
                       <a
                         href={`mailto:${lead.email}`}
-                        className="flex items-center gap-1 text-slate-700 hover:text-blue-600 transition-colors"
+                        className="flex items-center gap-1 text-slate-700 hover:text-[#F95721] transition-colors"
                       >
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         {lead.email}
@@ -1645,7 +1645,7 @@ export default function LeadDetailPage() {
 
                   <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
                     <span className="flex items-center gap-1 font-medium text-slate-700">
-                      <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                       {lead.areaId?.name
                         ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
                         : lead.city || lead.zone || "Territory Assigned"}
@@ -1729,7 +1729,7 @@ export default function LeadDetailPage() {
                           );
                           setShowReassignModal(true);
                         }}
-                        className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-blue-600 hover:bg-blue-50 border border-blue-200 transition-colors cursor-pointer"
+                        className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-[#F95721] hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
                         title="Change Assignment (Manager/Admin Only)"
                       >
                         Change
@@ -1877,13 +1877,13 @@ export default function LeadDetailPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`pb-2 transition-all relative whitespace-nowrap ${
                     isActive
-                      ? "text-blue-600 font-bold"
+                      ? "text-[#F95721] font-bold"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {tab.label}
                   {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F95721] rounded-full" />
                   )}
                 </button>
               );
@@ -1904,7 +1904,7 @@ export default function LeadDetailPage() {
                     </h3>
                     <button
                       onClick={() => setShowEditModal(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:underline"
+                      className="text-[11px] font-bold text-[#F95721] hover:underline"
                     >
                       Edit
                     </button>
@@ -1963,7 +1963,7 @@ export default function LeadDetailPage() {
                     </h3>
                     <button
                       onClick={() => setShowActivityModal(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:underline"
+                      className="text-[11px] font-bold text-[#F95721] hover:underline"
                     >
                       + Add Note
                     </button>
@@ -1974,7 +1974,7 @@ export default function LeadDetailPage() {
                       <>
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-1.5 text-slate-500">
-                            <Clock className="w-3.5 h-3.5 text-blue-500" />{" "}
+                            <Clock className="w-3.5 h-3.5 text-orange-500" />{" "}
                             Latest Activity
                           </span>
                           <span className="font-bold text-slate-800">
@@ -2016,7 +2016,7 @@ export default function LeadDetailPage() {
                         <p>No activity logs recorded yet.</p>
                         <button
                           onClick={() => setShowActivityModal(true)}
-                          className="px-3 py-1 rounded-xl bg-blue-50 text-blue-700 font-bold text-[10px]"
+                          className="px-3 py-1 rounded-xl bg-orange-50 text-orange-700 font-bold text-[10px]"
                         >
                           + Log First Call / Note
                         </button>
@@ -2258,7 +2258,7 @@ export default function LeadDetailPage() {
                     </h3>
                     <button
                       onClick={() => setActiveTab("Quotations")}
-                      className="text-[11px] font-bold text-blue-600 hover:underline"
+                      className="text-[11px] font-bold text-[#F95721] hover:underline"
                     >
                       View All
                     </button>
@@ -2281,7 +2281,7 @@ export default function LeadDetailPage() {
                                 q.status === "ACCEPTED"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                   : q.status === "APPROVED"
-                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                    ? "bg-orange-50 text-orange-700 border border-orange-200"
                                     : q.status === "REJECTED"
                                       ? "bg-rose-50 text-rose-700 border border-rose-200"
                                       : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -2581,7 +2581,7 @@ export default function LeadDetailPage() {
                                   balance === 0
                                     ? "bg-emerald-100 text-emerald-800"
                                     : paid > 0
-                                      ? "bg-blue-100 text-blue-800"
+                                      ? "bg-orange-100 text-orange-800"
                                       : "bg-amber-100 text-amber-800"
                                 }`}
                               >
@@ -2931,7 +2931,7 @@ export default function LeadDetailPage() {
                                   : q.status === "APPROVED"
                                     ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                     : q.status === "SENT"
-                                      ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                      ? "bg-orange-100 text-orange-800 border border-orange-200"
                                       : q.status === "PENDING_DISCOUNT_APPROVAL"
                                         ? "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse"
                                         : "bg-rose-100 text-rose-800 border border-rose-200"
@@ -2995,7 +2995,7 @@ export default function LeadDetailPage() {
                             <button
                               onClick={() => handleSendQuotationToClient(q._id)}
                               disabled={actionLoading}
-                              className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs"
+                              className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-xs"
                             >
                               <Send className="w-3.5 h-3.5" /> 🚀 Send
                             </button>
@@ -3115,7 +3115,7 @@ export default function LeadDetailPage() {
                 </div>
                 <button
                   onClick={() => setShowFollowupModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Schedule Follow-up
@@ -3214,7 +3214,7 @@ export default function LeadDetailPage() {
                     <p>No follow-ups recorded for this lead.</p>
                     <button
                       onClick={() => setShowFollowupModal(true)}
-                      className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 font-bold text-xs"
+                      className="px-3.5 py-1.5 rounded-xl bg-orange-50 text-orange-700 font-bold text-xs"
                     >
                       + Schedule Follow-up Call
                     </button>
@@ -3616,7 +3616,7 @@ export default function LeadDetailPage() {
               <div className="bg-white rounded-md p-5 border border-slate-200 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
-                    <Edit className="w-4 h-4 text-blue-600" />
+                    <Edit className="w-4 h-4 text-[#F95721]" />
                     <span>Add New Remark / Instruction</span>
                   </div>
                   <span className="text-[11px] text-slate-400 font-mono">
@@ -3631,7 +3631,7 @@ export default function LeadDetailPage() {
                     placeholder="Write a clear note (e.g., Client requested matte lamination sample, agreed on 50% advance token, call back on Saturday at 4 PM)..."
                     value={newNoteContent}
                     onChange={(e) => setNewNoteContent(e.target.value)}
-                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-blue-500 leading-relaxed resize-none"
+                    className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs focus:outline-none focus:border-[#F95721] leading-relaxed resize-none"
                   />
 
                   {/* One-Click Suggestion Tags */}
@@ -3664,7 +3664,7 @@ export default function LeadDetailPage() {
                           setNewNoteContent(sug.text);
                           setNewNoteCategory(sug.cat);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-[10px] font-medium border border-slate-200 transition-all"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-[#e84915] text-slate-600 text-[10px] font-medium border border-slate-200 transition-all"
                       >
                         + {sug.text}
                       </button>
@@ -3718,7 +3718,7 @@ export default function LeadDetailPage() {
                     <button
                       type="submit"
                       disabled={actionLoading || !newNoteContent.trim()}
-                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-blue-600/20 flex items-center justify-center gap-1.5 transition-all"
+                      className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       {actionLoading ? "Saving..." : "Save Remark"}
@@ -3839,7 +3839,7 @@ export default function LeadDetailPage() {
                           >
                             <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-[10px]">
+                                <div className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-[10px]">
                                   {(note.authorName || "S")
                                     .slice(0, 2)
                                     .toUpperCase()}
@@ -4214,7 +4214,7 @@ export default function LeadDetailPage() {
                           <span className="font-mono font-bold text-slate-900 text-xs">
                             {q.quotationNumber}
                           </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-100 text-orange-800">
                             PDF QUOTE
                           </span>
                         </div>
@@ -4296,7 +4296,7 @@ export default function LeadDetailPage() {
                 </h3>
                 <button
                   onClick={() => setShowActivityModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold"
                 >
                   <Plus className="w-3.5 h-3.5" />Log Activity
                 </button>
@@ -4311,7 +4311,7 @@ export default function LeadDetailPage() {
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-md font-bold text-[9px] bg-blue-100 text-blue-800">
+                          <span className="px-2 py-0.5 rounded-md font-bold text-[9px] bg-orange-100 text-orange-800">
                             {a.type || a.action || "NOTE"}
                           </span>
                           <span className="font-semibold text-slate-900">
@@ -4587,10 +4587,10 @@ export default function LeadDetailPage() {
               <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-blue-600" />
+                    <Layers className="w-4 h-4 text-[#F95721]" />
                     Product Technical Specifications (Designer Handoff)
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold font-mono">
                     STEP 12 READY
                   </span>
                 </div>
@@ -4701,7 +4701,7 @@ export default function LeadDetailPage() {
                           onClick={() =>
                             setOrderForm({ ...orderForm, material: item.label })
                           }
-                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-blue-100 hover:text-blue-800 text-[10px] text-slate-700 font-medium transition-colors"
+                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-orange-100 hover:text-orange-800 text-[10px] text-slate-700 font-medium transition-colors"
                         >
                           + {item.label}
                         </button>
@@ -4803,7 +4803,7 @@ export default function LeadDetailPage() {
                           }}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
                             isSelected
-                              ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                              ? "bg-[#F95721] text-white border-[#F95721] shadow-xs"
                               : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                           }`}
                         >
@@ -5293,10 +5293,10 @@ export default function LeadDetailPage() {
               <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-blue-600" />
+                    <Layers className="w-4 h-4 text-[#F95721]" />
                     Product Technical Specifications (Designer Handoff)
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold font-mono">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold font-mono">
                     STEP 12 READY
                   </span>
                 </div>
@@ -5419,7 +5419,7 @@ export default function LeadDetailPage() {
                               material: item.label,
                             })
                           }
-                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-blue-100 hover:text-blue-800 text-[10px] text-slate-700 font-medium transition-colors"
+                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-orange-100 hover:text-orange-800 text-[10px] text-slate-700 font-medium transition-colors"
                         >
                           + {item.label}
                         </button>
@@ -5509,7 +5509,7 @@ export default function LeadDetailPage() {
                           }}
                           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
                             isSelected
-                              ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                              ? "bg-[#F95721] text-white border-[#F95721] shadow-xs"
                               : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                           }`}
                         >
@@ -6442,7 +6442,7 @@ export default function LeadDetailPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md"
                 >
                   Save Changes
                 </button>
@@ -6532,7 +6532,7 @@ export default function LeadDetailPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md"
                 >
                   Schedule Follow-up
                 </button>
@@ -6607,7 +6607,7 @@ export default function LeadDetailPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md"
                 >
                   Save Activity
                 </button>
@@ -6888,7 +6888,7 @@ export default function LeadDetailPage() {
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-blue-600" />
+                <UserCheck className="w-4 h-4 text-[#F95721]" />
                 Reassign Lead
               </h3>
               <button
@@ -6959,7 +6959,7 @@ export default function LeadDetailPage() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md shadow-orange-500/20 disabled:opacity-50 cursor-pointer"
                 >
                   {actionLoading ? "Reassigning..." : "Confirm Reassignment"}
                 </button>

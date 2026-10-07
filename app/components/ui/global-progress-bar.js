@@ -95,7 +95,7 @@ export default function GlobalProgressBar() {
         return "from-amber-500 via-orange-400 to-amber-300";
       case "GET":
       default:
-        return "from-blue-600 via-cyan-400 to-indigo-400";
+        return "from-[#F95721] via-cyan-400 to-indigo-400";
     }
   };
 
@@ -108,7 +108,7 @@ export default function GlobalProgressBar() {
       >
         <div className="h-[3px] w-full bg-transparent overflow-hidden">
           <div
-            className={`h-full bg-gradient-to-r ${getActionAccent(currentMethod)} shadow-[0_0_12px_rgba(59,130,246,0.8)] transition-all duration-300 ease-out`}
+            className={`h-full bg-gradient-to-r ${getActionAccent(currentMethod)} shadow-[0_0_12px_rgba(249, 87, 33, 0.8)] transition-all duration-300 ease-out`}
             style={{
               width: `${progress}%`,
               transitionProperty: "width",
@@ -122,11 +122,11 @@ export default function GlobalProgressBar() {
         <div className="fixed bottom-5 right-5 z-[9998] pointer-events-none animate-fade-in">
           <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white/95 text-slate-800 border border-slate-200 shadow-xl backdrop-blur-md text-xs font-semibold tracking-normal">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F95721]"></span>
             </span>
 
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F95721] shrink-0" />
 
             <span className="text-slate-800">
               {getActionLabel(currentMethod)}

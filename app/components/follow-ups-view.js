@@ -407,8 +407,8 @@ export default function FollowUpsView({ user }) {
       return {
         label: `Overdue (${formattedTime})`,
         fullTime: formattedFull,
-        bg: "bg-blue-50 text-blue-700 border-blue-200/80",
-        dot: "bg-blue-500",
+        bg: "bg-orange-50 text-orange-700 border-orange-200/80",
+        dot: "bg-orange-500",
         icon: AlertCircle,
       };
     }

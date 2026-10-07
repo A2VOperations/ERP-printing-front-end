@@ -22,7 +22,7 @@ export default function Header({ title, subtitle, actionButton }) {
       <div className="flex items-center gap-4">
         {/* Tenant Badge */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-medium text-slate-300">
-          <Building2 className="w-3.5 h-3.5 text-blue-400" />
+          <Building2 className="w-3.5 h-3.5 text-orange-400" />
           <span>{tenantName}</span>
         </div>
 

@@ -262,7 +262,7 @@ export default function LeaderboardPage() {
                 title="Refresh Leaderboard"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
 
@@ -273,7 +273,7 @@ export default function LeaderboardPage() {
                     onClick={() => setTimeframe(t)}
                     className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                       timeframe === t
-                        ? "bg-blue-600 text-white shadow-xs"
+                        ? "bg-[#F95721] text-white shadow-xs"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -284,7 +284,7 @@ export default function LeaderboardPage() {
 
               <Link
                 href="/dashboard/admin/targets"
-                className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all"
+                className="px-3 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all"
               >
                 <Target className="w-3.5 h-3.5" />
                 Set Targets
@@ -321,7 +321,7 @@ export default function LeaderboardPage() {
                 <span className="text-[11px] font-bold uppercase tracking-wider">
                   Orders Closed
                 </span>
-                <ShoppingBag className="w-4 h-4 text-blue-500" />
+                <ShoppingBag className="w-4 h-4 text-orange-500" />
               </div>
               <div className="text-xl font-extrabold text-slate-900">
                 {totalOrdersWon}
@@ -558,7 +558,7 @@ export default function LeaderboardPage() {
                   placeholder="Search executive..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none focus:border-[#F95721]"
                 />
               </div>
             </div>

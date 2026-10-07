@@ -151,7 +151,7 @@ export default function FollowupsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Clock className="w-6 h-6 text-blue-600" />
+                <Clock className="w-6 h-6 text-[#F95721]" />
                 Follow-ups Manager
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -167,13 +167,13 @@ export default function FollowupsPage() {
                 title="Refresh"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
 
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm shadow-blue-600/25 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 Add Follow-up
@@ -442,7 +442,7 @@ export default function FollowupsPage() {
                       outcome: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-semibold"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-semibold"
                 >
                   <option value="">Select Outcome...</option>
                   {OUTCOME_OPTIONS.map((opt) => (
@@ -467,7 +467,7 @@ export default function FollowupsPage() {
                       outcomeNotes: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -483,7 +483,7 @@ export default function FollowupsPage() {
                       nextAction: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 >
                   <option value="NONE">None</option>
                   <option value="SCHEDULE_FOLLOWUP">
@@ -496,9 +496,9 @@ export default function FollowupsPage() {
               </div>
 
               {completeForm.nextAction === "SCHEDULE_FOLLOWUP" && (
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 space-y-2.5 animate-fade-in">
+                <div className="p-3 rounded-xl bg-orange-50/70 border border-orange-100 space-y-2.5 animate-fade-in">
                   <div>
-                    <label className="text-blue-900 font-semibold block mb-1 text-[11px]">
+                    <label className="text-orange-950 font-semibold block mb-1 text-[11px]">
                       Next Follow-up Title *
                     </label>
                     <input
@@ -512,11 +512,11 @@ export default function FollowupsPage() {
                           nextFollowupTitle: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-slate-800 text-xs focus:outline-none"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-orange-200 text-slate-800 text-xs focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-blue-900 font-semibold block mb-1 text-[11px]">
+                    <label className="text-orange-950 font-semibold block mb-1 text-[11px]">
                       Next Follow-up Date *
                     </label>
                     <input
@@ -529,7 +529,7 @@ export default function FollowupsPage() {
                           nextFollowupDate: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-slate-800 text-xs focus:outline-none"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-orange-200 text-slate-800 text-xs focus:outline-none"
                     />
                   </div>
                 </div>
@@ -586,7 +586,7 @@ export default function FollowupsPage() {
                   onChange={(e) =>
                     setNewFollowup({ ...newFollowup, title: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -605,7 +605,7 @@ export default function FollowupsPage() {
                         scheduledAt: e.target.value,
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -617,7 +617,7 @@ export default function FollowupsPage() {
                     onChange={(e) =>
                       setNewFollowup({ ...newFollowup, type: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   >
                     <option value="CALL">Call</option>
                     <option value="WHATSAPP">WhatsApp</option>
@@ -636,7 +636,7 @@ export default function FollowupsPage() {
                   onChange={(e) =>
                     setNewFollowup({ ...newFollowup, notes: e.target.value })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -650,7 +650,7 @@ export default function FollowupsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-md shadow-orange-500/20"
                 >
                   Schedule
                 </button>

@@ -294,7 +294,7 @@ export default function OrdersBillingPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-                <ShoppingBag className="w-6 h-6 text-blue-600" />
+                <ShoppingBag className="w-6 h-6 text-[#F95721]" />
                 Orders & Commercial Billing
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -310,7 +310,7 @@ export default function OrdersBillingPage() {
                   placeholder="Search order # or customer..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20 shadow-xs w-64 transition-all"
+                  className="pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#F95721] focus:ring-1 focus:ring-orange-500/20 shadow-xs w-64 transition-all"
                 />
               </div>
               <button
@@ -320,7 +320,7 @@ export default function OrdersBillingPage() {
                 title="Refresh Orders"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -381,7 +381,7 @@ export default function OrdersBillingPage() {
                     className="p-5 rounded-md bg-white border border-slate-200 hover:border-slate-300 shadow-xs hover:shadow-md transition-all space-y-4"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                      <span className="text-[11px] font-mono font-bold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md border border-orange-200">
                         {ord.orderNumber}
                       </span>
                       <span
@@ -391,7 +391,7 @@ export default function OrdersBillingPage() {
                             : ord.orderStatus === "APPROVAL"
                               ? "bg-purple-50 text-purple-700 border border-purple-200"
                               : ord.orderStatus === "DESIGN"
-                                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                ? "bg-orange-50 text-orange-700 border border-orange-200"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
                         }`}
                       >
@@ -420,7 +420,7 @@ export default function OrdersBillingPage() {
                             ord.designStatus === "COMPLETED"
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                               : ord.designStatus === "IN_DESIGN"
-                                ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                ? "bg-orange-100 text-orange-800 border border-orange-200"
                                 : ord.designStatus === "PROOF_SHARED"
                                   ? "bg-purple-100 text-purple-800 border border-purple-200"
                                   : ord.designStatus === "REVISION_REQUESTED"
@@ -462,7 +462,7 @@ export default function OrdersBillingPage() {
                     <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 text-[11px] text-slate-600 space-y-1.5">
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500 font-medium flex items-center gap-1">
-                          <Layers className="w-3.5 h-3.5 text-blue-600" />{" "}
+                          <Layers className="w-3.5 h-3.5 text-[#F95721]" />{" "}
                           Specs:
                         </span>
                         <div className="flex items-center gap-1.5">
@@ -476,7 +476,7 @@ export default function OrdersBillingPage() {
                             <button
                               type="button"
                               onClick={() => handleOpenSpecsModal(ord)}
-                              className="p-1 rounded hover:bg-slate-200 text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
+                              className="p-1 rounded hover:bg-slate-200 text-[#F95721] hover:text-[#e84915] transition-colors cursor-pointer"
                               title="Edit Technical Specifications"
                             >
                               <Edit3 className="w-3 h-3" />
@@ -491,7 +491,7 @@ export default function OrdersBillingPage() {
                             ? `(${ord.items[0].paperGsm} GSM)`
                             : ""}
                         </span>
-                        <span className="text-blue-600 font-semibold">
+                        <span className="text-[#F95721] font-semibold">
                           {ord.items?.[0]?.colors || "CMYK"} •{" "}
                           {ord.items?.[0]?.dpi || 100} DPI
                         </span>
@@ -566,7 +566,7 @@ export default function OrdersBillingPage() {
                       <button
                         type="button"
                         onClick={() => handleOpenSpecsModal(ord)}
-                        className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold transition-colors cursor-pointer"
+                        className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-semibold transition-colors cursor-pointer"
                         title="Edit Technical Specifications & Designer Handoff"
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -614,7 +614,7 @@ export default function OrdersBillingPage() {
                           );
                           setShowPaymentModal(true);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                       >
                         <CreditCard className="w-3.5 h-3.5" />
                         Record Payment
@@ -634,7 +634,7 @@ export default function OrdersBillingPage() {
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-md p-6 space-y-4 shadow-xl animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-blue-600" />
+                <CreditCard className="w-5 h-5 text-[#F95721]" />
                 <h3 className="text-base font-bold text-slate-900">
                   Record Payment
                 </h3>
@@ -653,7 +653,7 @@ export default function OrdersBillingPage() {
                 <span className="text-slate-500 font-medium">
                   Order Number:
                 </span>
-                <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                <span className="font-mono font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
                   {selectedOrder.orderNumber}
                 </span>
               </div>
@@ -682,11 +682,11 @@ export default function OrdersBillingPage() {
                     ).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </strong>
                 </div>
-                <div className="bg-blue-50/80 p-2 rounded-lg border border-blue-200/60">
-                  <span className="text-[10px] text-blue-700 font-medium block">
+                <div className="bg-orange-50/80 p-2 rounded-lg border border-orange-200/60">
+                  <span className="text-[10px] text-orange-700 font-medium block">
                     Balance Due
                   </span>
-                  <strong className="text-blue-800 font-black text-xs">
+                  <strong className="text-orange-800 font-black text-xs">
                     ₹
                     {((selectedOrder.balancePaise || 0) / 100).toLocaleString(
                       "en-IN",
@@ -709,7 +709,7 @@ export default function OrdersBillingPage() {
                       const bal = (selectedOrder.balancePaise || 0) / 100;
                       setPaymentAmountRupees(bal > 0 ? bal.toFixed(2) : "0");
                     }}
-                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline"
+                    className="text-[11px] text-[#F95721] hover:text-orange-800 font-semibold cursor-pointer underline"
                   >
                     Set Full Balance (₹
                     {((selectedOrder.balancePaise || 0) / 100).toFixed(2)})
@@ -726,7 +726,7 @@ export default function OrdersBillingPage() {
                   className={`w-full px-3.5 py-2 rounded-xl bg-slate-50 border text-slate-900 font-semibold text-sm focus:outline-none focus:bg-white ${
                     Number(paymentAmountRupees || 0) > ((selectedOrder.balancePaise !== undefined ? selectedOrder.balancePaise : selectedOrder.grandTotalPaise || 0) / 100)
                       ? "border-rose-400 focus:border-rose-600 bg-rose-50/30"
-                      : "border-slate-200 focus:border-blue-600"
+                      : "border-slate-200 focus:border-[#F95721]"
                   }`}
                 />
                 {(() => {
@@ -759,7 +759,7 @@ export default function OrdersBillingPage() {
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
                 >
                   <option value="UPI">UPI / QR Code</option>
                   <option value="BANK_TRANSFER">
@@ -779,7 +779,7 @@ export default function OrdersBillingPage() {
                   placeholder="e.g. UTR-982138923 or Cheque #000124"
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
                 />
               </div>
 
@@ -801,7 +801,7 @@ export default function OrdersBillingPage() {
                         ? selectedOrder.balancePaise
                         : selectedOrder.grandTotalPaise || 0) / 100)
                   }
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold shadow-xs cursor-pointer transition-opacity"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold shadow-xs cursor-pointer transition-opacity"
                 >
                   Confirm Payment
                 </button>
@@ -816,7 +816,7 @@ export default function OrdersBillingPage() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-md w-full max-w-xl p-6 space-y-4 shadow-xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2 text-blue-600">
+              <div className="flex items-center gap-2 text-[#F95721]">
                 <Layers className="w-5 h-5" />
                 <h3 className="text-base font-bold text-slate-900">
                   Product Technical Specifications ({editingOrder.orderNumber})
@@ -838,7 +838,7 @@ export default function OrdersBillingPage() {
             <form onSubmit={handleSaveOrderSpecs} className="space-y-4 text-xs">
               {/* Dimensions & Quantity */}
               <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 space-y-2.5">
-                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">
+                <span className="text-[11px] font-bold text-[#F95721] uppercase tracking-wider block">
                   1. Size &amp; Quantity
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -854,7 +854,7 @@ export default function OrdersBillingPage() {
                       onChange={(e) =>
                         setSpecsForm({ ...specsForm, width: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -870,7 +870,7 @@ export default function OrdersBillingPage() {
                       onChange={(e) =>
                         setSpecsForm({ ...specsForm, height: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -886,7 +886,7 @@ export default function OrdersBillingPage() {
                           dimensionUnit: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-[#F95721]"
                     >
                       <option value="inch">Inches (in)</option>
                       <option value="mm">Millimeter (mm)</option>
@@ -908,7 +908,7 @@ export default function OrdersBillingPage() {
                       onChange={(e) =>
                         setSpecsForm({ ...specsForm, quantity: e.target.value })
                       }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:outline-none focus:border-blue-600"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
                 </div>
@@ -1155,7 +1155,7 @@ export default function OrdersBillingPage() {
                     <button
                       type="submit"
                       disabled={savingSpecs}
-                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
+                      className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold text-xs shadow-xs disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       {savingSpecs ? "Saving..." : "Save Specifications"}
                     </button>
@@ -1236,20 +1236,20 @@ export default function OrdersBillingPage() {
                     ASSIGNED: {
                       label: "Designer Assigned",
                       desc: "Designer has been assigned and is reviewing the brief requirements.",
-                      bg: "bg-blue-50 border-blue-200 text-blue-900",
-                      badge: "bg-blue-100 text-blue-800",
+                      bg: "bg-orange-50 border-orange-200 text-orange-950",
+                      badge: "bg-orange-100 text-orange-800",
                     },
                     IN_DESIGN: {
                       label: "In Design Progress",
                       desc: "The assigned designer is actively working on artwork drafts and proofs.",
-                      bg: "bg-blue-50 border-blue-200 text-blue-900",
-                      badge: "bg-blue-100 text-blue-800",
+                      bg: "bg-orange-50 border-orange-200 text-orange-950",
+                      badge: "bg-orange-100 text-orange-800",
                     },
                     IN_PROGRESS: {
                       label: "In Design Progress",
                       desc: "The assigned designer is actively working on artwork drafts and proofs.",
-                      bg: "bg-blue-50 border-blue-200 text-blue-900",
-                      badge: "bg-blue-100 text-blue-800",
+                      bg: "bg-orange-50 border-orange-200 text-orange-950",
+                      badge: "bg-orange-100 text-orange-800",
                     },
                     CLIENT_REVIEW: {
                       label: "Client Proof Review (Action Recommended)",
@@ -1321,7 +1321,7 @@ export default function OrdersBillingPage() {
                 <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-blue-600" /> Customer
+                      <Phone className="w-3.5 h-3.5 text-[#F95721]" /> Customer
                       Contact Information
                     </span>
                     <span className="text-[10px] text-slate-500 font-medium">

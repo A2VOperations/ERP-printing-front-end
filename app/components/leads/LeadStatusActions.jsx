@@ -95,7 +95,7 @@ export default function LeadStatusActions({
         <button
           disabled={loading}
           onClick={() => handleAction("reopen")}
-          className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+          className="px-2.5 py-1 bg-orange-500/10 hover:bg-[#e84915] text-orange-400 hover:text-white border border-orange-500/20 rounded-lg text-xs font-semibold transition disabled:opacity-50"
         >
           Reopen
         </button>

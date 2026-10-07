@@ -367,7 +367,7 @@ export default function ExportDataView({
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-orange-50 text-[#F95721] border border-orange-200">
                 Data Management
               </span>
               <span className="text-xs text-slate-400">•</span>
@@ -475,7 +475,7 @@ export default function ExportDataView({
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-blue-500" />
+                <Filter className="w-4 h-4 text-orange-500" />
                 <h3 className="text-sm font-bold text-slate-900">2. Segment & Territory Filters</h3>
               </div>
               <span className="text-xs text-slate-400">Narrow target dataset</span>
@@ -654,7 +654,7 @@ export default function ExportDataView({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSelectAllColumns}
-                  className="text-[11px] font-semibold text-blue-600 hover:underline"
+                  className="text-[11px] font-semibold text-[#F95721] hover:underline"
                 >
                   All
                 </button>

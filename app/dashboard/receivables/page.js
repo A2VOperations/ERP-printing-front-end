@@ -122,7 +122,7 @@ export default function ReceivablesPage() {
     if (bucket.includes("OVERDUE") || bucket === "DUE_TODAY") {
       return "bg-amber-50 text-amber-700 border border-amber-200 font-bold";
     }
-    return "bg-blue-50 text-blue-700 border border-blue-200 font-semibold";
+    return "bg-orange-50 text-orange-700 border border-orange-200 font-semibold";
   };
 
   const formatBucketLabel = (b) => {

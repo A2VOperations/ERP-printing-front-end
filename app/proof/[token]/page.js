@@ -215,7 +215,7 @@ export default function PublicProofPortal() {
               Revision Requested
             </span>
           ) : (
-            <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded-full text-xs font-semibold">
+            <span className="bg-orange-500/20 text-orange-300 border border-[#F95721]/30 px-2.5 py-1 rounded-full text-xs font-semibold">
               Pending Review
             </span>
           )}

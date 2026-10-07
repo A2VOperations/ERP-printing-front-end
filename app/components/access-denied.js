@@ -68,7 +68,7 @@ export default function AccessDeniedView({ pathname, role, rule }) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Required Role:</span>
-                <span className="font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded">
+                <span className="font-bold text-orange-700 bg-orange-50 border border-orange-200/60 px-2 py-0.5 rounded">
                   {allowedRolesDisplay || "Administrator"}
                 </span>
               </div>
@@ -86,7 +86,7 @@ export default function AccessDeniedView({ pathname, role, rule }) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link
                 href={homePath}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-600/25 transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-sm shadow-orange-500/25 transition-all"
               >
                 <span>Return to Your Dashboard</span>
                 <ArrowRight className="w-3.5 h-3.5" />

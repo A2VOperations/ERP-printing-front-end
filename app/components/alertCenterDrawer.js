@@ -1411,7 +1411,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                           QUOTATION EXPIRING
                         </span>
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
                           <FileText className="w-4 h-4" />
                         </div>
                       </div>
@@ -2030,8 +2030,8 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
               </div>
 
               {/* Informational Callout Notice */}
-              <div className="rounded-xl bg-blue-50/70 border border-blue-100 p-3.5 flex items-start gap-2.5 text-xs text-slate-600">
-                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+              <div className="rounded-xl bg-orange-50/70 border border-orange-100 p-3.5 flex items-start gap-2.5 text-xs text-slate-600">
+                <Info className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
                 <p className="leading-relaxed font-normal">
                   Turning email preferences off does not hide, dismiss, or resolve any in-app alerts. In-app alerts remain fully available in this drawer.
                 </p>
@@ -2271,7 +2271,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                                     ? "bg-rose-100 text-rose-800"
                                     : isSkipped
                                       ? "bg-amber-100 text-amber-800"
-                                      : "bg-blue-100 text-blue-800"
+                                      : "bg-orange-100 text-orange-800"
                               }`}
                             >
                               {isSuccess && (

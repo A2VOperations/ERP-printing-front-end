@@ -186,7 +186,7 @@ export default function SystemSettingsPage() {
             </Link>
             <Link
               href="/dashboard/admin/settings/system"
-              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-xs"
+              className="px-3 py-1.5 rounded-xl bg-[#F95721] text-white shadow-xs"
             >
               System Business Rules
             </Link>
@@ -221,7 +221,7 @@ export default function SystemSettingsPage() {
                         followUpGraceHours: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Time before due follow-up marks as OVERDUE
@@ -250,7 +250,7 @@ export default function SystemSettingsPage() {
                         maxSalesDiscountPercent: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Discounts $\le$ this rate require no manager sign-off
@@ -270,7 +270,7 @@ export default function SystemSettingsPage() {
                         managerApprovalThresholdPercent: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Discounts above this escalate to CEO / Super Admin
@@ -290,7 +290,7 @@ export default function SystemSettingsPage() {
                         defaultGstPercent: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Intrastate CGST (9%) + SGST (9%) or IGST (18%)
@@ -319,7 +319,7 @@ export default function SystemSettingsPage() {
                         mandatoryAdvancePercent: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Minimum payment to trigger commercialReady clearance
@@ -339,7 +339,7 @@ export default function SystemSettingsPage() {
                         creditTermGraceDays: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Grace period before balance moves to OVERDUE bucket
@@ -368,7 +368,7 @@ export default function SystemSettingsPage() {
                         includedRevisionLimit: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Free client revision cycles per design project
@@ -388,7 +388,7 @@ export default function SystemSettingsPage() {
                         minPreflightDpi: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Resolution threshold for preflight verification PASS
@@ -408,7 +408,7 @@ export default function SystemSettingsPage() {
                         dimensionToleranceMm: Number(e.target.value),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-bold"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-bold"
                   />
                   <span className="text-[10px] text-slate-400 mt-1 block">
                     Allowed bleed variance before preflight WARNING

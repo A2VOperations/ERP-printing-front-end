@@ -362,7 +362,7 @@ export default function AdminTargetsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold shadow-xs">
+                <div className="w-9 h-9 rounded-md bg-orange-100 text-orange-700 flex items-center justify-center font-bold shadow-xs">
                   <Target className="w-5 h-5" />
                 </div>
                 <div>
@@ -416,7 +416,7 @@ export default function AdminTargetsPage() {
                 title="Refresh live targets"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
 
@@ -430,7 +430,7 @@ export default function AdminTargetsPage() {
 
               <button
                 onClick={handleOpenCreate}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 Set Representative Target
@@ -452,7 +452,7 @@ export default function AdminTargetsPage() {
                     maximumFractionDigits: 0,
                   })}
                 </span>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center font-bold text-xs">
                   <Target className="w-4 h-4" />
                 </div>
               </div>
@@ -536,7 +536,7 @@ export default function AdminTargetsPage() {
                   placeholder="Search sales representative by name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F95721] focus:bg-white transition-all"
                 />
               </div>
 
@@ -580,7 +580,7 @@ export default function AdminTargetsPage() {
             <div className="overflow-x-auto">
               {loading ? (
                 <div className="py-16 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
-                  <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-[#F95721]" />
                   <span>Loading sales quotas and live performance...</span>
                 </div>
               ) : filteredTargets.length === 0 ? (
@@ -620,7 +620,7 @@ export default function AdminTargetsPage() {
                           {/* User Details */}
                           <td className="py-3.5">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-[11px] shadow-2xs shrink-0">
+                              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F95721] to-indigo-600 text-white font-bold flex items-center justify-center text-[11px] shadow-2xs shrink-0">
                                 {(rep.name || "SR").slice(0, 2).toUpperCase()}
                               </div>
                               <div>
@@ -647,7 +647,7 @@ export default function AdminTargetsPage() {
                                     maximumFractionDigits: 0,
                                   })}
                                 </span>
-                                <span className="text-[10px] font-bold text-blue-600">
+                                <span className="text-[10px] font-bold text-[#F95721]">
                                   {item.targetOrdersCount} target orders
                                 </span>
                               </div>
@@ -680,7 +680,7 @@ export default function AdminTargetsPage() {
                                     pct >= 100
                                       ? "text-emerald-600"
                                       : pct >= 50
-                                        ? "text-blue-600"
+                                        ? "text-[#F95721]"
                                         : pct > 0
                                           ? "text-amber-600"
                                           : "text-slate-400"
@@ -700,7 +700,7 @@ export default function AdminTargetsPage() {
                                     pct >= 100
                                       ? "bg-emerald-500"
                                       : pct >= 50
-                                        ? "bg-blue-600"
+                                        ? "bg-[#F95721]"
                                         : pct > 0
                                           ? "bg-amber-500"
                                           : "bg-slate-200"
@@ -755,7 +755,7 @@ export default function AdminTargetsPage() {
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleOpenEdit(item)}
-                                className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs transition-colors flex items-center gap-1 shadow-2xs"
+                                className="px-3 py-1.5 rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-100 font-bold text-xs transition-colors flex items-center gap-1 shadow-2xs"
                               >
                                 <Edit2 className="w-3 h-3" />
                                 {hasTarget ? "Edit Target" : "Set Target"}
@@ -789,7 +789,7 @@ export default function AdminTargetsPage() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-md bg-orange-100 text-orange-700 flex items-center justify-center font-bold">
                   <Target className="w-5 h-5" />
                 </div>
                 <div>
@@ -834,7 +834,7 @@ export default function AdminTargetsPage() {
                       }));
                     }}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#F95721] focus:bg-white"
                   >
                     <option value="">-- Select Sales Representative --</option>
                     {usersList.map((usr) => (
@@ -867,7 +867,7 @@ export default function AdminTargetsPage() {
                         targetAmount: e.target.value,
                       }))
                     }
-                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
                     placeholder="100000"
                   />
                 </div>
@@ -889,7 +889,7 @@ export default function AdminTargetsPage() {
                       }
                       className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors ${
                         Number(targetForm.targetAmount) === amt
-                          ? "bg-blue-600 text-white border-blue-600"
+                          ? "bg-[#F95721] text-white border-[#F95721]"
                           : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                       }`}
                     >
@@ -914,7 +914,7 @@ export default function AdminTargetsPage() {
                       targetOrdersCount: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
                   placeholder="10"
                 />
               </div>
@@ -933,7 +933,7 @@ export default function AdminTargetsPage() {
                       notes: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#F95721] focus:bg-white"
                   placeholder="e.g., Focus on corporate catalog accounts and visiting card renewals..."
                 />
               </div>
@@ -950,7 +950,7 @@ export default function AdminTargetsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5"
                 >
                   {saving ? (
                     <>

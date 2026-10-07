@@ -147,7 +147,7 @@ export default function Customer360View({ customerId, user }) {
   if (loading) {
     return (
       <div className="py-24 text-center">
-        <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F95721] mb-4"></div>
         <p className="text-zinc-400 text-sm">
           Loading customer profile & history...
         </p>
@@ -215,7 +215,7 @@ export default function Customer360View({ customerId, user }) {
       <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl shadow-2xl space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-md bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-500/20 shrink-0">
+            <div className="w-16 h-16 rounded-md bg-gradient-to-tr from-[#F95721] to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-orange-500/20 shrink-0">
               {customer.displayName?.slice(0, 2).toUpperCase()}
             </div>
             <div className="space-y-1">
@@ -223,7 +223,7 @@ export default function Customer360View({ customerId, user }) {
                 <h1 className="text-2xl font-bold text-white tracking-tight">
                   {customer.displayName}
                 </h1>
-                <span className="px-2.5 py-0.5 text-xs font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">
+                <span className="px-2.5 py-0.5 text-xs font-mono font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full">
                   {customer.customerNumber}
                 </span>
                 <span
@@ -232,7 +232,7 @@ export default function Customer360View({ customerId, user }) {
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                       : customer.status === "VIP"
                         ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                        : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : "bg-orange-500/10 text-orange-400 border-orange-500/20"
                   }`}
                 >
                   {customer.status}
@@ -343,7 +343,7 @@ export default function Customer360View({ customerId, user }) {
             </button>
             <button
               onClick={() => setShowNewLeadModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center gap-2"
+              className="px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-sm font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition flex items-center gap-2"
             >
               <svg
                 className="w-4 h-4"
@@ -377,7 +377,7 @@ export default function Customer360View({ customerId, user }) {
             <div className="text-xs text-zinc-400 font-medium">
               Active Opportunities
             </div>
-            <div className="text-2xl font-bold text-blue-400 mt-1">
+            <div className="text-2xl font-bold text-orange-400 mt-1">
               {leadSummary.activeLeads}
             </div>
           </div>
@@ -427,7 +427,7 @@ export default function Customer360View({ customerId, user }) {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2.5 text-sm font-semibold rounded-t-xl transition border-b-2 -mb-1 ${
                 activeTab === tab.id
-                  ? "border-blue-500 text-blue-400 bg-zinc-900/60"
+                  ? "border-[#F95721] text-orange-400 bg-zinc-900/60"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -497,7 +497,7 @@ export default function Customer360View({ customerId, user }) {
                 </p>
                 <button
                   onClick={() => setShowNewLeadModal(true)}
-                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition"
+                  className="mt-3 px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition"
                 >
                   Create First Opportunity
                 </button>
@@ -521,7 +521,7 @@ export default function Customer360View({ customerId, user }) {
                         key={lead._id}
                         className="hover:bg-zinc-800/40 transition"
                       >
-                        <td className="py-3 px-4 font-mono text-xs font-bold text-blue-400">
+                        <td className="py-3 px-4 font-mono text-xs font-bold text-orange-400">
                           {lead.leadNumber}
                         </td>
                         <td className="py-3 px-4">
@@ -569,7 +569,7 @@ export default function Customer360View({ customerId, user }) {
                 </p>
                 <button
                   onClick={() => setShowNewFollowupModal(true)}
-                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition"
+                  className="mt-3 px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition"
                 >
                   Schedule Follow-up
                 </button>
@@ -615,7 +615,7 @@ export default function Customer360View({ customerId, user }) {
                                   ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
                                   : f.status === "DUE"
                                     ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                                    : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                    : "bg-orange-500/10 text-orange-400 border-orange-500/20"
                             }`}
                           >
                             {f.status}
@@ -670,7 +670,7 @@ export default function Customer360View({ customerId, user }) {
               </div>
               <button
                 onClick={() => router.push(`/dashboard/communication`)}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
               >
                 Open Communication Hub
               </button>
@@ -684,7 +684,7 @@ export default function Customer360View({ customerId, user }) {
                 </p>
                 <button
                   onClick={() => router.push(`/dashboard/communication`)}
-                  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition"
+                  className="mt-3 px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition"
                 >
                   Start Conversation
                 </button>
@@ -704,7 +704,7 @@ export default function Customer360View({ customerId, user }) {
                         <span className="text-[10px] font-mono text-zinc-500">
                           {thr.threadNumber}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase">
                           {thr.primaryChannel}
                         </span>
                       </div>
@@ -747,10 +747,10 @@ export default function Customer360View({ customerId, user }) {
                     key={ev._id}
                     className="relative flex items-start gap-4 pl-8"
                   >
-                    <div className="absolute left-2 top-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 border-4 border-zinc-900 shadow"></div>
+                    <div className="absolute left-2 top-1.5 w-3.5 h-3.5 rounded-full bg-orange-500 border-4 border-zinc-900 shadow"></div>
                     <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-xl p-3.5 w-full">
                       <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                        <span className="font-semibold text-blue-400">
+                        <span className="font-semibold text-orange-400">
                           {ev.actorName || "System User"}
                         </span>
                         <span>{new Date(ev.createdAt).toLocaleString()}</span>
@@ -851,7 +851,7 @@ export default function Customer360View({ customerId, user }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl shadow transition"
+                  className="px-5 py-2 bg-[#F95721] text-white text-sm font-semibold rounded-xl shadow transition"
                 >
                   {submitting ? "Saving..." : "Create Lead"}
                 </button>
@@ -1093,7 +1093,7 @@ export default function Customer360View({ customerId, user }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl shadow transition"
+                  className="px-5 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-sm font-semibold rounded-xl shadow transition"
                 >
                   {submitting ? "Scheduling..." : "Schedule"}
                 </button>

@@ -185,7 +185,7 @@ export default function CompanySettingsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Building2 className="w-6 h-6 text-blue-600" />
+                <Building2 className="w-6 h-6 text-[#F95721]" />
                 Company Profile & Commercial Identity
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -209,7 +209,7 @@ export default function CompanySettingsPage() {
           <div className="flex items-center gap-2 border-b border-slate-200 pb-2 text-xs font-bold">
             <Link
               href="/dashboard/admin/settings/company"
-              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-xs"
+              className="px-3 py-1.5 rounded-xl bg-[#F95721] text-white shadow-xs"
             >
               Company Identity
             </Link>
@@ -251,7 +251,7 @@ export default function CompanySettingsPage() {
                     onChange={(e) =>
                       setSettings({ ...settings, companyName: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -269,7 +269,7 @@ export default function CompanySettingsPage() {
                         legalEntityName: e.target.value,
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function CompanySettingsPage() {
                         gstin: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-mono"
                   />
                 </div>
 
@@ -314,7 +314,7 @@ export default function CompanySettingsPage() {
                         pan: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-mono"
                   />
                 </div>
               </div>
@@ -337,7 +337,7 @@ export default function CompanySettingsPage() {
                     onChange={(e) =>
                       setSettings({ ...settings, phone: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -351,7 +351,7 @@ export default function CompanySettingsPage() {
                     onChange={(e) =>
                       setSettings({ ...settings, email: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -366,7 +366,7 @@ export default function CompanySettingsPage() {
                     onChange={(e) =>
                       setSettings({ ...settings, website: e.target.value })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function CompanySettingsPage() {
                         },
                       })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
 
@@ -417,7 +417,7 @@ export default function CompanySettingsPage() {
                           },
                         })
                       }
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -437,7 +437,7 @@ export default function CompanySettingsPage() {
                           },
                         })
                       }
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -457,7 +457,7 @@ export default function CompanySettingsPage() {
                           },
                         })
                       }
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
 
@@ -477,7 +477,7 @@ export default function CompanySettingsPage() {
                           },
                         })
                       }
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                     />
                   </div>
                 </div>
@@ -489,7 +489,7 @@ export default function CompanySettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/25 transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/25 transition-all"
               >
                 <Save className="w-4 h-4" />
                 {saving ? "Saving Settings..." : "Save Company Settings"}

@@ -283,7 +283,7 @@ export default function PaymentsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 uppercase tracking-wide">
                   Payments &amp; Collections
                 </span>
                 <span className="text-xs text-slate-400 font-medium">
@@ -315,7 +315,7 @@ export default function PaymentsPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
               >
                 <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-blue-600" : "text-slate-500"}`}
+                  className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#F95721]" : "text-slate-500"}`}
                 />
                 Refresh
               </button>
@@ -378,7 +378,7 @@ export default function PaymentsPage() {
                 placeholder="Search by customer name, order #, or receipt #..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
               />
             </div>
           </div>
@@ -406,7 +406,7 @@ export default function PaymentsPage() {
                         colSpan={8}
                         className="py-12 text-center text-slate-400 text-xs"
                       >
-                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-blue-600" />
+                        <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-[#F95721]" />
                         Loading payments list...
                       </td>
                     </tr>
@@ -549,10 +549,10 @@ export default function PaymentsPage() {
                               {/* Preview & Download Buttons */}
                               <button
                                 onClick={() => setReceiptPayment(p)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] border border-blue-200 transition-all shadow-2xs"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold text-[11px] border border-orange-200 transition-all shadow-2xs"
                                 title="Preview Payment Receipt"
                               >
-                                <FileText className="w-3 h-3 text-blue-600" />
+                                <FileText className="w-3 h-3 text-[#F95721]" />
                                 Preview
                               </button>
 
@@ -669,7 +669,7 @@ export default function PaymentsPage() {
             {/* Document Body (WYSIWYG Mirror of PDF) */}
             <div className="p-6 md:p-8 space-y-6 text-xs text-slate-700 bg-white max-h-[80vh] overflow-y-auto">
               {/* Branded Header Banner */}
-              <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-[#F95721] to-[#FF7043] text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-xl md:text-2xl font-black tracking-tight">
                     {tenantName}
@@ -797,7 +797,7 @@ export default function PaymentsPage() {
                           Payment for Order {rOrderNum}
                         </strong>
                         {receiptPayment.paymentType && (
-                          <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md inline-block mt-1 font-medium border border-blue-100">
+                          <span className="text-[10px] text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md inline-block mt-1 font-medium border border-orange-100">
                             Type: {receiptPayment.paymentType}
                           </span>
                         )}

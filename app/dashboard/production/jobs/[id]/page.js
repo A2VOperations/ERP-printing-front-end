@@ -176,7 +176,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center text-slate-500">
-            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-[#F95721]" />
             <p className="text-xs font-semibold text-slate-700">
               Loading Production Job Card...
             </p>
@@ -193,7 +193,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
         <main className="flex-1 p-8">
           <Link
             href="/dashboard/production"
-            className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 mb-6 hover:underline"
+            className="inline-flex items-center gap-2 text-xs font-bold text-[#F95721] mb-6 hover:underline"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Production Queue
           </Link>
@@ -290,7 +290,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                     job.productionStatus === "READY_FOR_RELEASE"
                       ? "bg-amber-50 text-amber-700 border-amber-200"
                       : job.productionStatus === "SENT_FOR_PRODUCTION"
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
                         : job.productionStatus === "IN_PRODUCTION"
                           ? "bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse"
                           : job.productionStatus === "READY_FOR_DISPATCH"
@@ -336,7 +336,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 {job.productionStatus === "READY_FOR_RELEASE" && (
                   <button
                     onClick={() => setShowManualModal(true)}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <span>Release to Production (Manual)</span>
                   </button>
@@ -422,7 +422,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeTab === tab.key
-                      ? "bg-blue-600 text-white shadow-xs"
+                      ? "bg-[#F95721] text-white shadow-xs"
                       : "bg-white text-slate-600 border border-slate-200 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
@@ -489,7 +489,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                     </span>
                     <button
                       onClick={() => handleCopySha(sha256Hash)}
-                      className="text-[10px] text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                      className="text-[10px] text-[#F95721] hover:text-[#e84915] font-bold flex items-center gap-1 cursor-pointer"
                     >
                       {copiedHash ? (
                         <Check className="w-3 h-3 text-emerald-600" />
@@ -499,7 +499,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                       <span>{copiedHash ? "Copied" : "Copy"}</span>
                     </button>
                   </div>
-                  <p className="font-mono text-xs text-blue-600 break-all select-all font-semibold">
+                  <p className="font-mono text-xs text-[#F95721] break-all select-all font-semibold">
                     {sha256Hash}
                   </p>
                   <p className="text-[10px] text-slate-500 pt-1">
@@ -536,7 +536,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                     <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
                       Quantity
                     </span>
-                    <p className="font-bold text-blue-600 text-sm">
+                    <p className="font-bold text-[#F95721] text-sm">
                       {job.specificationsSnapshot?.quantity || 1} units
                     </p>
                   </div>
@@ -575,11 +575,11 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 </div>
 
                 {job.notes && (
-                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs">
-                    <span className="text-[10px] font-bold uppercase text-blue-800 block mb-0.5">
+                  <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs">
+                    <span className="text-[10px] font-bold uppercase text-orange-800 block mb-0.5">
                       Production Notes
                     </span>
-                    <p className="text-blue-900">{job.notes}</p>
+                    <p className="text-orange-950">{job.notes}</p>
                   </div>
                 )}
               </div>
@@ -601,7 +601,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 </div>
                 <Link
                   href="/dashboard/production/delivery"
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
                   <Truck className="w-3.5 h-3.5" />
                   <span>Open Delivery Hub</span>
@@ -760,7 +760,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                   value={manualNotes}
                   onChange={(e) => setManualNotes(e.target.value)}
                   placeholder="e.g. Sent print file via WhatsApp to vendor on 9876543210..."
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
@@ -774,7 +774,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Confirm Sent
                 </button>
@@ -814,7 +814,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="e.g. Order design revisions requested by client before printing..."
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   required
                 />
               </div>

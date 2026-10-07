@@ -428,7 +428,7 @@ export default function SalesDashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowAddLeadModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-98 text-white font-bold text-xs sm:text-sm rounded-xl px-4 py-2.5 shadow-sm shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
+                className="bg-[#F95721] hover:bg-[#e84915] active:scale-98 text-white font-bold text-xs sm:text-sm rounded-xl px-4 py-2.5 shadow-sm shadow-orange-500/25 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>Add Manual Lead</span>
@@ -560,7 +560,7 @@ export default function SalesDashboardPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search in my leads..."
-                        className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
+                        className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:bg-white"
                       />
                     </div>
 
@@ -599,7 +599,7 @@ export default function SalesDashboardPage() {
                               }}
                               className={`w-full text-left px-2.5 py-1.5 rounded-lg font-medium transition-colors ${
                                 priorityFilter === p
-                                  ? "bg-blue-50 text-blue-600 font-bold"
+                                  ? "bg-orange-50 text-[#F95721] font-bold"
                                   : "text-slate-600 hover:bg-slate-50"
                               }`}
                             >
@@ -619,7 +619,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("ALL")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "ALL"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -631,7 +631,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("NEW")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "NEW"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -643,7 +643,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("FOLLOW_UP")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "FOLLOW_UP"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -655,7 +655,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("QUOTATION")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "QUOTATION"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -667,7 +667,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("NEGOTIATION")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "NEGOTIATION"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -679,7 +679,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("WON")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "WON"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -691,7 +691,7 @@ export default function SalesDashboardPage() {
                     onClick={() => setActiveTab("LOST")}
                     className={`py-3 relative border-b-2 whitespace-nowrap transition-colors cursor-pointer ${
                       activeTab === "LOST"
-                        ? "border-blue-600 text-blue-600 font-bold"
+                        ? "border-[#F95721] text-[#F95721] font-bold"
                         : "border-transparent hover:text-slate-900"
                     }`}
                   >
@@ -712,7 +712,7 @@ export default function SalesDashboardPage() {
                               filteredLeads.length > 0 &&
                               selectedLeads.length === filteredLeads.length
                             }
-                            className="rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            className="rounded text-[#F95721] focus:ring-orange-500 cursor-pointer"
                           />
                         </th>
                         <th className="py-3 px-3">BUSINESS / CONTACT</th>
@@ -734,7 +734,7 @@ export default function SalesDashboardPage() {
                             <tr
                               key={item._id}
                               className={`hover:bg-slate-50/70 transition-colors ${
-                                isSelected ? "bg-blue-50/40" : ""
+                                isSelected ? "bg-orange-50/40" : ""
                               }`}
                             >
                               {/* Checkbox */}
@@ -743,7 +743,7 @@ export default function SalesDashboardPage() {
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => handleToggleLead(item._id)}
-                                  className="rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                  className="rounded text-[#F95721] focus:ring-orange-500 cursor-pointer"
                                 />
                               </td>
 
@@ -808,7 +808,7 @@ export default function SalesDashboardPage() {
                                     <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                                   )}
                                   {item.sourceType === "VISIT" && (
-                                    <Store className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                    <Store className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                                   )}
                                   {item.sourceType === "REFERRAL" && (
                                     <Users className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
@@ -848,7 +848,7 @@ export default function SalesDashboardPage() {
                                   </span>
                                 )}
                                 {item.status === "NEGOTIATION" && (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">
                                     Negotiation
                                   </span>
                                 )}
@@ -871,14 +871,14 @@ export default function SalesDashboardPage() {
                                     href="/dashboard/quotations"
                                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-all"
                                   >
-                                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                    <FileText className="w-3.5 h-3.5 text-[#F95721]" />
                                     <span>View</span>
                                   </Link>
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => setCallingLead(item)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs shadow-xs shadow-blue-500/20 transition-all cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] active:scale-95 text-white font-bold text-xs shadow-xs shadow-orange-500/20 transition-all cursor-pointer"
                                   >
                                     <PhoneCall className="w-3.5 h-3.5" />
                                     <span>Call Now</span>
@@ -945,7 +945,7 @@ export default function SalesDashboardPage() {
                   {/* Task 2 */}
                   <div className="flex items-center justify-between text-xs py-1">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full border-2 border-blue-400 flex items-center justify-center shrink-0" />
+                      <div className="w-4 h-4 rounded-full border-2 border-orange-400 flex items-center justify-center shrink-0" />
                       <span className="font-semibold text-slate-700">
                         Complete follow-ups
                       </span>
@@ -991,7 +991,7 @@ export default function SalesDashboardPage() {
                   </h3>
                   <Link
                     href="/dashboard/leads"
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                    className="text-xs font-semibold text-[#F95721] hover:text-[#e84915] hover:underline"
                   >
                     View All
                   </Link>
@@ -1060,12 +1060,12 @@ export default function SalesDashboardPage() {
                   {/* Action 2: My Quotations */}
                   <Link
                     href="/dashboard/quotations"
-                    className="p-3 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all flex items-center gap-2.5 group"
+                    className="p-3 rounded-xl border border-slate-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all flex items-center gap-2.5 group"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F95721] flex items-center justify-center shrink-0">
                       <FileText className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-blue-700 leading-tight">
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-[#e84915] leading-tight">
                       My Quotations
                     </span>
                   </Link>
@@ -1110,7 +1110,7 @@ export default function SalesDashboardPage() {
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-orange-50 text-[#F95721] flex items-center justify-center">
                   <Plus className="w-4 h-4" />
                 </div>
                 <div>
@@ -1147,7 +1147,7 @@ export default function SalesDashboardPage() {
                     }))
                   }
                   placeholder="e.g. Royal Printers &amp; Stationers"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                 />
               </div>
 
@@ -1166,7 +1166,7 @@ export default function SalesDashboardPage() {
                       }))
                     }
                     placeholder="e.g. Sunil Verma"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                   />
                 </div>
 
@@ -1185,7 +1185,7 @@ export default function SalesDashboardPage() {
                       }))
                     }
                     placeholder="10-digit mobile number"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1202,7 +1202,7 @@ export default function SalesDashboardPage() {
                       setNewLeadForm((prev) => ({ ...prev, area: e.target.value }))
                     }
                     placeholder="e.g. Burari"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                   />
                 </div>
 
@@ -1217,7 +1217,7 @@ export default function SalesDashboardPage() {
                       setNewLeadForm((prev) => ({ ...prev, zone: e.target.value }))
                     }
                     placeholder="e.g. Sant Nagar"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1237,7 +1237,7 @@ export default function SalesDashboardPage() {
                       }))
                     }
                     placeholder="e.g. Visiting Cards"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                   />
                 </div>
 
@@ -1253,7 +1253,7 @@ export default function SalesDashboardPage() {
                         priority: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none bg-white"
                   >
                     <option value="HIGH">High Priority</option>
                     <option value="MEDIUM">Medium Priority</option>
@@ -1276,7 +1276,7 @@ export default function SalesDashboardPage() {
                     }))
                   }
                   placeholder="Any customer preferences, urgency, or specifications..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                 />
               </div>
 
@@ -1291,7 +1291,7 @@ export default function SalesDashboardPage() {
                 <button
                   type="submit"
                   disabled={isSubmittingLead}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5"
                 >
                   {isSubmittingLead ? "Creating..." : "Save & Add Lead"}
                 </button>
@@ -1307,8 +1307,8 @@ export default function SalesDashboardPage() {
       {callingLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-inner">
-              <PhoneCall className="w-7 h-7 text-blue-600 animate-pulse" />
+            <div className="w-14 h-14 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center mx-auto shadow-inner">
+              <PhoneCall className="w-7 h-7 text-[#F95721] animate-pulse" />
             </div>
 
             <div>
@@ -1334,7 +1334,7 @@ export default function SalesDashboardPage() {
               <a
                 href={`tel:${callingLead.phone}`}
                 onClick={() => setCallingLead(null)}
-                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Call Device</span>

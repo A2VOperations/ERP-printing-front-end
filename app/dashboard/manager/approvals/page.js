@@ -302,8 +302,8 @@ export default function ApprovalCenterPage() {
                                 CEO / Admin Tier
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-200">
-                                <ShieldCheck className="w-3 h-3 text-blue-700" />
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-950 border border-orange-200">
+                                <ShieldCheck className="w-3 h-3 text-orange-700" />
                                 Manager Tier
                               </span>
                             )}

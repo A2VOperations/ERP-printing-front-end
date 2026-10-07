@@ -314,7 +314,7 @@ export default function DispatchDeliveryPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Delivered
                 </span>
-                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                <CheckCircle2 className="w-4 h-4 text-[#F95721]" />
               </div>
               <p className="text-2xl font-black text-slate-900">
                 {deliveredCount}
@@ -378,7 +378,7 @@ export default function DispatchDeliveryPage() {
                       <div className="flex justify-between items-center">
                         <Link
                           href={`/dashboard/production/jobs/${pJob._id}`}
-                          className="font-bold text-slate-900 hover:text-blue-600 text-xs"
+                          className="font-bold text-slate-900 hover:text-[#F95721] text-xs"
                         >
                           {pJob.productionJobNumber}
                         </Link>
@@ -437,7 +437,7 @@ export default function DispatchDeliveryPage() {
                   placeholder="Search delivery #, customer..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 shadow-2xs transition-colors"
+                  className="w-full pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#F95721] shadow-2xs transition-colors"
                 />
               </div>
             </div>
@@ -463,7 +463,7 @@ export default function DispatchDeliveryPage() {
                         colSpan="8"
                         className="py-12 text-center text-slate-500"
                       >
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#F95721]" />
                         <span>Loading delivery records...</span>
                       </td>
                     </tr>
@@ -629,7 +629,7 @@ export default function DispatchDeliveryPage() {
                 <select
                   value={deliveryType}
                   onChange={(e) => setDeliveryType(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                 >
                   <option value="CUSTOMER_DELIVERY">
                     CUSTOMER_DELIVERY (Internal Driver)
@@ -654,7 +654,7 @@ export default function DispatchDeliveryPage() {
                     value={courierName}
                     onChange={(e) => setCourierName(e.target.value)}
                     placeholder="e.g. BlueDart / Van 01"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -666,7 +666,7 @@ export default function DispatchDeliveryPage() {
                     value={driverName}
                     onChange={(e) => setDriverName(e.target.value)}
                     placeholder="e.g. Mukesh"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -681,7 +681,7 @@ export default function DispatchDeliveryPage() {
                     value={driverPhone}
                     onChange={(e) => setDriverPhone(e.target.value)}
                     placeholder="e.g. 9876543210"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -696,7 +696,7 @@ export default function DispatchDeliveryPage() {
                       setTrackingNumber(e.target.value);
                     }}
                     placeholder="e.g. MH-04-AB-1234"
-                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -757,7 +757,7 @@ export default function DispatchDeliveryPage() {
                 <select
                   value={attemptReason}
                   onChange={(e) => setAttemptReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                 >
                   <option value="Customer unavailable / Premises closed">
                     Customer unavailable / Premises closed
@@ -784,7 +784,7 @@ export default function DispatchDeliveryPage() {
                   value={attemptNotes}
                   onChange={(e) => setAttemptNotes(e.target.value)}
                   placeholder="Driver observations, customer phone interaction..."
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 
@@ -836,16 +836,16 @@ export default function DispatchDeliveryPage() {
               </p>
             )}
 
-            <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
-              <span className="font-bold block text-blue-950">
+            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950 space-y-1">
+              <span className="font-bold block text-orange-950">
                 Automated Financial Settlement Logic:
               </span>
-              <p className="text-[11px] text-blue-800 leading-relaxed">
+              <p className="text-[11px] text-orange-800 leading-relaxed">
                 If the associated Order balance is fully settled (0 balance
                 due), the Order will automatically advance to{" "}
-                <strong className="text-blue-950">COMPLETED</strong>. If an
+                <strong className="text-orange-950">COMPLETED</strong>. If an
                 outstanding balance remains, the Order will transition to{" "}
-                <strong className="text-blue-950">DELIVERED</strong> awaiting
+                <strong className="text-orange-950">DELIVERED</strong> awaiting
                 financial closure.
               </p>
             </div>
@@ -860,7 +860,7 @@ export default function DispatchDeliveryPage() {
                   value={podRecipientName}
                   onChange={(e) => setPodRecipientName(e.target.value)}
                   placeholder="Person who accepted delivery"
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                   required
                 />
               </div>
@@ -874,7 +874,7 @@ export default function DispatchDeliveryPage() {
                   value={podNotes}
                   onChange={(e) => setPodNotes(e.target.value)}
                   placeholder="Package condition, receipt signed on site..."
-                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
                 />
               </div>
 

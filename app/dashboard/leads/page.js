@@ -57,7 +57,7 @@ const TABS = [
     id: "CONTACTED",
     label: "Contacted",
     countKey: "contacted",
-    dotColor: "bg-blue-500",
+    dotColor: "bg-orange-500",
   },
   {
     id: "QUOTATION_SENT",
@@ -87,10 +87,10 @@ const STATUS_OPTIONS = [
   {
     id: "CONTACTED",
     label: "Contacted",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
-    dot: "bg-blue-500",
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+    border: "border-orange-200",
+    dot: "bg-orange-500",
   },
   {
     id: "INTERESTED",
@@ -163,12 +163,12 @@ export function getLeadStatusStyle(rawStatus) {
   // 2. Contacted: Blue (darker)
   if (s === "CONTACTED" || s === "CALL_ANSWERED" || s === "IN_COMMUNICATION") {
     return {
-      rowBg: "bg-blue-100/90 hover:bg-blue-200/80",
-      expandedBg: "bg-blue-200/60",
-      gridBg: "bg-blue-100/90 border-blue-300 hover:border-blue-400",
-      accentBar: "bg-blue-600",
-      borderL: "border-l-4 border-l-blue-600",
-      badgeBg: "bg-blue-200 text-blue-900 border-blue-300",
+      rowBg: "bg-orange-100/90 hover:bg-orange-200/80",
+      expandedBg: "bg-orange-200/60",
+      gridBg: "bg-orange-100/90 border-orange-300 hover:border-orange-400",
+      accentBar: "bg-[#F95721]",
+      borderL: "border-l-4 border-l-[#F95721]",
+      badgeBg: "bg-orange-200 text-orange-950 border-orange-300",
       label: "Contacted",
     };
   }
@@ -704,7 +704,7 @@ export default function LeadsDashboardPage() {
         pct,
         color:
           src === "GOOGLE"
-            ? "bg-blue-600"
+            ? "bg-[#F95721]"
             : src === "REFERRAL"
               ? "bg-purple-600"
               : "bg-emerald-600",
@@ -1676,8 +1676,8 @@ export default function LeadsDashboardPage() {
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 border border-slate-400 font-bold text-[10px]">
                   <span className="w-2 h-2 rounded-full bg-slate-600"></span> New (Gray)
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span> Contacted (Blue)
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-100 text-orange-950 border border-orange-400 font-bold text-[10px]">
+                  <span className="w-2 h-2 rounded-full bg-[#F95721]"></span> Contacted (Orange)
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-400 font-bold text-[10px]">
                   <span className="w-2 h-2 rounded-full bg-amber-600"></span> Interested (Orange)
@@ -1877,7 +1877,7 @@ export default function LeadsDashboardPage() {
                                     e.stopPropagation();
                                     setCallingLead(lead);
                                   }}
-                                  className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1 rounded-md transition-colors cursor-pointer"
+                                  className="text-slate-400 hover:text-[#F95721] hover:bg-orange-50 p-1 rounded-md transition-colors cursor-pointer"
                                   title="Call Phone"
                                 >
                                   <Phone className="w-3.5 h-3.5" />
@@ -2186,7 +2186,7 @@ export default function LeadsDashboardPage() {
                             },
                             MEDIUM: {
                               label: "Medium",
-                              badge: "bg-blue-50 text-blue-700 border-blue-200",
+                              badge: "bg-orange-50 text-orange-700 border-orange-200",
                             },
                             LOW: {
                               label: "Low",
@@ -2195,7 +2195,7 @@ export default function LeadsDashboardPage() {
                             },
                           }[lead.priority || "MEDIUM"] || {
                             label: "Medium",
-                            badge: "bg-blue-50 text-blue-700 border-blue-200",
+                            badge: "bg-orange-50 text-orange-700 border-orange-200",
                           };
                           const areaText = formatLeadTerritory(lead);
 
@@ -2506,7 +2506,7 @@ export default function LeadsDashboardPage() {
                                     <button
                                       type="button"
                                       onClick={() => setCallingLead(lead)}
-                                      className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all cursor-pointer shadow-2xs"
+                                      className="p-1.5 rounded-lg bg-orange-50 text-[#F95721] hover:bg-[#e84915] hover:text-white transition-all cursor-pointer shadow-2xs"
                                       title="Call customer now"
                                     >
                                       <Phone className="w-3.5 h-3.5" />
@@ -2675,12 +2675,12 @@ export default function LeadsDashboardPage() {
                                         <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-2.5">
                                           <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
                                             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-                                              <Phone className="w-3.5 h-3.5 text-blue-600" />
+                                              <Phone className="w-3.5 h-3.5 text-[#F95721]" />
                                               Contact Details
                                             </span>
                                             <a
                                               href={`tel:${lead.phone}`}
-                                              className="text-[10px] text-blue-600 font-bold hover:underline"
+                                              className="text-[10px] text-[#F95721] font-bold hover:underline"
                                             >
                                               Call Device
                                             </a>
@@ -2804,14 +2804,14 @@ export default function LeadsDashboardPage() {
                                                   `/dashboard/leads/${lead._id}?tab=Payments&openPayment=true`,
                                                 )
                                               }
-                                              className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200/90 text-left transition-all cursor-pointer group hover:shadow-xs"
+                                              className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-orange-50/70 hover:bg-orange-100/80 border border-orange-200/90 text-left transition-all cursor-pointer group hover:shadow-xs"
                                               title="Record advance or settlement payment"
                                             >
-                                              <span className="p-1 rounded-md bg-blue-600 text-white shadow-2xs group-hover:scale-105 transition-transform">
+                                              <span className="p-1 rounded-md bg-[#F95721] text-white shadow-2xs group-hover:scale-105 transition-transform">
                                                 <CreditCard className="w-3.5 h-3.5" />
                                               </span>
 
-                                              <span className="font-bold text-[15px] text-slate-800 group-hover:text-blue-900 leading-tight">
+                                              <span className="font-bold text-[15px] text-slate-800 group-hover:text-orange-950 leading-tight">
                                                 Payment
                                               </span>
                                             </button>
@@ -2927,7 +2927,7 @@ export default function LeadsDashboardPage() {
                                           <button
                                             type="button"
                                             onClick={() => setCallingLead(lead)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
                                           >
                                             <Phone className="w-3.5 h-3.5" />
                                             <span>Call Customer</span>
@@ -3158,7 +3158,7 @@ export default function LeadsDashboardPage() {
                 <label className="text-slate-700 font-semibold block mb-1 flex items-center justify-between">
                   <span>Assign To</span>
                   {!isManagerOrAdmin && (
-                    <span className="text-[10px] text-blue-600 font-semibold flex items-center gap-1">
+                    <span className="text-[10px] text-[#F95721] font-semibold flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Auto-assigned to you
                     </span>
                   )}
@@ -3181,7 +3181,7 @@ export default function LeadsDashboardPage() {
                 ) : (
                   <div className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between">
                     <div className="flex items-center gap-2 truncate">
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-[#F95721] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
                         {(currentUser?.name || "ME").slice(0, 2).toUpperCase()}
                       </div>
                       <span className="truncate">
@@ -3494,8 +3494,8 @@ export default function LeadsDashboardPage() {
       {callingLead && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
-            <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-inner">
-              <PhoneCall className="w-7 h-7 text-blue-600 animate-pulse" />
+            <div className="w-14 h-14 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center mx-auto shadow-inner">
+              <PhoneCall className="w-7 h-7 text-[#F95721] animate-pulse" />
             </div>
 
             <div>
@@ -3518,7 +3518,7 @@ export default function LeadsDashboardPage() {
             <div className="flex items-center gap-2 pt-1">
               <a
                 href={`tel:${callingLead.phone}`}
-                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex-1 py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Call Device</span>

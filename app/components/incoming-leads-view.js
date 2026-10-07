@@ -235,7 +235,7 @@ export default function IncomingLeadsView({
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-5 right-5 z-9999 px-4 py-3 bg-slate-900 text-emerald-400 border border-slate-700 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 animate-bounce">
-          <Sparkles className="w-4 h-4 text-blue-400" />
+          <Sparkles className="w-4 h-4 text-orange-400" />
           <span>{toast}</span>
         </div>
       )}
@@ -258,7 +258,7 @@ export default function IncomingLeadsView({
               <UserCheck className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-blue-200">
+              <div className="text-xs font-bold uppercase tracking-wider text-orange-200">
                 My Handled
               </div>
               <div className="text-2xl font-black">{stats.myHandled} Leads</div>
@@ -277,7 +277,7 @@ export default function IncomingLeadsView({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by client name, phone, zone, or business..."
-            className="w-full h-10 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all"
+            className="w-full h-10 pl-10 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-[#F95721] focus:ring-2 focus:ring-orange-500/10 outline-none transition-all"
           />
           {searchQuery && (
             <button
@@ -295,7 +295,7 @@ export default function IncomingLeadsView({
           {selectedLeadIds.length > 0 && (
             <button
               onClick={onAcceptSelected}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
+              className="px-4 py-2 bg-orange-500 hover:bg-[#e84915] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 animate-pulse"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Accept Selected ({selectedLeadIds.length})</span>
@@ -309,7 +309,7 @@ export default function IncomingLeadsView({
               className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
             >
               {selectedLeadIds.length === incomingLeads.length ? (
-                <CheckSquare className="w-4 h-4 text-blue-600" />
+                <CheckSquare className="w-4 h-4 text-[#F95721]" />
               ) : (
                 <Square className="w-4 h-4 text-slate-400" />
               )}
@@ -323,7 +323,7 @@ export default function IncomingLeadsView({
 
           {/* Month Selector Dropdown */}
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700">
-            <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <Calendar className="w-3.5 h-3.5 text-[#F95721] shrink-0" />
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
@@ -356,14 +356,14 @@ export default function IncomingLeadsView({
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"}`}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "grid" ? "bg-white text-[#F95721] shadow-xs" : "text-slate-400 hover:text-slate-600"}`}
               title="Grid View"
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "table" ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"}`}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === "table" ? "bg-white text-[#F95721] shadow-xs" : "text-slate-400 hover:text-slate-600"}`}
               title="Table View"
             >
               <List className="w-4 h-4" />
@@ -407,31 +407,31 @@ export default function IncomingLeadsView({
                 key={leadId}
                 className={`border rounded-md p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-4 relative group overflow-hidden ${
                   isSelected
-                    ? "border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40"
+                    ? "border-[#F95721] ring-2 ring-orange-500/20 bg-orange-50/40"
                     : lead.handledBy
                       ? "border-emerald-200/90 bg-linear-to-b from-emerald-50/30 via-white to-white hover:border-emerald-300"
-                      : "border-blue-200/90 bg-linear-to-b from-blue-50/30 via-white to-white hover:border-blue-300"
+                      : "border-orange-200/90 bg-linear-to-b from-orange-50/30 via-white to-white hover:border-orange-300"
                 }`}
               >
                 <div
-                  className={`absolute top-0 left-0 right-0 h-1.5 ${lead.handledBy ? "bg-emerald-500" : "bg-blue-500 animate-pulse"}`}
+                  className={`absolute top-0 left-0 right-0 h-1.5 ${lead.handledBy ? "bg-emerald-500" : "bg-orange-500 animate-pulse"}`}
                 />
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => toggleSelectOne(leadId)}
-                      className="text-slate-400 hover:text-blue-600 cursor-pointer pt-0.5"
+                      className="text-slate-400 hover:text-[#F95721] cursor-pointer pt-0.5"
                     >
                       {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-blue-500" />
+                        <CheckSquare className="w-5 h-5 text-orange-500" />
                       ) : (
                         <Square className="w-5 h-5 text-slate-300" />
                       )}
                     </button>
 
                     <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                      <h3 className="font-extrabold text-slate-900 text-sm group-hover:text-[#F95721] transition-colors flex items-center gap-1.5">
                         <span>{lead.name}</span>
                       </h3>
                       {lead.businessName && (
@@ -443,15 +443,15 @@ export default function IncomingLeadsView({
                     </div>
                   </div>
 
-                  <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 border border-blue-200">
-                    {/* <UserRoundArrowLeft className="w-3 h-3 text-blue-600 animate-pulse" /> */}
+                  <span className="px-2.5 py-1 bg-orange-100 text-orange-800 rounded-full font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 border border-orange-200">
+                    {/* <UserRoundArrowLeft className="w-3 h-3 text-[#F95721] animate-pulse" /> */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="15"
                       height="15"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#2563eb"
+                      stroke="#F95721"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -517,7 +517,7 @@ export default function IncomingLeadsView({
 
                   <button
                     onClick={() => onAccept(leadId, lead.name)}
-                    className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 bg-orange-500 hover:bg-[#e84915] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Accept Lead</span>
@@ -541,7 +541,7 @@ export default function IncomingLeadsView({
                     >
                       {selectedLeadIds.length === incomingLeads.length &&
                       incomingLeads.length > 0 ? (
-                        <CheckSquare className="w-4 h-4 text-blue-600" />
+                        <CheckSquare className="w-4 h-4 text-[#F95721]" />
                       ) : (
                         <Square className="w-4 h-4 text-slate-300" />
                       )}
@@ -563,15 +563,15 @@ export default function IncomingLeadsView({
                   return (
                     <tr
                       key={leadId}
-                      className={`hover:bg-blue-50/30 transition-colors ${isSelected ? "bg-blue-50/40" : ""}`}
+                      className={`hover:bg-orange-50/30 transition-colors ${isSelected ? "bg-orange-50/40" : ""}`}
                     >
                       <td className="py-3.5 px-4">
                         <button
                           onClick={() => toggleSelectOne(leadId)}
-                          className="cursor-pointer text-slate-400 hover:text-blue-600"
+                          className="cursor-pointer text-slate-400 hover:text-[#F95721]"
                         >
                           {isSelected ? (
-                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                            <CheckSquare className="w-4 h-4 text-[#F95721]" />
                           ) : (
                             <Square className="w-4 h-4 text-slate-300" />
                           )}
@@ -608,7 +608,7 @@ export default function IncomingLeadsView({
                           </button>
                           <button
                             onClick={() => onAccept(leadId, lead.name)}
-                            className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1"
+                            className="px-3 py-1.5 bg-orange-500 hover:bg-[#e84915] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Accept</span>
@@ -630,7 +630,7 @@ export default function IncomingLeadsView({
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-9999 flex justify-end animate-fade-in">
             <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col justify-between overflow-hidden animate-slide-left border-l border-slate-200">
               {/* Premium Header */}
-              <div className="bg-blue-900 text-white p-6 flex items-start justify-between shadow-md">
+              <div className="bg-[#0F172A] text-white p-6 flex items-start justify-between shadow-md">
                 <div className="flex items-center gap-3.5">
                   <div className="w-13 h-13 rounded-md bg-white/20 backdrop-blur-md text-white flex items-center justify-center font-black text-lg shadow-lg border border-white/30 shrink-0">
                     {(quickViewLead.name || "L").substring(0, 2).toUpperCase()}
@@ -640,12 +640,12 @@ export default function IncomingLeadsView({
                       {quickViewLead.name || "Unnamed Client"}
                     </h3>
                     {quickViewLead.businessName ? (
-                      <p className="text-xs text-blue-100 font-semibold flex items-center gap-1.5 mt-0.5">
-                        <Building2 className="w-3.5 h-3.5 text-blue-200 shrink-0" />
+                      <p className="text-xs text-orange-100 font-semibold flex items-center gap-1.5 mt-0.5">
+                        <Building2 className="w-3.5 h-3.5 text-orange-200 shrink-0" />
                         <span>{quickViewLead.businessName}</span>
                       </p>
                     ) : (
-                      <p className="text-[11px] text-blue-200 font-medium mt-0.5">
+                      <p className="text-[11px] text-orange-200 font-medium mt-0.5">
                         Incoming Lead Profile
                       </p>
                     )}
@@ -653,7 +653,7 @@ export default function IncomingLeadsView({
                 </div>
                 <button
                   onClick={() => setQuickViewLead(null)}
-                  className="text-blue-200 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/20 transition-colors cursor-pointer"
+                  className="text-orange-200 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/20 transition-colors cursor-pointer"
                   title="Close Drawer"
                 >
                   <X className="w-4 h-4" />
@@ -663,17 +663,17 @@ export default function IncomingLeadsView({
               {/* Body */}
               <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-5 text-xs text-slate-700">
                 {/* Status & Campaign */}
-                <div className="bg-blue-50/90 border border-blue-200/80 p-4 rounded-md flex items-center justify-between shadow-2xs">
+                <div className="bg-orange-50/90 border border-orange-200/80 p-4 rounded-md flex items-center justify-between shadow-2xs">
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-800">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-orange-800">
                       Status
                     </div>
-                    <div className="font-black text-blue-900 text-sm mt-0.5 flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
+                    <div className="font-black text-orange-950 text-sm mt-0.5 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" />
                       <span>Incoming / Unassigned</span>
                     </div>
                   </div>
-                  <span className="px-3 py-1 bg-blue-500 text-white font-extrabold rounded-full text-xs shadow-xs">
+                  <span className="px-3 py-1 bg-orange-500 text-white font-extrabold rounded-full text-xs shadow-xs">
                     Requires Acceptance
                   </span>
                 </div>
@@ -709,11 +709,11 @@ export default function IncomingLeadsView({
                           ).toLocaleString("en-IN")}
                         </span>
                       </div>
-                      <div className="bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-xl">
-                        <span className="text-[9px] uppercase font-bold text-blue-400 block tracking-wider">
+                      <div className="bg-orange-500/10 border border-orange-500/20 p-2.5 rounded-xl">
+                        <span className="text-[9px] uppercase font-bold text-orange-400 block tracking-wider">
                           Balance
                         </span>
-                        <span className="text-xs font-mono font-black text-blue-300 mt-0.5 block">
+                        <span className="text-xs font-mono font-black text-orange-300 mt-0.5 block">
                           ₹
                           {(
                             Number(quickViewLead.balanceAmount) || 0
@@ -762,9 +762,9 @@ export default function IncomingLeadsView({
                       {quickViewLead.phone ? (
                         <a
                           href={`tel:${quickViewLead.phone}`}
-                          className="font-bold text-slate-800 font-mono text-xs hover:text-blue-600 transition-colors inline-flex items-center gap-1.5 mt-0.5"
+                          className="font-bold text-slate-800 font-mono text-xs hover:text-[#F95721] transition-colors inline-flex items-center gap-1.5 mt-0.5"
                         >
-                          <Phone className="w-3 h-3 text-blue-500" />
+                          <Phone className="w-3 h-3 text-orange-500" />
                           <span>{quickViewLead.phone}</span>
                         </a>
                       ) : (
@@ -780,10 +780,10 @@ export default function IncomingLeadsView({
                       {quickViewLead.email ? (
                         <a
                           href={`mailto:${quickViewLead.email}`}
-                          className="font-bold text-slate-800 text-xs truncate hover:text-blue-600 transition-colors inline-flex items-center gap-1.5 mt-0.5 max-w-full"
+                          className="font-bold text-slate-800 text-xs truncate hover:text-[#F95721] transition-colors inline-flex items-center gap-1.5 mt-0.5 max-w-full"
                           title={quickViewLead.email}
                         >
-                          <Mail className="w-3 h-3 text-blue-500 shrink-0" />
+                          <Mail className="w-3 h-3 text-orange-500 shrink-0" />
                           <span className="truncate">
                             {quickViewLead.email}
                           </span>
@@ -815,7 +815,7 @@ export default function IncomingLeadsView({
                         Added By User
                       </span>
                       <span className="font-bold text-slate-700 text-xs flex items-center gap-1.5 mt-0.5">
-                        <User className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <User className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                         <span>
                           {quickViewLead.createdBy || "System / Unspecified"}
                         </span>
@@ -830,13 +830,13 @@ export default function IncomingLeadsView({
                     <h4 className="font-bold uppercase text-[10px] tracking-wider text-slate-400">
                       Initial Remarks
                     </h4>
-                    <div className="bg-blue-50/80 border border-blue-200/80 p-4 rounded-md flex flex-col gap-2 shadow-2xs text-slate-800 font-medium">
+                    <div className="bg-orange-50/80 border border-orange-200/80 p-4 rounded-md flex flex-col gap-2 shadow-2xs text-slate-800 font-medium">
                       {quickViewLead.remark && <p>{quickViewLead.remark}</p>}
                       {quickViewLead.remark2 && (
                         <p
                           className={
                             quickViewLead.remark
-                              ? "border-t border-blue-200/60 pt-2"
+                              ? "border-t border-orange-200/60 pt-2"
                               : ""
                           }
                         >
@@ -1032,9 +1032,9 @@ export default function IncomingLeadsView({
                             );
                           } else if (item.type === "ACCEPTED") {
                             badgeBg =
-                              "bg-blue-50 text-blue-700 border-blue-200";
+                              "bg-orange-50 text-orange-700 border-orange-200";
                             icon = (
-                              <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                              <CheckCircle2 className="w-3 h-3 text-[#F95721]" />
                             );
                           } else if (item.type === "UPDATED") {
                             badgeBg =
@@ -1108,7 +1108,7 @@ export default function IncomingLeadsView({
                       quickViewLead.name,
                     )
                   }
-                  className="w-full py-3 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-orange-500 hover:bg-[#e84915] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-orange-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Accept Lead Now</span>

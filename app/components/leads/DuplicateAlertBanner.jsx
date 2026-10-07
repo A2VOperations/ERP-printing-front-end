@@ -33,7 +33,7 @@ export default function DuplicateAlertBanner({ duplicateData }) {
         {duplicateData.exactPhoneMatch && (
           <Link
             href={`/dashboard/customers/${duplicateData.exactPhoneMatch._id}`}
-            className="text-xs font-semibold text-blue-400 hover:underline inline-block pt-1"
+            className="text-xs font-semibold text-orange-400 hover:underline inline-block pt-1"
           >
             View Customer Profile (
             {duplicateData.exactPhoneMatch.customerNumber}:{" "}

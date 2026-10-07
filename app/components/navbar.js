@@ -1050,7 +1050,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       case "admin":
         return "bg-purple-100 text-purple-700 border-purple-200";
       case "manager":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-orange-100 text-orange-700 border-orange-200";
       case "sales":
         return "bg-emerald-100 text-emerald-700 border-emerald-200";
       case "designer":
@@ -1066,7 +1066,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       case "admin":
         return "bg-purple-600";
       case "manager":
-        return "bg-blue-600";
+        return "bg-[#F95721]";
       case "sales":
         return "bg-emerald-600";
       case "designer":
@@ -1255,7 +1255,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               setShowMobileMenu((prev) => !prev);
               window.dispatchEvent(new CustomEvent("toggle-sidebar"));
             }}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 shrink-0"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/20 shrink-0"
             title="Toggle Navigation Menu"
             aria-label="Toggle Navigation Menu"
           >
@@ -1267,7 +1267,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
             onClick={() => setShowSearchModal(true)}
             className="relative flex-1 cursor-pointer group min-w-0"
           >
-            <Search className="w-4 h-4 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0" />
+            <Search className="w-4 h-4 absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-[#F95721] transition-colors shrink-0" />
             <div className="w-full pl-8.5 sm:pl-10 pr-2.5 sm:pr-3 lg:pr-14 py-1.5 sm:py-2 rounded-xl sm:rounded-sm bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-400 group-hover:border-slate-300 group-hover:bg-slate-100/70 select-none shadow-2xs transition-all flex items-center justify-between">
               <span className="truncate">
                 <span className="hidden sm:inline">
@@ -1325,7 +1325,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
             {/* Calendar Shortcut */}
             <button
               onClick={() => router.push("/dashboard/followups")}
-              className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors hidden sm:inline-flex"
+              className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 text-slate-600 hover:text-[#F95721] transition-colors hidden sm:inline-flex"
               title="Calendar & Tasks"
               aria-label="Calendar & Tasks"
             >
@@ -1377,7 +1377,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               </div>
               <ChevronDown
                 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 transition-transform duration-200 hidden sm:block ${
-                  showUserDropdown ? "rotate-180 text-blue-600" : ""
+                  showUserDropdown ? "rotate-180 text-[#F95721]" : ""
                 }`}
               />
             </button>
@@ -1410,7 +1410,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         }
                         className={`w-14 h-14 rounded-full ${getAvatarBg(
                           user.role,
-                        )} text-white font-black text-base flex items-center justify-center shadow-xs overflow-hidden border-2 border-white ring-1 ring-slate-200 relative transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer`}
+                        )} text-white font-black text-base flex items-center justify-center shadow-xs overflow-hidden border-2 border-white ring-1 ring-slate-200 relative transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500/40 cursor-pointer`}
                       >
                         {user.avatarUrl ? (
                           <img
@@ -1444,7 +1444,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         onClick={() => avatarFileInputRef.current?.click()}
                         disabled={isUploadingAvatar}
                         title={user.avatarUrl ? "Change photo" : "Upload photo"}
-                        className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xs border-2 border-white transition-all cursor-pointer"
+                        className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-[#F95721] hover:bg-[#e84915] text-white flex items-center justify-center shadow-xs border-2 border-white transition-all cursor-pointer"
                       >
                         {isUploadingAvatar ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -1469,7 +1469,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                           type="button"
                           onClick={() => avatarFileInputRef.current?.click()}
                           disabled={isUploadingAvatar}
-                          className="text-[12px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors cursor-pointer"
+                          className="text-[12px] font-semibold text-[#F95721] hover:text-[#e84915] flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Camera className="w-4 h-4" />
                           <span>
@@ -1526,7 +1526,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                             : "/dashboard"
                     }
                     onClick={() => setShowUserDropdown(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                   >
                     <Layers className="w-4 h-4 text-slate-400" />
                     <span className="text-sm">
@@ -1541,7 +1541,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                   <Link
                     href="/dashboard/reports"
                     onClick={() => setShowUserDropdown(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                   >
                     <BarChart3 className="w-4 h-4 text-slate-400" />
                     <span className="text-sm">Reports & Analytics</span>
@@ -1551,7 +1551,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     <Link
                       href="/dashboard/admin/settings/company"
                       onClick={() => setShowUserDropdown(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                     >
                       <Settings className="w-4 h-4 text-slate-400" />
                       <span>Company Settings</span>
@@ -1562,7 +1562,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     <Link
                       href="/dashboard/manager/team"
                       onClick={() => setShowUserDropdown(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                     >
                       <Users className="w-4 h-4 text-slate-400" />
                       <span>Team Performance</span>
@@ -1573,7 +1573,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     <Link
                       href="/dashboard/design"
                       onClick={() => setShowUserDropdown(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                     >
                       <Palette className="w-4 h-4 text-slate-400" />
                       <span>My Design Projects</span>
@@ -1584,7 +1584,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     <Link
                       href="/dashboard/data-operator"
                       onClick={() => setShowUserDropdown(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
                     >
                       <Layers className="w-4 h-4 text-slate-400" />
                       <span>Data Operator Workspace</span>
@@ -1719,7 +1719,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-scale-up">
             {/* Search Input Bar */}
             <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center gap-2.5 sm:gap-3 shrink-0">
-              <Search className="w-5 h-5 text-blue-600 shrink-0" />
+              <Search className="w-5 h-5 text-[#F95721] shrink-0" />
               <input
                 type="text"
                 autoFocus
@@ -1740,7 +1740,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
             <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-4">
               {isSearching && (
                 <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-[#F95721] border-t-transparent rounded-full animate-spin" />
                   <span>Searching CRM database...</span>
                 </div>
               )}
@@ -1763,10 +1763,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                               setShowSearchModal(false);
                               router.push(`/dashboard/customers/${c._id}`);
                             }}
-                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 flex items-center justify-between cursor-pointer transition-colors"
+                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-orange-50 flex items-center justify-between cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-2.5">
-                              <Building2 className="w-4 h-4 text-blue-600" />
+                              <Building2 className="w-4 h-4 text-[#F95721]" />
                               <span className="font-bold text-slate-800">
                                 {c.displayName || c.companyName || c.name}
                               </span>
@@ -1798,7 +1798,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                               setShowSearchModal(false);
                               router.push(`/dashboard/leads/${l._id}`);
                             }}
-                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 flex items-center justify-between cursor-pointer transition-colors"
+                            className="p-2.5 rounded-xl bg-slate-50 hover:bg-orange-50 flex items-center justify-between cursor-pointer transition-colors"
                           >
                             <div className="flex items-center gap-2.5">
                               <Users className="w-4 h-4 text-emerald-600" />
@@ -1877,9 +1877,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                             setShowSearchModal(false);
                             router.push(item.href);
                           }}
-                          className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 border border-slate-100 text-slate-700 flex flex-col items-center justify-center gap-1.5 transition-all group"
+                          className="p-3 rounded-xl bg-slate-50 hover:bg-orange-50 hover:text-[#F95721] border border-slate-100 text-slate-700 flex flex-col items-center justify-center gap-1.5 transition-all group"
                         >
-                          <Icon className="w-7 h-7 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                          <Icon className="w-7 h-7 text-slate-400 group-hover:text-[#F95721] transition-colors" />
                           <span className="text-md font-semibold">
                             {item.name}
                           </span>
@@ -1966,7 +1966,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                       onClick={() => setShowMobileMenu(false)}
                       className={`flex items-center gap-3 px-3 py-3 text-sm font-semibold transition-all ${
                         isActive
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
                           : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                       }`}
                     >

@@ -244,7 +244,7 @@ export default function QuotationsView({ user }) {
       DRAFT: "bg-slate-100 text-slate-700 border-slate-300",
       PENDING_DISCOUNT_APPROVAL:
         "bg-amber-100 text-amber-800 border-amber-300 animate-pulse",
-      SENT: "bg-blue-100 text-blue-800 border-blue-300",
+      SENT: "bg-orange-100 text-orange-800 border-orange-300",
       ACCEPTED:
         "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold",
       REJECTED: "bg-rose-100 text-rose-800 border-rose-300",

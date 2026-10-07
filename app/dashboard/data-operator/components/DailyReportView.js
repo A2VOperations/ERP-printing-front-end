@@ -366,7 +366,7 @@ export default function DailyReportView({
           </button>
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-sm shadow-blue-500/20"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-[#F95721] hover:bg-[#e84915] rounded-xl transition shadow-sm shadow-orange-500/20"
           >
             <Download className="w-4 h-4 text-white" />
             Export Day CSV
@@ -469,7 +469,7 @@ export default function DailyReportView({
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               Leads Ingested
             </span>
-            <FileText className="w-4 h-4 text-blue-500" />
+            <FileText className="w-4 h-4 text-orange-500" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900">{totalLeadsToday}</span>
@@ -479,7 +479,7 @@ export default function DailyReportView({
           </div>
           <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2.5 overflow-hidden">
             <div
-              className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+              className="bg-[#F95721] h-1.5 rounded-full transition-all duration-500"
               style={{ width: `${targetPct}%` }}
             />
           </div>
@@ -799,7 +799,7 @@ export default function DailyReportView({
                         <div className="flex items-center gap-1.5">
                           <a
                             href={`tel:${lead.phone}`}
-                            className="font-mono font-medium text-blue-600 hover:underline"
+                            className="font-mono font-medium text-[#F95721] hover:underline"
                           >
                             {lead.phone}
                           </a>
@@ -824,7 +824,7 @@ export default function DailyReportView({
                       <span className="text-[10px] text-slate-400">{lead.zone}</span>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-50 text-orange-700 border border-orange-200">
                         {lead.categoryLabel}
                       </span>
                     </td>

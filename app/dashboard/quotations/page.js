@@ -1012,7 +1012,7 @@ function QuotationsContent() {
       case "APPROVED":
         return "bg-emerald-100 text-emerald-800 border-emerald-300";
       case "SENT":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-orange-100 text-orange-800 border-orange-300";
       case "ACCEPTED":
         return "bg-green-100 text-green-900 border-green-400 font-black";
       case "PENDING_DISCOUNT_APPROVAL":
@@ -1036,7 +1036,7 @@ function QuotationsContent() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+              <div className="w-11 h-11 rounded-md bg-orange-50 text-[#F95721] flex items-center justify-center border border-orange-100">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
@@ -1058,7 +1058,7 @@ function QuotationsContent() {
                 title="Refresh Quotations"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin text-blue-600" : ""}`}
+                  className={`w-4 h-4 ${loading ? "animate-spin text-[#F95721]" : ""}`}
                 />
               </button>
             </div>
@@ -1132,7 +1132,7 @@ function QuotationsContent() {
                     placeholder="Search quote #, client..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -1158,7 +1158,7 @@ function QuotationsContent() {
                       onClick={() => setSelectedQuote(item)}
                       className={`p-4 rounded-md border transition-all cursor-pointer space-y-2.5 ${
                         isSelected
-                          ? "bg-blue-50/70 border-blue-400 shadow-xs ring-1 ring-blue-400/30"
+                          ? "bg-orange-50/70 border-orange-400 shadow-xs ring-1 ring-orange-400/30"
                           : "bg-white hover:bg-slate-50/80 border-slate-200"
                       }`}
                     >
@@ -1226,7 +1226,7 @@ function QuotationsContent() {
                   {/* Action Top Bar */}
                   <div className="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-400/30">
                         OFFICIAL QUOTATION
                       </span>
                       <span className="text-xs font-mono font-bold text-slate-200">
@@ -1261,7 +1261,7 @@ function QuotationsContent() {
                           onClick={() => handleOpenEdit(selectedQuote)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-all"
                         >
-                          <Edit3 className="w-3.5 h-3.5 text-blue-400" />
+                          <Edit3 className="w-3.5 h-3.5 text-orange-400" />
                           {selectedQuote.status === "DRAFT" ||
                           selectedQuote.status === "PENDING_DISCOUNT_APPROVAL"
                             ? "Edit Quotation"
@@ -1312,7 +1312,7 @@ function QuotationsContent() {
                             alert(err.message || "Failed to download PDF");
                           }
                         }}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-xs transition-all"
                       >
                         <Download className="w-3.5 h-3.5" />
                         Download PDF
@@ -1420,7 +1420,7 @@ function QuotationsContent() {
                       <button
                         onClick={() => handleSendQuotation(selectedQuote)}
                         disabled={actionLoading}
-                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 flex items-center gap-1.5 transition-all"
+                        className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 transition-all"
                       >
                         <Send className="w-4 h-4" />
                         🚀 Send to Client
@@ -1430,14 +1430,14 @@ function QuotationsContent() {
 
                   {/* 3. Sent Banner (Awaiting Client Acceptance or Rejection) */}
                   {selectedQuote.status === "SENT" && (
-                    <div className="p-4 bg-blue-50 border-b border-blue-200 text-blue-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 bg-orange-50 border-b border-orange-200 text-orange-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5">
-                        <Clock className="w-5 h-5 text-blue-600 shrink-0" />
+                        <Clock className="w-5 h-5 text-[#F95721] shrink-0" />
                         <div>
-                          <strong className="block text-blue-950 font-bold">
+                          <strong className="block text-orange-950 font-bold">
                             Quotation Sent to Client
                           </strong>
-                          <span className="text-[11px] text-blue-800">
+                          <span className="text-[11px] text-orange-800">
                             Awaiting client response. You can record direct
                             payment for products (no order) or convert custom
                             items to an order for designers.
@@ -1548,7 +1548,7 @@ function QuotationsContent() {
                   {/* Formal Quotation Document Body (Mirroring the Official PDF Document) */}
                   <div className="p-6 md:p-8 space-y-6 text-xs text-slate-700 bg-white">
                     {/* Header Banner matching PDF */}
-                    <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-[#F95721] to-[#FF7043] text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div>
                         <h2 className="text-xl md:text-2xl font-black tracking-tight">
                           {tenantName}
@@ -1744,7 +1744,7 @@ function QuotationsContent() {
                                   )}
                                   <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                     {specs.length > 0 && (
-                                      <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md inline-block font-medium border border-blue-100">
+                                      <span className="text-[10px] text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md inline-block font-medium border border-orange-100">
                                         {specs.join(" • ")}
                                       </span>
                                     )}
@@ -2050,7 +2050,7 @@ function QuotationsContent() {
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
+                <FileText className="w-5 h-5 text-[#F95721]" />
                 <h3 className="text-base font-bold text-slate-900">
                   Create New Quotation
                 </h3>
@@ -2080,7 +2080,7 @@ function QuotationsContent() {
                     onChange={(e) =>
                       setNewQuote({ ...newQuote, customerName: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
                 <div>
@@ -2095,7 +2095,7 @@ function QuotationsContent() {
                     onChange={(e) =>
                       setNewQuote({ ...newQuote, phone: e.target.value })
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
                 </div>
               </div>
@@ -2109,7 +2109,7 @@ function QuotationsContent() {
                   <button
                     type="button"
                     onClick={handleAddCreateItem}
-                    className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
+                    className="text-[#F95721] hover:text-[#e84915] font-bold flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />+ Add Item
                   </button>
@@ -2296,7 +2296,7 @@ function QuotationsContent() {
               </div>
 
               {/* Live Quotation Financials Breakdown */}
-              <div className="p-4 rounded-md bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="p-4 rounded-md bg-gradient-to-r from-slate-50 to-orange-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
                 <div className="flex flex-wrap items-center gap-5">
                   <div>
                     <span className="text-slate-400 block text-[10px] font-semibold uppercase">
@@ -2338,7 +2338,7 @@ function QuotationsContent() {
                     <span className="text-slate-400 block text-[10px] font-semibold uppercase">
                       GST Total
                     </span>
-                    <span className="font-bold text-blue-600 font-mono">
+                    <span className="font-bold text-[#F95721] font-mono">
                       +₹
                       {builderGst.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
@@ -2351,7 +2351,7 @@ function QuotationsContent() {
                   <span className="text-slate-400 block text-[10px] font-semibold uppercase">
                     Grand Total (Incl. GST)
                   </span>
-                  <span className="font-black text-base text-blue-700 font-mono">
+                  <span className="font-black text-base text-orange-700 font-mono">
                     ₹
                     {builderGrandTotal.toLocaleString("en-IN", {
                       minimumFractionDigits: 2,
@@ -2372,7 +2372,7 @@ function QuotationsContent() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold shadow-md shadow-orange-500/20"
                 >
                   {actionLoading
                     ? "Creating Quotation..."
@@ -2390,7 +2390,7 @@ function QuotationsContent() {
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-blue-600" />
+                <Edit3 className="w-5 h-5 text-[#F95721]" />
                 <h3 className="text-base font-bold text-slate-900">
                   {editIsRevision
                     ? `Revise Quotation (V${editingQuote.version + 1})`
@@ -2414,7 +2414,7 @@ function QuotationsContent() {
                   <button
                     type="button"
                     onClick={handleAddEditItem}
-                    className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
+                    className="text-[#F95721] hover:text-[#e84915] font-bold flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />+ Add Item
                   </button>
@@ -2568,7 +2568,7 @@ function QuotationsContent() {
               </div>
 
               {/* Live Edit Financials Breakdown */}
-              <div className="p-4 rounded-md bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="p-4 rounded-md bg-gradient-to-r from-slate-50 to-orange-50/40 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs">
                 <div className="flex flex-wrap items-center gap-5">
                   <div>
                     <span className="text-slate-400 block text-[10px] font-semibold uppercase">
@@ -2610,7 +2610,7 @@ function QuotationsContent() {
                     <span className="text-slate-400 block text-[10px] font-semibold uppercase">
                       GST Total
                     </span>
-                    <span className="font-bold text-blue-600 font-mono">
+                    <span className="font-bold text-[#F95721] font-mono">
                       +₹
                       {editGst.toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
@@ -2623,7 +2623,7 @@ function QuotationsContent() {
                   <span className="text-slate-400 block text-[10px] font-semibold uppercase">
                     Grand Total (Incl. GST)
                   </span>
-                  <span className="font-black text-base text-blue-700 font-mono">
+                  <span className="font-black text-base text-orange-700 font-mono">
                     ₹
                     {editGrandTotal.toLocaleString("en-IN", {
                       minimumFractionDigits: 2,
@@ -2644,7 +2644,7 @@ function QuotationsContent() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold shadow-md shadow-orange-500/20"
                 >
                   {actionLoading
                     ? "Saving..."
@@ -3215,7 +3215,7 @@ export default function QuotationsPage() {
           <main className="flex-1 flex flex-col min-w-0">
             <Navbar />
             <div className="p-16 text-center text-slate-400 text-xs my-auto">
-              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-blue-600" />
+              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-[#F95721]" />
               Loading Quotations Studio...
             </div>
           </main>

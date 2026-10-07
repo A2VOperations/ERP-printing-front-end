@@ -430,7 +430,7 @@ export default function Home() {
             {/* Login Form */}
             <form onSubmit={handleLoginSubmit} className="flex flex-col">
               {/* Field 1: Employee ID / Email */}
-              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3.5 bg-white focus-within:border-[#1864FF] focus-within:ring-3 focus-within:ring-blue-100 transition-all shadow-2xs">
+              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3.5 bg-white focus-within:border-[#F95721] focus-within:ring-3 focus-within:ring-orange-100 transition-all shadow-2xs">
                 <User className="w-5 h-5 text-slate-400 shrink-0" />
                 <div className="flex-1 flex flex-col justify-center min-w-0">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">
@@ -449,7 +449,7 @@ export default function Home() {
               </div>
 
               {/* Field 2: Password */}
-              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3.5 bg-white focus-within:border-[#1864FF] focus-within:ring-3 focus-within:ring-blue-100 transition-all shadow-2xs mt-3.5">
+              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3.5 bg-white focus-within:border-[#F95721] focus-within:ring-3 focus-within:ring-orange-100 transition-all shadow-2xs mt-3.5">
                 <Lock className="w-5 h-5 text-slate-400 shrink-0" />
                 <div className="flex-1 flex flex-col justify-center min-w-0">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">
@@ -490,7 +490,7 @@ export default function Home() {
                   <div
                     className={`w-4 h-4 rounded-md flex items-center justify-center transition-colors ${
                       rememberMe
-                        ? "bg-[#1864FF] border border-[#1864FF] text-white"
+                        ? "bg-[#F95721] border border-[#F95721] text-white"
                         : "border border-slate-300 bg-white"
                     }`}
                   >
@@ -506,7 +506,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-5 py-3.5 px-6 rounded-xl bg-[#1864FF] hover:bg-[#0d55e8] active:scale-[0.99] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-60"
+                className="w-full mt-5 py-3.5 px-6 rounded-xl bg-[#F95721] hover:bg-[#e84915] active:scale-[0.99] text-white font-bold text-sm shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
@@ -522,8 +522,8 @@ export default function Home() {
               </button>
 
               {/* Security Access Box */}
-              <div className="mt-5 bg-blue-50/80 border border-blue-100/90 rounded-xl p-3 flex items-start gap-2.5 text-left">
-                <ShieldCheck className="w-5 h-5 text-[#1864FF] shrink-0 mt-0.5" />
+              <div className="mt-5 bg-orange-50/80 border border-orange-100/90 rounded-xl p-3 flex items-start gap-2.5 text-left">
+                <ShieldCheck className="w-5 h-5 text-[#F95721] shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <div className="font-bold text-xs text-slate-900 leading-snug">
                     Secure Access for A2V Prints Team Only
@@ -557,7 +557,7 @@ export default function Home() {
             </button>
 
             <div className="text-center mb-5">
-              <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1864FF] flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-full bg-orange-50 text-[#F95721] flex items-center justify-center mx-auto mb-3">
                 <Lock className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-black text-slate-900">
@@ -584,7 +584,7 @@ export default function Home() {
             )}
 
             <form onSubmit={handleForgotSubmit} className="space-y-4">
-              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3 bg-white focus-within:border-[#1864FF] focus-within:ring-3 focus-within:ring-blue-100 transition-all">
+              <div className="border border-slate-200 rounded-xl px-4 py-2.5 flex items-center gap-3 bg-white focus-within:border-[#F95721] focus-within:ring-3 focus-within:ring-orange-100 transition-all">
                 <User className="w-5 h-5 text-slate-400 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block leading-none">
@@ -612,7 +612,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 py-3 rounded-xl bg-[#1864FF] hover:bg-[#0d55e8] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-3 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 cursor-pointer disabled:opacity-50"
                 >
                   {forgotLoading ? (
                     <>
