@@ -4566,7 +4566,7 @@ export default function LeadsManager({
               )}
 
               <img
-                src={imageModal.images[imageModal.currentIndex]?.url}
+                src={imageModal.images[imageModal.currentIndex]?.url || null}
                 alt="Lead Preview"
                 className="max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl border border-slate-800 animate-scale-up"
               />
@@ -4603,7 +4603,7 @@ export default function LeadsManager({
                     }`}
                   >
                     <img
-                      src={img.url}
+                      src={img.url || null}
                       alt="thumb"
                       className="w-full h-full object-cover"
                     />

@@ -922,7 +922,7 @@ export default function DataOperatorPage() {
           rawCreatedAt: l.createdAt || new Date().toISOString(),
           entryTime: "—",
           status: l.status || "Assigned",
-          photoUrl: l.shopImageUrl || "",
+          photoUrl: l.shopImageUrl || null,
         }));
         setRecentEntries(formatted);
 
@@ -1505,7 +1505,7 @@ export default function DataOperatorPage() {
 
       // Safeguard: Never save transient local blob: URLs into MongoDB
       if (finalPhotoUrl && !finalPhotoUrl.startsWith("http")) {
-        finalPhotoUrl = "";
+        finalPhotoUrl = null;
       }
 
       const createdLead = await api.post("/leads", {
@@ -1517,7 +1517,7 @@ export default function DataOperatorPage() {
         zone: formData.zone.trim(),
         businessCategory: formData.category,
         subCategory: formData.subCategory.trim(),
-        shopImageUrl: finalPhotoUrl,
+        shopImageUrl: finalPhotoUrl || undefined,
         documents:
           finalPhotoUrl && finalPhotoUrl.startsWith("http")
             ? [
@@ -1575,7 +1575,7 @@ export default function DataOperatorPage() {
         rawCreatedAt: new Date().toISOString(),
         entryTime: "Just now",
         status: "Assigned",
-        photoUrl: finalPhotoUrl,
+        photoUrl: finalPhotoUrl || null,
       };
 
       setRecentEntries((prev) => [newEntry, ...prev]);
@@ -1600,7 +1600,7 @@ export default function DataOperatorPage() {
         photoName: currentItem
           ? `${currentItem.fileName || "Photo"} (${currentItem.fileSize || "—"})`
           : "Manual Entry",
-        photoUrl: finalPhotoUrl,
+        photoUrl: finalPhotoUrl || null,
       });
 
       const remainingQueue = photosQueue.filter(
@@ -1933,7 +1933,7 @@ export default function DataOperatorPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md shadow-orange-500/20 shrink-0 bg-[#F95721] text-white flex items-center justify-center">
-                  {currentUserAvatar ? (
+                  {currentUserAvatar?.trim() ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={currentUserAvatar}
@@ -2238,13 +2238,17 @@ export default function DataOperatorPage() {
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
-                            <div className="relative h-28 w-full bg-slate-900">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={photo.previewUrl}
-                                alt={photo.fileName}
-                                className="w-full h-full object-cover"
-                              />
+                            <div className="relative h-28 w-full bg-slate-900 flex items-center justify-center">
+                              {photo.previewUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={photo.previewUrl}
+                                  alt={photo.fileName || "Photo"}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-slate-500" />
+                              )}
                               <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-900/80 text-white font-black text-[10px] flex items-center justify-center">
                                 {idx + 1}
                               </span>
@@ -2363,12 +2367,16 @@ export default function DataOperatorPage() {
                                   className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
                                   title="Click to view full photo"
                                 >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={row.photoUrl}
-                                    alt={row.businessName || "Photo"}
-                                    className="w-full h-full object-contain"
-                                  />
+                                  {row.photoUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={row.photoUrl}
+                                      alt={row.businessName || "Photo"}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  ) : (
+                                    <ImageIcon className="w-5 h-5 text-slate-500" />
+                                  )}
                                 </button>
                               </td>
                               <td className="py-3 px-3 text-right whitespace-nowrap">
@@ -3118,12 +3126,16 @@ export default function DataOperatorPage() {
                           className="border border-slate-200/90 rounded-sm overflow-hidden bg-white shadow-2xs group hover:shadow-md transition-all flex flex-col justify-between relative"
                         >
                           <div className="relative h-32 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={item.previewUrl}
-                              alt={item.fileName}
-                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                            />
+                            {item.previewUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.previewUrl}
+                                alt={item.fileName || "Photo"}
+                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <ImageIcon className="w-8 h-8 text-slate-500" />
+                            )}
 
                             {/* Serial Badge on Top-Left */}
                             <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/85 backdrop-blur-xs text-white font-mono font-black text-[10px] border border-white/20 shadow-xs flex items-center gap-1">
@@ -3494,17 +3506,24 @@ export default function DataOperatorPage() {
                       </div>
 
                       {/* Transformable Image */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={activePhoto.previewUrl}
-                        alt={activePhoto ? activePhoto.fileName : "No file"}
-                        className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
-                        style={{
-                          transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${zoomLevel}) rotate(${rotation}deg)`,
-                          transformOrigin: "center center",
-                        }}
-                        draggable={false}
-                      />
+                      {activePhoto?.previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={activePhoto.previewUrl}
+                          alt={activePhoto ? activePhoto.fileName : "No file"}
+                          className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
+                          style={{
+                            transform: `translate(${imagePan.x}px, ${imagePan.y}px) scale(${zoomLevel}) rotate(${rotation}deg)`,
+                            transformOrigin: "center center",
+                          }}
+                          draggable={false}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-slate-500 h-full">
+                          <ImageIcon className="w-10 h-10 mb-2 opacity-50" />
+                          <span className="text-xs">No preview available</span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="py-12 px-4 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 flex flex-col items-center justify-center space-y-2">
@@ -3532,12 +3551,18 @@ export default function DataOperatorPage() {
                             : "border-slate-200 opacity-60 hover:opacity-100"
                         }`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={p.previewUrl}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        {p.previewUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.previewUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-slate-500" />
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -3996,13 +4021,17 @@ export default function DataOperatorPage() {
                         key={i}
                         className="rounded-xl overflow-hidden border border-slate-200 bg-white hover:shadow-sm transition-all"
                       >
-                        <div className="h-20 w-full bg-slate-900">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={shop.photoUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
+                        <div className="h-20 w-full bg-slate-900 flex items-center justify-center">
+                          {shop.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={shop.photoUrl}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-slate-500" />
+                          )}
                         </div>
                         <div className="p-2 text-center">
                           <div className="text-[11px] font-black text-slate-900 truncate">
@@ -4133,7 +4162,7 @@ export default function DataOperatorPage() {
                 createdByName: `${currentUser?.name || "Data Operator"} (Data Operator)`,
                 createdAt: "Just now",
                 photoName: "Shop Front Photo",
-                photoUrl: recentEntries[0].photoUrl || "",
+                photoUrl: recentEntries[0].photoUrl || null,
               } : {
                 leadNumber: "LD-8902",
                 businessName: "Sample Enterprises",
@@ -4146,7 +4175,7 @@ export default function DataOperatorPage() {
                 createdByName: `${currentUser?.name || "Data Operator"} (Data Operator)`,
                 createdAt: "Just now",
                 photoName: "Shop Front Photo",
-                photoUrl: "",
+                photoUrl: null,
               });
 
               return activeLead ? (
@@ -4315,13 +4344,17 @@ export default function DataOperatorPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-center">
-                    <div className="sm:col-span-5 h-44 rounded-xl overflow-hidden bg-slate-900 relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={activeLead.photoUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60"}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="sm:col-span-5 h-44 rounded-xl overflow-hidden bg-slate-900 relative flex items-center justify-center">
+                      {activeLead.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={activeLead.photoUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-slate-600" />
+                      )}
                     </div>
 
                     <div className="sm:col-span-7 space-y-1.5 text-xs">
@@ -4736,12 +4769,16 @@ export default function DataOperatorPage() {
                               className="w-14 h-12 rounded-sm overflow-hidden border border-slate-200 bg-slate-900 hover:border-blue-500 hover:scale-105 transition-all flex items-center justify-center cursor-pointer shadow-2xs group"
                               title="Click to view full photo"
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={row.photoUrl}
-                                alt={row.businessName || "Photo"}
-                                className="w-full h-full object-contain"
-                              />
+                              {row.photoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={row.photoUrl}
+                                  alt={row.businessName || "Photo"}
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <ImageIcon className="w-5 h-5 text-slate-500" />
+                              )}
                             </button>
                           </td>
                           <td className="py-3 px-3 text-right whitespace-nowrap">
@@ -5426,17 +5463,24 @@ export default function DataOperatorPage() {
               </div>
 
               {/* Transformable Image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={showPreviewModal.photoUrl}
-                alt={showPreviewModal.businessName || "Photo"}
-                className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
-                style={{
-                  transform: `translate(${modalPan.x}px, ${modalPan.y}px) scale(${modalZoom}) rotate(${modalRotation}deg)`,
-                  transformOrigin: "center center",
-                }}
-                draggable={false}
-              />
+              {showPreviewModal?.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={showPreviewModal.photoUrl}
+                  alt={showPreviewModal.businessName || "Photo"}
+                  className="w-full h-full object-contain pointer-events-none transition-transform duration-100 ease-out"
+                  style={{
+                    transform: `translate(${modalPan.x}px, ${modalPan.y}px) scale(${modalZoom}) rotate(${modalRotation}deg)`,
+                    transformOrigin: "center center",
+                  }}
+                  draggable={false}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-500 h-full">
+                  <ImageIcon className="w-16 h-16 mb-2 opacity-50" />
+                  <span className="text-sm">No photo available</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
