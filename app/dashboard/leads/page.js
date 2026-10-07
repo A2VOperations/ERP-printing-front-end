@@ -259,6 +259,8 @@ export default function LeadsDashboardPage() {
   const [sortBy, setSortBy] = useState("value_desc"); // 'value_desc' | 'value_asc' | 'date_desc' | 'name_asc'
   const [timeframe, setTimeframe] = useState("This Month");
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState(""); // 'YYYY-MM-DD'
+  const [datePreset, setDatePreset] = useState(""); // '' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH'
   const [loading, setLoading] = useState(true);
 
   // Live Data
@@ -808,6 +810,7 @@ export default function LeadsDashboardPage() {
   // Filtered & Sorted Leads
   const filteredLeads = useMemo(() => {
     let result = scopedLeads.filter((l) => {
+      // 1. Stage tab filter
       const matchesTab =
         activeTab === "ALL" ||
         (activeTab === "NEW" && l.status === "NEW") ||
@@ -818,15 +821,78 @@ export default function LeadsDashboardPage() {
         (activeTab === "WON" && l.status === "WON") ||
         (activeTab === "LOST" && ["LOST", "NOT_INTERESTED"].includes(l.status));
 
-      const query = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        !query ||
-        (l.contactName || l.customerName || "").toLowerCase().includes(query) ||
-        (l.businessName || l.companyName || "").toLowerCase().includes(query) ||
-        (l.phone || "").includes(query) ||
-        (l.requirement || "").toLowerCase().includes(query);
+      if (!matchesTab) return false;
 
-      return matchesTab && matchesSearch;
+      // 2. Search Query (Lead Number, Customer, Company, Phone, Requirement)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase().trim();
+        const leadNo = (l.leadNumber || "").toLowerCase();
+        const leadId = (l._id || "").toLowerCase();
+        const shortId = leadId ? `ld-${leadId.slice(-6)}` : "";
+        const hashId = leadId ? `#${leadId.slice(-6)}` : "";
+        const idSuffix = leadId ? leadId.slice(-6) : "";
+        const contactName = (l.contactName || l.customerName || "").toLowerCase();
+        const businessName = (l.businessName || l.companyName || "").toLowerCase();
+        const phone = (l.phone || "").toLowerCase();
+        const requirement = (l.requirement || "").toLowerCase();
+        const email = (l.email || "").toLowerCase();
+
+        const matchesSearch =
+          leadNo.includes(query) ||
+          leadId.includes(query) ||
+          shortId.includes(query) ||
+          hashId.includes(query) ||
+          idSuffix.includes(query) ||
+          contactName.includes(query) ||
+          businessName.includes(query) ||
+          phone.includes(query) ||
+          requirement.includes(query) ||
+          email.includes(query);
+
+        if (!matchesSearch) return false;
+      }
+
+      // 3. Specific Date Filter (YYYY-MM-DD)
+      if (dateFilter) {
+        const leadCreatedStr = l.createdAt
+          ? new Date(l.createdAt).toLocaleDateString("en-CA")
+          : "";
+        const leadUpdatedStr = l.updatedAt
+          ? new Date(l.updatedAt).toLocaleDateString("en-CA")
+          : "";
+        if (leadCreatedStr !== dateFilter && leadUpdatedStr !== dateFilter) {
+          return false;
+        }
+      }
+
+      // 4. Date Preset Filter (Today, Yesterday, 7 Days, This Month)
+      if (datePreset && datePreset !== "ALL") {
+        const now = new Date();
+        const leadDate = l.createdAt ? new Date(l.createdAt) : null;
+        if (!leadDate || isNaN(leadDate.getTime())) return false;
+
+        const leadDateStr = leadDate.toLocaleDateString("en-CA");
+        const todayStr = now.toLocaleDateString("en-CA");
+
+        if (datePreset === "TODAY") {
+          if (leadDateStr !== todayStr) return false;
+        } else if (datePreset === "YESTERDAY") {
+          const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          if (leadDateStr !== yesterday.toLocaleDateString("en-CA")) return false;
+        } else if (datePreset === "THIS_WEEK") {
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          if (leadDate < sevenDaysAgo) return false;
+        } else if (datePreset === "THIS_MONTH") {
+          if (
+            leadDate.getMonth() !== now.getMonth() ||
+            leadDate.getFullYear() !== now.getFullYear()
+          ) {
+            return false;
+          }
+        }
+      }
+
+      return true;
     });
 
     // Sorting
@@ -856,7 +922,7 @@ export default function LeadsDashboardPage() {
     });
 
     return result;
-  }, [scopedLeads, activeTab, searchQuery, sortBy]);
+  }, [scopedLeads, activeTab, searchQuery, dateFilter, datePreset, sortBy]);
 
   // Export Batch to CSV
   const handleExportBatch = () => {
@@ -1646,9 +1712,111 @@ export default function LeadsDashboardPage() {
           <div className="">
             {/* Left 8 Columns: Selection strip, 2-column Lead Cards Grid, Bottom Action */}
             <div className=" space-y-4">
+              {/* Lead Number & Date Filtration Bar */}
+              <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                {/* Search / Lead Number Input */}
+                <div className="relative flex-1 min-w-[280px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Filter by Lead # (e.g. LD-10290), Customer, Company, Phone..."
+                    className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full hover:bg-slate-200 transition-colors cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Date Filtering: Specific Date & Quick Presets */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Specific Date Picker */}
+                  <div className="relative flex items-center">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => {
+                        setDateFilter(e.target.value);
+                        if (e.target.value) setDatePreset("");
+                      }}
+                      className="pl-8.5 pr-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100/80 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all cursor-pointer"
+                      title="Filter by Specific Lead Date"
+                    />
+                    {dateFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setDateFilter("")}
+                        className="ml-1 text-slate-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
+                        title="Clear date filter"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Quick Date Presets */}
+                  <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-600">
+                    {[
+                      { id: "ALL", label: "All Dates" },
+                      { id: "TODAY", label: "Today" },
+                      { id: "YESTERDAY", label: "Yesterday" },
+                      { id: "THIS_WEEK", label: "7 Days" },
+                      { id: "THIS_MONTH", label: "This Month" },
+                    ].map((p) => {
+                      const isSelected =
+                        !dateFilter &&
+                        (datePreset === p.id || (!datePreset && p.id === "ALL"));
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setDateFilter("");
+                            setDatePreset(p.id === "ALL" ? "" : p.id);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-xs ${
+                            isSelected
+                              ? "bg-white text-indigo-700 shadow-2xs font-bold"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Reset All Active Filters */}
+                  {(searchQuery || dateFilter || (datePreset && datePreset !== "ALL")) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setDateFilter("");
+                        setDatePreset("");
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Reset all filters"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Selection Summary Strip */}
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+                <div className="flex items-center gap-2 text-xs text-slate-600 font-medium flex-wrap">
                   <div className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
                     <Check className="w-2.5 h-2.5 stroke-[3]" />
                   </div>
@@ -1659,11 +1827,47 @@ export default function LeadsDashboardPage() {
                       {activeTab === "ALL" ? "Total" : activeTab} Leads
                     </strong>
                   </span>
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-[11px] border border-indigo-200">
+                      Lead/Search: &quot;{searchQuery}&quot;
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="hover:text-indigo-900"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {dateFilter && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-[11px] border border-purple-200">
+                      Date: {dateFilter}
+                      <button
+                        type="button"
+                        onClick={() => setDateFilter("")}
+                        className="hover:text-purple-900"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {datePreset && datePreset !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-[11px] border border-purple-200">
+                      Date: {datePreset.replace(/_/g, " ")}
+                      <button
+                        type="button"
+                        onClick={() => setDatePreset("")}
+                        className="hover:text-purple-900"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
                 </div>
 
                 <button
                   onClick={handleExportBatch}
-                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer self-end sm:self-auto"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export Batch
@@ -1830,7 +2034,10 @@ export default function LeadsDashboardPage() {
                                   )}
                                 </div>
 
-                                {/* Source Badge */}
+                                {/* Lead Number & Source Badge */}
+                                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  {lead.leadNumber || `#${lead._id?.slice(-6).toUpperCase()}`}
+                                </span>
                                 <span
                                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
                                     (lead.source || "GOOGLE").toUpperCase() ===
@@ -1989,11 +2196,21 @@ export default function LeadsDashboardPage() {
                                 >
                                   {companyName}
                                 </Link>
-                                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium mt-0.5">
-                                  <User className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span className="truncate">
-                                    {contactPerson}
-                                  </span>
+                                <div className="flex items-center justify-between text-xs text-slate-500 font-medium mt-0.5">
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <User className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate">
+                                      {contactPerson}
+                                    </span>
+                                  </div>
+                                  {lead.createdAt && (
+                                    <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                                      {new Date(lead.createdAt).toLocaleDateString("en-IN", {
+                                        day: "2-digit",
+                                        month: "short",
+                                      })}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -2238,6 +2455,9 @@ export default function LeadsDashboardPage() {
                                     })()}
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                                          {lead.leadNumber || `#${lead._id?.slice(-6).toUpperCase()}`}
+                                        </span>
                                         <Link
                                           href={`/dashboard/leads/${lead._id}`}
                                           className="font-bold text-slate-900 hover:text-indigo-600 truncate text-[13px] leading-tight"
@@ -2255,12 +2475,26 @@ export default function LeadsDashboardPage() {
                                           {priorityCfg.label}
                                         </span>
                                       </div>
-                                      <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
+                                      <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 flex-wrap">
                                         <span>
                                           {lead.customerName ||
                                             lead.contactName ||
                                             "Owner"}
                                         </span>
+                                        {lead.createdAt && (
+                                          <>
+                                            <span className="text-slate-300">
+                                              •
+                                            </span>
+                                            <span className="text-slate-500 text-[10px] font-medium">
+                                              {new Date(lead.createdAt).toLocaleDateString("en-IN", {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                              })}
+                                            </span>
+                                          </>
+                                        )}
                                         {areaText && (
                                           <>
                                             <span className="text-slate-300">
