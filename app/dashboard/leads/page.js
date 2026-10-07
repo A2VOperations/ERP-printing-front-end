@@ -1670,32 +1670,6 @@ export default function LeadsDashboardPage() {
                 </button>
               </div>
 
-              {/* Status Color Coding Legend Strip */}
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold text-slate-700 py-1 px-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Status Colors:</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 border border-blue-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span> New (Blue)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-yellow-100 text-yellow-950 border border-yellow-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Contacted (Yellow)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ebdcc9] text-[#5c3a21] border border-[#cbb59d] font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-[#8d6748]"></span> Interested (Brown)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-100 text-purple-900 border border-purple-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-purple-600"></span> Proposal Sent (Purple)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-200 text-orange-950 border border-orange-500 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-orange-700"></span> Negotiation (Dark Orange)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Won (Green)
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 border border-rose-400 font-bold text-[10px]">
-                  <span className="w-2 h-2 rounded-full bg-rose-600"></span> Lost (Red)
-                </span>
-              </div>
-
               {/* View Rendering: Grid vs List vs Board */}
               {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -13,6 +13,7 @@ import {
   MapPin,
   Calendar,
   Clock,
+  Folder,
   FileText,
   ShoppingBag,
   CreditCard,
@@ -269,7 +270,11 @@ export default function LeadDetailPage() {
     const seenUrls = new Set();
 
     // 1. Direct shop image attached by Data Operator
-    if (lead?.shopImageUrl && typeof lead.shopImageUrl === "string" && lead.shopImageUrl.trim()) {
+    if (
+      lead?.shopImageUrl &&
+      typeof lead.shopImageUrl === "string" &&
+      lead.shopImageUrl.trim()
+    ) {
       const url = lead.shopImageUrl.trim();
       seenUrls.add(url);
       list.push({
@@ -302,8 +307,8 @@ export default function LeadDetailPage() {
             date: doc.uploadedAt
               ? new Date(doc.uploadedAt)
               : lead?.createdAt
-              ? new Date(lead.createdAt)
-              : new Date(),
+                ? new Date(lead.createdAt)
+                : new Date(),
             uploadedBy: doc.uploadedByName || "Data Operator",
             isPrimary: false,
           });
@@ -312,7 +317,9 @@ export default function LeadDetailPage() {
     }
 
     // Sort/arrange strictly by date (newest first)
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return list.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }, [lead]);
 
   const activePhoto = allLeadPhotos[activePhotoIdx] || allLeadPhotos[0] || null;
@@ -354,7 +361,11 @@ export default function LeadDetailPage() {
         notes: reassignNotes,
       });
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("lead-assigned", { detail: { lead, targetUserId: reassignTargetId } }));
+        window.dispatchEvent(
+          new CustomEvent("lead-assigned", {
+            detail: { lead, targetUserId: reassignTargetId },
+          }),
+        );
         window.dispatchEvent(new Event("refresh-inbox-count"));
       }
       setShowReassignModal(false);
@@ -485,7 +496,11 @@ export default function LeadDetailPage() {
           ? qRes.value.data
           : qRes.value.data?.records || [];
         const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
-        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
+        const currentLeadNumber = (
+          loadedLead?.leadNumber ||
+          loadedLead?.leadId ||
+          ""
+        ).toString();
 
         const matchingQuotes = allQuotes.filter((q) => {
           const qLeadObj = q.leadId;
@@ -495,10 +510,24 @@ export default function LeadDetailPage() {
             (typeof qLeadObj === "string" ? qLeadObj : "") ||
             ""
           ).toString();
-          const qLeadNumber = (qLeadObj?.leadNumber || qLeadObj?.leadId || "").toString();
+          const qLeadNumber = (
+            qLeadObj?.leadNumber ||
+            qLeadObj?.leadId ||
+            ""
+          ).toString();
 
-          if (qLeadId && (qLeadId === currentLeadDbId || (currentLeadNumber && qLeadId === currentLeadNumber))) return true;
-          if (qLeadNumber && (qLeadNumber === currentLeadNumber || qLeadNumber === currentLeadDbId)) return true;
+          if (
+            qLeadId &&
+            (qLeadId === currentLeadDbId ||
+              (currentLeadNumber && qLeadId === currentLeadNumber))
+          )
+            return true;
+          if (
+            qLeadNumber &&
+            (qLeadNumber === currentLeadNumber ||
+              qLeadNumber === currentLeadDbId)
+          )
+            return true;
           return false;
         });
         setQuotations(matchingQuotes);
@@ -509,7 +538,11 @@ export default function LeadDetailPage() {
           ? oRes.value.data
           : oRes.value.data?.records || [];
         const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
-        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
+        const currentLeadNumber = (
+          loadedLead?.leadNumber ||
+          loadedLead?.leadId ||
+          ""
+        ).toString();
 
         const matchingOrders = allOrders.filter((o) => {
           const oLeadObj = o.leadId;
@@ -519,10 +552,24 @@ export default function LeadDetailPage() {
             (typeof oLeadObj === "string" ? oLeadObj : "") ||
             ""
           ).toString();
-          const oLeadNumber = (oLeadObj?.leadNumber || oLeadObj?.leadId || "").toString();
+          const oLeadNumber = (
+            oLeadObj?.leadNumber ||
+            oLeadObj?.leadId ||
+            ""
+          ).toString();
 
-          if (oLeadId && (oLeadId === currentLeadDbId || (currentLeadNumber && oLeadId === currentLeadNumber))) return true;
-          if (oLeadNumber && (oLeadNumber === currentLeadNumber || oLeadNumber === currentLeadDbId)) return true;
+          if (
+            oLeadId &&
+            (oLeadId === currentLeadDbId ||
+              (currentLeadNumber && oLeadId === currentLeadNumber))
+          )
+            return true;
+          if (
+            oLeadNumber &&
+            (oLeadNumber === currentLeadNumber ||
+              oLeadNumber === currentLeadDbId)
+          )
+            return true;
           return false;
         });
         setOrders(matchingOrders);
@@ -533,7 +580,11 @@ export default function LeadDetailPage() {
           ? pRes.value.data
           : pRes.value.data?.records || [];
         const currentLeadDbId = (loadedLead?._id || leadId || "").toString();
-        const currentLeadNumber = (loadedLead?.leadNumber || loadedLead?.leadId || "").toString();
+        const currentLeadNumber = (
+          loadedLead?.leadNumber ||
+          loadedLead?.leadId ||
+          ""
+        ).toString();
 
         const matchingPayments = allPayments.filter((p) => {
           const pLeadObj = p.leadId;
@@ -543,10 +594,24 @@ export default function LeadDetailPage() {
             (typeof pLeadObj === "string" ? pLeadObj : "") ||
             ""
           ).toString();
-          const pLeadNumber = (pLeadObj?.leadNumber || pLeadObj?.leadId || "").toString();
+          const pLeadNumber = (
+            pLeadObj?.leadNumber ||
+            pLeadObj?.leadId ||
+            ""
+          ).toString();
 
-          if (pLeadId && (pLeadId === currentLeadDbId || (currentLeadNumber && pLeadId === currentLeadNumber))) return true;
-          if (pLeadNumber && (pLeadNumber === currentLeadNumber || pLeadNumber === currentLeadDbId)) return true;
+          if (
+            pLeadId &&
+            (pLeadId === currentLeadDbId ||
+              (currentLeadNumber && pLeadId === currentLeadNumber))
+          )
+            return true;
+          if (
+            pLeadNumber &&
+            (pLeadNumber === currentLeadNumber ||
+              pLeadNumber === currentLeadDbId)
+          )
+            return true;
           return false;
         });
         setPayments(matchingPayments);
@@ -1070,13 +1135,16 @@ export default function LeadDetailPage() {
     if (paymentForm.orderId) {
       const ord = orders.find((o) => o._id === paymentForm.orderId);
       if (ord) {
-        const balRupees = (ord.balancePaise !== undefined ? ord.balancePaise : ord.grandTotalPaise || 0) / 100;
+        const balRupees =
+          (ord.balancePaise !== undefined
+            ? ord.balancePaise
+            : ord.grandTotalPaise || 0) / 100;
         if (amountNum > balRupees) {
           alert(
             `Payment Rejected: Overpayment is not allowed.\n\n` +
-            `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
-            `Maximum Allowed Balance: ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
-            `Payments cannot exceed the approved order balance. To bill additional items, please create a new quotation or order.`
+              `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+              `Maximum Allowed Balance: ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+              `Payments cannot exceed the approved order balance. To bill additional items, please create a new quotation or order.`,
           );
           return;
         }
@@ -1084,13 +1152,15 @@ export default function LeadDetailPage() {
     } else if (paymentForm.quotationId) {
       const q = quotations.find((quo) => quo._id === paymentForm.quotationId);
       if (q) {
-        const qTotalRupees = (q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0);
+        const qTotalRupees = q.grandTotalPaise
+          ? q.grandTotalPaise / 100
+          : q.totalAmount || 0;
         if (amountNum > qTotalRupees) {
           alert(
             `Payment Rejected: Overpayment is not allowed.\n\n` +
-            `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
-            `Quotation Total: ₹${qTotalRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
-            `Payments cannot exceed the quotation total. Please create a new quotation for extra amounts.`
+              `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+              `Quotation Total: ₹${qTotalRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+              `Payments cannot exceed the quotation total. Please create a new quotation for extra amounts.`,
           );
           return;
         }
@@ -1103,9 +1173,15 @@ export default function LeadDetailPage() {
         leadId,
         customerId: lead?.customerId?._id || lead?.customerId || undefined,
         quotationId: paymentForm.quotationId || undefined,
-        orderId: paymentForm.isDirectQuotationPayment ? undefined : (paymentForm.orderId || undefined),
+        orderId: paymentForm.isDirectQuotationPayment
+          ? undefined
+          : paymentForm.orderId || undefined,
         isDirectQuotationPayment: Boolean(paymentForm.isDirectQuotationPayment),
-        selectedItemIndexes: paymentForm.selectedItemIndexes && paymentForm.selectedItemIndexes.length > 0 ? paymentForm.selectedItemIndexes : undefined,
+        selectedItemIndexes:
+          paymentForm.selectedItemIndexes &&
+          paymentForm.selectedItemIndexes.length > 0
+            ? paymentForm.selectedItemIndexes
+            : undefined,
         amount: amountNum,
         paymentType: "ADVANCE",
         paymentMethod: paymentForm.paymentMethod,
@@ -1402,31 +1478,7 @@ export default function LeadDetailPage() {
             </div>
 
             <div className="flex items-center gap-2.5 flex-wrap">
-              <Link
-                href="/dashboard/leads"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
-              >
-                ← Back to Leads
-              </Link>
-
-              <Link
-                href={`/dashboard/whatsapp?customerId=${lead.customerId || lead._id}&leadId=${leadId}&phone=${lead.phone || ""}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                title="Open WhatsApp Communication"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                WhatsApp
-              </Link>
-
-              <Link
-                href={`/dashboard/communication?leadId=${leadId}`}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-xs transition-all"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Communication Hub
-              </Link>
-
-              {isClosedLead ? (
+              {isClosedLead && (
                 <button
                   onClick={handleReopenLead}
                   disabled={actionLoading}
@@ -1434,14 +1486,6 @@ export default function LeadDetailPage() {
                   title="Reopen this lead for another order"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />↻ Reopen Lead (New Order)
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowStatusModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  Change Stage
                 </button>
               )}
 
@@ -1457,14 +1501,16 @@ export default function LeadDetailPage() {
                 onClick={() => handleOpenCreateOrderModal()}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all"
               >
-                <ShoppingBag className="w-3.5 h-3.5" />Create / Convert Order
+                <ShoppingBag className="w-3.5 h-3.5" />
+                Create Order
               </button>
 
               <Link
                 href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-600/25 transition-all"
               >
-                <FileText className="w-3.5 h-3.5" />Quotation
+                <FileText className="w-3.5 h-3.5" />
+                Quotation
               </Link>
 
               <button
@@ -1478,7 +1524,8 @@ export default function LeadDetailPage() {
                 }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
               >
-                <Plus className="w-3.5 h-3.5" />Follow-up
+                <Plus className="w-3.5 h-3.5" />
+                Follow-up
               </button>
             </div>
           </div>
@@ -1511,347 +1558,402 @@ export default function LeadDetailPage() {
             </div>
           )}
 
-          {/* Lead Hero Profile Card */}
-          <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200/90 shadow-sm relative overflow-hidden">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-              {/* Left Profile Info with Photo attached by Data Operator */}
-              <div className="flex flex-col sm:flex-row items-start gap-5 flex-1 min-w-0">
-                {/* Photo or Initials Avatar */}
-                {allLeadPhotos.length > 0 ? (
-                  <div className="flex flex-col items-center gap-2 shrink-0">
-                    <div
-                      onClick={() => setSelectedImagePreview(activePhoto?.url || allLeadPhotos[0]?.url)}
-                      className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-indigo-200/80 shadow-md group cursor-pointer bg-slate-950 shrink-0"
-                      title="Click to view full resolution"
-                    >
-                      <img
-                        src={activePhoto?.url || allLeadPhotos[0]?.url}
-                        alt={lead.businessName || "Shop Front"}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 p-2 text-center">
-                        <Eye className="w-4 h-4 text-white" />
-                        <span>View Photo</span>
-                      </div>
-                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
-                        <ImageIcon className="w-3 h-3 text-amber-400" />
-                        Shop Photo
-                      </span>
-                    </div>
-
-                    {/* Date Arranged Tag & Switcher */}
-                    <div className="text-center space-y-1 w-full max-w-[130px]">
-                      <span className="text-[10px] font-semibold text-slate-500 block truncate">
-                        📅{" "}
-                        {activePhoto?.date
-                          ? new Date(activePhoto.date).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "Captured Photo"}
-                      </span>
-
-                      {/* If multiple photos, allow switching */}
-                      {allLeadPhotos.length > 1 && (
-                        <div className="flex items-center justify-center gap-1.5 pt-0.5">
-                          {allLeadPhotos.map((p, idx) => (
-                            <button
-                              key={p.id || idx}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActivePhotoIdx(idx);
-                              }}
-                              className={`h-2 rounded-full transition-all cursor-pointer ${
-                                idx === activePhotoIdx
-                                  ? "bg-indigo-600 w-5"
-                                  : "bg-slate-300 hover:bg-slate-400 w-2"
-                              }`}
-                              title={`Photo ${idx + 1} (${new Date(p.date).toLocaleDateString()})`}
-                            />
-                          ))}
-                          <span className="text-[9px] font-bold text-indigo-600">
-                            {activePhotoIdx + 1}/{allLeadPhotos.length}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-indigo-50 text-indigo-700 font-black text-2xl flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs">
-                    {leadInitials}
-                  </div>
-                )}
-
-                {/* Main Information Block */}
-                <div className="space-y-2.5 flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      {lead.businessName || lead.contactName || "Lead Inquiry"}
-                    </h1>
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadgeStyle(lead.status)}`}
-                    >
-                      {lead.status}
-                    </span>
-                    {lead.acceptanceStatus === "PENDING" && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-                        Pending Acceptance
-                      </span>
-                    )}
-                    {lead.priority === "URGENT" && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                        Urgent
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-4 text-xs text-slate-600 flex-wrap">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-800">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      {lead.contactName || "Primary Contact"}
-                    </span>
-
-                    <a
-                      href={`tel:${lead.phone}`}
-                      className="flex items-center gap-1 text-slate-700 font-mono hover:text-[#F95721] transition-colors font-medium"
-                      title="Click to call"
-                    >
-                      <Phone className="w-3.5 h-3.5 text-orange-500" />
-                      {lead.phone}
-                    </a>
-
-                    {lead.alternatePhone && (
-                      <a
-                        href={`tel:${lead.alternatePhone}`}
-                        className="flex items-center gap-1 text-slate-500 font-mono hover:text-[#F95721] transition-colors"
-                      >
-                        <Phone className="w-3.5 h-3.5 text-slate-400" />
-                        {lead.alternatePhone}
-                      </a>
-                    )}
-
-                    {lead.email && (
-                      <a
-                        href={`mailto:${lead.email}`}
-                        className="flex items-center gap-1 text-slate-700 hover:text-[#F95721] transition-colors"
-                      >
-                        <Mail className="w-3.5 h-3.5 text-slate-400" />
-                        {lead.email}
-                      </a>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap pt-0.5">
-                    <span className="flex items-center gap-1 font-medium text-slate-700">
-                      <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                      {lead.areaId?.name
-                        ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
-                        : lead.city || lead.zone || "Territory Assigned"}
-                    </span>
-
-                    {lead.businessCategory && (
-                      <>
-                        <span className="text-slate-300">•</span>
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[11px]">
-                          {lead.businessCategory}
-                        </span>
-                      </>
-                    )}
-
-                    {lead.subCategory && (
-                      <span className="text-slate-500 font-medium">
-                        ({lead.subCategory})
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Notes / Remarks by Data Operator */}
-                  {lead.notes && (
-                    <div className="bg-amber-50/80 border border-amber-200/90 rounded-xl px-3 py-2 text-xs text-amber-950 flex items-start gap-2 mt-1">
-                      <span className="font-bold text-[10px] uppercase text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
-                        Data Operator Note
-                      </span>
-                      <p className="line-clamp-2 text-xs font-medium leading-relaxed">
-                        {lead.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
+          {/* Lead Hero Profile - Excel / Table Format */}
+          <div className="bg-white rounded-xl border border-slate-300 shadow-xs overflow-hidden mb-4">
+            {/* Excel Sheet Header Bar */}
+            <div className="bg-slate-100 border-b border-slate-200 px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-xs bg-[#107c41]"></span>
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Lead Information Sheet • {lead.leadNumber || `LD-${lead._id.slice(-6).toUpperCase()}`}
+                </span>
               </div>
-
-              {/* Right Metadata & Score */}
-              <div className="flex items-center gap-5 xl:border-l xl:border-slate-100 xl:pl-6 text-xs shrink-0 flex-wrap justify-between sm:justify-start">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Lead ID
-                  </span>
-                  <span className="font-bold text-slate-900 font-mono text-[11px]">
-                    {lead.leadNumber ||
-                      `LD-${lead._id.slice(-6).toUpperCase()}`}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Source
-                  </span>
-                  <span className="font-bold text-slate-900 flex items-center gap-1">
-                    {lead.source === "DATA_OPERATOR" ? (
-                      <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 font-bold text-[10px] border border-orange-200">
-                        DATA OPERATOR
-                      </span>
-                    ) : (
-                      lead.source || "MANUAL"
-                    )}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Assigned To
-                  </span>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[9px] flex items-center justify-center">
-                      {(lead.assignedToId?.name || "UN")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </div>
-                    <span className="font-bold text-slate-900">
-                      {lead.assignedToId?.name || "Unassigned"}
-                    </span>
-                    {canAssignOrReassign && (
-                      <button
-                        onClick={() => {
-                          setReassignTargetId(
-                            lead.assignedToId?._id || lead.assignedToId || "",
-                          );
-                          setShowReassignModal(true);
-                        }}
-                        className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-[#F95721] hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
-                        title="Change Assignment (Manager/Admin Only)"
-                      >
-                        Change
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Created On
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {new Date(lead.createdAt || Date.now()).toLocaleDateString(
-                      "en-GB",
-                      { day: "2-digit", month: "short", year: "numeric" },
-                    )}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Next Follow-up
-                  </span>
-                  <span
-                    className={`font-bold ${lead.nextFollowUp ? "text-amber-700" : "text-slate-400 italic font-normal"}`}
-                  >
-                    {lead.nextFollowUp
-                      ? new Date(lead.nextFollowUp).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })
-                      : "None Scheduled"}
-                  </span>
-                </div>
-
-                {/* Score Circle Gauge */}
-                <div className="flex items-center gap-2 pl-2">
-                  <div className="w-12 h-12 rounded-full border-2 border-emerald-500 flex items-center justify-center font-black text-emerald-600 text-sm">
-                    {getLeadScore()}
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">
-                      Lead Score
-                    </span>
-                    <span className="text-xs font-bold text-emerald-600">
-                      {getLeadScore() >= 80
-                        ? "High Intent"
-                        : getLeadScore() >= 50
-                          ? "Active"
-                          : "Nurturing"}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${getStatusBadgeStyle(lead.status)}`}>
+                Status: {lead.status}
+              </span>
             </div>
 
-            {/* Interactive Dynamic Pipeline Stepper Bar */}
-            <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between gap-2 overflow-x-auto">
-              <div className="flex items-center gap-1 shrink-0 text-slate-400 text-[10px] font-bold uppercase tracking-wider mr-2">
-                Pipeline Stage
-              </div>
-
-              <div className="flex items-center gap-2 flex-1 min-w-[650px]">
-                {PIPELINE_STAGES.map((stg, i) => {
-                  const isCurrent = lead.status === stg.id;
-                  const isPassed =
-                    currentStageIndex !== -1 &&
-                    i < currentStageIndex &&
-                    lead.status !== "LOST";
-
-                  return (
-                    <React.Fragment key={stg.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleStageClick(stg.id)}
-                        disabled={actionLoading}
-                        className={`flex-1 p-2.5 rounded-xl border text-center transition-all cursor-pointer group ${
-                          isCurrent
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20 font-bold"
-                            : isPassed
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100/70 font-semibold"
-                              : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-100 font-medium"
-                        }`}
-                        title={`Click to set stage to ${stg.label}`}
-                      >
-                        <div className="flex items-center justify-center gap-1">
-                          {isPassed && (
-                            <span className="text-emerald-600 text-xs">✓</span>
-                          )}
-                          <strong
-                            className={`block text-[11px] ${isCurrent ? "text-white" : ""}`}
+            {/* Excel Grid Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[850px] border-collapse text-xs">
+                <tbody>
+                  {/* Row 1 */}
+                  <tr>
+                    {/* Left Photo Column spanning rows */}
+                    <td
+                      rowSpan={lead.notes ? 5 : 4}
+                      className="w-42 p-3 bg-slate-50/60 border border-slate-200 text-center align-middle shrink-0"
+                    >
+                      {allLeadPhotos.length > 0 ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            onClick={() =>
+                              setSelectedImagePreview(
+                                activePhoto?.url || allLeadPhotos[0]?.url,
+                              )
+                            }
+                            className="relative h-full overflow-hidden group cursor-pointer mx-auto"
+                            title="Click to view full resolution"
                           >
-                            {stg.label}
-                          </strong>
-                        </div>
-                        <span
-                          className={`text-[10px] block mt-0.5 ${isCurrent ? "text-indigo-100" : "text-slate-400"}`}
-                        >
-                          {getStageDate(stg.id)}
-                        </span>
-                      </button>
+                            <img
+                              src={activePhoto?.url || allLeadPhotos[0]?.url}
+                              alt={lead.businessName || "Shop Front"}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 p-2 text-center">
+                              <Eye className="w-4 h-4 text-white" />
+                              <span>View Photo</span>
+                            </div>
+                          </div>
 
-                      {i < PIPELINE_STAGES.length - 1 && (
-                        <span
-                          className={`font-bold ${isPassed ? "text-emerald-500" : "text-slate-300"}`}
+                          {allLeadPhotos.length > 1 && (
+                            <div className="flex items-center justify-center gap-1.5 pt-0.5">
+                              {allLeadPhotos.map((p, idx) => (
+                                <button
+                                  key={p.id || idx}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActivePhotoIdx(idx);
+                                  }}
+                                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                    idx === activePhotoIdx
+                                      ? "bg-[#107c41] w-4"
+                                      : "bg-slate-300 hover:bg-slate-400 w-1.5"
+                                  }`}
+                                  title={`Photo ${idx + 1}`}
+                                />
+                              ))}
+                              <span className="text-[9px] font-bold text-slate-500">
+                                {activePhotoIdx + 1}/{allLeadPhotos.length}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 rounded-xl bg-indigo-50 text-indigo-700 font-black text-2xl flex items-center justify-center mx-auto border border-indigo-100 shadow-2xs">
+                          {leadInitials}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Business Name */}
+                    <th className="w-50 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Business Name
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-slate-900 text-lg">
+                          {lead.businessName || lead.contactName || "Lead Inquiry"}
+                        </span>
+                        {lead.acceptanceStatus === "PENDING" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                            Pending Acceptance
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Lead ID */}
+                    <th className="w-40 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Lead ID
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-mono font-bold text-slate-900 text-lg">
+                      {lead.leadNumber || `LD-${lead._id.slice(-6).toUpperCase()}`}
+                    </td>
+
+                    {/* Priority */}
+                    <th className="w-32 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Priority
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-bold text-slate-900 text-lg">
+                      <div className="relative inline-block">
+                        {(() => {
+                          const p = String(lead?.priority || "MEDIUM").toUpperCase();
+                          const priorityStyles = {
+                            URGENT: "bg-rose-100 text-rose-800 border-rose-300",
+                            HIGH: "bg-amber-100 text-amber-900 border-amber-300",
+                            MEDIUM: "bg-blue-100 text-blue-800 border-blue-300",
+                            LOW: "bg-slate-100 text-slate-700 border-slate-300",
+                          }[p] || "bg-blue-100 text-blue-800 border-blue-300";
+
+                          return (
+                            <select
+                              value={p}
+                              disabled={actionLoading}
+                              onChange={async (e) => {
+                                const newPriority = e.target.value;
+                                try {
+                                  setActionLoading(true);
+                                  setLead((prev) =>
+                                    prev ? { ...prev, priority: newPriority } : prev,
+                                  );
+                                  await api.patch(`/leads/${leadId}`, {
+                                    priority: newPriority,
+                                  });
+                                  loadLeadDetails();
+                                } catch (err) {
+                                  alert(err.message || "Failed to update priority");
+                                  loadLeadDetails();
+                                } finally {
+                                  setActionLoading(false);
+                                }
+                              }}
+                              className={`font-bold text-sm px-2 py-0.5 rounded border appearance-none pr-5 cursor-pointer outline-none transition-all shadow-2xs ${priorityStyles}`}
+                              title="Click to change lead priority"
+                            >
+                              <option value="URGENT">Urgent</option>
+                              <option value="HIGH">High</option>
+                              <option value="MEDIUM">Medium</option>
+                              <option value="LOW">Low</option>
+                            </select>
+                          );
+                        })()}
+                        <ChevronDown className="w-2.5 h-2.5 text-slate-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Row 2 */}
+                  <tr>
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Contact Person
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-900 text-lg">
+                        <User className="w-5 h-5 text-slate-400" />
+                        {lead.contactName || "Primary Contact"}
+                      </span>
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Phone Number
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <a
+                          href={`tel:${lead.phone}`}
+                          className="font-mono text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 text-lg"
                         >
-                          →
+                          <Phone className="w-4 h-4 text-orange-500" />
+                          {lead.phone}
+                        </a>
+                        {lead.alternatePhone && (
+                          <a
+                            href={`tel:${lead.alternatePhone}`}
+                            className="font-mono text-slate-500 hover:text-slate-700 text-md flex items-center gap-1"
+                          >
+                            <span className="text-slate-300">/</span>
+                            {lead.alternatePhone}
+                          </a>
+                        )}
+                      </div>
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Email
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
+                      {lead.email ? (
+                        <a
+                          href={`mailto:${lead.email}`}
+                          className="text-slate-700 hover:text-orange-600 flex items-center gap-1 truncate font-bold text-lg"
+                        >
+                          <Mail className="w-5 h-5 text-slate-400 shrink-0" />
+                          {lead.email}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 italic font-normal">-</span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Row 3 */}
+                  <tr>
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Territory / Area
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-medium text-slate-800">
+                      <span className="flex items-center gap-1 text-lg">
+                        <MapPin className="w-5 h-5 text-orange-500 shrink-0" />
+                        {lead.areaId?.name
+                          ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
+                          : lead.city || lead.zone || "Territory Assigned"}
+                      </span>
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Category
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200">
+                      <span className="font-bold text-slate-800 text-lg">
+                        {lead.businessCategory || "Standard"}
+                      </span>
+                      {lead.subCategory && (
+                        <span className="text-slate-500 text-xs ml-1">
+                          ({lead.subCategory})
                         </span>
                       )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Source
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200">
+                      {lead.source === "DATA_OPERATOR" ? (
+                        <span className="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-bold text-md border border-orange-200">
+                          DATA OPERATOR
+                        </span>
+                      ) : (
+                        <span className="font-bold text-slate-700 text-lg">
+                          {lead.source || "MANUAL"}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Row 4 */}
+                  <tr>
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Assigned Executive
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {(lead.assignedToId?.name || "UN")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                        <span className="font-bold text-slate-900 text-lg">
+                          {lead.assignedToId?.name || "Unassigned"}
+                        </span>
+                        {canAssignOrReassign && (
+                          <button
+                            onClick={() => {
+                              setReassignTargetId(
+                                lead.assignedToId?._id || lead.assignedToId || "",
+                              );
+                              setShowReassignModal(true);
+                            }}
+                            className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-[#F95721] hover:bg-orange-50 border border-orange-200 transition-colors cursor-pointer"
+                            title="Change Assignment (Manager/Admin Only)"
+                          >
+                            Change
+                          </button>
+                        )}
+                      </div>
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Created On
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800 text-lg">
+                      {new Date(lead.createdAt || Date.now()).toLocaleDateString(
+                        "en-GB",
+                        { day: "2-digit", month: "short", year: "numeric" },
+                      )}
+                    </td>
+
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                      Next Follow-Up
+                    </th>
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-lg">
+                      <span
+                        className={`font-bold ${lead.nextFollowUp ? "text-amber-700" : "text-slate-400 italic font-normal"}`}
+                      >
+                        {lead.nextFollowUp
+                          ? new Date(lead.nextFollowUp).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                          : "None Scheduled"}
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* Row 5: Notes (Optional) */}
+                  {lead.notes && (
+                    <tr>
+                      <th className="bg-amber-50 text-amber-900 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2 border border-slate-200 text-left">
+                        Operator Note
+                      </th>
+                      <td
+                        colSpan={5}
+                        className="px-3.5 py-2 bg-amber-50/50 border border-slate-200 text-lg font-medium text-amber-950 leading-relaxed"
+                      >
+                        {lead.notes}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Interactive Dynamic Pipeline Stepper Bar */}
+          <div className="mt-4 p-6 bg-white border-b border-slate-100 rounded-xl shadow-2xs flex items-center justify-center gap-2 overflow-x-auto">
+            <div className="flex items-center gap-1 shrink-0 text-slate-400 text-[12px] font-bold uppercase tracking-wider mr-2">
+              Status
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 min-w-162.5">
+              {PIPELINE_STAGES.map((stg, i) => {
+                const isCurrent = lead.status === stg.id;
+                const isPassed =
+                  currentStageIndex !== -1 &&
+                  i < currentStageIndex &&
+                  lead.status !== "LOST";
+
+                return (
+                  <React.Fragment key={stg.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleStageClick(stg.id)}
+                      disabled={actionLoading}
+                      className={`flex-1 p-2 rounded-xl border text-center transition-all cursor-pointer group ${
+                        isCurrent
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20 font-bold"
+                          : isPassed
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100/70 font-semibold"
+                            : "bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-100 font-medium"
+                      }`}
+                      title={`Click to set stage to ${stg.label}`}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        {isPassed && (
+                          <span className="text-emerald-600 text-xs">✓</span>
+                        )}
+                        <strong
+                          className={`block text-[15px] ${isCurrent ? "text-white" : ""}`}
+                        >
+                          {stg.label}
+                        </strong>
+                      </div>
+                      <span
+                        className={`text-[12px] block mt-0.5 ${isCurrent ? "text-indigo-100" : "text-slate-400"}`}
+                      >
+                        {getStageDate(stg.id)}
+                      </span>
+                    </button>
+
+                    {i < PIPELINE_STAGES.length - 1 && (
+                      <span
+                        className={`font-bold ${isPassed ? "text-emerald-500" : "text-slate-300"}`}
+                      >
+                        →
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
 
           {/* Navigation Tabs Bar */}
-          <div className="flex items-center gap-6 border-b border-slate-200/80 pb-2 text-xs font-semibold overflow-x-auto">
+          <div className="flex items-center gap-6 border-b border-slate-200/80 pb-2 text-md font-semibold overflow-x-auto">
             {[
               { id: "Overview", label: "Overview" },
               { id: "Orders", label: `Orders (${orders.length})` },
@@ -1892,39 +1994,32 @@ export default function LeadDetailPage() {
 
           {/* OVERVIEW TAB CONTENT */}
           {activeTab === "Overview" && (
-            <div className="space-y-6 text-xs">
-
+            <div className="space-y-6 text-sm">
               {/* Row 1: 4 Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {/* Card 1: Lead Information */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Lead Information
                     </h3>
-                    <button
-                      onClick={() => setShowEditModal(true)}
-                      className="text-[11px] font-bold text-[#F95721] hover:underline"
-                    >
-                      Edit
-                    </button>
                   </div>
 
-                  <div className="space-y-2 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between py-0.5">
-                      <span className="text-slate-400">Business Name</span>
+                      <span className="text-slate-500 font-medium">Business Name</span>
                       <strong className="text-slate-800 text-right">
                         {lead.businessName || "Individual / Retail"}
                       </strong>
                     </div>
                     <div className="flex justify-between py-0.5">
-                      <span className="text-slate-400">Contact Person</span>
+                      <span className="text-slate-500 font-medium">Contact Person</span>
                       <strong className="text-slate-800 text-right">
                         {lead.contactName || "-"}
                       </strong>
                     </div>
                     <div className="flex justify-between py-0.5">
-                      <span className="text-slate-400">Estimated Budget</span>
+                      <span className="text-slate-500 font-medium">Estimated Budget</span>
                       <strong className="text-slate-800 text-right">
                         {lead.expectedValue || lead.estimatedBudget
                           ? `₹${(lead.expectedValue || lead.estimatedBudget).toLocaleString("en-IN")}`
@@ -1932,22 +2027,22 @@ export default function LeadDetailPage() {
                       </strong>
                     </div>
                     <div className="flex justify-between py-0.5">
-                      <span className="text-slate-400">Priority</span>
+                      <span className="text-slate-500 font-medium">Priority</span>
                       <span className="font-bold text-slate-800">
                         {lead.priority || "MEDIUM"}
                       </span>
                     </div>
                     <div className="flex justify-between py-0.5">
-                      <span className="text-slate-400">Lead Source</span>
+                      <span className="text-slate-500 font-medium">Lead Source</span>
                       <span className="font-bold text-slate-800">
                         {lead.source || "MANUAL"}
                       </span>
                     </div>
-                    <div className="pt-1.5 border-t border-slate-100">
-                      <span className="text-slate-400 block mb-0.5 font-semibold">
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-slate-500 block mb-1 font-semibold text-xs uppercase tracking-wider">
                         Requirement Summary
                       </span>
-                      <p className="text-slate-700 leading-relaxed bg-slate-50 p-2 rounded-xl border border-slate-100">
+                      <p className="text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                         {lead.requirement ||
                           "No specific requirement details noted."}
                       </p>
@@ -1958,23 +2053,23 @@ export default function LeadDetailPage() {
                 {/* Card 2: Last Interaction Summary */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Last Interaction Summary
                     </h3>
                     <button
                       onClick={() => setShowActivityModal(true)}
-                      className="text-[11px] font-bold text-[#F95721] hover:underline"
+                      className="text-xs font-bold text-[#F95721] hover:underline"
                     >
                       + Add Note
                     </button>
                   </div>
 
-                  <div className="space-y-2.5 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     {activities.length > 0 ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 text-slate-500">
-                            <Clock className="w-3.5 h-3.5 text-orange-500" />{" "}
+                          <span className="flex items-center gap-1.5 text-slate-500 font-medium">
+                            <Clock className="w-4 h-4 text-orange-500" />{" "}
                             Latest Activity
                           </span>
                           <span className="font-bold text-slate-800">
@@ -1985,7 +2080,7 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-500">
+                          <span className="text-slate-500 font-medium">
                             Date &amp; Time
                           </span>
                           <span className="font-bold text-slate-800">
@@ -2000,11 +2095,11 @@ export default function LeadDetailPage() {
                           </span>
                         </div>
 
-                        <div className="pt-1.5 border-t border-slate-100">
-                          <span className="text-slate-400 block mb-0.5">
+                        <div className="pt-2 border-t border-slate-100">
+                          <span className="text-slate-500 block mb-1 font-semibold text-xs uppercase tracking-wider">
                             Note Details
                           </span>
-                          <p className="text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                          <p className="text-slate-700 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                             {activities[0].description ||
                               activities[0].summary ||
                               "Interaction logged."}
@@ -2013,10 +2108,10 @@ export default function LeadDetailPage() {
                       </>
                     ) : (
                       <div className="text-center py-6 text-slate-400 space-y-2">
-                        <p>No activity logs recorded yet.</p>
+                        <p className="text-sm">No activity logs recorded yet.</p>
                         <button
                           onClick={() => setShowActivityModal(true)}
-                          className="px-3 py-1 rounded-xl bg-orange-50 text-orange-700 font-bold text-[10px]"
+                          className="px-3.5 py-1.5 rounded-xl bg-orange-50 text-orange-700 font-bold text-xs"
                         >
                           + Log First Call / Note
                         </button>
@@ -2028,17 +2123,17 @@ export default function LeadDetailPage() {
                 {/* Card 3: Quick Actions Grid */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Quick Actions
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                  <div className="flex flex-wrap justify-center items-center gap-2.5 text-center text-xs">
                     <button
                       onClick={() => handleOpenCreateOrderModal()}
                       className="p-3 rounded-md bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
-                      <ShoppingBag className="w-4 h-4" />
+                      <ShoppingBag className="w-5 h-5" />
                       Create Order
                     </button>
 
@@ -2046,7 +2141,7 @@ export default function LeadDetailPage() {
                       href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                       className="p-3 rounded-md bg-cyan-50/80 hover:bg-cyan-100 text-cyan-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
-                      <FileText className="w-4 h-4" />
+                      <FileText className="w-5 h-5" />
                       Quotation
                     </Link>
 
@@ -2068,7 +2163,7 @@ export default function LeadDetailPage() {
                       }}
                       className="p-3 rounded-md bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
-                      <CreditCard className="w-4 h-4" />
+                      <CreditCard className="w-5 h-5" />
                       Advance Pay
                     </button>
 
@@ -2083,8 +2178,16 @@ export default function LeadDetailPage() {
                       }}
                       className="p-3 rounded-md bg-amber-50/80 hover:bg-amber-100 text-amber-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-5 h-5" />
                       Follow-up
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab("Documents")}
+                      className="p-3 rounded-md bg-purple-50/80 hover:bg-purple-100 text-purple-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                    >
+                      <Folder className="w-5 h-5" />
+                      Documents
                     </button>
                   </div>
                 </div>
@@ -2092,30 +2195,30 @@ export default function LeadDetailPage() {
                 {/* Card 4: Lead Status & Reopen Option */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3.5">
                   <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Stage &amp; Governance
                     </h3>
                     <button
                       onClick={() => setShowStatusModal(true)}
-                      className="text-[11px] font-bold text-purple-600 hover:underline"
+                      className="text-xs font-bold text-purple-600 hover:underline"
                     >
                       Update Stage
                     </button>
                   </div>
 
-                  <div className="space-y-2.5 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Current Stage</span>
+                      <span className="text-slate-500 font-medium">Current Stage</span>
                       <span
-                        className={`px-2 py-0.5 rounded-full font-bold text-[10px] border ${getStatusBadgeStyle(lead.status)}`}
+                        className={`px-2.5 py-1 rounded-full font-bold text-xs border ${getStatusBadgeStyle(lead.status)}`}
                       >
                         {lead.status}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Priority Level</span>
-                      <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-bold text-[10px] border border-rose-200">
+                      <span className="text-slate-500 font-medium">Priority Level</span>
+                      <span className="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200">
                         {lead.priority || "HIGH"}
                       </span>
                     </div>
@@ -2128,25 +2231,25 @@ export default function LeadDetailPage() {
                         <button
                           onClick={handleReopenLead}
                           disabled={actionLoading}
-                          className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-1.5"
                         >
-                          <RotateCcw className="w-3.5 h-3.5" />
+                          <RotateCcw className="w-4 h-4" />
                           Reopen for Next Order
                         </button>
                       </div>
                     ) : (
                       <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                        <span className="text-slate-400 block font-semibold">
+                        <span className="text-slate-500 block font-semibold text-xs uppercase tracking-wider">
                           Stage Quick Switch
                         </span>
-                        <div className="flex flex-wrap gap-1.5 text-[10px]">
+                        <div className="flex flex-wrap gap-1.5 text-xs">
                           {PIPELINE_STAGES.filter(
                             (s) => s.id !== lead.status,
                           ).map((s) => (
                             <button
                               key={s.id}
                               onClick={() => handleStageClick(s.id)}
-                              className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
                             >
                               → {s.label}
                             </button>
@@ -2163,35 +2266,35 @@ export default function LeadDetailPage() {
                 {/* Card 1: Commercial Orders */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Commercial Orders ({orders.length})
                     </h3>
                     <button
                       onClick={() => setActiveTab("Orders")}
-                      className="text-[11px] font-bold text-indigo-600 hover:underline"
+                      className="text-xs font-bold text-indigo-600 hover:underline"
                     >
                       View All
                     </button>
                   </div>
 
-                  <div className="space-y-2.5 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     {orders.length > 0 ? (
                       orders.slice(0, 2).map((o) => (
                         <div
                           key={o._id}
-                          className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5"
+                          className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-2"
                         >
                           <div className="flex justify-between items-center">
-                            <strong className="text-slate-900 font-mono text-xs">
+                            <strong className="text-slate-900 font-mono text-sm">
                               {o.orderNumber || o._id}
                             </strong>
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {o.orderStatus || "CONFIRMED"}
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-center text-slate-500 text-[10px]">
-                            <span>
+                          <div className="flex justify-between items-center text-slate-600 text-xs">
+                            <span className="font-bold text-slate-900 text-sm">
                               ₹
                               {(o.grandTotalPaise
                                 ? o.grandTotalPaise / 100
@@ -2205,12 +2308,12 @@ export default function LeadDetailPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/50">
+                          <div className="flex items-center justify-end gap-2.5 pt-1.5 border-t border-slate-200/50">
                             <button
                               onClick={() => handleOpenDesignerHandoff(o)}
-                              className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                              className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
                             >
-                              <Palette className="w-3 h-3" /> Hand Off
+                              <Palette className="w-3.5 h-3.5" /> Hand Off
                             </button>
                             <button
                               onClick={async () => {
@@ -2226,23 +2329,23 @@ export default function LeadDetailPage() {
                                   );
                                 }
                               }}
-                              className="text-[10px] font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                              className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1"
                             >
-                              <Download className="w-3 h-3" /> Invoice
+                              <Download className="w-3.5 h-3.5" /> Invoice
                             </button>
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="text-center py-5 space-y-2">
-                        <p className="text-slate-400 text-xs">
+                        <p className="text-slate-400 text-sm">
                           No orders created yet for this lead.
                         </p>
                         <button
                           onClick={() => handleOpenCreateOrderModal()}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-xs"
+                          className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Create Commercial
+                          <Plus className="w-4 h-4" /> Create Commercial
                           Order
                         </button>
                       </div>
@@ -2253,31 +2356,31 @@ export default function LeadDetailPage() {
                 {/* Card 2: Client Quotations */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Client Quotations ({quotations.length})
                     </h3>
                     <button
                       onClick={() => setActiveTab("Quotations")}
-                      className="text-[11px] font-bold text-[#F95721] hover:underline"
+                      className="text-xs font-bold text-[#F95721] hover:underline"
                     >
                       View All
                     </button>
                   </div>
 
-                  <div className="space-y-2.5 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     {quotations.length > 0 ? (
                       quotations.slice(0, 2).map((q) => (
                         <div
                           key={q._id}
-                          className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5"
+                          className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-2"
                         >
                           <div className="flex justify-between items-center">
-                            <strong className="text-slate-900 font-mono text-xs">
+                            <strong className="text-slate-900 font-mono text-sm">
                               {q.quotationNumber ||
                                 `QT-${q._id.slice(-6).toUpperCase()}`}
                             </strong>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                              className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                 q.status === "ACCEPTED"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                   : q.status === "APPROVED"
@@ -2291,13 +2394,13 @@ export default function LeadDetailPage() {
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-center text-slate-500 text-[10px]">
+                          <div className="flex justify-between items-center text-slate-600 text-xs">
                             <span>
                               {new Date(q.createdAt).toLocaleDateString(
                                 "en-GB",
                               )}
                             </span>
-                            <strong className="text-slate-900 font-bold">
+                            <strong className="text-slate-900 font-bold text-sm">
                               ₹
                               {(q.grandTotalPaise
                                 ? q.grandTotalPaise / 100
@@ -2306,7 +2409,7 @@ export default function LeadDetailPage() {
                             </strong>
                           </div>
 
-                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/50">
+                          <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-200/50">
                             <button
                               onClick={() => {
                                 handleOpenCreateOrderModal({
@@ -2320,9 +2423,9 @@ export default function LeadDetailPage() {
                                   designNotes: `Converted from Quotation ${q.quotationNumber}`,
                                 });
                               }}
-                              className="text-[10px] font-bold text-indigo-700 hover:underline flex items-center gap-1"
+                              className="text-xs font-bold text-indigo-700 hover:underline flex items-center gap-1"
                             >
-                              <ShoppingBag className="w-3 h-3" /> Convert to
+                              <ShoppingBag className="w-3.5 h-3.5" /> Convert to
                               Order →
                             </button>
                           </div>
@@ -2330,14 +2433,14 @@ export default function LeadDetailPage() {
                       ))
                     ) : (
                       <div className="text-center py-5 space-y-2">
-                        <p className="text-slate-400 text-xs">
+                        <p className="text-slate-400 text-sm">
                           No quotations generated yet.
                         </p>
                         <Link
                           href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs"
+                          className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
                         >
-                          <Plus className="w-3.5 h-3.5" /> Create Quotation
+                          <Plus className="w-4 h-4" /> Create Quotation
                         </Link>
                       </div>
                     )}
@@ -2347,18 +2450,18 @@ export default function LeadDetailPage() {
                 {/* Card 3: Payments & Advances with In-Place Verify */}
                 <div className="bg-white rounded-md p-4 border border-slate-200/90 shadow-xs space-y-3">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 className="font-bold text-slate-900 text-xs">
+                    <h3 className="font-bold text-slate-900 text-base">
                       Advance &amp; Payments ({payments.length})
                     </h3>
                     <button
                       onClick={() => setActiveTab("Payments")}
-                      className="text-[11px] font-bold text-emerald-600 hover:underline"
+                      className="text-xs font-bold text-emerald-600 hover:underline"
                     >
                       View Ledger
                     </button>
                   </div>
 
-                  <div className="space-y-2.5 text-[11px]">
+                  <div className="space-y-2.5 text-sm">
                     {payments.length > 0 ? (
                       payments.slice(0, 2).map((p) => {
                         const isPending = p.status === "PENDING_VERIFICATION";
@@ -2370,14 +2473,14 @@ export default function LeadDetailPage() {
                         return (
                           <div
                             key={p._id}
-                            className={`p-3 rounded-xl border space-y-1.5 ${isPending ? "bg-amber-50/40 border-amber-200" : "bg-slate-50 border-slate-100"}`}
+                            className={`p-3.5 rounded-xl border space-y-2 ${isPending ? "bg-amber-50/40 border-amber-200" : "bg-slate-50 border-slate-100"}`}
                           >
                             <div className="flex justify-between items-center">
-                              <strong className="text-slate-900 font-mono text-xs">
+                              <strong className="text-slate-900 font-mono text-sm">
                                 {p.receiptNumber || "RCT"}
                               </strong>
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                                   isConfirmed
                                     ? "bg-emerald-100 text-emerald-800"
                                     : isPending
@@ -2392,31 +2495,31 @@ export default function LeadDetailPage() {
                                     : "✕ Rejected"}
                               </span>
                             </div>
-                            <div className="flex justify-between text-[10px] text-slate-500">
+                            <div className="flex justify-between text-xs text-slate-600">
                               <span>{p.paymentMethod?.replace(/_/g, " ")}</span>
-                              <strong className="text-slate-900 font-bold">
+                              <strong className="text-slate-900 font-bold text-sm">
                                 ₹{amountRupees.toLocaleString("en-IN")}
                               </strong>
                             </div>
 
                             {/* Direct Verify/Reject for Manager/Admin right from Overview */}
                             {isPending && canVerifyPayment && (
-                              <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-amber-200/50">
+                              <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-amber-200/50">
                                 <button
                                   type="button"
                                   onClick={() => handleVerifyPayment(p._id)}
                                   disabled={actionLoading}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs flex items-center gap-1 transition-all"
+                                  className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1 transition-all"
                                   title="Confirm and verify payment into company ledger"
                                 >
-                                  <CheckCircle2 className="w-3 h-3" />
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
                                   Confirm &amp; Verify
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleRejectPayment(p._id)}
                                   disabled={actionLoading}
-                                  className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] border border-rose-200 transition-all"
+                                  className="px-3 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-all"
                                   title="Reject payment"
                                 >
                                   ✕
@@ -2427,8 +2530,8 @@ export default function LeadDetailPage() {
                         );
                       })
                     ) : (
-                      <div className="text-center py-5 text-slate-400 text-xs space-y-2">
-                        <p>No payments recorded yet.</p>
+                      <div className="text-center py-5 text-slate-400 space-y-2">
+                        <p className="text-sm">No payments recorded yet.</p>
                         <button
                           onClick={() => {
                             setPaymentForm({
@@ -2445,7 +2548,7 @@ export default function LeadDetailPage() {
                             });
                             setShowPaymentModal(true);
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-[10px]"
+                          className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs"
                         >
                           + Record Advance
                         </button>
@@ -2477,7 +2580,8 @@ export default function LeadDetailPage() {
                     onClick={() => handleOpenCreateOrderModal()}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs transition-all"
                   >
-                    <Plus className="w-4 h-4" />Create Commercial Order
+                    <Plus className="w-4 h-4" />
+                    Create Commercial Order
                   </button>
                 </div>
               </div>
@@ -2899,7 +3003,8 @@ export default function LeadDetailPage() {
                   href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition-all"
                 >
-                  <Plus className="w-3.5 h-3.5" />Create Quotation
+                  <Plus className="w-3.5 h-3.5" />
+                  Create Quotation
                 </Link>
               </div>
 
@@ -3258,7 +3363,8 @@ export default function LeadDetailPage() {
                     }}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-all"
                   >
-                    <Plus className="w-4 h-4" />Record Advance Payment
+                    <Plus className="w-4 h-4" />
+                    Record Advance Payment
                   </button>
                 </div>
               </div>
@@ -3955,7 +4061,8 @@ export default function LeadDetailPage() {
                     }}
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" />Upload File / Photo
+                    <Plus className="w-4 h-4" />
+                    Upload File / Photo
                   </button>
                 </div>
               </div>
@@ -4298,7 +4405,8 @@ export default function LeadDetailPage() {
                   onClick={() => setShowActivityModal(true)}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold"
                 >
-                  <Plus className="w-3.5 h-3.5" />Log Activity
+                  <Plus className="w-3.5 h-3.5" />
+                  Log Activity
                 </button>
               </div>
 
@@ -4461,10 +4569,9 @@ export default function LeadDetailPage() {
                                 ...orderForm,
                                 selectedItemIndex: "",
                                 title: it0?.title || orderForm.title,
-                                amount: (
-                                  selectedQ.grandTotalPaise
-                                    ? selectedQ.grandTotalPaise / 100
-                                    : selectedQ.totalAmount || 0
+                                amount: (selectedQ.grandTotalPaise
+                                  ? selectedQ.grandTotalPaise / 100
+                                  : selectedQ.totalAmount || 0
                                 ).toString(),
                               });
                             } else {
@@ -4490,8 +4597,7 @@ export default function LeadDetailPage() {
                                 ...orderForm,
                                 selectedItemIndex: itemIdx,
                                 title:
-                                  it?.title ||
-                                  `Item ${Number(itemIdx) + 1}`,
+                                  it?.title || `Item ${Number(itemIdx) + 1}`,
                                 amount: Math.round(itemTotal).toString(),
                                 width: it?.width ? it.width.toString() : "",
                                 height: it?.height ? it.height.toString() : "",
@@ -4509,10 +4615,9 @@ export default function LeadDetailPage() {
                         >
                           <option value="">
                             -- All Items in Quotation (₹
-                            {(
-                              selectedQ.grandTotalPaise
-                                ? selectedQ.grandTotalPaise / 100
-                                : selectedQ.totalAmount || 0
+                            {(selectedQ.grandTotalPaise
+                              ? selectedQ.grandTotalPaise / 100
+                              : selectedQ.totalAmount || 0
                             ).toLocaleString("en-IN")}
                             ) --
                           </option>
@@ -4535,8 +4640,8 @@ export default function LeadDetailPage() {
                             const itemTotal = Math.round(gross - disc + tax);
                             return (
                               <option key={idx} value={idx.toString()}>
-                                Item #{idx + 1}: {it.title} (Qty: {it.quantity} • ₹
-                                {itemTotal.toLocaleString("en-IN")})
+                                Item #{idx + 1}: {it.title} (Qty: {it.quantity}{" "}
+                                • ₹{itemTotal.toLocaleString("en-IN")})
                               </option>
                             );
                           })}
@@ -4894,7 +4999,8 @@ export default function LeadDetailPage() {
                     <div className="flex items-center gap-2">
                       {orderUploading && (
                         <span className="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
-                          <RefreshCw className="w-3 h-3 animate-spin" /> Uploading...
+                          <RefreshCw className="w-3 h-3 animate-spin" />{" "}
+                          Uploading...
                         </span>
                       )}
                       <label
@@ -4917,15 +5023,18 @@ export default function LeadDetailPage() {
                           for (const file of Array.from(files)) {
                             const formData = new FormData();
                             formData.append("file", file);
-                            formData.append("title", file.name || "Order Attachment");
+                            formData.append(
+                              "title",
+                              file.name || "Order Attachment",
+                            );
                             formData.append("category", "ARTWORK");
                             formData.append(
                               "description",
-                              "Attached to commercial order."
+                              "Attached to commercial order.",
                             );
                             const res = await api.post(
                               `/leads/${leadId}/documents`,
-                              formData
+                              formData,
                             );
                             const dList = Array.isArray(res.data)
                               ? res.data
@@ -4934,8 +5043,10 @@ export default function LeadDetailPage() {
                               setDocuments(dList);
                               const newlyUploaded = dList[0];
                               setOrderForm((prev) => {
-                                const alreadyAttached = (prev.briefAttachments || []).some(
-                                  (a) => a.fileUrl === newlyUploaded.fileUrl
+                                const alreadyAttached = (
+                                  prev.briefAttachments || []
+                                ).some(
+                                  (a) => a.fileUrl === newlyUploaded.fileUrl,
                                 );
                                 if (alreadyAttached) return prev;
                                 return {
@@ -4945,9 +5056,11 @@ export default function LeadDetailPage() {
                                     {
                                       fileUrl: newlyUploaded.fileUrl,
                                       fileName:
-                                        newlyUploaded.fileName || newlyUploaded.title,
+                                        newlyUploaded.fileName ||
+                                        newlyUploaded.title,
                                       fileType: newlyUploaded.fileType,
-                                      fileSizeBytes: newlyUploaded.fileSizeBytes,
+                                      fileSizeBytes:
+                                        newlyUploaded.fileSizeBytes,
                                       cloudinaryPublicId:
                                         newlyUploaded.cloudinaryPublicId,
                                     },
@@ -4986,15 +5099,18 @@ export default function LeadDetailPage() {
                         for (const file of Array.from(files)) {
                           const formData = new FormData();
                           formData.append("file", file);
-                          formData.append("title", file.name || "Order Attachment");
+                          formData.append(
+                            "title",
+                            file.name || "Order Attachment",
+                          );
                           formData.append("category", "ARTWORK");
                           formData.append(
                             "description",
-                            "Attached to commercial order via drag-and-drop."
+                            "Attached to commercial order via drag-and-drop.",
                           );
                           const res = await api.post(
                             `/leads/${leadId}/documents`,
-                            formData
+                            formData,
                           );
                           const dList = Array.isArray(res.data)
                             ? res.data
@@ -5003,8 +5119,10 @@ export default function LeadDetailPage() {
                             setDocuments(dList);
                             const newlyUploaded = dList[0];
                             setOrderForm((prev) => {
-                              const alreadyAttached = (prev.briefAttachments || []).some(
-                                (a) => a.fileUrl === newlyUploaded.fileUrl
+                              const alreadyAttached = (
+                                prev.briefAttachments || []
+                              ).some(
+                                (a) => a.fileUrl === newlyUploaded.fileUrl,
                               );
                               if (alreadyAttached) return prev;
                               return {
@@ -5014,7 +5132,8 @@ export default function LeadDetailPage() {
                                   {
                                     fileUrl: newlyUploaded.fileUrl,
                                     fileName:
-                                      newlyUploaded.fileName || newlyUploaded.title,
+                                      newlyUploaded.fileName ||
+                                      newlyUploaded.title,
                                     fileType: newlyUploaded.fileType,
                                     fileSizeBytes: newlyUploaded.fileSizeBytes,
                                     cloudinaryPublicId:
@@ -5037,7 +5156,9 @@ export default function LeadDetailPage() {
                         : "border-indigo-200/80 bg-white/70 hover:bg-white hover:border-indigo-300"
                     }`}
                     onClick={() => {
-                      const input = document.getElementById("orderDirectFileInput");
+                      const input = document.getElementById(
+                        "orderDirectFileInput",
+                      );
                       if (input) input.click();
                     }}
                   >
@@ -5046,10 +5167,12 @@ export default function LeadDetailPage() {
                         <Upload className="w-4 h-4" />
                       </div>
                       <p className="text-xs font-semibold text-slate-700">
-                        Drag &amp; drop artwork or documents here, or click to browse
+                        Drag &amp; drop artwork or documents here, or click to
+                        browse
                       </p>
                       <p className="text-[10px] text-slate-400">
-                        Upload artwork proofs, PDF, CDR, PSD, AI, images or ZIP to attach directly to this order
+                        Upload artwork proofs, PDF, CDR, PSD, AI, images or ZIP
+                        to attach directly to this order
                       </p>
                     </div>
                   </div>
@@ -5059,7 +5182,8 @@ export default function LeadDetailPage() {
                     orderForm.briefAttachments.length > 0 && (
                       <div className="space-y-1.5 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100">
                         <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
-                          Attached to this Order ({orderForm.briefAttachments.length}):
+                          Attached to this Order (
+                          {orderForm.briefAttachments.length}):
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {orderForm.briefAttachments.map((att, idx) => (
@@ -5078,9 +5202,10 @@ export default function LeadDetailPage() {
                                 onClick={() => {
                                   setOrderForm((prev) => ({
                                     ...prev,
-                                    briefAttachments: prev.briefAttachments.filter(
-                                      (_, i) => i !== idx
-                                    ),
+                                    briefAttachments:
+                                      prev.briefAttachments.filter(
+                                        (_, i) => i !== idx,
+                                      ),
                                   }));
                                 }}
                                 className="text-slate-400 hover:text-rose-600 font-bold ml-1"
@@ -5098,12 +5223,13 @@ export default function LeadDetailPage() {
                   {documents && documents.length > 0 && (
                     <div className="space-y-1.5 pt-1">
                       <span className="text-[10px] text-slate-500 font-bold block">
-                        Quick Pick from Lead&apos;s Saved Documents &amp; Artwork ({documents.length}):
+                        Quick Pick from Lead&apos;s Saved Documents &amp;
+                        Artwork ({documents.length}):
                       </span>
                       <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1 bg-white/60 rounded-xl border border-indigo-100/60">
                         {documents.map((d) => {
                           const isAttached = orderForm.briefAttachments?.some(
-                            (a) => a.fileUrl === d.fileUrl
+                            (a) => a.fileUrl === d.fileUrl,
                           );
                           return (
                             <div
@@ -5114,7 +5240,7 @@ export default function LeadDetailPage() {
                                     ...prev,
                                     briefAttachments:
                                       prev.briefAttachments.filter(
-                                        (a) => a.fileUrl !== d.fileUrl
+                                        (a) => a.fileUrl !== d.fileUrl,
                                       ),
                                   }));
                                 } else {
@@ -5127,7 +5253,8 @@ export default function LeadDetailPage() {
                                         fileName: d.fileName || d.title,
                                         fileType: d.fileType,
                                         fileSizeBytes: d.fileSizeBytes,
-                                        cloudinaryPublicId: d.cloudinaryPublicId,
+                                        cloudinaryPublicId:
+                                          d.cloudinaryPublicId,
                                       },
                                     ],
                                   }));
@@ -5988,7 +6115,13 @@ export default function LeadDetailPage() {
                 )}
 
                 {quotations.length > 0 && (
-                  <div className={orders.length > 0 && !paymentForm.isDirectQuotationPayment ? "" : "md:col-span-2"}>
+                  <div
+                    className={
+                      orders.length > 0 && !paymentForm.isDirectQuotationPayment
+                        ? ""
+                        : "md:col-span-2"
+                    }
+                  >
                     <label className="text-slate-700 font-semibold block mb-1">
                       Link to Quotation
                     </label>
@@ -6024,75 +6157,96 @@ export default function LeadDetailPage() {
               </div>
 
               {/* Direct Quotation Item Selection (No Order / No Designer) */}
-              {paymentForm.quotationId && (() => {
-                const chosenQuote = quotations.find((q) => q._id === paymentForm.quotationId);
-                const qItems = chosenQuote?.items || [];
-                if (qItems.length === 0) return null;
+              {paymentForm.quotationId &&
+                (() => {
+                  const chosenQuote = quotations.find(
+                    (q) => q._id === paymentForm.quotationId,
+                  );
+                  const qItems = chosenQuote?.items || [];
+                  if (qItems.length === 0) return null;
 
-                return (
-                  <div className="space-y-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="checkbox"
-                          id="lead-direct-quote-toggle"
-                          checked={paymentForm.isDirectQuotationPayment}
-                          onChange={(e) =>
-                            setPaymentForm({
-                              ...paymentForm,
-                              isDirectQuotationPayment: e.target.checked,
-                              orderId: e.target.checked ? "" : paymentForm.orderId,
-                            })
-                          }
-                          className="rounded text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <label htmlFor="lead-direct-quote-toggle" className="text-xs font-bold text-emerald-950 cursor-pointer">
-                          Direct Payment for Product Items (Do NOT Create Order)
-                        </label>
+                  return (
+                    <div className="space-y-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            id="lead-direct-quote-toggle"
+                            checked={paymentForm.isDirectQuotationPayment}
+                            onChange={(e) =>
+                              setPaymentForm({
+                                ...paymentForm,
+                                isDirectQuotationPayment: e.target.checked,
+                                orderId: e.target.checked
+                                  ? ""
+                                  : paymentForm.orderId,
+                              })
+                            }
+                            className="rounded text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <label
+                            htmlFor="lead-direct-quote-toggle"
+                            className="text-xs font-bold text-emerald-950 cursor-pointer"
+                          >
+                            Direct Payment for Product Items (Do NOT Create
+                            Order)
+                          </label>
+                        </div>
+                        <span className="text-[10px] text-emerald-800 font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">
+                          Quotation → Payment Only
+                        </span>
                       </div>
-                      <span className="text-[10px] text-emerald-800 font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">
-                        Quotation → Payment Only
-                      </span>
-                    </div>
 
-                    {paymentForm.isDirectQuotationPayment && (
-                      <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
-                        {qItems.map((it, idx) => {
-                          const isSel = (paymentForm.selectedItemIndexes || []).map(Number).includes(Number(idx));
-                          const itTot = (it.itemTotalPaise || 0) / 100;
-                          return (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                const cur = (paymentForm.selectedItemIndexes || []).map(Number);
-                                const next = cur.includes(idx) ? cur.filter((i) => i !== idx) : [...cur, idx];
-                                setPaymentForm({
-                                  ...paymentForm,
-                                  selectedItemIndexes: next,
-                                });
-                              }}
-                              className={`p-2 rounded-xl border flex items-center justify-between text-xs cursor-pointer ${
-                                isSel ? "bg-white border-emerald-400 font-bold shadow-2xs" : "bg-white/60 border-slate-200 text-slate-600"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={isSel}
-                                  onChange={() => {}}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>{it.title || `Item #${idx + 1}`}</span>
+                      {paymentForm.isDirectQuotationPayment && (
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
+                          {qItems.map((it, idx) => {
+                            const isSel = (
+                              paymentForm.selectedItemIndexes || []
+                            )
+                              .map(Number)
+                              .includes(Number(idx));
+                            const itTot = (it.itemTotalPaise || 0) / 100;
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  const cur = (
+                                    paymentForm.selectedItemIndexes || []
+                                  ).map(Number);
+                                  const next = cur.includes(idx)
+                                    ? cur.filter((i) => i !== idx)
+                                    : [...cur, idx];
+                                  setPaymentForm({
+                                    ...paymentForm,
+                                    selectedItemIndexes: next,
+                                  });
+                                }}
+                                className={`p-2 rounded-xl border flex items-center justify-between text-xs cursor-pointer ${
+                                  isSel
+                                    ? "bg-white border-emerald-400 font-bold shadow-2xs"
+                                    : "bg-white/60 border-slate-200 text-slate-600"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSel}
+                                    onChange={() => {}}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                                  />
+                                  <span>{it.title || `Item #${idx + 1}`}</span>
+                                </div>
+                                <span className="font-mono text-emerald-800">
+                                  ₹{itTot.toLocaleString("en-IN")}
+                                </span>
                               </div>
-                              <span className="font-mono text-emerald-800">₹{itTot.toLocaleString("en-IN")}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               <div>
                 <label className="text-slate-700 font-semibold block mb-1">
