@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { supabase } from "@/lib/supabaseClient";
 import { normalizeRole } from "@/lib/rbacGuard";
 import AlertCenterDrawer from "./alertCenterDrawer";
+import { getNavSections, isRouteActive } from "@/lib/navigationConfig";
 import {
   Home,
   Menu,
@@ -1077,174 +1078,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
   };
 
-  // Mobile menu items based on role
-  const getMobileNavItems = () => {
-    const role = user.role.toLowerCase();
-    const common = [
-      { name: "Dashboard", href: "/dashboard", icon: Layers },
-      {
-        name: "Reports & Analytics",
-        href: "/dashboard/reports",
-        icon: BarChart3,
-      },
-    ];
 
-    if (role === "admin") {
-      return [
-        ...common,
-        { name: "Admin Console", href: "/dashboard/admin", icon: Shield },
-        {
-          name: "User Management",
-          href: "/dashboard/admin/users",
-          icon: Users,
-        },
-        {
-          name: "Leads & Pipeline",
-          href: "/dashboard/leads",
-          icon: TrendingUp,
-        },
-        { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-        { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
-        { name: "Production", href: "/dashboard/production", icon: Layers },
-        { name: "Design Projects", href: "/dashboard/design", icon: Palette },
-        {
-          name: "Communications",
-          href: "/dashboard/communication",
-          icon: MessageSquare,
-        },
-        {
-          name: "System Settings",
-          href: "/dashboard/admin/settings/company",
-          icon: Settings,
-        },
-      ];
-    }
-
-    if (role === "manager") {
-      return [
-        ...common,
-        { name: "Manager Overview", href: "/dashboard/manager", icon: Shield },
-        {
-          name: "Team Performance",
-          href: "/dashboard/manager/team",
-          icon: Users,
-        },
-        {
-          name: "Discount Approvals",
-          href: "/dashboard/manager/approvals",
-          icon: CheckSquare,
-        },
-        {
-          name: "Leads Management",
-          href: "/dashboard/leads",
-          icon: TrendingUp,
-        },
-        { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-        { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
-        {
-          name: "Production Oversight",
-          href: "/dashboard/production",
-          icon: Layers,
-        },
-        {
-          name: "Follow-ups & Calls",
-          href: "/dashboard/followups",
-          icon: PhoneCall,
-        },
-        {
-          name: "Communications",
-          href: "/dashboard/communication",
-          icon: MessageSquare,
-        },
-      ];
-    }
-
-    if (role.includes("data_operator") || role.includes("operator")) {
-      return [
-        { name: "Dashboard", href: "/dashboard/data-operator", icon: Home, exact: true },
-        {
-          name: "Market Photos",
-          href: "/dashboard/data-operator?view=photos",
-          icon: Camera,
-        },
-        {
-          name: "Add New Lead",
-          href: "/dashboard/data-operator?view=review",
-          icon: PlusCircle,
-        },
-        {
-          name: "My Created Leads",
-          href: "/dashboard/data-operator?view=leads",
-          icon: CheckSquare,
-        },
-        {
-          name: "Area / Zone Status",
-          href: "/dashboard/data-operator?view=coverage",
-          icon: MapPin,
-        },
-        {
-          name: "Daily Report",
-          href: "/dashboard/data-operator?view=reports",
-          icon: BarChart3,
-        },
-        {
-          name: "Export Data",
-          href: "/dashboard/data-operator?view=export",
-          icon: FileText,
-        },
-      ];
-    }
-
-    if (role === "designer") {
-      return [
-        { name: "Home", href: "/dashboard/designer", icon: Home },
-        {
-          name: "Reports & Analytics",
-          href: "/dashboard/reports",
-          icon: BarChart3,
-        },
-        { name: "My Design Projects", href: "/dashboard/design", icon: Folder },
-        {
-          name: "Communications",
-          href: "/dashboard/communication",
-          icon: MessageSquare,
-        },
-      ];
-    }
-
-    // Default SALES
-    return [
-      {
-        name: "Sales Dashboard",
-        href: "/dashboard/sales",
-        icon: Layers,
-        exact: true,
-      },
-      {
-        name: "Reports & Analytics",
-        href: "/dashboard/reports",
-        icon: BarChart3,
-      },
-      { name: "Sales Pipeline", href: "/dashboard/leads", icon: TrendingUp },
-      {
-        name: "Follow-ups & Calls",
-        href: "/dashboard/followups",
-        icon: PhoneCall,
-      },
-      { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
-      { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-      {
-        name: "Payments & Receivables",
-        href: "/dashboard/receivables",
-        icon: CreditCard,
-      },
-      {
-        name: "Communications",
-        href: "/dashboard/communication",
-        icon: MessageSquare,
-      },
-    ];
-  };
 
   return (
     <>
@@ -1872,79 +1706,100 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-72 max-w-[85vw] bg-[#0B1120] text-slate-300 h-full p-4 flex flex-col justify-between shadow-2xl animate-slide-right cursor-default overflow-hidden"
+            className="w-72 max-w-[85vw] bg-[#0F172A] text-slate-300 h-full flex flex-col justify-between shadow-2xl border-r border-slate-800 animate-slide-right cursor-default overflow-hidden select-none"
           >
-            <div className="flex flex-col min-h-0 flex-1">
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-16 h-12 rounded-xl flex items-center justify-center shrink-0">
-                    <Image
-                      src="/logo/A2V  Groups Logo.png"
-                      alt="Logo"
-                      width={50}
-                      height={50}
-                      style={{ width: "auto", height: "auto" }}
-                      className="shrink-0 max-h-15"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-[25px] font-bold text-white block leading-tight truncate max-w-40">
-                      A2V Prints{" "}
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Brand Header */}
+              <div className="h-16 flex items-center justify-between border-b border-slate-800/80 px-4 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Image
+                    src="/logo/A2V  Groups Logo.png"
+                    alt="logo"
+                    width={50}
+                    height={50}
+                    style={{ width: "auto", height: "auto" }}
+                    className="shrink-0"
+                  />
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <span className="font-medium text-[22px] text-white block truncate">
+                      A2V PRINTS
                     </span>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowMobileMenu(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+                  aria-label="Close navigation menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Drawer Navigation Links */}
-              <div className="mt-4 space-y-1 overflow-y-auto pr-1 flex-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-2 mb-2">
-                  Navigation ({user.roleDisplay})
+              {/* Dynamic Navigation Sections - Identical to desktop */}
+              <div className="flex-1 py-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+                {getNavSections(activeRoleRaw).map((section, sIdx) => (
+                  <div key={section.title || `mobile-sec-${sIdx}`} className="space-y-1">
+                    {section.title && (
+                      <span className="px-3 text-[12px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5 truncate">
+                        {section.title}
+                      </span>
+                    )}
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = isRouteActive(
+                        item,
+                        pathname,
+                        currentView,
+                        currentFilter
+                      );
+
+                      return (
+                        <Link
+                          key={item.name + item.href}
+                          href={item.href}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                          }}
+                          className={`relative group flex items-center text-xs font-semibold transition-all duration-150 gap-3 px-3 py-2 mx-2 rounded-xl ${
+                            isActive
+                              ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
+                              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                          }`}
+                        >
+                          <Icon
+                            className={`w-5 h-5 shrink-0 ${
+                              isActive
+                                ? "text-white"
+                                : "text-slate-400 group-hover:text-slate-200"
+                            }`}
+                          />
+                          <span className="truncate text-base">{item.name}</span>
+
+                          {item.href === "/dashboard/leads/inbox" &&
+                            isSalesPerson &&
+                            assignedInboxCount > 0 && (
+                              <span
+                                className="ml-auto inline-flex items-center gap-1.5 bg-linear-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md shadow-red-600/40 border border-red-400/40 animate-pulse tracking-wide"
+                                title={`${assignedInboxCount} lead${assignedInboxCount > 1 ? "s" : ""} assigned to you`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                                <span>{assignedInboxCount}</span>
+                              </span>
+                            )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Footer Info */}
+              <div className="p-3 border-t border-slate-800/80 shrink-0 flex items-center justify-between text-xs font-medium text-slate-400">
+                <span className="truncate">{user.name || "User"}</span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-semibold shrink-0">
+                  {user.roleDisplay}
                 </span>
-                {getMobileNavItems().map((item) => {
-                  const Icon = item.icon;
-                  let isActive = false;
-                  if (item.href.includes("?view=")) {
-                    const itemView = item.href.split("?view=")[1];
-                    isActive =
-                      pathname.startsWith("/dashboard/data-operator") &&
-                      currentView === itemView;
-                  } else if (item.href === "/dashboard/data-operator") {
-                    isActive =
-                      pathname === "/dashboard/data-operator" &&
-                      (!currentView || currentView === "dashboard");
-                  } else if (item.href.includes("?filter=")) {
-                    const itemFilter = item.href.split("?filter=")[1];
-                    isActive = currentFilter === itemFilter;
-                  } else if (item.exact || item.href === "/dashboard") {
-                    isActive = pathname === item.href && !currentView && !currentFilter;
-                  } else {
-                    isActive =
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" && pathname.startsWith(item.href));
-                  }
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setShowMobileMenu(false)}
-                      className={`flex items-center gap-3 px-3 py-3 text-sm font-semibold transition-all ${
-                        isActive
-                          ? "bg-[#F95721] text-white shadow-md shadow-orange-600/30"
-                          : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.name}</span>
-                    </Link>
-                  );
-                })}
               </div>
             </div>
           </div>
