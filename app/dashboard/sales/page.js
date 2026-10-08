@@ -290,15 +290,12 @@ export default function SalesDashboardPage() {
   // Normalise backend leads for UI display
   const displayLeads = useMemo(() => {
     return (leads || []).map((l) => {
-      const unifiedName = (
+      const bName =
         (l.businessName && l.businessName.trim() !== "Direct Lead" && l.businessName.trim() !== "—" ? l.businessName.trim() : null) ||
-        (l.companyName && l.companyName.trim() !== "Direct Lead" && l.companyName.trim() !== "—" ? l.companyName.trim() : null) ||
+        (l.companyName && l.companyName.trim() !== "Direct Lead" && l.companyName.trim() !== "—" ? l.companyName.trim() : "");
+      const cName =
         (l.contactName && l.contactName.trim() !== "Direct Lead" && l.contactName.trim() !== "—" ? l.contactName.trim() : null) ||
-        (l.customerName && l.customerName.trim() !== "Direct Lead" && l.customerName.trim() !== "—" ? l.customerName.trim() : null) ||
-        "Inquiry"
-      );
-      const bName = unifiedName;
-      const cName = l.contactName && l.contactName !== unifiedName ? l.contactName : (l.customerName && l.customerName !== unifiedName ? l.customerName : unifiedName);
+        (l.customerName && l.customerName.trim() !== "Direct Lead" && l.customerName.trim() !== "—" ? l.customerName.trim() : "");
       const phone = l.phone || l.mobileNumber || "—";
       const areaName = l.area || l.address?.city || l.location || "Burari";
       const zoneName = l.zone || l.address?.state || "Sant Nagar";
@@ -605,14 +602,11 @@ export default function SalesDashboardPage() {
         newLeadForm.contactName?.trim() ||
         ""
       );
-      const resolvedBusinessName = bName || cName || "Lead";
-      const resolvedContactName = cName || bName || "Customer";
-
       await api.post("/leads", {
-        businessName: resolvedBusinessName,
-        companyName: resolvedBusinessName,
-        contactName: resolvedContactName,
-        customerName: resolvedContactName,
+        businessName: bName,
+        companyName: bName,
+        contactName: cName || (bName ? "Contact Person" : "Lead Contact"),
+        customerName: cName || (bName ? "Contact Person" : "Lead Contact"),
         phone: newLeadForm.phone.trim().replace(/\D/g, ""),
         email: newLeadForm.email?.trim() || undefined,
         alternatePhone: newLeadForm.alternatePhone?.trim() || undefined,
@@ -631,7 +625,7 @@ export default function SalesDashboardPage() {
           uploadedPhotoUrl
             ? [
                 {
-                  title: `Shop Photo - ${unifiedName}`,
+                  title: `Shop Photo - ${resolvedBusinessName || resolvedContactName}`,
                   category: "PHOTO",
                   fileUrl: uploadedPhotoUrl,
                   uploadedByName: currentUser?.name || userName || "Sales Executive",
@@ -2122,7 +2116,7 @@ export default function SalesDashboardPage() {
                 </div>
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Client Name
+                    Contact Person Name
                   </label>
                   <input
                     type="text"

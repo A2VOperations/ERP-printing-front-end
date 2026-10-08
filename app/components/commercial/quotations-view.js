@@ -392,8 +392,20 @@ export default function QuotationsView({ user }) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-900">
-                        {q.customerSnapshot?.displayName || "N/A"}
+                        {q.customerSnapshot?.contactPerson ||
+                          (q.customerSnapshot?.displayName !== q.customerSnapshot?.companyName
+                            ? q.customerSnapshot?.displayName
+                            : "") ||
+                          q.customerName ||
+                          q.customerId?.contactPerson ||
+                          "Valued Client"}
                       </div>
+                      {q.customerSnapshot?.companyName &&
+                        q.customerSnapshot?.companyName !== q.customerSnapshot?.contactPerson && (
+                          <div className="text-xs text-slate-500 font-medium">
+                            Shop: {q.customerSnapshot?.companyName}
+                          </div>
+                        )}
                       <div className="text-xs text-slate-400">
                         {q.customerSnapshot?.phone || "No phone"}
                       </div>

@@ -552,14 +552,7 @@ export default function ProductionJobDetailPage({ params: paramsPromise }) {
                     </p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
-                      Color Mode
-                    </span>
-                    <p className="font-bold text-slate-800">
-                      {job.specificationsSnapshot?.colorMode || "CMYK"}
-                    </p>
-                  </div>
+
 
                   <div className="col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">

@@ -55,7 +55,10 @@ function QuotationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const leadIdParam = searchParams.get("leadId") || "";
-  const customerNameParam = searchParams.get("customerName") || "";
+  const businessNameParam = searchParams.get("businessName") || "";
+  const contactPersonParam =
+    searchParams.get("contactPerson") || searchParams.get("customerName") || "";
+  const customerNameParam = contactPersonParam;
   const phoneParam = searchParams.get("phone") || "";
 
   const [quotations, setQuotations] = useState([]);
@@ -127,6 +130,8 @@ function QuotationsContent() {
   const [showBuilderModal, setShowBuilderModal] = useState(false);
   const [newQuote, setNewQuote] = useState({
     leadId: "",
+    businessName: "",
+    contactPerson: "",
     customerName: "",
     phone: "",
     items: [
@@ -149,6 +154,8 @@ function QuotationsContent() {
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingQuote, setEditingQuote] = useState(null);
+  const [editBusinessName, setEditBusinessName] = useState("");
+  const [editContactPerson, setEditContactPerson] = useState("");
   const [editItems, setEditItems] = useState([]);
   const [editDiscountPercent, setEditDiscountPercent] = useState(0);
   const [editValidityDays, setEditValidityDays] = useState(15);
@@ -249,17 +256,19 @@ function QuotationsContent() {
   }, [selectedQuote?._id]);
 
   useEffect(() => {
-    if (leadIdParam || customerNameParam || phoneParam) {
+    if (leadIdParam || businessNameParam || contactPersonParam || phoneParam) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewQuote((prev) => ({
         ...prev,
         leadId: leadIdParam || prev.leadId,
-        customerName: customerNameParam || prev.customerName,
+        businessName: businessNameParam || prev.businessName,
+        contactPerson: contactPersonParam || prev.contactPerson,
+        customerName: contactPersonParam || businessNameParam || prev.customerName,
         phone: phoneParam || prev.phone,
       }));
       setShowBuilderModal(true);
     }
-  }, [leadIdParam, customerNameParam, phoneParam]);
+  }, [leadIdParam, businessNameParam, contactPersonParam, phoneParam]);
 
   const fetchQuotations = async () => {
     try {
@@ -325,7 +334,10 @@ function QuotationsContent() {
       setActionLoading(true);
       await api.post("/quotations", {
         leadId: newQuote.leadId || leadIdParam || undefined,
-        customerName: newQuote.customerName,
+        businessName: newQuote.businessName?.trim() || undefined,
+        companyName: newQuote.businessName?.trim() || undefined,
+        contactPerson: (newQuote.contactPerson?.trim() || newQuote.customerName?.trim()) || undefined,
+        customerName: (newQuote.contactPerson?.trim() || newQuote.customerName?.trim() || newQuote.businessName?.trim()) || undefined,
         phone: newQuote.phone,
         items: newQuote.items.map((item) => ({
           title: item.title || item.product || "Print Item",
@@ -347,6 +359,8 @@ function QuotationsContent() {
       setShowBuilderModal(false);
       setNewQuote({
         leadId: "",
+        businessName: "",
+        contactPerson: "",
         customerName: "",
         phone: "",
         items: [
@@ -382,6 +396,24 @@ function QuotationsContent() {
       return;
     }
     setEditingQuote(quote);
+    setEditBusinessName(
+      quote.customerSnapshot?.companyName ||
+      quote.leadId?.businessName ||
+      quote.customerId?.companyName ||
+      ""
+    );
+    const existingContact =
+      quote.customerSnapshot?.contactPerson ||
+      quote.customerName ||
+      quote.leadId?.contactName ||
+      quote.leadId?.customerName ||
+      quote.customerId?.contactPerson ||
+      (quote.customerSnapshot?.companyName !== quote.customerSnapshot?.displayName
+        ? quote.customerSnapshot?.displayName
+        : "") ||
+      quote.customerId?.displayName ||
+      "";
+    setEditContactPerson(existingContact);
     const isEditable =
       quote.status === "DRAFT" || quote.status === "PENDING_DISCOUNT_APPROVAL";
     setEditIsRevision(!isEditable);
@@ -447,6 +479,10 @@ function QuotationsContent() {
     try {
       setActionLoading(true);
       const payload = {
+        businessName: editBusinessName?.trim() || undefined,
+        companyName: editBusinessName?.trim() || undefined,
+        contactPerson: editContactPerson?.trim() || undefined,
+        customerName: editContactPerson?.trim() || editBusinessName?.trim() || undefined,
         items: editItems.map((item) => ({
           title: item.title,
           description: item.description,
@@ -947,20 +983,53 @@ function QuotationsContent() {
     "/logo/A2V  Groups Logo.png";
 
   const snap = selectedQuote?.customerSnapshot || {};
-  const clientDisplayName =
-    snap.displayName ||
+  const clientCompany = (
     snap.companyName ||
+    selectedQuote?.leadId?.businessName ||
+    selectedQuote?.customerId?.companyName ||
+    ""
+  ).trim();
+  let resolvedContact = (
+    snap.contactPerson ||
     selectedQuote?.customerName ||
-    "Valued Customer";
-  const clientCompany =
-    snap.companyName && snap.companyName !== clientDisplayName
-      ? snap.companyName
-      : "";
-  const clientContact =
-    snap.contactPerson || (!clientCompany ? clientDisplayName : "");
-  const clientPhone = snap.phone || selectedQuote?.phone || "Not provided";
-  const clientEmail = snap.email || "Not provided";
-  const clientGstin = snap.gstin || "Unregistered";
+    selectedQuote?.leadId?.contactName ||
+    selectedQuote?.leadId?.customerName ||
+    selectedQuote?.customerId?.contactPerson ||
+    ""
+  ).trim();
+
+  if (clientCompany && resolvedContact.toLowerCase() === clientCompany.toLowerCase()) {
+    const leadContact = (selectedQuote?.leadId?.contactName || "").trim();
+    const custContact = (selectedQuote?.customerId?.contactPerson || "").trim();
+    if (leadContact && leadContact.toLowerCase() !== clientCompany.toLowerCase()) {
+      resolvedContact = leadContact;
+    } else if (custContact && custContact.toLowerCase() !== clientCompany.toLowerCase()) {
+      resolvedContact = custContact;
+    }
+  }
+
+  const clientContact = resolvedContact;
+  const clientDisplayName =
+    clientContact ||
+    (snap.displayName && snap.displayName.toLowerCase() !== clientCompany.toLowerCase() ? snap.displayName : "") ||
+    (selectedQuote?.customerId?.displayName && selectedQuote?.customerId?.displayName.toLowerCase() !== clientCompany.toLowerCase() ? selectedQuote?.customerId?.displayName : "") ||
+    selectedQuote?.customerName ||
+    "Contact Person";
+  const clientPhone =
+    snap.phone ||
+    selectedQuote?.phone ||
+    selectedQuote?.leadId?.phone ||
+    selectedQuote?.customerId?.phone ||
+    "Not provided";
+  const clientEmail =
+    snap.email ||
+    selectedQuote?.leadId?.email ||
+    selectedQuote?.customerId?.email ||
+    "Not provided";
+  const clientGstin =
+    snap.gstin ||
+    selectedQuote?.customerId?.gstin ||
+    "Unregistered";
 
   const salesRep = selectedQuote?.assignedSalesId || {};
   const salesRepName = salesRep.name || "";
@@ -1150,10 +1219,31 @@ function QuotationsContent() {
                       ? item.grandTotalPaise / 100
                       : item.totalAmount || 0
                   ).toLocaleString("en-IN");
-                  const client =
-                    item.customerSnapshot?.displayName ||
+                  const compName = (
                     item.customerSnapshot?.companyName ||
+                    item.leadId?.businessName ||
+                    item.customerId?.companyName ||
+                    ""
+                  ).trim();
+                  let contPerson = (
+                    item.customerSnapshot?.contactPerson ||
                     item.customerName ||
+                    item.leadId?.contactName ||
+                    item.leadId?.customerName ||
+                    item.customerId?.contactPerson ||
+                    ""
+                  ).trim();
+                  if (compName && contPerson.toLowerCase() === compName.toLowerCase()) {
+                    const alt = (item.leadId?.contactName || item.customerId?.contactPerson || "").trim();
+                    if (alt && alt.toLowerCase() !== compName.toLowerCase()) {
+                      contPerson = alt;
+                    }
+                  }
+                  const client =
+                    contPerson ||
+                    (item.customerSnapshot?.displayName && item.customerSnapshot?.displayName.toLowerCase() !== compName.toLowerCase() ? item.customerSnapshot?.displayName : "") ||
+                    item.customerName ||
+                    compName ||
                     "Direct Customer";
 
                   return (
@@ -1179,6 +1269,11 @@ function QuotationsContent() {
                           <h4 className="font-bold text-slate-800 text-sm mt-0.5 truncate max-w-[200px]">
                             {client}
                           </h4>
+                          {compName && compName.toLowerCase() !== (contPerson || "").toLowerCase() && (
+                            <span className="text-[11px] text-slate-500 font-medium block truncate max-w-[200px]">
+                              Shop: <span className="text-slate-700 font-semibold">{compName}</span>
+                            </span>
+                          )}
                           <span className="text-[10px] text-slate-400 block font-medium">
                             {formatDate(item.createdAt)} •{" "}
                             {item.items?.length || 1} Items
@@ -1415,28 +1510,14 @@ function QuotationsContent() {
                       <div className="flex items-center gap-2.5">
                         <Clock className="w-5 h-5 text-[#F95721] shrink-0" />
                         <div>
-                          <strong className="block text-orange-950 font-bold">
+                          <strong className="block text-orange-950 font-bold text-sm">
                             Quotation Sent to Client
                           </strong>
-                          <span className="text-[11px] text-orange-800">
-                            Awaiting client response. You can record direct
-                            payment for products (no order) or convert custom
-                            items to an order for designers.
-                          </span>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() =>
-                            handleOpenDirectPaymentModal(selectedQuote)
-                          }
-                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                          title="Record payment directly for products (iron, hardware) without creating orders or sending to designers"
-                        >
-                          <CreditCard className="w-4 h-4" />
-                          💳 Pay Directly (Products - No Order)
-                        </button>
+                       
                         <button
                           onClick={() =>
                             handleMarkClientAccepted(selectedQuote)
@@ -1446,14 +1527,14 @@ function QuotationsContent() {
                           title="Convert items that need design/fabrication into orders and assign to designers"
                         >
                           <Layers className="w-4 h-4" />
-                          Convert Items to Order (Designers)
+                          Convert Items to Order
                         </button>
                         <button
                           onClick={() => handleMarkNotAccepted(selectedQuote)}
                           disabled={actionLoading}
                           className="px-3 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs transition-all flex items-center gap-1 cursor-pointer"
                         >
-                          <X className="w-4 h-4" />✕ Not Accepted
+                          <X className="w-4 h-4" />Not Accepted
                         </button>
                       </div>
                     </div>
@@ -1529,9 +1610,9 @@ function QuotationsContent() {
                   {/* Formal Quotation Document Body (Mirroring the Official PDF Document) */}
                   <div className="p-6 md:p-8 space-y-6 text-xs text-slate-700 bg-white">
                     {/* Header Banner matching PDF */}
-                    <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-[#F95721] to-[#FF7043] text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="rounded-md p-5 md:p-6 bg-linear-to-r from-[#F95721] to-[#FF7043] text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white p-2 shadow-xs flex items-center justify-center shrink-0 border border-white/20">
+                        <div className="w-14 h-14 rounded-lg bg-white p-2 shadow-xs flex items-center justify-center shrink-0 border border-white/20">
                           <img
                             src={tenantLogo}
                             alt="Logo"
@@ -1608,13 +1689,14 @@ function QuotationsContent() {
                           PREPARED FOR:
                         </span>
                         <strong className="text-slate-900 text-sm block font-bold">
-                          {clientDisplayName}
+                          {clientContact || clientDisplayName}
                         </strong>
-                        {(clientCompany || clientContact) && (
-                          <div className="text-slate-600 text-xs">
-                            {clientCompany
-                              ? `Company: ${clientCompany}`
-                              : `Contact: ${clientContact}`}
+                        {clientCompany && clientCompany.toLowerCase() !== (clientContact || "").toLowerCase() && (
+                          <div className="text-slate-600 text-xs font-medium">
+                            Shop / Business:{" "}
+                            <span className="text-slate-800 font-semibold">
+                              {clientCompany}
+                            </span>
                           </div>
                         )}
                         <div className="text-slate-600 text-xs">
@@ -1903,7 +1985,7 @@ function QuotationsContent() {
                             </div>
                           )}
 
-                          <div className="flex justify-between items-center text-slate-900 font-extrabold text-sm pt-2.5 border-t-2 border-slate-300 p-2 bg-sky-50/80 rounded-xl border border-sky-200">
+                          <div className="flex justify-between items-center text-slate-900 font-extrabold text-sm pt-2.5 border-t-2 border-slate-300 p-2 bg-sky-50/80 rounded-xl border">
                             <span className="text-xs uppercase tracking-wider font-black text-sky-950">
                               GRAND TOTAL:
                             </span>
@@ -2007,18 +2089,36 @@ function QuotationsContent() {
               onSubmit={handleCreateQuotation}
               className="space-y-5 text-xs"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-slate-700 font-bold block mb-1">
-                    Customer / Business Name *
+                    Business / Company Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Retailers"
+                    value={newQuote.businessName || ""}
+                    onChange={(e) =>
+                      setNewQuote({ ...newQuote, businessName: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 font-bold block mb-1">
+                    Customer / Contact Person Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Apex Retailers"
-                    value={newQuote.customerName}
+                    placeholder="e.g. Rahul Sharma"
+                    value={newQuote.contactPerson || newQuote.customerName || ""}
                     onChange={(e) =>
-                      setNewQuote({ ...newQuote, customerName: e.target.value })
+                      setNewQuote({
+                        ...newQuote,
+                        contactPerson: e.target.value,
+                        customerName: e.target.value,
+                      })
                     }
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721]"
                   />
@@ -2347,6 +2447,33 @@ function QuotationsContent() {
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-5 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div>
+                  <label className="text-slate-700 font-bold block mb-1">
+                    Business / Company Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Retailers"
+                    value={editBusinessName}
+                    onChange={(e) => setEditBusinessName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-[#F95721]"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-700 font-bold block mb-1">
+                    Customer / Contact Person Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rahul Sharma"
+                    value={editContactPerson}
+                    onChange={(e) => setEditContactPerson(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-[#F95721]"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-slate-800 font-bold">

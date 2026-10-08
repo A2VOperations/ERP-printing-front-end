@@ -305,29 +305,6 @@ export default function FollowupsPage() {
                       Follow-up Details
                     </h3>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          const cId =
-                            selectedFollowup.customerId?._id ||
-                            selectedFollowup.customerId ||
-                            selectedFollowup.leadId?._id ||
-                            selectedFollowup.leadId ||
-                            "";
-                          const phone =
-                            selectedFollowup.customerId?.phone ||
-                            selectedFollowup.leadId?.phone ||
-                            selectedFollowup.leadId?.contactPhone ||
-                            "";
-                          router.push(
-                            `/dashboard/whatsapp?customerId=${cId}&phone=${phone}&template=general_followup`,
-                          );
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-100 transition-colors cursor-pointer"
-                        title="Chat via WhatsApp"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        WhatsApp
-                      </button>
 
                       {selectedFollowup.status !== "COMPLETED" && (
                         <button

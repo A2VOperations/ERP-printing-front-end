@@ -836,19 +836,7 @@ export default function DispatchDeliveryPage() {
               </p>
             )}
 
-            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950 space-y-1">
-              <span className="font-bold block text-orange-950">
-                Automated Financial Settlement Logic:
-              </span>
-              <p className="text-[11px] text-orange-800 leading-relaxed">
-                If the associated Order balance is fully settled (0 balance
-                due), the Order will automatically advance to{" "}
-                <strong className="text-orange-950">COMPLETED</strong>. If an
-                outstanding balance remains, the Order will transition to{" "}
-                <strong className="text-orange-950">DELIVERED</strong> awaiting
-                financial closure.
-              </p>
-            </div>
+
 
             <form onSubmit={handleCompleteDelivery} className="space-y-4">
               <div>

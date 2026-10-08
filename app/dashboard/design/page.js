@@ -1620,21 +1620,21 @@ function DesignStudioContent() {
                             </span>
                           </div>
 
-                          {/* 5. Colors */}
+                          {/* 5. Print Sides */}
                           <div className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                                5. Colors
+                                5. Print Sides
                               </span>
                               <span className="text-[9px] px-1 rounded bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">
-                                PROFILE
+                                SIDES
                               </span>
                             </div>
                             <span className="font-bold text-emerald-700 text-sm block">
-                              {dynamicSpecs.colorMode}
+                              {dynamicSpecs.printSides === "DOUBLE" ? "Double Sided" : "Single Side"}
                             </span>
                             <span className="text-[10px] text-slate-500 mt-0.5 block">
-                              {dynamicSpecs.printSides} Side Print
+                              Print Orientation
                             </span>
                           </div>
 
@@ -2839,118 +2839,6 @@ function DesignStudioContent() {
                         })
                       }
                       className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-purple-600"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 3. Colors & Print Sides & Method */}
-              <div className="p-3.5 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3">
-                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">
-                  3. Color &amp; Print Configuration
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Color Mode
-                    </label>
-                    <select
-                      value={editSpecsForm.colorMode || "CMYK"}
-                      onChange={(e) =>
-                        setEditSpecsForm({
-                          ...editSpecsForm,
-                          colorMode: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-600"
-                    >
-                      <option value="CMYK">CMYK Full Color (4-Process)</option>
-                      <option value="SINGLE_BLACK">
-                        Single Color (Black / 1C)
-                      </option>
-                      <option value="2C">2 Spot Colors</option>
-                      <option value="PANTONE">Pantone Match</option>
-                      <option value="RGB">RGB (Digital Only)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Print Sides
-                    </label>
-                    <select
-                      value={editSpecsForm.printSides || "SINGLE"}
-                      onChange={(e) =>
-                        setEditSpecsForm({
-                          ...editSpecsForm,
-                          printSides: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-600"
-                    >
-                      <option value="SINGLE">Single Side (Front Only)</option>
-                      <option value="DOUBLE">
-                        Double Sided (Front &amp; Back)
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Target Resolution (DPI)
-                    </label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="number"
-                        placeholder="100"
-                        value={editSpecsForm.dpi ?? ""}
-                        onChange={(e) =>
-                          setEditSpecsForm({
-                            ...editSpecsForm,
-                            dpi: e.target.value,
-                          })
-                        }
-                        className="w-20 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-amber-700 font-bold font-mono focus:outline-none focus:border-amber-600"
-                      />
-                      <div className="flex gap-1 flex-1">
-                        {[100, 150, 300].map((preset) => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() =>
-                              setEditSpecsForm({
-                                ...editSpecsForm,
-                                dpi: preset,
-                              })
-                            }
-                            className={`flex-1 px-1.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
-                              Number(editSpecsForm.dpi) === preset
-                                ? "bg-amber-100 text-amber-800 border-amber-300"
-                                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                            }`}
-                          >
-                            {preset}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Printing Method
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Digital Offset"
-                      value={editSpecsForm.printingMethod ?? ""}
-                      onChange={(e) =>
-                        setEditSpecsForm({
-                          ...editSpecsForm,
-                          printingMethod: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold focus:outline-none focus:border-emerald-600"
                     />
                   </div>
                 </div>

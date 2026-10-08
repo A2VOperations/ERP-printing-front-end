@@ -394,7 +394,7 @@ export default function ProductionReleaseCenterPage() {
                             CLIENT APPROVED
                           </span>
                           <div className="text-[10px] text-slate-500 mt-1 font-mono">
-                            {brief.colorMode || "CMYK"} • {brief.dpi || 100} DPI
+                            {brief.dpi || 100} DPI
                           </div>
                         </div>
                       </div>

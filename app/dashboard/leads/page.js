@@ -1084,14 +1084,12 @@ export default function LeadsDashboardPage() {
         newLead.contactName?.trim() ||
         ""
       );
-      const resolvedBusinessName = bName || cName || "Lead";
-      const resolvedContactName = cName || bName || "Customer";
 
       await api.post("/leads", {
-        businessName: resolvedBusinessName,
-        companyName: resolvedBusinessName,
-        contactName: resolvedContactName,
-        customerName: resolvedContactName,
+        businessName: bName,
+        companyName: bName,
+        contactName: cName || (bName ? "Contact Person" : "Lead Contact"),
+        customerName: cName || (bName ? "Contact Person" : "Lead Contact"),
         phone: newLead.phone,
         email: newLead.email,
         alternatePhone: newLead.alternatePhone,
@@ -1109,7 +1107,7 @@ export default function LeadsDashboardPage() {
           uploadedPhotoUrl
             ? [
                 {
-                  title: `Shop Photo - ${unifiedName}`,
+                  title: `Shop Photo - ${resolvedBusinessName || resolvedContactName}`,
                   category: "PHOTO",
                   fileUrl: uploadedPhotoUrl,
                   uploadedByName: currentUser?.name || "Sales Executive",
@@ -1321,14 +1319,12 @@ export default function LeadsDashboardPage() {
 
       const bName = (quickEditForm.businessName || "").trim();
       const cName = (quickEditForm.contactName || "").trim();
-      const resolvedBusinessName = bName || cName || "Lead";
-      const resolvedContactName = cName || bName || "Customer";
 
       await api.put(`/leads/${quickEditLead._id}`, {
-        businessName: resolvedBusinessName,
-        companyName: resolvedBusinessName,
-        contactName: resolvedContactName,
-        customerName: resolvedContactName,
+        businessName: bName,
+        companyName: bName,
+        contactName: cName || (bName ? "Contact Person" : "Lead Contact"),
+        customerName: cName || (bName ? "Contact Person" : "Lead Contact"),
         phone: quickEditForm.phone.trim(),
         expectedValue: Number(quickEditForm.expectedValue) || 0,
         requirement: quickEditForm.requirement.trim(),
@@ -1343,10 +1339,10 @@ export default function LeadsDashboardPage() {
           l._id === quickEditLead._id
             ? {
                 ...l,
-                customerName: unifiedName,
-                contactName: unifiedName,
-                companyName: unifiedName,
-                businessName: unifiedName,
+                customerName: resolvedContactName,
+                contactName: resolvedContactName,
+                companyName: resolvedBusinessName,
+                businessName: resolvedBusinessName,
                 phone: quickEditForm.phone,
                 expectedValue: Number(quickEditForm.expectedValue) || 0,
                 requirement: quickEditForm.requirement,
@@ -2609,8 +2605,6 @@ export default function LeadsDashboardPage() {
                                             (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null) ||
                                             (lead.contactName && lead.contactName !== "Direct Lead" && lead.contactName !== "—" ? lead.contactName : null) ||
                                             (lead.customerName && lead.customerName !== "Direct Lead" && lead.customerName !== "—" ? lead.customerName : null) ||
-                                            lead.businessName ||
-                                            lead.contactName ||
                                             "Lead"}
                                         </Link>
                                         <span
@@ -2625,15 +2619,11 @@ export default function LeadsDashboardPage() {
                                       <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 flex-wrap">
                                         <span>
                                           {(() => {
-                                            const mainTitle =
-                                              (lead.businessName && lead.businessName !== "Direct Lead" && lead.businessName !== "—" ? lead.businessName : null) ||
-                                              (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null) ||
-                                              lead.customerName ||
-                                              lead.contactName ||
-                                              "Lead";
-                                            if (lead.customerName && lead.customerName !== mainTitle) return lead.customerName;
-                                            if (lead.contactName && lead.contactName !== mainTitle) return lead.contactName;
-                                            if (lead.businessName && lead.businessName !== mainTitle && lead.businessName !== "Direct Lead") return lead.businessName;
+                                            const b = (lead.businessName && lead.businessName !== "Direct Lead" && lead.businessName !== "—" ? lead.businessName : null) || (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null);
+                                            const c = (lead.contactName && lead.contactName !== "Direct Lead" && lead.contactName !== "—" ? lead.contactName : null) || (lead.customerName && lead.customerName !== "Direct Lead" && lead.customerName !== "—" ? lead.customerName : null);
+                                            if (b && c && b.toLowerCase() !== c.toLowerCase()) {
+                                              return `👤 Contact: ${c}`;
+                                            }
                                             return lead.businessCategory || lead.requirement || (lead.source ? `${lead.source} Lead` : "Lead");
                                           })()}
                                         </span>
@@ -3367,7 +3357,7 @@ export default function LeadsDashboardPage() {
                 </div>
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Client Name
+                    Contact Person Name
                   </label>
                   <input
                     type="text"

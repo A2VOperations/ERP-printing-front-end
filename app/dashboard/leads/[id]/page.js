@@ -497,16 +497,19 @@ export default function LeadDetailPage() {
           lostReason: l.lostReason || "",
           notes: "",
         });
-        const unifiedName = (
+        const bName = (
           (l.businessName && l.businessName.trim() !== "Direct Lead" && l.businessName.trim() !== "—" ? l.businessName.trim() : null) ||
           (l.companyName && l.companyName.trim() !== "Direct Lead" && l.companyName.trim() !== "—" ? l.companyName.trim() : null) ||
+          ""
+        );
+        const cName = (
           (l.contactName && l.contactName.trim() !== "Direct Lead" && l.contactName.trim() !== "—" ? l.contactName.trim() : null) ||
           (l.customerName && l.customerName.trim() !== "Direct Lead" && l.customerName.trim() !== "—" ? l.customerName.trim() : null) ||
           ""
         );
         setEditForm({
-          contactName: unifiedName,
-          businessName: unifiedName,
+          contactName: cName,
+          businessName: bName,
           phone: l.phone || "",
           email: l.email || "",
           alternatePhone: l.alternatePhone || "",
@@ -1309,16 +1312,13 @@ export default function LeadDetailPage() {
   const handleUpdateLead = async (e) => {
     e.preventDefault();
     try {
-      const unifiedName = (
-        editForm.businessName?.trim() ||
-        editForm.contactName?.trim() ||
-        "Lead"
-      );
+      const bName = editForm.businessName?.trim() || "";
+      const cName = editForm.contactName?.trim() || "";
       await api.patch(`/leads/${leadId}`, {
-        contactName: unifiedName,
-        customerName: unifiedName,
-        businessName: unifiedName,
-        companyName: unifiedName,
+        contactName: cName,
+        customerName: cName,
+        businessName: bName,
+        companyName: bName,
         phone: editForm.phone,
         email: editForm.email,
         alternatePhone: editForm.alternatePhone,
@@ -1570,7 +1570,7 @@ export default function LeadDetailPage() {
               </button>
 
               <Link
-                href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
+                href={`/dashboard/quotations?leadId=${leadId}&businessName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&contactPerson=${encodeURIComponent(lead?.contactName || lead?.customerName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-600/25 transition-all"
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -1749,7 +1749,7 @@ export default function LeadDetailPage() {
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-black text-slate-900 text-sm">
-                          {lead.businessName || lead.companyName || lead.contactName || lead.customerName || "Lead Inquiry"}
+                          {lead.businessName || lead.companyName || "—"}
                         </span>
                         {lead.acceptanceStatus === "PENDING" && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
@@ -1827,7 +1827,7 @@ export default function LeadDetailPage() {
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
                       <span className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
                         <User className="w-5 h-5 text-slate-400" />
-                        {lead.contactName || lead.customerName || lead.businessName || lead.companyName || "Primary Contact"}
+                        {lead.contactName || lead.customerName || "—"}
                       </span>
                     </td>
 
@@ -2243,7 +2243,7 @@ export default function LeadDetailPage() {
                     </button>
 
                     <Link
-                      href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
+                      href={`/dashboard/quotations?leadId=${leadId}&businessName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&contactPerson=${encodeURIComponent(lead?.contactName || lead?.customerName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                       className="p-3 rounded-md bg-cyan-50/80 hover:bg-cyan-100 text-cyan-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
                     >
                       <FileText className="w-5 h-5" />
@@ -2424,7 +2424,7 @@ export default function LeadDetailPage() {
                                 } catch (err) {
                                   alert(
                                     err.message ||
-                                      "Failed to download Invoice PDF",
+                                      "Failed to download Invoice",
                                   );
                                 }
                               }}
@@ -3044,14 +3044,14 @@ export default function LeadDetailPage() {
                                 } catch (err) {
                                   alert(
                                     err.message ||
-                                      "Failed to download invoice PDF",
+                                      "Failed to download invoice",
                                   );
                                 }
                               }}
                               className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all flex items-center gap-1"
                             >
                               <Download className="w-3.5 h-3.5 text-slate-500" />
-                              Tax Invoice PDF
+                              Tax Invoice
                             </button>
                           </div>
                         </div>
@@ -4893,9 +4893,6 @@ export default function LeadDetailPage() {
                     <Layers className="w-4 h-4 text-[#F95721]" />
                     Product Technical Specifications (Designer Handoff)
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold font-mono">
-                    STEP 12 READY
-                  </span>
                 </div>
 
                 {/* 1. Size / Dimensions & Quantity */}
@@ -5028,22 +5025,8 @@ export default function LeadDetailPage() {
                   </div>
                 </div>
 
-                {/* 3. Colors & Print Sides */}
+                {/* 3. Print Sides */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  {/* <div>
-                    <label className="text-slate-700 font-semibold block mb-1">Colors / Color Mode</label>
-                    <select
-                      value={orderForm.colors || 'CMYK'}
-                      onChange={(e) => setOrderForm({ ...orderForm, colors: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    >
-                      <option value="CMYK">CMYK (Full Color 4-Process)</option>
-                      <option value="SINGLE_BLACK">Single Color (Black / 1C)</option>
-                      <option value="2C">2 Spot Colors</option>
-                      <option value="PANTONE">Pantone Match</option>
-                      <option value="RGB">RGB (Digital Only)</option>
-                    </select>
-                  </div> */}
 
                   <div>
                     <label className="text-slate-700 font-semibold block mb-1">
@@ -5205,7 +5188,7 @@ export default function LeadDetailPage() {
                         htmlFor="orderDirectFileInput"
                         className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer border border-indigo-200 flex items-center gap-1 transition-all"
                       >
-                        <Plus className="w-3 h-3" /> + Upload Document
+                        <Plus className="w-3 h-3" />Upload Document
                       </label>
                     </div>
                     <input
@@ -5621,9 +5604,6 @@ export default function LeadDetailPage() {
                     <Layers className="w-4 h-4 text-[#F95721]" />
                     Product Technical Specifications (Designer Handoff)
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold font-mono">
-                    STEP 12 READY
-                  </span>
                 </div>
 
                 {/* 1. Size / Dimensions & Quantity */}
@@ -5950,7 +5930,7 @@ export default function LeadDetailPage() {
                     htmlFor="handoffDirectFileInput"
                     className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer border border-indigo-200 flex items-center gap-1 transition-all"
                   >
-                    <Plus className="w-3 h-3" /> + Upload New File
+                    <Plus className="w-3 h-3" />Upload New File
                   </label>
                   <input
                     type="file"
@@ -6680,13 +6660,12 @@ export default function LeadDetailPage() {
                   <input
                     type="text"
                     required
-                    value={editForm.contactName || editForm.businessName}
+                    value={editForm.contactName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setEditForm({
                         ...editForm,
                         contactName: val,
-                        businessName: val,
                       });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
@@ -6698,13 +6677,12 @@ export default function LeadDetailPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.businessName || editForm.contactName}
+                    value={editForm.businessName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setEditForm({
                         ...editForm,
                         businessName: val,
-                        contactName: val,
                       });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
