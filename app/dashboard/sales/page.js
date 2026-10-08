@@ -138,8 +138,10 @@ export default function SalesDashboardPage() {
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [newLeadForm, setNewLeadForm] = useState({
-    customerName: "",
+    businessName: "",
     companyName: "",
+    customerName: "",
+    contactName: "",
     phone: "",
     email: "",
     alternatePhone: "",
@@ -593,17 +595,24 @@ export default function SalesDashboardPage() {
         }
       }
 
-      const unifiedName = (
+      const bName = (
+        newLeadForm.businessName?.trim() ||
         newLeadForm.companyName?.trim() ||
-        newLeadForm.customerName?.trim() ||
-        "Customer"
+        ""
       );
+      const cName = (
+        newLeadForm.customerName?.trim() ||
+        newLeadForm.contactName?.trim() ||
+        ""
+      );
+      const resolvedBusinessName = bName || cName || "Lead";
+      const resolvedContactName = cName || bName || "Customer";
 
       await api.post("/leads", {
-        contactName: unifiedName,
-        customerName: unifiedName,
-        businessName: unifiedName,
-        companyName: unifiedName,
+        businessName: resolvedBusinessName,
+        companyName: resolvedBusinessName,
+        contactName: resolvedContactName,
+        customerName: resolvedContactName,
         phone: newLeadForm.phone.trim().replace(/\D/g, ""),
         email: newLeadForm.email?.trim() || undefined,
         alternatePhone: newLeadForm.alternatePhone?.trim() || undefined,
@@ -635,8 +644,10 @@ export default function SalesDashboardPage() {
       setShowAddLeadModal(false);
       handleRemovePhoto();
       setNewLeadForm({
-        customerName: "",
+        businessName: "",
         companyName: "",
+        customerName: "",
+        contactName: "",
         phone: "",
         email: "",
         alternatePhone: "",
@@ -2091,18 +2102,18 @@ export default function SalesDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Business Name / Client Name *
+                    Business Name *
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Sharma Constructions"
-                    value={newLeadForm.customerName || newLeadForm.companyName}
+                    value={newLeadForm.businessName || newLeadForm.companyName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLeadForm({
                         ...newLeadForm,
-                        customerName: val,
+                        businessName: val,
                         companyName: val,
                       });
                     }}
@@ -2111,18 +2122,18 @@ export default function SalesDashboardPage() {
                 </div>
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Company / Brand Name
+                    Client Name
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Sharma Constructions"
-                    value={newLeadForm.companyName || newLeadForm.customerName}
+                    placeholder="e.g. Ramesh Sharma"
+                    value={newLeadForm.customerName || newLeadForm.contactName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLeadForm({
                         ...newLeadForm,
-                        companyName: val,
                         customerName: val,
+                        contactName: val,
                       });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"

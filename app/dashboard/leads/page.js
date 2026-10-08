@@ -327,8 +327,10 @@ export default function LeadsDashboardPage() {
 
   // Form State
   const [newLead, setNewLead] = useState({
-    customerName: "",
+    businessName: "",
     companyName: "",
+    customerName: "",
+    contactName: "",
     phone: "",
     email: "",
     alternatePhone: "",
@@ -1072,17 +1074,24 @@ export default function LeadsDashboardPage() {
         }
       }
 
-      const unifiedName = (
+      const bName = (
+        newLead.businessName?.trim() ||
         newLead.companyName?.trim() ||
-        newLead.customerName?.trim() ||
-        "Lead"
+        ""
       );
+      const cName = (
+        newLead.customerName?.trim() ||
+        newLead.contactName?.trim() ||
+        ""
+      );
+      const resolvedBusinessName = bName || cName || "Lead";
+      const resolvedContactName = cName || bName || "Customer";
 
       await api.post("/leads", {
-        contactName: unifiedName,
-        businessName: unifiedName,
-        companyName: unifiedName,
-        customerName: unifiedName,
+        businessName: resolvedBusinessName,
+        companyName: resolvedBusinessName,
+        contactName: resolvedContactName,
+        customerName: resolvedContactName,
         phone: newLead.phone,
         email: newLead.email,
         alternatePhone: newLead.alternatePhone,
@@ -1113,8 +1122,10 @@ export default function LeadsDashboardPage() {
       setShowAddModal(false);
       handleRemovePhoto();
       setNewLead({
-        customerName: "",
+        businessName: "",
         companyName: "",
+        customerName: "",
+        contactName: "",
         phone: "",
         email: "",
         alternatePhone: "",
@@ -1308,17 +1319,16 @@ export default function LeadsDashboardPage() {
         : "Burari";
       const zoneVal = parts[1] || parts[0] || "Baba colony";
 
-      const unifiedName = (
-        quickEditForm.businessName?.trim() ||
-        quickEditForm.contactName?.trim() ||
-        "Lead"
-      );
+      const bName = (quickEditForm.businessName || "").trim();
+      const cName = (quickEditForm.contactName || "").trim();
+      const resolvedBusinessName = bName || cName || "Lead";
+      const resolvedContactName = cName || bName || "Customer";
 
       await api.put(`/leads/${quickEditLead._id}`, {
-        contactName: unifiedName,
-        customerName: unifiedName,
-        businessName: unifiedName,
-        companyName: unifiedName,
+        businessName: resolvedBusinessName,
+        companyName: resolvedBusinessName,
+        contactName: resolvedContactName,
+        customerName: resolvedContactName,
         phone: quickEditForm.phone.trim(),
         expectedValue: Number(quickEditForm.expectedValue) || 0,
         requirement: quickEditForm.requirement.trim(),
@@ -3337,18 +3347,18 @@ export default function LeadsDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Business Name / Client Name *
+                    Business Name *
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Sharma Constructions"
-                    value={newLead.customerName || newLead.companyName}
+                    value={newLead.businessName || newLead.companyName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLead({
                         ...newLead,
-                        customerName: val,
+                        businessName: val,
                         companyName: val,
                       });
                     }}
@@ -3357,18 +3367,18 @@ export default function LeadsDashboardPage() {
                 </div>
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Company / Brand Name
+                    Client Name
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Sharma Constructions"
-                    value={newLead.companyName || newLead.customerName}
+                    placeholder="e.g. Ramesh Sharma"
+                    value={newLead.customerName || newLead.contactName || ""}
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLead({
                         ...newLead,
-                        companyName: val,
                         customerName: val,
+                        contactName: val,
                       });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"

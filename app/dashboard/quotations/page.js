@@ -941,6 +941,10 @@ function QuotationsContent() {
   const tenantPhone = currentTenant?.phone || "+91 98765 43210";
   const tenantEmail = currentTenant?.email || "contact@a2vprinting.com";
   const tenantGstin = currentTenant?.gstin || "27AAAAA0000A1Z5";
+  const tenantLogo =
+    currentTenant?.logoUrl ||
+    currentTenant?.branding?.logoUrl ||
+    "/logo/A2V  Groups Logo.png";
 
   const snap = selectedQuote?.customerSnapshot || {};
   const clientDisplayName =
@@ -1526,27 +1530,36 @@ function QuotationsContent() {
                   <div className="p-6 md:p-8 space-y-6 text-xs text-slate-700 bg-white">
                     {/* Header Banner matching PDF */}
                     <div className="rounded-md p-5 md:p-6 bg-gradient-to-r from-[#F95721] to-[#FF7043] text-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div>
-                        <h2 className="text-xl md:text-2xl font-black tracking-tight">
-                          {tenantName}
-                        </h2>
-                        <p className="text-sky-100 text-xs mt-1 font-medium">
-                          {tenantTagline}
-                        </p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-white p-2 shadow-xs flex items-center justify-center shrink-0 border border-white/20">
+                          <img
+                            src={tenantLogo}
+                            alt="Logo"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div>
+                          <h2 className="text-xl md:text-2xl font-black tracking-tight">
+                            {tenantName}
+                          </h2>
+                          <p className="text-orange-100 text-xs mt-0.5 font-medium">
+                            {tenantTagline}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="text-left md:text-right bg-white/10 backdrop-blur-xs border border-white/20 px-4 py-2.5 rounded-xl space-y-0.5">
-                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-sky-200 block">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-orange-200 block">
                           COMMERCIAL QUOTATION
                         </span>
                         <div className="font-mono font-bold text-white text-xs">
                           No: {selectedQuote.quotationNumber || "QT-DRAFT"} (v
                           {selectedQuote.version || 1})
                         </div>
-                        <div className="text-[11px] text-sky-100">
+                        <div className="text-[11px] text-orange-100">
                           Date Issued: {quoteCreatedAt}
                         </div>
-                        <div className="text-[11px] text-sky-200 font-semibold">
+                        <div className="text-[11px] text-orange-200 font-semibold">
                           Valid Until: {quoteValidUntil}
                         </div>
                       </div>
@@ -1559,9 +1572,16 @@ function QuotationsContent() {
                         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-1">
                           ISSUED BY:
                         </span>
-                        <strong className="text-slate-900 text-sm block font-bold">
-                          {tenantName}
-                        </strong>
+                        <div className="flex items-center gap-2 mb-1">
+                          <img
+                            src={tenantLogo}
+                            alt="Logo"
+                            className="w-5 h-5 object-contain shrink-0"
+                          />
+                          <strong className="text-slate-900 text-sm block font-bold">
+                            {tenantName}
+                          </strong>
+                        </div>
                         <div className="text-slate-600 text-xs">
                           Phone:{" "}
                           <span className="font-medium text-slate-800">
@@ -1713,35 +1733,6 @@ function QuotationsContent() {
                                       {item.description}
                                     </span>
                                   )}
-                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                    {specs.length > 0 && (
-                                      <span className="text-[10px] text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md inline-block font-medium border border-orange-100">
-                                        {specs.join(" • ")}
-                                      </span>
-                                    )}
-                                    {item.directPaymentStatus === "PAID" && (
-                                      <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold border border-emerald-300">
-                                        ✓ Paid Directly (Product - ₹
-                                        {(
-                                          (item.directPaymentPaidPaise ||
-                                            item.itemTotalPaise ||
-                                            0) / 100
-                                        ).toLocaleString("en-IN")}
-                                        )
-                                      </span>
-                                    )}
-                                    {item.directPaymentStatus ===
-                                      "PARTIALLY_PAID" && (
-                                      <span className="text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md inline-flex items-center gap-1 font-bold border border-amber-300">
-                                        Partially Paid Directly (₹
-                                        {(
-                                          (item.directPaymentPaidPaise || 0) /
-                                          100
-                                        ).toLocaleString("en-IN")}
-                                        )
-                                      </span>
-                                    )}
-                                  </div>
                                 </td>
                                 <td className="py-3 px-3 text-right font-semibold text-slate-800 font-mono">
                                   {qty}
