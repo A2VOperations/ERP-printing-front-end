@@ -99,7 +99,7 @@ function QuotationsContent() {
         if (res?.data) {
           const s = res.data;
           setCurrentTenant({
-            name: s.companyName || "A2V PRINTING SOLUTIONS",
+            name: s.companyName || "A2V Prints",
             phone: s.phone || "+91 98765 43210",
             email: s.email || "contact@a2vprinting.com",
             gstin: s.gstin || "27AAAAA0000A1Z5",
@@ -131,17 +131,17 @@ function QuotationsContent() {
     phone: "",
     items: [
       {
-        title: "Flex Banner 440 GSM",
-        description: "Outdoor Frontlit 10x4 ft",
+        title: "",
+        description: "",
         quantity: 1,
-        rate: 1500,
+        rate: 0,
         discountPercent: 0,
         taxRatePercent: 18,
       },
     ],
     discountPercent: 0,
     validityDays: 15,
-    notes: "Standard turn-around 24-48 hours upon artwork approval.",
+    notes: "Standard turn-around 24-48 hours.",
     termsAndConditions:
       "50% advance along with confirmed purchase order. Balance upon pre-dispatch delivery intimation.",
   });
@@ -351,10 +351,10 @@ function QuotationsContent() {
         phone: "",
         items: [
           {
-            title: "Flex Banner 440 GSM",
-            description: "Outdoor Frontlit 10x4 ft",
+            title: "",
+            description: "",
             quantity: 1,
-            rate: 1500,
+            rate: 0,
             discountPercent: 0,
           },
         ],
@@ -934,10 +934,10 @@ function QuotationsContent() {
     100;
 
   // Selected Quote Resolved Values
-  const tenantName = currentTenant?.name || "A2V PRINTING SOLUTIONS";
+  const tenantName = currentTenant?.name || "A2V Prints";
   const tenantTagline =
     currentTenant?.branding?.tagline ||
-    "Commercial Printing & Packaging Solutions";
+    "Print your identity and build your brand. ";
   const tenantPhone = currentTenant?.phone || "+91 98765 43210";
   const tenantEmail = currentTenant?.email || "contact@a2vprinting.com";
   const tenantGstin = currentTenant?.gstin || "27AAAAA0000A1Z5";
@@ -1279,29 +1279,6 @@ function QuotationsContent() {
                       )}
 
                       <button
-                        onClick={() => {
-                          const cId =
-                            selectedQuote.customerId ||
-                            selectedQuote.customerSnapshot?._id ||
-                            selectedQuote.leadId ||
-                            "";
-                          const phone =
-                            selectedQuote.customerSnapshot?.phone ||
-                            selectedQuote.customerPhone ||
-                            "";
-                          const quoteNo = selectedQuote.quotationNumber || "";
-                          router.push(
-                            `/dashboard/whatsapp?customerId=${cId}&phone=${phone}&quoteNo=${quoteNo}&template=quotation_followup`,
-                          );
-                        }}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                        title="Follow up / Share via WhatsApp"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        WhatsApp
-                      </button>
-
-                      <button
                         onClick={async () => {
                           try {
                             await api.downloadPdf(
@@ -1635,12 +1612,7 @@ function QuotationsContent() {
                             </span>
                           )}
                         </div>
-                        <div className="text-slate-600 text-xs">
-                          GSTIN:{" "}
-                          <span className="font-mono font-semibold text-slate-800">
-                            {clientGstin}
-                          </span>
-                        </div>
+
                         {salesRepName && (
                           <div className="text-[11px] text-slate-500 pt-0.5 border-t border-slate-200 mt-1">
                             Sales Rep:{" "}
@@ -1670,7 +1642,6 @@ function QuotationsContent() {
                             </th>
                             <th className="py-3 px-3 text-right">TAX (₹)</th>
                             <th className="py-3 px-4 text-right">TOTAL (₹)</th>
-                            <th className="py-3 px-3 text-center">ACTION</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1825,28 +1796,6 @@ function QuotationsContent() {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2,
                                   })}
-                                </td>
-                                <td className="py-3 px-3 text-center whitespace-nowrap">
-                                  {item.directPaymentStatus === "PAID" ? (
-                                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                      ✓ Paid
-                                    </span>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleOpenDirectPaymentModal(
-                                          selectedQuote,
-                                          idx,
-                                        )
-                                      }
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-2xs transition-all cursor-pointer"
-                                      title="Pay directly for this specific item without creating an order or assigning to a designer"
-                                    >
-                                      <CreditCard className="w-3 h-3" />
-                                      Pay Direct
-                                    </button>
-                                  )}
                                 </td>
                               </tr>
                             );
@@ -2111,7 +2060,8 @@ function QuotationsContent() {
                     onClick={handleAddCreateItem}
                     className="text-[#F95721] hover:text-[#e84915] font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" />+ Add Item
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Item
                   </button>
                 </div>
 
@@ -2128,7 +2078,7 @@ function QuotationsContent() {
                         <input
                           type="text"
                           required
-                          placeholder="e.g. Flex Banner 440 GSM"
+                          placeholder="e.g. Flex"
                           value={item.title ?? ""}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
@@ -2145,7 +2095,7 @@ function QuotationsContent() {
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 10x4 ft Frontlit"
+                          placeholder="e.g. 10x4 "
                           value={item.description ?? ""}
                           onChange={(e) => {
                             const copy = [...newQuote.items];
@@ -2416,7 +2366,8 @@ function QuotationsContent() {
                     onClick={handleAddEditItem}
                     className="text-[#F95721] hover:text-[#e84915] font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" />+ Add Item
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Item
                   </button>
                 </div>
 

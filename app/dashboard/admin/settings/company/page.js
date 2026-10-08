@@ -24,7 +24,7 @@ export default function CompanySettingsPage() {
   const [isAuthorized, setIsAuthorized] = useState(true);
 
   const [settings, setSettings] = useState({
-    companyName: "A2V Printing Solutions",
+    companyName: "A2V Prints",
     legalEntityName: "",
     gstin: "",
     pan: "",
@@ -124,7 +124,7 @@ export default function CompanySettingsPage() {
         };
         if (cleanEmail) tenantPayload.email = cleanEmail;
         if (payload.phone) tenantPayload.phone = payload.phone;
-        await api.patch("/tenants/current", tenantPayload);
+        await api.patch("/tenants/current", tenantPayload, { silent: true });
       } catch (tErr) {
         console.warn("Tenant sync notice:", tErr.message);
       }

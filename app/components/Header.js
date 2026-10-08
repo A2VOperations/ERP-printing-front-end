@@ -1,16 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Building2, Bell, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Building2, Bell, Sparkles } from "lucide-react";
 
 export default function Header({ title, subtitle, actionButton }) {
-  const [tenantName, setTenantName] = useState('A2V Printing Solutions');
+  const [tenantName, setTenantName] = useState("A2V Prints");
 
   useEffect(() => {
-    const storedTenant = localStorage.getItem('tenantName');
+    const storedTenant = localStorage.getItem("tenantName");
     if (storedTenant) setTenantName(storedTenant);
   }, []);
-
 
   return (
     <header className="h-16 bg-slate-950/60 backdrop-blur-md border-b border-slate-800/80 px-8 flex items-center justify-between sticky top-0 z-30">

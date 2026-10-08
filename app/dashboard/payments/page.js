@@ -73,7 +73,7 @@ export default function PaymentsPage() {
         if (res?.data) {
           const s = res.data;
           setCurrentTenant({
-            name: s.companyName || "A2V PRINTING SOLUTIONS",
+            name: s.companyName || "A2V Prints",
             phone: s.phone || "+91 98765 43210",
             email: s.email || "contact@a2vprinting.com",
             gstin: s.gstin || "27AAAAA0000A1Z5",
@@ -191,10 +191,10 @@ export default function PaymentsPage() {
     );
 
   // Resolved Receipt Values for Preview Modal
-  const tenantName = currentTenant?.name || "A2V PRINTING SOLUTIONS";
+  const tenantName = currentTenant?.name || "A2V Prints";
   const tenantTagline =
     currentTenant?.branding?.tagline ||
-    "Commercial Printing & Packaging Solutions";
+    "Print your identity and build your brand. ";
   const tenantPhone = currentTenant?.phone || "+91 98765 43210";
   const tenantEmail = currentTenant?.email || "contact@a2vprinting.com";
   const tenantGstin = currentTenant?.gstin || "27AAAAA0000A1Z5";
@@ -765,12 +765,6 @@ export default function PaymentsPage() {
                         </span>
                       </span>
                     )}
-                  </div>
-                  <div className="text-slate-600 text-xs">
-                    GSTIN:{" "}
-                    <span className="font-mono font-semibold text-slate-800">
-                      {rClientGstin}
-                    </span>
                   </div>
                 </div>
               </div>

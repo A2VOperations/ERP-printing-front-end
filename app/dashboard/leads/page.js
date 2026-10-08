@@ -48,6 +48,8 @@ import {
   ShoppingBag,
   CreditCard,
   Layers,
+  Camera,
+  Trash2,
 } from "lucide-react";
 
 const TABS = [
@@ -145,7 +147,10 @@ const STATUS_OPTIONS = [
  * - Deal lost / order lost: red
  */
 export function getLeadStatusStyle(rawStatus) {
-  const s = String(rawStatus || "NEW").trim().toUpperCase().replace(/[\s-]+/g, "_");
+  const s = String(rawStatus || "NEW")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
 
   // 1. New leads: Blue
   if (s === "NEW" || s === "NEW_LEAD" || s === "PENDING") {
@@ -187,7 +192,12 @@ export function getLeadStatusStyle(rawStatus) {
   }
 
   // 4. Proposal sent: Purple
-  if (s === "QUOTATION_SENT" || s === "PROPOSAL_SENT" || s === "QUOTATION" || s === "PROPOSAL") {
+  if (
+    s === "QUOTATION_SENT" ||
+    s === "PROPOSAL_SENT" ||
+    s === "QUOTATION" ||
+    s === "PROPOSAL"
+  ) {
     return {
       rowBg: "bg-purple-100/90 hover:bg-purple-200/80",
       expandedBg: "bg-purple-200/60",
@@ -226,7 +236,13 @@ export function getLeadStatusStyle(rawStatus) {
   }
 
   // 7. Deal lost / order lost: Red
-  if (s === "LOST" || s === "DEAL_LOST" || s === "ORDER_LOST" || s === "CANCELLED" || s === "DROPPED") {
+  if (
+    s === "LOST" ||
+    s === "DEAL_LOST" ||
+    s === "ORDER_LOST" ||
+    s === "CANCELLED" ||
+    s === "DROPPED"
+  ) {
     return {
       rowBg: "bg-rose-100/90 hover:bg-rose-200/85",
       expandedBg: "bg-rose-200/60",
@@ -325,6 +341,29 @@ export default function LeadsDashboardPage() {
     nextFollowUp: "",
     notes: "",
   });
+  const [leadPhotoFile, setLeadPhotoFile] = useState(null);
+  const [leadPhotoPreview, setLeadPhotoPreview] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (PNG, JPG, WEBP, etc.)");
+      return;
+    }
+    setLeadPhotoFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setLeadPhotoPreview(objectUrl);
+  };
+
+  const handleRemovePhoto = () => {
+    if (leadPhotoPreview) {
+      URL.revokeObjectURL(leadPhotoPreview);
+    }
+    setLeadPhotoFile(null);
+    setLeadPhotoPreview(null);
+  };
 
   const [followupForm, setFollowupForm] = useState({
     scheduledAt: "",
@@ -790,7 +829,11 @@ export default function LeadsDashboardPage() {
   // Requirement pill styling
   const renderRequirementBadge = (reqStr) => {
     if (!reqStr)
-      return <span className="text-slate-500 font-medium whitespace-nowrap">Standard Print</span>;
+      return (
+        <span className="text-slate-500 font-medium whitespace-nowrap">
+          Standard Print
+        </span>
+      );
     const lower = reqStr.toLowerCase();
 
     if (lower.includes("flex") || lower.includes("menu")) {
@@ -807,7 +850,11 @@ export default function LeadsDashboardPage() {
         </span>
       );
     }
-    return <span className="text-slate-700 font-medium whitespace-nowrap">{reqStr}</span>;
+    return (
+      <span className="text-slate-700 font-medium whitespace-nowrap">
+        {reqStr}
+      </span>
+    );
   };
 
   // Filtered & Sorted Leads
@@ -834,8 +881,16 @@ export default function LeadsDashboardPage() {
         const shortId = leadId ? `ld-${leadId.slice(-6)}` : "";
         const hashId = leadId ? `#${leadId.slice(-6)}` : "";
         const idSuffix = leadId ? leadId.slice(-6) : "";
-        const contactName = (l.contactName || l.customerName || "").toLowerCase();
-        const businessName = (l.businessName || l.companyName || "").toLowerCase();
+        const contactName = (
+          l.contactName ||
+          l.customerName ||
+          ""
+        ).toLowerCase();
+        const businessName = (
+          l.businessName ||
+          l.companyName ||
+          ""
+        ).toLowerCase();
         const phone = (l.phone || "").toLowerCase();
         const requirement = (l.requirement || "").toLowerCase();
         const email = (l.email || "").toLowerCase();
@@ -881,9 +936,12 @@ export default function LeadsDashboardPage() {
           if (leadDateStr !== todayStr) return false;
         } else if (datePreset === "YESTERDAY") {
           const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-          if (leadDateStr !== yesterday.toLocaleDateString("en-CA")) return false;
+          if (leadDateStr !== yesterday.toLocaleDateString("en-CA"))
+            return false;
         } else if (datePreset === "THIS_WEEK") {
-          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const sevenDaysAgo = new Date(
+            now.getTime() - 7 * 24 * 60 * 60 * 1000,
+          );
           if (leadDate < sevenDaysAgo) return false;
         } else if (datePreset === "THIS_MONTH") {
           if (
@@ -992,9 +1050,39 @@ export default function LeadsDashboardPage() {
         : "Burari";
       const zoneVal = parts[1] || parts[0] || "Baba colony";
 
+      // Upload shop photo if selected
+      let uploadedPhotoUrl = "";
+      if (leadPhotoFile) {
+        setIsUploadingPhoto(true);
+        try {
+          const uploadRes = await api.upload(
+            "/leads/upload-photo",
+            leadPhotoFile,
+            "photo",
+          );
+          if (uploadRes?.data?.url) {
+            uploadedPhotoUrl = uploadRes.data.url;
+          } else if (uploadRes?.url) {
+            uploadedPhotoUrl = uploadRes.url;
+          }
+        } catch (uErr) {
+          console.warn("Shop photo upload notice:", uErr);
+        } finally {
+          setIsUploadingPhoto(false);
+        }
+      }
+
+      const unifiedName = (
+        newLead.companyName?.trim() ||
+        newLead.customerName?.trim() ||
+        "Lead"
+      );
+
       await api.post("/leads", {
-        contactName: newLead.customerName,
-        businessName: newLead.companyName,
+        contactName: unifiedName,
+        businessName: unifiedName,
+        companyName: unifiedName,
+        customerName: unifiedName,
         phone: newLead.phone,
         email: newLead.email,
         alternatePhone: newLead.alternatePhone,
@@ -1007,9 +1095,23 @@ export default function LeadsDashboardPage() {
         notes: newLead.notes,
         area: areaVal,
         zone: zoneVal,
+        shopImageUrl: uploadedPhotoUrl || undefined,
+        documents:
+          uploadedPhotoUrl
+            ? [
+                {
+                  title: `Shop Photo - ${unifiedName}`,
+                  category: "PHOTO",
+                  fileUrl: uploadedPhotoUrl,
+                  uploadedByName: currentUser?.name || "Sales Executive",
+                  uploadedAt: new Date(),
+                },
+              ]
+            : [],
       });
 
       setShowAddModal(false);
+      handleRemovePhoto();
       setNewLead({
         customerName: "",
         companyName: "",
@@ -1030,6 +1132,7 @@ export default function LeadsDashboardPage() {
       alert(err.message || "Failed to create lead");
     } finally {
       setCreatingLead(false);
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -1205,9 +1308,17 @@ export default function LeadsDashboardPage() {
         : "Burari";
       const zoneVal = parts[1] || parts[0] || "Baba colony";
 
+      const unifiedName = (
+        quickEditForm.businessName?.trim() ||
+        quickEditForm.contactName?.trim() ||
+        "Lead"
+      );
+
       await api.put(`/leads/${quickEditLead._id}`, {
-        contactName: quickEditForm.contactName.trim(),
-        businessName: quickEditForm.businessName.trim(),
+        contactName: unifiedName,
+        customerName: unifiedName,
+        businessName: unifiedName,
+        companyName: unifiedName,
         phone: quickEditForm.phone.trim(),
         expectedValue: Number(quickEditForm.expectedValue) || 0,
         requirement: quickEditForm.requirement.trim(),
@@ -1222,10 +1333,10 @@ export default function LeadsDashboardPage() {
           l._id === quickEditLead._id
             ? {
                 ...l,
-                customerName: quickEditForm.contactName,
-                contactName: quickEditForm.contactName,
-                companyName: quickEditForm.businessName,
-                businessName: quickEditForm.businessName,
+                customerName: unifiedName,
+                contactName: unifiedName,
+                companyName: unifiedName,
+                businessName: unifiedName,
                 phone: quickEditForm.phone,
                 expectedValue: Number(quickEditForm.expectedValue) || 0,
                 requirement: quickEditForm.requirement,
@@ -1514,7 +1625,9 @@ export default function LeadsDashboardPage() {
               </div>
               <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">
                 <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                <span className="truncate">{overviewMetrics.new} new this month</span>
+                <span className="truncate">
+                  {overviewMetrics.new} new this month
+                </span>
               </div>
             </div>
 
@@ -1778,7 +1891,8 @@ export default function LeadsDashboardPage() {
                     ].map((p) => {
                       const isSelected =
                         !dateFilter &&
-                        (datePreset === p.id || (!datePreset && p.id === "ALL"));
+                        (datePreset === p.id ||
+                          (!datePreset && p.id === "ALL"));
                       return (
                         <button
                           key={p.id}
@@ -1800,7 +1914,9 @@ export default function LeadsDashboardPage() {
                   </div>
 
                   {/* Reset All Active Filters */}
-                  {(searchQuery || dateFilter || (datePreset && datePreset !== "ALL")) && (
+                  {(searchQuery ||
+                    dateFilter ||
+                    (datePreset && datePreset !== "ALL")) && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1894,15 +2010,14 @@ export default function LeadsDashboardPage() {
                       const scoreMeta = getLeadScoreMeta(lead);
                       const statusStyle = getLeadStatusStyle(lead.status);
 
-                      const companyName =
-                        lead.companyName ||
-                        lead.businessName ||
-                        lead.customerName ||
-                        "Direct Inquiry";
-                      const contactPerson =
-                        lead.customerName ||
-                        lead.contactName ||
-                        "Primary Contact";
+                      const leadTitle =
+                        (lead.businessName && lead.businessName !== "Direct Lead" && lead.businessName !== "—" ? lead.businessName : null) ||
+                        (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null) ||
+                        (lead.contactName && lead.contactName !== "Direct Lead" && lead.contactName !== "—" ? lead.contactName : null) ||
+                        (lead.customerName && lead.customerName !== "Direct Lead" && lead.customerName !== "—" ? lead.customerName : null) ||
+                        "Lead";
+                      const companyName = leadTitle;
+                      const contactPerson = lead.contactName && lead.contactName !== leadTitle ? lead.contactName : leadTitle;
 
                       const assignedUser =
                         lead.assignedToId &&
@@ -2040,7 +2155,8 @@ export default function LeadsDashboardPage() {
 
                                 {/* Lead Number & Source Badge */}
                                 <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                  {lead.leadNumber || `#${lead._id?.slice(-6).toUpperCase()}`}
+                                  {lead.leadNumber ||
+                                    `#${lead._id?.slice(-6).toUpperCase()}`}
                                 </span>
                                 <span
                                   className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
@@ -2209,7 +2325,9 @@ export default function LeadsDashboardPage() {
                                   </div>
                                   {lead.createdAt && (
                                     <span className="text-[10px] text-slate-400 shrink-0 font-medium">
-                                      {new Date(lead.createdAt).toLocaleDateString("en-IN", {
+                                      {new Date(
+                                        lead.createdAt,
+                                      ).toLocaleDateString("en-IN", {
                                         day: "2-digit",
                                         month: "short",
                                       })}
@@ -2311,7 +2429,9 @@ export default function LeadsDashboardPage() {
                           </div>
 
                           {/* Full-width bottom colored stage bar */}
-                          <div className={`w-full h-1.5 ${statusStyle.accentBar}`} />
+                          <div
+                            className={`w-full h-1.5 ${statusStyle.accentBar}`}
+                          />
                         </div>
                       );
                     })
@@ -2334,8 +2454,12 @@ export default function LeadsDashboardPage() {
                           <th className="px-4 py-3.5 min-w-[220px] whitespace-nowrap">
                             Lead / Company
                           </th>
-                          <th className="px-3 py-3.5 min-w-[130px] whitespace-nowrap">Contact</th>
-                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">Source</th>
+                          <th className="px-3 py-3.5 min-w-[130px] whitespace-nowrap">
+                            Contact
+                          </th>
+                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">
+                            Source
+                          </th>
                           <th className="px-3 py-3.5 min-w-[150px] whitespace-nowrap">
                             Requirement
                           </th>
@@ -2345,8 +2469,12 @@ export default function LeadsDashboardPage() {
                           <th className="px-3 py-3.5 min-w-[140px] whitespace-nowrap">
                             Next Follow-up
                           </th>
-                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">Assigned To</th>
-                          <th className="px-3 py-3.5 min-w-[140px] whitespace-nowrap">Status</th>
+                          <th className="px-3 py-3.5 min-w-[110px] whitespace-nowrap">
+                            Assigned To
+                          </th>
+                          <th className="px-3 py-3.5 min-w-[140px] whitespace-nowrap">
+                            Status
+                          </th>
                           <th className="px-4 py-3.5 text-right min-w-[170px] whitespace-nowrap">
                             Quick Actions
                           </th>
@@ -2381,7 +2509,8 @@ export default function LeadsDashboardPage() {
                             },
                             MEDIUM: {
                               label: "Medium",
-                              badge: "bg-orange-50 text-orange-700 border-orange-200",
+                              badge:
+                                "bg-orange-50 text-orange-700 border-orange-200",
                             },
                             LOW: {
                               label: "Low",
@@ -2390,7 +2519,8 @@ export default function LeadsDashboardPage() {
                             },
                           }[lead.priority || "MEDIUM"] || {
                             label: "Medium",
-                            badge: "bg-orange-50 text-orange-700 border-orange-200",
+                            badge:
+                              "bg-orange-50 text-orange-700 border-orange-200",
                           };
                           const areaText = formatLeadTerritory(lead);
 
@@ -2404,7 +2534,9 @@ export default function LeadsDashboardPage() {
                                 }`}
                               >
                                 {/* Expand chevron */}
-                                <td className={`px-3 py-3.5 text-center ${statusStyle.borderL}`}>
+                                <td
+                                  className={`p-2.5  w-10 text-center ${statusStyle.borderL}`}
+                                >
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -2412,7 +2544,7 @@ export default function LeadsDashboardPage() {
                                         isExpanded ? null : lead._id,
                                       )
                                     }
-                                    className={`w-6 h-6 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all cursor-pointer ${
+                                    className={`w-6 h-6 bg-indigo-50 rounded-md flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all cursor-pointer ${
                                       isExpanded
                                         ? "rotate-180 text-indigo-600 bg-indigo-50"
                                         : ""
@@ -2423,7 +2555,7 @@ export default function LeadsDashboardPage() {
                                         : "Expand inline details"
                                     }
                                   >
-                                    <ChevronDown className="w-3.5 h-3.5 transition-transform" />
+                                    <ChevronDown className="w-5 h-5 transition-transform" />
                                   </button>
                                 </td>
 
@@ -2463,24 +2595,37 @@ export default function LeadsDashboardPage() {
                                           href={`/dashboard/leads/${lead._id}`}
                                           className="font-bold text-slate-900 hover:text-indigo-600 truncate text-[13px] leading-tight"
                                         >
-                                          {lead.companyName ||
+                                          {(lead.businessName && lead.businessName !== "Direct Lead" && lead.businessName !== "—" ? lead.businessName : null) ||
+                                            (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null) ||
+                                            (lead.contactName && lead.contactName !== "Direct Lead" && lead.contactName !== "—" ? lead.contactName : null) ||
+                                            (lead.customerName && lead.customerName !== "Direct Lead" && lead.customerName !== "—" ? lead.customerName : null) ||
                                             lead.businessName ||
-                                            "Direct Lead"}
+                                            lead.contactName ||
+                                            "Lead"}
                                         </Link>
                                         <span
-                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border ${priorityCfg.badge}`}
+                                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[12px] font-bold border ${priorityCfg.badge}`}
                                         >
                                           {priorityCfg.icon && (
-                                            <priorityCfg.icon className="w-2.5 h-2.5 shrink-0" />
+                                            <priorityCfg.icon className="w-3 h-3 shrink-0" />
                                           )}
                                           {priorityCfg.label}
                                         </span>
                                       </div>
                                       <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 flex-wrap">
                                         <span>
-                                          {lead.customerName ||
-                                            lead.contactName ||
-                                            "Owner"}
+                                          {(() => {
+                                            const mainTitle =
+                                              (lead.businessName && lead.businessName !== "Direct Lead" && lead.businessName !== "—" ? lead.businessName : null) ||
+                                              (lead.companyName && lead.companyName !== "Direct Lead" && lead.companyName !== "—" ? lead.companyName : null) ||
+                                              lead.customerName ||
+                                              lead.contactName ||
+                                              "Lead";
+                                            if (lead.customerName && lead.customerName !== mainTitle) return lead.customerName;
+                                            if (lead.contactName && lead.contactName !== mainTitle) return lead.contactName;
+                                            if (lead.businessName && lead.businessName !== mainTitle && lead.businessName !== "Direct Lead") return lead.businessName;
+                                            return lead.businessCategory || lead.requirement || (lead.source ? `${lead.source} Lead` : "Lead");
+                                          })()}
                                         </span>
                                       </div>
                                     </div>
@@ -2491,7 +2636,7 @@ export default function LeadsDashboardPage() {
                                 <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                      <span className="font-mono font-semibold text-slate-800 text-[13px]">
+                                      <span className="font-mono font-semibold text-slate-800 text-sm">
                                         {lead.phone || "-"}
                                       </span>
                                       {lead.phone && (
@@ -2545,7 +2690,9 @@ export default function LeadsDashboardPage() {
                                 <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div>
                                     {renderRequirementBadge(lead.requirement)}
-                                    {lead.printingRequirement?.quantity && (
+                                    {Number(
+                                      lead.printingRequirement?.quantity,
+                                    ) > 0 && (
                                       <span className="text-[10px] text-slate-400 block mt-0.5 font-medium whitespace-nowrap">
                                         Qty: {lead.printingRequirement.quantity}{" "}
                                         {lead.printingRequirement.unit || "PCS"}
@@ -2647,7 +2794,7 @@ export default function LeadsDashboardPage() {
 
                                     {/* Status Popup Menu */}
                                     {activeStatusDropdownId === lead._id && (
-                                      <div className="absolute left-0 top-full mt-1.5 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-1.5 space-y-0.5 animate-scale-up text-xs font-semibold">
+                                      <div className="absolute left-0 top-full mt-1.5 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-0.5 space-y-0.5 animate-scale-up text-xs font-semibold">
                                         <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 mb-1">
                                           Change Status
                                         </div>
@@ -2789,8 +2936,13 @@ export default function LeadsDashboardPage() {
 
                               {/* INLINE EXPANDED DETAILS DRAWER */}
                               {isExpanded && (
-                                <tr className={`border-b-2 border-slate-300 ${statusStyle.expandedBg}`}>
-                                  <td colSpan={10} className={`p-4 md:p-5 ${statusStyle.borderL}`}>
+                                <tr
+                                  className={`border-b-2 border-slate-300 ${statusStyle.expandedBg}`}
+                                >
+                                  <td
+                                    colSpan={10}
+                                    className={`p-4 md:p-5 ${statusStyle.borderL}`}
+                                  >
                                     <div className="space-y-4">
                                       {/* Top Bar of Drawer: Identity & Pipeline fast switcher */}
                                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-indigo-100">
@@ -2863,57 +3015,51 @@ export default function LeadsDashboardPage() {
                                               <Phone className="w-3.5 h-3.5 text-[#F95721]" />
                                               Contact Details
                                             </span>
-                                            <a
-                                              href={`tel:${lead.phone}`}
-                                              className="text-[10px] text-[#F95721] font-bold hover:underline"
-                                            >
-                                              Call Device
-                                            </a>
                                           </div>
 
                                           <div className="space-y-1.5 text-[11px]">
                                             <div className="flex justify-between">
-                                              <span className="text-slate-400">
+                                              <span className="text-slate-400 text-sm">
                                                 Primary Phone:
                                               </span>
-                                              <span className="font-mono font-bold text-slate-800">
+                                              <span className="font-mono font-bold text-slate-800 text-lg">
                                                 {lead.phone || "-"}
                                               </span>
                                             </div>
                                             {lead.alternatePhone && (
                                               <div className="flex justify-between">
-                                                <span className="text-slate-400">
+                                                <span className="text-slate-400 text-md">
                                                   Alt Phone:
                                                 </span>
-                                                <span className="font-mono text-slate-700">
+                                                <span className="font-mono text-slate-700 text-md">
                                                   {lead.alternatePhone}
                                                 </span>
                                               </div>
                                             )}
                                             {lead.email && (
                                               <div className="flex justify-between">
-                                                <span className="text-slate-400">
+                                                <span className="text-slate-400 text-lg">
                                                   Email:
                                                 </span>
-                                                <span className="text-slate-700 truncate max-w-[150px]">
+                                                <span className="text-slate-700 truncate max-w-[150px] text-lg">
                                                   {lead.email}
                                                 </span>
                                               </div>
                                             )}
                                             <div className="flex justify-between items-center">
-                                              <span className="text-slate-400">
+                                              <span className="text-slate-400 text-sm">
                                                 Area / Zone:
                                               </span>
-                                              <span className="font-bold font-mono text-[12px] inline-flex items-center gap-1 px-2 py-0.5">
+                                              <span className="font-bold font-mono inline-flex items-center gap-1 px-2 py-0.5 text-sm">
                                                 {formatLeadTerritory(lead) ||
                                                   "Not specified"}
                                               </span>
                                             </div>
                                             <div className="flex justify-between">
-                                              <span className="text-slate-400">
+                                              <span className="text-slate-400 text-sm">
                                                 Source:
                                               </span>
-                                              <span className="font-bold text-slate-700">
+                                              <span className="font-bold text-slate-700 text-sm">
                                                 {lead.source || "GOOGLE"}
                                               </span>
                                             </div>
@@ -3176,7 +3322,11 @@ export default function LeadsDashboardPage() {
                 Add New Lead
               </h3>
               <button
-                onClick={() => setShowAddModal(false)}
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  handleRemovePhoto();
+                }}
                 className="text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 ✕
@@ -3187,17 +3337,22 @@ export default function LeadsDashboardPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Customer Name *
+                    Business Name / Client Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Raj Sharma"
-                    value={newLead.customerName}
-                    onChange={(e) =>
-                      setNewLead({ ...newLead, customerName: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    placeholder="e.g. Sharma Constructions"
+                    value={newLead.customerName || newLead.companyName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewLead({
+                        ...newLead,
+                        customerName: val,
+                        companyName: val,
+                      });
+                    }}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
                   />
                 </div>
                 <div>
@@ -3207,11 +3362,16 @@ export default function LeadsDashboardPage() {
                   <input
                     type="text"
                     placeholder="e.g. Sharma Constructions"
-                    value={newLead.companyName}
-                    onChange={(e) =>
-                      setNewLead({ ...newLead, companyName: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
+                    value={newLead.companyName || newLead.customerName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewLead({
+                        ...newLead,
+                        companyName: val,
+                        customerName: val,
+                      });
+                    }}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 font-medium"
                   />
                 </div>
               </div>
@@ -3260,6 +3420,81 @@ export default function LeadsDashboardPage() {
                     setNewLead({ ...newLead, requirement: e.target.value })
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Shop / Lead Photo Upload */}
+              <div className="space-y-1.5">
+                <label className="text-slate-700 font-semibold block flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-indigo-600" />
+                    Shop / Lead Photo (Optional)
+                  </span>
+                  {leadPhotoFile && (
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Photo Selected
+                    </span>
+                  )}
+                </label>
+
+                {leadPhotoPreview ? (
+                  <div className="relative p-2.5 bg-slate-50 border-2 border-dashed border-indigo-200 rounded-2xl flex items-center gap-3">
+                    <img
+                      src={leadPhotoPreview}
+                      alt="Shop Preview"
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-2xs shrink-0"
+                    />
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {leadPhotoFile?.name || "Shop Image"}
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {leadPhotoFile?.size
+                          ? `${(leadPhotoFile.size / 1024).toFixed(1)} KB`
+                          : "Ready to upload"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <label
+                          htmlFor="leads-page-photo-input"
+                          className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer hover:underline"
+                        >
+                          Change
+                        </label>
+                        <span className="text-slate-300">•</span>
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="text-[11px] font-bold text-red-500 hover:text-red-700 cursor-pointer hover:underline flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="leads-page-photo-input"
+                    className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl bg-slate-50/80 hover:bg-indigo-50/30 transition-all cursor-pointer group text-center"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 group-hover:scale-110 flex items-center justify-center transition-transform mb-1 shadow-2xs">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-600">
+                      Click to take photo or upload shop image
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      JPG, PNG, WEBP • Max 10MB
+                    </span>
+                  </label>
+                )}
+
+                <input
+                  id="leads-page-photo-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
                 />
               </div>
 
@@ -3398,7 +3633,10 @@ export default function LeadsDashboardPage() {
                 <button
                   type="button"
                   disabled={creatingLead}
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    handleRemovePhoto();
+                  }}
                   className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold cursor-pointer"
                 >
                   Cancel
@@ -3415,7 +3653,7 @@ export default function LeadsDashboardPage() {
                   {creatingLead ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>Creating Lead...</span>
+                      <span>{isUploadingPhoto ? "Uploading Photo..." : "Creating Lead..."}</span>
                     </>
                   ) : (
                     <span>Create Lead</span>
@@ -3716,53 +3954,6 @@ export default function LeadsDashboardPage() {
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>WhatsApp</span>
               </button>
-            </div>
-
-            {/* Quick 1-Click Call Outcome Logger */}
-            <div className="pt-2 border-t border-slate-100 text-left space-y-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Quick Log Call Outcome
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCallOutcome(callingLead, "Connected & Interested")
-                  }
-                  className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-bold border border-emerald-200 transition-colors text-left"
-                >
-                  Connected &amp; Interested
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedLead(callingLead);
-                    setShowFollowupModal(true);
-                    setCallingLead(null);
-                  }}
-                  className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 text-[11px] font-bold border border-amber-200 transition-colors text-left"
-                >
-                  Callback Requested
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCallOutcome(callingLead, "No Answer / Line Busy")
-                  }
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-semibold border border-slate-200 transition-colors text-left"
-                >
-                  No Answer / Busy
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCallOutcome(callingLead, "Not Interested")
-                  }
-                  className="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-[11px] font-semibold border border-rose-200 transition-colors text-left"
-                >
-                  Not Interested
-                </button>
-              </div>
             </div>
 
             <div className="pt-2">

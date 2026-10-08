@@ -48,6 +48,9 @@ import {
   Send,
   Eye,
   Image as ImageIcon,
+  Camera,
+  Loader2,
+  History,
 } from "lucide-react";
 
 const PIPELINE_STAGES = [
@@ -263,13 +266,14 @@ export default function LeadDetailPage() {
   }, []);
 
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
 
-  // Collect all photos attached by Data Operator and team, arranged by date (newest first)
+  // Collect all photos attached by Data Operator, Sales, or uploaded as documents
   const allLeadPhotos = useMemo(() => {
     const list = [];
     const seenUrls = new Set();
 
-    // 1. Direct shop image attached by Data Operator
+    // 1. Direct shop image attached by Data Operator or Sales
     if (
       lead?.shopImageUrl &&
       typeof lead.shopImageUrl === "string" &&
@@ -282,34 +286,59 @@ export default function LeadDetailPage() {
         url,
         title: `Shop Photo - ${lead.businessName || "Client"}`,
         date: lead.createdAt ? new Date(lead.createdAt) : new Date(),
-        uploadedBy: "Data Operator",
+        uploadedBy:
+          lead.createdById?.name ||
+          (lead.source === "DATA_OPERATOR" ? "Data Operator" : "Sales Team"),
         isPrimary: true,
       });
     }
 
-    // 2. Photos from documents collection
-    if (Array.isArray(lead?.documents)) {
-      lead.documents.forEach((doc, idx) => {
-        if (!doc?.fileUrl) return;
-        const url = doc.fileUrl.trim();
-        const isPhoto =
-          doc.category === "PHOTO" ||
-          doc.category === "CLIENT_WORK" ||
-          url.match(/\.(jpg|jpeg|png|webp|gif)($|\?)/i) ||
-          (doc.fileType && doc.fileType.startsWith("image/"));
+    // 2. Photos from documents collection (both lead.documents and loaded documents state)
+    const combinedDocs = [
+      ...(Array.isArray(lead?.documents) ? lead.documents : []),
+      ...(Array.isArray(documents) ? documents : []),
+    ];
 
-        if (isPhoto && !seenUrls.has(url)) {
-          seenUrls.add(url);
+    combinedDocs.forEach((doc, idx) => {
+      if (!doc?.fileUrl) return;
+      const url = doc.fileUrl.trim();
+      const isPhoto =
+        doc.category === "PHOTO" ||
+        doc.category === "CLIENT_WORK" ||
+        url.match(/\.(jpg|jpeg|png|webp|gif)($|\?)/i) ||
+        (doc.fileType && doc.fileType.startsWith("image/"));
+
+      if (isPhoto && !seenUrls.has(url)) {
+        seenUrls.add(url);
+        list.push({
+          id: doc._id || `doc-photo-${idx}`,
+          url,
+          title: doc.title || doc.fileName || `Market Photo ${idx + 1}`,
+          date: doc.uploadedAt
+            ? new Date(doc.uploadedAt)
+            : lead?.createdAt
+              ? new Date(lead.createdAt)
+              : new Date(),
+          uploadedBy:
+            doc.uploadedByName ||
+            lead.createdById?.name ||
+            "Team Member",
+          isPrimary: false,
+        });
+      }
+    });
+
+    // 3. Photos from imageUrls array if any
+    if (Array.isArray(lead?.imageUrls)) {
+      lead.imageUrls.forEach((url, idx) => {
+        if (typeof url === "string" && url.trim() && !seenUrls.has(url.trim())) {
+          seenUrls.add(url.trim());
           list.push({
-            id: doc._id || `doc-photo-${idx}`,
-            url,
-            title: doc.title || doc.fileName || `Market Photo ${idx + 1}`,
-            date: doc.uploadedAt
-              ? new Date(doc.uploadedAt)
-              : lead?.createdAt
-                ? new Date(lead.createdAt)
-                : new Date(),
-            uploadedBy: doc.uploadedByName || "Data Operator",
+            id: `img-url-${idx}`,
+            url: url.trim(),
+            title: `Shop Photo ${idx + 1}`,
+            date: lead.createdAt ? new Date(lead.createdAt) : new Date(),
+            uploadedBy: lead.createdById?.name || "Uploaded Photo",
             isPrimary: false,
           });
         }
@@ -320,7 +349,28 @@ export default function LeadDetailPage() {
     return list.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
-  }, [lead]);
+  }, [lead, documents]);
+
+  // Handler to upload or update shop photo directly from lead profile
+  const handleProfilePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingProfilePhoto(true);
+      const res = await api.upload("/leads/upload-photo", file, "photo");
+      const photoUrl = res?.data?.url || res?.url;
+      if (photoUrl) {
+        await api.patch(`/leads/${leadId}`, {
+          shopImageUrl: photoUrl,
+        });
+        await loadLeadDetails();
+      }
+    } catch (err) {
+      alert("Failed to upload photo: " + (err.message || "Unknown error"));
+    } finally {
+      setUploadingProfilePhoto(false);
+    }
+  };
 
   const activePhoto = allLeadPhotos[activePhotoIdx] || allLeadPhotos[0] || null;
 
@@ -447,9 +497,16 @@ export default function LeadDetailPage() {
           lostReason: l.lostReason || "",
           notes: "",
         });
+        const unifiedName = (
+          (l.businessName && l.businessName.trim() !== "Direct Lead" && l.businessName.trim() !== "—" ? l.businessName.trim() : null) ||
+          (l.companyName && l.companyName.trim() !== "Direct Lead" && l.companyName.trim() !== "—" ? l.companyName.trim() : null) ||
+          (l.contactName && l.contactName.trim() !== "Direct Lead" && l.contactName.trim() !== "—" ? l.contactName.trim() : null) ||
+          (l.customerName && l.customerName.trim() !== "Direct Lead" && l.customerName.trim() !== "—" ? l.customerName.trim() : null) ||
+          ""
+        );
         setEditForm({
-          contactName: l.contactName || l.name || "",
-          businessName: l.businessName || l.companyName || "",
+          contactName: unifiedName,
+          businessName: unifiedName,
           phone: l.phone || "",
           email: l.email || "",
           alternatePhone: l.alternatePhone || "",
@@ -1252,9 +1309,16 @@ export default function LeadDetailPage() {
   const handleUpdateLead = async (e) => {
     e.preventDefault();
     try {
+      const unifiedName = (
+        editForm.businessName?.trim() ||
+        editForm.contactName?.trim() ||
+        "Lead"
+      );
       await api.patch(`/leads/${leadId}`, {
-        contactName: editForm.contactName,
-        businessName: editForm.businessName,
+        contactName: unifiedName,
+        customerName: unifiedName,
+        businessName: unifiedName,
+        companyName: unifiedName,
         phone: editForm.phone,
         email: editForm.email,
         alternatePhone: editForm.alternatePhone,
@@ -1582,7 +1646,7 @@ export default function LeadDetailPage() {
                     {/* Left Photo Column spanning rows */}
                     <td
                       rowSpan={lead.notes ? 5 : 4}
-                      className="w-42 p-3 bg-slate-50/60 border border-slate-200 text-center align-middle shrink-0"
+                      className="w-50 p-3 bg-slate-50/60 border border-slate-200 text-center align-middle shrink-0"
                     >
                       {allLeadPhotos.length > 0 ? (
                         <div className="flex flex-col items-center gap-2">
@@ -1606,45 +1670,86 @@ export default function LeadDetailPage() {
                             </div>
                           </div>
 
-                          {allLeadPhotos.length > 1 && (
-                            <div className="flex items-center justify-center gap-1.5 pt-0.5">
-                              {allLeadPhotos.map((p, idx) => (
-                                <button
-                                  key={p.id || idx}
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActivePhotoIdx(idx);
-                                  }}
-                                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                    idx === activePhotoIdx
-                                      ? "bg-[#107c41] w-4"
-                                      : "bg-slate-300 hover:bg-slate-400 w-1.5"
-                                  }`}
-                                  title={`Photo ${idx + 1}`}
-                                />
-                              ))}
-                              <span className="text-[9px] font-bold text-slate-500">
-                                {activePhotoIdx + 1}/{allLeadPhotos.length}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-between w-full px-1">
+                            {allLeadPhotos.length > 1 ? (
+                              <div className="flex items-center gap-1.5 pt-0.5">
+                                {allLeadPhotos.map((p, idx) => (
+                                  <button
+                                    key={p.id || idx}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActivePhotoIdx(idx);
+                                    }}
+                                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                      idx === activePhotoIdx
+                                        ? "bg-[#107c41] w-4"
+                                        : "bg-slate-300 hover:bg-slate-400 w-1.5"
+                                    }`}
+                                    title={`Photo ${idx + 1}`}
+                                  />
+                                ))}
+                                <span className="text-[9px] font-bold text-slate-500">
+                                  {activePhotoIdx + 1}/{allLeadPhotos.length}
+                                </span>
+                              </div>
+                            ) : (
+                              <span />
+                            )}
+
+                            <label
+                              className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1 hover:underline"
+                              title="Update or change shop photo"
+                            >
+                              <Camera className="w-3 h-3" />
+                              <span>Update</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingProfilePhoto}
+                                onChange={handleProfilePhotoUpload}
+                              />
+                            </label>
+                          </div>
                         </div>
                       ) : (
-                        <div className="w-20 h-20 rounded-xl bg-indigo-50 text-indigo-700 font-black text-2xl flex items-center justify-center mx-auto border border-indigo-100 shadow-2xs">
-                          {leadInitials}
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <div className="w-16 h-16 rounded-xl bg-indigo-50 text-indigo-700 font-black text-xl flex items-center justify-center mx-auto border border-indigo-100 shadow-2xs">
+                            {leadInitials}
+                          </div>
+                          <label className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-indigo-600 hover:text-indigo-700 text-[11px] font-bold cursor-pointer shadow-2xs transition-all">
+                            {uploadingProfilePhoto ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="w-3 h-3" />
+                                <span>Add Photo</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingProfilePhoto}
+                              onChange={handleProfilePhotoUpload}
+                            />
+                          </label>
                         </div>
                       )}
                     </td>
 
                     {/* Business Name */}
-                    <th className="w-50 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="w-50 bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Business Name
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-slate-900 text-lg">
-                          {lead.businessName || lead.contactName || "Lead Inquiry"}
+                        <span className="font-black text-slate-900 text-sm">
+                          {lead.businessName || lead.companyName || lead.contactName || lead.customerName || "Lead Inquiry"}
                         </span>
                         {lead.acceptanceStatus === "PENDING" && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
@@ -1655,18 +1760,18 @@ export default function LeadDetailPage() {
                     </td>
 
                     {/* Lead ID */}
-                    <th className="w-40 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="w-40 bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Lead ID
                     </th>
-                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-mono font-bold text-slate-900 text-lg">
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-mono font-bold text-slate-900 text-sm">
                       {lead.leadNumber || `LD-${lead._id.slice(-6).toUpperCase()}`}
                     </td>
 
                     {/* Priority */}
-                    <th className="w-32 bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="w-32 bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Priority
                     </th>
-                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-bold text-slate-900 text-lg">
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-bold text-slate-900 text-sm">
                       <div className="relative inline-block">
                         {(() => {
                           const p = String(lead?.priority || "MEDIUM").toUpperCase();
@@ -1716,24 +1821,24 @@ export default function LeadDetailPage() {
 
                   {/* Row 2 */}
                   <tr>
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Contact Person
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
-                      <span className="flex items-center gap-1.5 font-bold text-slate-900 text-lg">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
                         <User className="w-5 h-5 text-slate-400" />
-                        {lead.contactName || "Primary Contact"}
+                        {lead.contactName || lead.customerName || lead.businessName || lead.companyName || "Primary Contact"}
                       </span>
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Phone Number
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200">
                       <div className="flex items-center gap-2 flex-wrap">
                         <a
                           href={`tel:${lead.phone}`}
-                          className="font-mono text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 text-lg"
+                          className="font-mono text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 text-sm"
                         >
                           <Phone className="w-4 h-4 text-orange-500" />
                           {lead.phone}
@@ -1750,14 +1855,14 @@ export default function LeadDetailPage() {
                       </div>
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Email
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
                       {lead.email ? (
                         <a
                           href={`mailto:${lead.email}`}
-                          className="text-slate-700 hover:text-orange-600 flex items-center gap-1 truncate font-bold text-lg"
+                          className="text-slate-700 hover:text-orange-600 flex items-center gap-1 truncate font-bold text-sm"
                         >
                           <Mail className="w-5 h-5 text-slate-400 shrink-0" />
                           {lead.email}
@@ -1770,11 +1875,11 @@ export default function LeadDetailPage() {
 
                   {/* Row 3 */}
                   <tr>
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Territory / Area
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-medium text-slate-800">
-                      <span className="flex items-center gap-1 text-lg">
+                      <span className="flex items-center gap-1 text-sm">
                         <MapPin className="w-5 h-5 text-orange-500 shrink-0" />
                         {lead.areaId?.name
                           ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
@@ -1782,11 +1887,11 @@ export default function LeadDetailPage() {
                       </span>
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Category
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200">
-                      <span className="font-bold text-slate-800 text-lg">
+                      <span className="font-bold text-slate-800 text-sm">
                         {lead.businessCategory || "Standard"}
                       </span>
                       {lead.subCategory && (
@@ -1796,7 +1901,7 @@ export default function LeadDetailPage() {
                       )}
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Source
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200">
@@ -1805,7 +1910,7 @@ export default function LeadDetailPage() {
                           DATA OPERATOR
                         </span>
                       ) : (
-                        <span className="font-bold text-slate-700 text-lg">
+                        <span className="font-bold text-slate-700 text-sm">
                           {lead.source || "MANUAL"}
                         </span>
                       )}
@@ -1814,7 +1919,7 @@ export default function LeadDetailPage() {
 
                   {/* Row 4 */}
                   <tr>
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Assigned Executive
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800">
@@ -1824,7 +1929,7 @@ export default function LeadDetailPage() {
                             .slice(0, 2)
                             .toUpperCase()}
                         </div>
-                        <span className="font-bold text-slate-900 text-lg">
+                        <span className="font-bold text-slate-900 text-sm">
                           {lead.assignedToId?.name || "Unassigned"}
                         </span>
                         {canAssignOrReassign && (
@@ -1844,20 +1949,20 @@ export default function LeadDetailPage() {
                       </div>
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Created On
                     </th>
-                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800 text-lg">
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-slate-800 text-sm">
                       {new Date(lead.createdAt || Date.now()).toLocaleDateString(
                         "en-GB",
                         { day: "2-digit", month: "short", year: "numeric" },
                       )}
                     </td>
 
-                    <th className="bg-slate-100/90 text-slate-600 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
+                    <th className="bg-slate-100/90 text-slate-600 font-bold text-sm uppercase tracking-wider px-3.5 py-2.5 border border-slate-200 text-left">
                       Next Follow-Up
                     </th>
-                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-lg">
+                    <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-semibold text-sm">
                       <span
                         className={`font-bold ${lead.nextFollowUp ? "text-amber-700" : "text-slate-400 italic font-normal"}`}
                       >
@@ -1877,12 +1982,12 @@ export default function LeadDetailPage() {
                   {/* Row 5: Notes (Optional) */}
                   {lead.notes && (
                     <tr>
-                      <th className="bg-amber-50 text-amber-900 font-bold text-[15px] uppercase tracking-wider px-3.5 py-2 border border-slate-200 text-left">
+                      <th className="bg-amber-50 text-amber-900 font-bold text-sm uppercase tracking-wider px-3.5 py-2 border border-slate-200 text-left">
                         Operator Note
                       </th>
                       <td
                         colSpan={5}
-                        className="px-3.5 py-2 bg-amber-50/50 border border-slate-200 text-lg font-medium text-amber-950 leading-relaxed"
+                        className="px-3.5 py-2 bg-amber-50/50 border border-slate-200 text-sm font-medium text-amber-950 leading-relaxed"
                       >
                         {lead.notes}
                       </td>
@@ -1927,7 +2032,7 @@ export default function LeadDetailPage() {
                           <span className="text-emerald-600 text-xs">✓</span>
                         )}
                         <strong
-                          className={`block text-[15px] ${isCurrent ? "text-white" : ""}`}
+                          className={`block text-sm ${isCurrent ? "text-white" : ""}`}
                         >
                           {stg.label}
                         </strong>
@@ -2198,12 +2303,6 @@ export default function LeadDetailPage() {
                     <h3 className="font-bold text-slate-900 text-base">
                       Stage &amp; Governance
                     </h3>
-                    <button
-                      onClick={() => setShowStatusModal(true)}
-                      className="text-xs font-bold text-purple-600 hover:underline"
-                    >
-                      Update Stage
-                    </button>
                   </div>
 
                   <div className="space-y-2.5 text-sm">
@@ -4396,50 +4495,149 @@ export default function LeadDetailPage() {
 
           {/* ACTIVITY TIMELINE TAB */}
           {activeTab === "Activity Timeline" && (
-            <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
-              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                <h3 className="font-bold text-slate-900 text-sm">
-                  Activity History &amp; Audit Trail
-                </h3>
-                <button
-                  onClick={() => setShowActivityModal(true)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Log Activity
-                </button>
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <History className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      Activity History &amp; Audit Trail
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        {activities.length} {activities.length === 1 ? "Event" : "Events"}
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Chronological history of lead updates, communications, status transitions &amp; audits
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => loadLeadDetails()}
+                    className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                    title="Refresh activities"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${actionLoading ? "animate-spin" : ""}`} />
+                  </button>
+                  <button
+                    onClick={() => setShowActivityModal(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-semibold shadow-xs transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Log Activity
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 {activities.length > 0 ? (
-                  activities.map((a) => (
-                    <div
-                      key={a._id}
-                      className="p-3.5 rounded-md bg-slate-50 border border-slate-100 flex items-start justify-between gap-3"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-md font-bold text-[9px] bg-orange-100 text-orange-800">
-                            {a.type || a.action || "NOTE"}
+                  activities.map((a, idx) => {
+                    const eventTypeStr = a.eventType || a.action || a.type || "ACTIVITY";
+                    let badgeInfo = { label: "Activity", color: "bg-slate-100 text-slate-800 border-slate-200" };
+                    const t = String(eventTypeStr).toUpperCase();
+
+                    if (t.includes("CREATED") || t === "CREATE") {
+                      badgeInfo = { label: "Lead Created", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+                    } else if (t.includes("UPDATED") || t === "UPDATE") {
+                      badgeInfo = { label: "Lead Updated", color: "bg-sky-50 text-sky-700 border-sky-200" };
+                    } else if (t.includes("STATUS")) {
+                      badgeInfo = { label: "Status Transition", color: "bg-purple-50 text-purple-700 border-purple-200" };
+                    } else if (t.includes("ASSIGN") || t.includes("FORWARD")) {
+                      badgeInfo = { label: "Assignment", color: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+                    } else if (t.includes("FOLLOWUP")) {
+                      badgeInfo = { label: "Follow-up", color: "bg-amber-50 text-amber-700 border-amber-200" };
+                    } else if (t.includes("DOCUMENT") || t.includes("PHOTO")) {
+                      badgeInfo = { label: "Attachment / Photo", color: "bg-teal-50 text-teal-700 border-teal-200" };
+                    } else if (t.includes("CALL")) {
+                      badgeInfo = { label: "Phone Call", color: "bg-blue-50 text-blue-700 border-blue-200" };
+                    } else if (t.includes("WHATSAPP")) {
+                      badgeInfo = { label: "WhatsApp Chat", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+                    } else if (t.includes("NOTE") || t.includes("REMARK")) {
+                      badgeInfo = { label: "Interaction Remark", color: "bg-orange-50 text-orange-700 border-orange-200" };
+                    } else if (t.includes("AUDIT")) {
+                      badgeInfo = { label: "System Audit", color: "bg-rose-50 text-rose-700 border-rose-200" };
+                    }
+
+                    const changesList = Array.isArray(a.metadata?.changes) ? a.metadata.changes : null;
+                    const timestampVal = a.occurredAt || a.createdAt || a.timestamp || null;
+
+                    return (
+                      <div
+                        key={a._id || idx}
+                        className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 hover:border-slate-300 transition-all flex items-start justify-between gap-3"
+                      >
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`px-2.5 py-0.5 rounded-lg font-bold text-[10px] border ${badgeInfo.color}`}>
+                              {badgeInfo.label}
+                            </span>
+                            <span className="font-semibold text-slate-800 text-[12px] leading-snug">
+                              {a.summary || a.description}
+                            </span>
+                          </div>
+
+                          {/* Changed fields breakdown */}
+                          {changesList && changesList.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {changesList.map((c, cIdx) => (
+                                <span
+                                  key={cIdx}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] bg-white border border-slate-200 text-slate-600 font-mono"
+                                >
+                                  <span className="font-semibold text-slate-800">{c.label}:</span>
+                                  <span className="line-through text-slate-400">{String(c.before || "None").slice(0, 20)}</span>
+                                  <span className="text-slate-400">→</span>
+                                  <span className="text-emerald-700 font-medium">{String(c.after || "None").slice(0, 20)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-0.5">
+                            <span className="flex items-center gap-1 font-medium text-slate-500">
+                              <User className="w-3 h-3 text-slate-400" />
+                              {a.actorName || a.actorEmail || "Sales User"}
+                            </span>
+                            {a.metadata?.leadNumber && (
+                              <span className="font-mono text-slate-400">
+                                Ref: {a.metadata.leadNumber}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0 pt-0.5">
+                          <span className="text-[10px] text-slate-500 font-medium block">
+                            {timestampVal
+                              ? new Date(timestampVal).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "-"}
                           </span>
-                          <span className="font-semibold text-slate-900">
-                            {a.summary || a.description}
+                          <span className="text-[10px] text-slate-400 font-mono block">
+                            {timestampVal
+                              ? new Date(timestampVal).toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : ""}
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-400 block mt-1">
-                          By: {a.actorName || a.actorEmail || "Representative"}
-                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                        {new Date(
-                          a.createdAt || a.timestamp || Date.now(),
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
-                  <div className="text-center py-8 text-slate-400 text-xs">
-                    No activity logs recorded yet.
+                  <div className="text-center py-12 px-4 rounded-xl bg-slate-50/50 border border-dashed border-slate-200 text-slate-400 text-xs space-y-2">
+                    <History className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="font-semibold text-slate-700">No activity logs recorded yet</p>
+                    <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                      All lead updates, stage transitions, customer interactions, and audit logs will automatically appear here.
+                    </p>
                   </div>
                 )}
               </div>
@@ -6477,15 +6675,20 @@ export default function LeadDetailPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
-                    Contact Person Name *
+                    Contact / Client Name *
                   </label>
                   <input
                     type="text"
                     required
-                    value={editForm.contactName}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, contactName: e.target.value })
-                    }
+                    value={editForm.contactName || editForm.businessName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditForm({
+                        ...editForm,
+                        contactName: val,
+                        businessName: val,
+                      });
+                    }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
                   />
                 </div>
@@ -6495,10 +6698,15 @@ export default function LeadDetailPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.businessName}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, businessName: e.target.value })
-                    }
+                    value={editForm.businessName || editForm.contactName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditForm({
+                        ...editForm,
+                        businessName: val,
+                        contactName: val,
+                      });
+                    }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
                   />
                 </div>

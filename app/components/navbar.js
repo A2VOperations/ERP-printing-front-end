@@ -73,9 +73,12 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         } catch {}
 
         if (!storedRole) {
-          if (pathname?.startsWith("/dashboard/data-operator")) storedRole = "data_operator";
-          else if (pathname?.startsWith("/dashboard/admin")) storedRole = "admin";
-          else if (pathname?.startsWith("/dashboard/manager")) storedRole = "manager";
+          if (pathname?.startsWith("/dashboard/data-operator"))
+            storedRole = "data_operator";
+          else if (pathname?.startsWith("/dashboard/admin"))
+            storedRole = "admin";
+          else if (pathname?.startsWith("/dashboard/manager"))
+            storedRole = "manager";
           else storedRole = "sales";
         }
 
@@ -83,7 +86,8 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         if (storedRole.includes("admin")) roleDisplay = "Super Admin";
         else if (storedRole.includes("manager")) roleDisplay = "Sales Manager";
         else if (storedRole.includes("sales")) roleDisplay = "Sales Executive";
-        else if (storedRole.includes("designer")) roleDisplay = "Graphic Designer";
+        else if (storedRole.includes("designer"))
+          roleDisplay = "Graphic Designer";
         else if (storedRole.includes("operator")) roleDisplay = "Data Operator";
         else roleDisplay = storedRole.toUpperCase();
 
@@ -112,7 +116,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   });
 
   const [tenant, setTenant] = useState({
-    name: "A2V Printing Solutions",
+    name: "A2V Prints",
     code: "",
   });
 
@@ -125,8 +129,8 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     (pathname?.startsWith("/dashboard/data-operator")
       ? "data_operator"
       : pathname?.startsWith("/dashboard/admin")
-      ? "admin"
-      : "sales")
+        ? "admin"
+        : "sales")
   ).toLowerCase();
 
   const userRoleNorm = normalizeRole(activeRoleRaw);
@@ -481,7 +485,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               audioBufferRef.current = buf;
             }
           },
-          () => {}
+          () => {},
         );
       } catch {}
     };
@@ -496,10 +500,22 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       window.removeEventListener("click", handleFirstUserGesture);
     };
 
-    window.addEventListener("touchstart", handleFirstUserGesture, { once: true, passive: true });
-    window.addEventListener("touchend", handleFirstUserGesture, { once: true, passive: true });
-    window.addEventListener("pointerdown", handleFirstUserGesture, { once: true, passive: true });
-    window.addEventListener("click", handleFirstUserGesture, { once: true, passive: true });
+    window.addEventListener("touchstart", handleFirstUserGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("touchend", handleFirstUserGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("pointerdown", handleFirstUserGesture, {
+      once: true,
+      passive: true,
+    });
+    window.addEventListener("click", handleFirstUserGesture, {
+      once: true,
+      passive: true,
+    });
 
     return () => {
       isCancelled = true;
@@ -591,22 +607,30 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       const playPromise = audio.play();
 
       if (playPromise !== undefined) {
-        playPromise
-          .catch(() => {
-            // Mobile browser blocked programmatic autoplay before screen tap
-            const resumeAudio = () => {
-              unlockAudioContext();
-              if (leadAudioRef.current) {
-                leadAudioRef.current.play().catch(() => {});
-              }
-              window.removeEventListener("touchstart", resumeAudio);
-              window.removeEventListener("pointerdown", resumeAudio);
-              window.removeEventListener("click", resumeAudio);
-            };
-            window.addEventListener("touchstart", resumeAudio, { once: true, passive: true });
-            window.addEventListener("pointerdown", resumeAudio, { once: true, passive: true });
-            window.addEventListener("click", resumeAudio, { once: true, passive: true });
+        playPromise.catch(() => {
+          // Mobile browser blocked programmatic autoplay before screen tap
+          const resumeAudio = () => {
+            unlockAudioContext();
+            if (leadAudioRef.current) {
+              leadAudioRef.current.play().catch(() => {});
+            }
+            window.removeEventListener("touchstart", resumeAudio);
+            window.removeEventListener("pointerdown", resumeAudio);
+            window.removeEventListener("click", resumeAudio);
+          };
+          window.addEventListener("touchstart", resumeAudio, {
+            once: true,
+            passive: true,
           });
+          window.addEventListener("pointerdown", resumeAudio, {
+            once: true,
+            passive: true,
+          });
+          window.addEventListener("click", resumeAudio, {
+            once: true,
+            passive: true,
+          });
+        });
       }
     } catch {
       // Audio playback error or autoplay restriction
@@ -643,96 +667,109 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     return () => {
       stopLeadSound();
     };
-  }, [isSalesPerson, showBigNotification, incomingLeadAlert, startLeadSoundLoop, stopLeadSound]);
+  }, [
+    isSalesPerson,
+    showBigNotification,
+    incomingLeadAlert,
+    startLeadSoundLoop,
+    stopLeadSound,
+  ]);
 
-  const fetchAssignedLeads = useCallback(async (isInitial = false) => {
-    try {
-      // STRICT ROLE GATE: Only Sales Executives receive incoming assigned lead alerts & notification bar
-      // NEVER show any incoming lead alerts to Data Operators, Admin, Designers, or Managers
-      if (!isSalesPerson) {
-        setAssignedInboxCount(0);
-        setAssignedLeads([]);
-        setShowBigNotification(false);
-        setIncomingLeadAlert(null);
-        return;
-      }
-
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") || localStorage.getItem("auth_token")
-          : null;
-      if (!token) return;
-
-      // Resolve my user ID to ensure leads are ONLY those assigned to this specific salesperson
-      let myUserId = user?._id || user?.id || "";
-      if (!myUserId && typeof window !== "undefined") {
-        try {
-          const u = JSON.parse(localStorage.getItem("user") || "{}");
-          myUserId = u._id || u.id || "";
-        } catch {}
-      }
-
-      const res = await api.get(
-        "/leads?acceptanceStatus=PENDING&limit=25&sortBy=createdAt&sortOrder=desc",
-        { silent: true }
-      );
-      const raw = res?.data;
-      const list = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
-
-      // Helper to cleanly extract ObjectId string whether populated or scalar
-      const extractAssigneeId = (ld) => {
-        if (!ld) return "";
-        const target = ld.assignedToId || ld.assignedTo;
-        if (typeof target === "object" && target !== null) {
-          return String(target._id || target.id || "");
+  const fetchAssignedLeads = useCallback(
+    async (isInitial = false) => {
+      try {
+        // STRICT ROLE GATE: Only Sales Executives receive incoming assigned lead alerts & notification bar
+        // NEVER show any incoming lead alerts to Data Operators, Admin, Designers, or Managers
+        if (!isSalesPerson) {
+          setAssignedInboxCount(0);
+          setAssignedLeads([]);
+          setShowBigNotification(false);
+          setIncomingLeadAlert(null);
+          return;
         }
-        return typeof target === "string" ? target : "";
-      };
 
-      // Since backend already enforces assignedToId = user._id for salespersons,
-      // list contains this user's leads. We safely verify only if both IDs exist.
-      const myAssignedLeads = (myUserId && list.length > 0)
-        ? list.filter((ld) => {
-            const assignedId = extractAssigneeId(ld);
-            return !assignedId || String(assignedId) === String(myUserId);
-          })
-        : list;
-
-      const total =
-        raw?.pagination?.totalRecords !== undefined
-          ? raw.pagination.totalRecords
-          : myAssignedLeads.length;
-
-      setAssignedInboxCount(total);
-      setAssignedLeads(myAssignedLeads);
-
-      // Synchronize badge with sidebar
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(
-          new CustomEvent("refresh-inbox-count", { detail: { count: total } })
-        );
-      }
-
-      if (myAssignedLeads.length > 0) {
-        const latest = myAssignedLeads[0];
-        const lastNotifiedId =
+        const token =
           typeof window !== "undefined"
-            ? sessionStorage.getItem("crm_last_notified_lead_id")
+            ? localStorage.getItem("token") ||
+              localStorage.getItem("auth_token")
             : null;
+        if (!token) return;
 
-        // If a new lead is assigned to this salesperson that hasn't been acknowledged in this session
-        if (latest._id && latest._id !== lastNotifiedId) {
-          setIncomingLeadAlert(latest);
-          setShowBigNotification(true);
+        // Resolve my user ID to ensure leads are ONLY those assigned to this specific salesperson
+        let myUserId = user?._id || user?.id || "";
+        if (!myUserId && typeof window !== "undefined") {
+          try {
+            const u = JSON.parse(localStorage.getItem("user") || "{}");
+            myUserId = u._id || u.id || "";
+          } catch {}
         }
-      } else {
-        setShowBigNotification(false);
-        setIncomingLeadAlert(null);
+
+        const res = await api.get(
+          "/leads?acceptanceStatus=PENDING&limit=25&sortBy=createdAt&sortOrder=desc",
+          { silent: true },
+        );
+        const raw = res?.data;
+        const list = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
+
+        // Helper to cleanly extract ObjectId string whether populated or scalar
+        const extractAssigneeId = (ld) => {
+          if (!ld) return "";
+          const target = ld.assignedToId || ld.assignedTo;
+          if (typeof target === "object" && target !== null) {
+            return String(target._id || target.id || "");
+          }
+          return typeof target === "string" ? target : "";
+        };
+
+        // Since backend already enforces assignedToId = user._id for salespersons,
+        // list contains this user's leads. We safely verify only if both IDs exist.
+        const myAssignedLeads =
+          myUserId && list.length > 0
+            ? list.filter((ld) => {
+                const assignedId = extractAssigneeId(ld);
+                return !assignedId || String(assignedId) === String(myUserId);
+              })
+            : list;
+
+        const total =
+          raw?.pagination?.totalRecords !== undefined
+            ? raw.pagination.totalRecords
+            : myAssignedLeads.length;
+
+        setAssignedInboxCount(total);
+        setAssignedLeads(myAssignedLeads);
+
+        // Synchronize badge with sidebar
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("refresh-inbox-count", {
+              detail: { count: total },
+            }),
+          );
+        }
+
+        if (myAssignedLeads.length > 0) {
+          const latest = myAssignedLeads[0];
+          const lastNotifiedId =
+            typeof window !== "undefined"
+              ? sessionStorage.getItem("crm_last_notified_lead_id")
+              : null;
+
+          // If a new lead is assigned to this salesperson that hasn't been acknowledged in this session
+          if (latest._id && latest._id !== lastNotifiedId) {
+            setIncomingLeadAlert(latest);
+            setShowBigNotification(true);
+          }
+        } else {
+          setShowBigNotification(false);
+          setIncomingLeadAlert(null);
+        }
+      } catch {
+        // Fail silently
       }
-    } catch {
-      // Fail silently
-    }
-  }, [isSalesPerson, user?._id, user?.id]);
+    },
+    [isSalesPerson, user?._id, user?.id],
+  );
 
   const hasFetchedAssignedLeadsRef = useRef(false);
 
@@ -766,12 +803,20 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       const lead = e?.detail?.lead;
       const rawTarget =
         e?.detail?.targetUserId ||
-        (typeof lead?.assignedToId === "object" ? lead?.assignedToId?._id : lead?.assignedToId) ||
-        (typeof lead?.assignedTo === "object" ? lead?.assignedTo?._id : lead?.assignedTo);
+        (typeof lead?.assignedToId === "object"
+          ? lead?.assignedToId?._id
+          : lead?.assignedToId) ||
+        (typeof lead?.assignedTo === "object"
+          ? lead?.assignedTo?._id
+          : lead?.assignedTo);
       const targetUserId = rawTarget ? String(rawTarget) : "";
 
       // If target user is specified, verify it matches this salesperson
-      if (targetUserId && myUserId && String(targetUserId) !== String(myUserId)) {
+      if (
+        targetUserId &&
+        myUserId &&
+        String(targetUserId) !== String(myUserId)
+      ) {
         return;
       }
 
@@ -814,9 +859,14 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     try {
       await api.post(`/leads/${incomingLeadAlert._id}/accept`, {});
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
+        sessionStorage.setItem(
+          "crm_last_notified_lead_id",
+          incomingLeadAlert._id,
+        );
         window.dispatchEvent(
-          new CustomEvent("lead-accepted", { detail: { leadId: incomingLeadAlert._id } })
+          new CustomEvent("lead-accepted", {
+            detail: { leadId: incomingLeadAlert._id },
+          }),
         );
       }
       setShowBigNotification(false);
@@ -833,7 +883,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
   const handleDismissBigNotification = () => {
     stopLeadSound();
     if (incomingLeadAlert && typeof window !== "undefined") {
-      sessionStorage.setItem("crm_last_notified_lead_id", incomingLeadAlert._id);
+      sessionStorage.setItem(
+        "crm_last_notified_lead_id",
+        incomingLeadAlert._id,
+      );
     }
     setShowBigNotification(false);
     setIncomingLeadAlert(null);
@@ -1078,8 +1131,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     }
   };
 
-
-
   return (
     <>
       <header className="h-14 sm:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs transition-all">
@@ -1120,7 +1171,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           <div className="flex items-center gap-0.5 sm:gap-1.5 md:gap-2 text-slate-500">
-
             {/* WhatsApp / Messaging Shortcut */}
             <button
               onClick={() => router.push("/dashboard/whatsapp")}
@@ -1150,7 +1200,8 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                   aria-label="Notification Center"
                 >
                   <Bell className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
-                  {(unreadNotificationCount > 0 || (isSalesPerson && assignedInboxCount > 0)) && (
+                  {(unreadNotificationCount > 0 ||
+                    (isSalesPerson && assignedInboxCount > 0)) && (
                     <span className="absolute top-1 right-1 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
                   )}
                 </button>
@@ -1469,11 +1520,16 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                   )}
                 </div>
                 <h4 className="text-sm sm:text-base font-extrabold tracking-tight text-white mt-0.5 truncate">
-                  {incomingLeadAlert.businessName || incomingLeadAlert.contactName || "New Assigned Lead"}
-                  {incomingLeadAlert.contactName && incomingLeadAlert.businessName
+                  {incomingLeadAlert.businessName ||
+                    incomingLeadAlert.contactName ||
+                    "New Assigned Lead"}
+                  {incomingLeadAlert.contactName &&
+                  incomingLeadAlert.businessName
                     ? ` (${incomingLeadAlert.contactName})`
                     : ""}
-                  {incomingLeadAlert.phone ? ` • ${incomingLeadAlert.phone}` : ""}
+                  {incomingLeadAlert.phone
+                    ? ` • ${incomingLeadAlert.phone}`
+                    : ""}
                 </h4>
                 {incomingLeadAlert.requirement && (
                   <p className="text-xs text-red-100/90 font-medium truncate max-w-2xl hidden sm:block">
@@ -1503,7 +1559,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                 title="Quick Accept Lead"
               >
                 <Check className="w-3.5 h-3.5 text-emerald-300" />
-                <span>{isQuickAccepting ? "Accepting..." : "Quick Accept"}</span>
+                <span>
+                  {isQuickAccepting ? "Accepting..." : "Quick Accept"}
+                </span>
               </button>
               <button
                 onClick={handleDismissBigNotification}
@@ -1739,7 +1797,10 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
               {/* Dynamic Navigation Sections - Identical to desktop */}
               <div className="flex-1 py-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
                 {getNavSections(activeRoleRaw).map((section, sIdx) => (
-                  <div key={section.title || `mobile-sec-${sIdx}`} className="space-y-1">
+                  <div
+                    key={section.title || `mobile-sec-${sIdx}`}
+                    className="space-y-1"
+                  >
                     {section.title && (
                       <span className="px-3 text-[12px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5 truncate">
                         {section.title}
@@ -1751,7 +1812,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         item,
                         pathname,
                         currentView,
-                        currentFilter
+                        currentFilter,
                       );
 
                       return (
@@ -1774,7 +1835,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                                 : "text-slate-400 group-hover:text-slate-200"
                             }`}
                           />
-                          <span className="truncate text-base">{item.name}</span>
+                          <span className="truncate text-base">
+                            {item.name}
+                          </span>
 
                           {item.href === "/dashboard/leads/inbox" &&
                             isSalesPerson &&

@@ -207,7 +207,7 @@ export default function Customer360View({ customerId, user }) {
           Back to Directory
         </button>
         <div className="text-xs text-zinc-500 font-mono">
-          Tenant: {customer.tenantId?.name || "A2V Printing"}
+          Tenant: {customer.tenantId?.name || "A2V Prints"}
         </div>
       </div>
 
