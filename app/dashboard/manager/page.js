@@ -962,12 +962,7 @@ export default function ManagerDashboardPage() {
                     <span className="w-4 h-4 rounded-full bg-orange-500 text-white font-bold text-[9px] flex items-center justify-center">
                       {designDueCount}
                     </span>
-                    <Link
-                      href="/dashboard/design"
-                      className="px-2 py-0.5 rounded-lg bg-white border border-orange-200 text-orange-700 font-bold text-[10px] hover:bg-orange-50"
-                    >
-                      Queue
-                    </Link>
+                    
                   </div>
                 </div>
 
@@ -988,12 +983,7 @@ export default function ManagerDashboardPage() {
                     <span className="w-4 h-4 rounded-full bg-teal-500 text-white font-bold text-[9px] flex items-center justify-center">
                       {clientReviewPendingCount}
                     </span>
-                    <Link
-                      href="/dashboard/design"
-                      className="px-2 py-0.5 rounded-lg bg-white border border-teal-200 text-teal-700 font-bold text-[10px] hover:bg-teal-50"
-                    >
-                      Proofs
-                    </Link>
+                    
                   </div>
                 </div>
 
@@ -1015,7 +1005,7 @@ export default function ManagerDashboardPage() {
                       {productionLockedCount}
                     </span>
                     <Link
-                      href="/dashboard/manager/production-release"
+                      href="/dashboard/production"
                       className="px-2 py-0.5 rounded-lg bg-cyan-600 text-white font-bold text-[10px] hover:bg-cyan-700 shadow-xs flex items-center gap-1"
                     >
                       <Mail className="w-3 h-3" />
@@ -1228,26 +1218,11 @@ export default function ManagerDashboardPage() {
                 </Link>
 
                 {/* 6. Open Design Studio */}
-                <Link
-                  href="/dashboard/design"
-                  className="p-2.5 rounded-xl bg-teal-50/70 hover:bg-teal-100 border border-teal-100 flex items-center gap-2.5 transition-colors"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0">
-                    <Palette className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <strong className="text-slate-900 text-[11px] block">
-                      Design Studio
-                    </strong>
-                    <span className="text-[9px] text-slate-500">
-                      Proof workflow
-                    </span>
-                  </div>
-                </Link>
+                
 
                 {/* 7. Production Releases */}
                 <Link
-                  href="/dashboard/manager/production-release"
+                  href="/dashboard/production"
                   className="p-2.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100 border border-cyan-100 flex items-center gap-2.5 transition-colors"
                 >
                   <div className="w-7 h-7 rounded-lg bg-cyan-600 text-white flex items-center justify-center shrink-0">
@@ -1448,7 +1423,7 @@ export default function ManagerDashboardPage() {
                 </div>
               </div>
               <Link
-                href="/dashboard/manager/production-release"
+                href="/dashboard/production"
                 className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold transition-all shadow-xs flex items-center gap-1.5"
               >
                 <Mail className="w-3.5 h-3.5" />
@@ -1515,7 +1490,7 @@ export default function ManagerDashboardPage() {
                           </td>
                           <td className="py-2.5 text-right">
                             <Link
-                              href="/dashboard/manager/production-release"
+                              href="/dashboard/production"
                               className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] inline-flex items-center gap-1 shadow-xs"
                             >
                               <Mail className="w-3 h-3 text-cyan-400" />

@@ -57,8 +57,6 @@ const ROLE_COLORS = {
   sales: "bg-emerald-50 text-emerald-700 border-emerald-200",
   employee: "bg-emerald-50 text-emerald-700 border-emerald-200",
   executive: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  designer: "bg-amber-50 text-amber-700 border-amber-200",
-  graphic_designer: "bg-amber-50 text-amber-700 border-amber-200",
   data_operator: "bg-teal-50 text-teal-700 border-teal-200",
   "data-operator": "bg-teal-50 text-teal-700 border-teal-200",
 };
@@ -611,8 +609,6 @@ export default function AdminUserDashboardsPage() {
         matchesRole = ["sales", "employee", "executive"].includes(r);
       } else if (roleFilter === "MANAGER") {
         matchesRole = ["manager", "sales_manager"].includes(r);
-      } else if (roleFilter === "DESIGNER") {
-        matchesRole = ["designer", "graphic_designer"].includes(r);
       } else if (roleFilter === "ADMIN") {
         matchesRole = ["admin", "super_admin"].includes(r);
       }
@@ -790,9 +786,7 @@ export default function AdminUserDashboardsPage() {
                   {[
                     { id: "ALL", label: "All Members" },
                     { id: "SALES", label: "Sales Executives" },
-                    { id: "MANAGER", label: "Managers" },
-                    { id: "DESIGNER", label: "Designers" },
-                  ].map((tab) => (
+                    { id: "MANAGER", label: "Managers" },                  ].map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setRoleFilter(tab.id)}
@@ -1484,12 +1478,7 @@ export default function AdminUserDashboardsPage() {
                               <CheckCircle2 className="w-3.5 h-3.5" /> 0 Overdue
                             </span>
                           )}
-                          <Link
-                            href="/dashboard/design"
-                            className="text-indigo-600 font-bold text-[11px] hover:underline flex items-center gap-0.5"
-                          >
-                            Studio →
-                          </Link>
+                          
                         </div>
                       </div>
                     </div>
@@ -1694,13 +1683,7 @@ export default function AdminUserDashboardsPage() {
                                 >
                                   View All ({selectedUserDashboard.designProjects?.length || 0}) →
                                 </button>
-                                <Link
-                                  href="/dashboard/design"
-                                  className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 transition-all"
-                                  title="Open live Design Studio"
-                                >
-                                  Studio <ExternalLink className="w-3 h-3" />
-                                </Link>
+                                
                               </div>
                             </div>
 
@@ -1800,13 +1783,7 @@ export default function AdminUserDashboardsPage() {
                                               )}
                                             </span>
                                           )}
-                                          <Link
-                                            href={`/dashboard/design?projectId=${p._id}`}
-                                            className="p-1 rounded-lg hover:bg-indigo-50 text-indigo-600 transition"
-                                            title="Open in Design Studio"
-                                          >
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                          </Link>
+                                          
                                         </div>
                                       </div>
                                     );
@@ -1884,12 +1861,7 @@ export default function AdminUserDashboardsPage() {
                                             ord.commercialStatus ||
                                             ord.orderStatus}
                                         </span>
-                                        <Link
-                                          href={`/dashboard/design?orderId=${ord._id}`}
-                                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-indigo-50 transition"
-                                        >
-                                          Design →
-                                        </Link>
+                                        
                                       </div>
                                     </div>
                                   ))}
@@ -1913,13 +1885,7 @@ export default function AdminUserDashboardsPage() {
                               </p>
                             </div>
                           </div>
-                          <Link
-                            href="/dashboard/design"
-                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 flex items-center gap-1.5 transition"
-                          >
-                            <Palette className="w-4 h-4" />
-                            Launch Design Studio
-                          </Link>
+                          
                         </div>
                       </div>
                     ) : (
@@ -2414,13 +2380,7 @@ export default function AdminUserDashboardsPage() {
                             Track proofs, artwork revisions, dimensions, and approval workflows.
                           </p>
                         </div>
-                        <Link
-                          href="/dashboard/design"
-                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Launch Full Studio
-                        </Link>
+                        
                       </div>
 
                       {/* Filter & Search Bar */}
@@ -2573,12 +2533,7 @@ export default function AdminUserDashboardsPage() {
                                       )}
                                     </td>
                                     <td className="py-3 px-4 text-right">
-                                      <Link
-                                        href={`/dashboard/design?projectId=${p._id}`}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 transition"
-                                      >
-                                        Studio <ExternalLink className="w-3 h-3" />
-                                      </Link>
+                                      
                                     </td>
                                   </tr>
                                 );

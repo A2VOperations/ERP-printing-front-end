@@ -20,7 +20,6 @@ const MODULE_RESOURCES = [
   { id: "QUOTATIONS", name: "Quotations & Pricing" },
   { id: "ORDERS", name: "Orders & Commercials" },
   { id: "PAYMENTS", name: "Payments & Ledgers" },
-  { id: "DESIGN_PROJECTS", name: "Design Studio & Proofs" },
   { id: "PRODUCTION", name: "Outsourced Production" },
   { id: "DELIVERIES", name: "Logistics & Deliveries" },
   { id: "REPORTS", name: "Reporting & Analytics" },
@@ -74,7 +73,6 @@ const DEFAULT_STANDARD_ROLES = [
       { resource: "ORDERS", action: "CREATE", dataScope: "TEAM" },
       { resource: "PAYMENTS", action: "VIEW", dataScope: "TEAM" },
       { resource: "PAYMENTS", action: "CREATE", dataScope: "TEAM" },
-      { resource: "DESIGN_PROJECTS", action: "VIEW", dataScope: "TEAM" },
       { resource: "PRODUCTION", action: "VIEW", dataScope: "ALL" },
       { resource: "DELIVERIES", action: "VIEW", dataScope: "ALL" },
       { resource: "DOCUMENTS", action: "VIEW", dataScope: "TEAM" },
@@ -111,23 +109,6 @@ const DEFAULT_STANDARD_ROLES = [
       { resource: "DOCUMENTS", action: "CREATE", dataScope: "OWN" },
       { resource: "REPORTS", action: "VIEW", dataScope: "OWN" },
       { resource: "AREAS", action: "VIEW", dataScope: "ALL" },
-    ],
-  },
-  {
-    slug: "designer",
-    name: "Graphic Designer",
-    description:
-      "Pre-press artwork creation, client proof generation, and revision handling.",
-    isSystemDefault: true,
-    permissions: [
-      { resource: "DESIGN_PROJECTS", action: "VIEW", dataScope: "OWN" },
-      { resource: "DESIGN_PROJECTS", action: "CREATE", dataScope: "OWN" },
-      { resource: "DESIGN_PROJECTS", action: "UPDATE", dataScope: "OWN" },
-      { resource: "DOCUMENTS", action: "VIEW", dataScope: "OWN" },
-      { resource: "DOCUMENTS", action: "CREATE", dataScope: "OWN" },
-      { resource: "CUSTOMERS", action: "VIEW", dataScope: "ALL" },
-      { resource: "ORDERS", action: "VIEW", dataScope: "ALL" },
-      { resource: "REPORTS", action: "VIEW", dataScope: "OWN" },
     ],
   },
   {
@@ -286,7 +267,7 @@ export default function RolesPermissionsPage() {
 
           {/* 4 Role Selector Tabs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {["admin", "manager", "sales", "designer"].map((slug) => {
+            {["admin", "manager", "sales", "data_operator"].map((slug) => {
               const isSelected = selectedRoleSlug === slug;
               const roleInfo =
                 roles.find((r) => r.slug === slug) ||

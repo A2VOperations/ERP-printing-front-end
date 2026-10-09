@@ -29,11 +29,8 @@ export default function ReportsView({ user: currentUser }) {
       ? JSON.parse(localStorage.getItem("user"))
       : null);
   const isAdmin = loggedInUser?.role === "admin";
-  const isDesigner = loggedInUser?.role === "designer";
-  const [reportMode, setReportMode] = useState(() =>
-    isDesigner ? "design" : "sales",
-  );
-  const [designProjects, setDesignProjects] = useState([]);
+  const [reportMode, setReportMode] = useState("sales");
+  const designProjects = [];
 
   const [users, setUsers] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -70,7 +67,7 @@ export default function ReportsView({ user: currentUser }) {
     try {
       const userId =
         loggedInUser?.email || loggedInUser?.id || loggedInUser?._id || "";
-      const [usersRes, leadsRes, followUpsRes, designRes] = await Promise.all([
+      const [usersRes, leadsRes, followUpsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/users`, {
           headers: { "x-user-id": userId },
         })
@@ -84,14 +81,7 @@ export default function ReportsView({ user: currentUser }) {
         fetch(`${API_BASE_URL}/api/followups/reports`)
           .then((res) => res.json())
           .catch(() => ({ success: false })),
-        fetch(`${API_BASE_URL}/api/design-projects`, {
-          headers: {
-            "x-user-id": userId,
-            "x-user-role": loggedInUser?.role || "",
-          },
-        })
-          .then((res) => res.json())
-          .catch(() => ({ success: false })),
+
       ]);
 
       if (usersRes.success) {
@@ -116,9 +106,6 @@ export default function ReportsView({ user: currentUser }) {
         setFollowUps(followUpsRes.followUps || []);
       }
 
-      if (designRes?.success) {
-        setDesignProjects(designRes.projects || []);
-      }
     } catch (err) {
       console.error("Error loading report data:", err);
       setError(
@@ -627,7 +614,7 @@ export default function ReportsView({ user: currentUser }) {
         <div className="flex flex-wrap items-center gap-3">
           {/* Report Type Selector Pills */}
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-            {!isDesigner && (
+            {true && (
               <button
                 onClick={() => setReportMode("sales")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -639,16 +626,7 @@ export default function ReportsView({ user: currentUser }) {
                 📊 Sales & Lead Reports
               </button>
             )}
-            <button
-              onClick={() => setReportMode("design")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                reportMode === "design"
-                  ? "bg-sky-600 text-white shadow-xs"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              🎨 Graphic Design Reports
-            </button>
+            
           </div>
 
           {/* User Selector Dropdown */}

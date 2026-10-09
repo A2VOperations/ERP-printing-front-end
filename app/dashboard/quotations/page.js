@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/app/components/sidebar";
@@ -55,7 +55,8 @@ function QuotationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const leadIdParam = searchParams.get("leadId") || "";
-  const businessNameParam = searchParams.get("businessName") || "";
+  const businessNameParam =
+    searchParams.get("businessName") || searchParams.get("companyName") || "";
   const contactPersonParam =
     searchParams.get("contactPerson") || searchParams.get("customerName") || "";
   const customerNameParam = contactPersonParam;
@@ -67,6 +68,8 @@ function QuotationsContent() {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [dispatchSuccessUrl, setDispatchSuccessUrl] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const stored =
@@ -164,49 +167,45 @@ function QuotationsContent() {
   const [editIsRevision, setEditIsRevision] = useState(false);
 
   // Multi-Order / Convert to Orders State
-  const [designers, setDesigners] = useState([]);
   const [quoteOrders, setQuoteOrders] = useState([]);
   const [quoteOrdersLoading, setQuoteOrdersLoading] = useState(false);
   const [showConvertOrderModal, setShowConvertOrderModal] = useState(false);
   const [convertQuote, setConvertQuote] = useState(null);
-  const [convertForm, setConvertForm] = useState({
-    selectedItemIndexes: [],
-    assignedDesignerId: "",
-    designNotes: "",
-    designDeadline: "",
+  const [orderForm, setOrderForm] = useState({
+    quotationId: "",
+    selectedItemIndex: "",
+    title: "",
+    amount: "",
+    advanceRequiredPercent: 50,
     promisedDeliveryDate: "",
     deliveryMethod: "PICKUP",
-    advanceRequiredPercent: 50,
-    orderNotes: "",
+    notes: "",
+    width: "",
+    height: "",
+    dimensionUnit: "inch",
+    quantity: 1,
+    material: "",
+    gsm: "",
+    colors: "CMYK",
+    printSides: "SINGLE",
+    finishing: [],
   });
 
-  // Direct Quotation Payment State (Products / Retail items without design/orders)
+  // Quotation payments are recorded against an accepted quotation.
   const [quotePayments, setQuotePayments] = useState([]);
   const [quotePaymentsLoading, setQuotePaymentsLoading] = useState(false);
   const [showDirectPaymentModal, setShowDirectPaymentModal] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [directPaymentForm, setDirectPaymentForm] = useState({
-    selectedItemIndexes: [],
     amount: "",
     paymentMethod: "CASH",
-    paymentType: "FINAL_SETTLEMENT",
+    paymentType: "ADVANCE",
     transactionReference: "",
     bankName: "",
     chequeNumber: "",
     notes: "",
   });
 
-  useEffect(() => {
-    api
-      .get("/users?limit=100")
-      .then((res) => {
-        const list = Array.isArray(res.data)
-          ? res.data
-          : res.data?.records || [];
-        setDesigners(list);
-      })
-      .catch(() => {});
-  }, []);
 
   const fetchQuoteOrders = async (quoteId) => {
     if (!quoteId) {
@@ -267,6 +266,28 @@ function QuotationsContent() {
         phone: phoneParam || prev.phone,
       }));
       setShowBuilderModal(true);
+
+      // If leadIdParam exists and businessName or contactPerson is missing, fetch full lead record
+      if (leadIdParam && (!businessNameParam || !contactPersonParam || !phoneParam)) {
+        api
+          .get(`/leads/${leadIdParam}`, { silent: true })
+          .then((res) => {
+            const ld = res?.data?.lead || res?.data;
+            if (ld) {
+              const bName = ld.businessName || ld.companyName || "";
+              const cName = ld.contactName || ld.customerName || "";
+              const ph = ld.phone || "";
+              setNewQuote((prev) => ({
+                ...prev,
+                businessName: prev.businessName || bName,
+                contactPerson: prev.contactPerson || cName,
+                customerName: prev.customerName || cName || bName,
+                phone: prev.phone || ph,
+              }));
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [leadIdParam, businessNameParam, contactPersonParam, phoneParam]);
 
@@ -310,10 +331,10 @@ function QuotationsContent() {
       items: [
         ...newQuote.items,
         {
-          title: "Visiting Cards Matte 350 GSM",
-          description: "Standard 3.5x2 in, Double Sided",
-          quantity: 1000,
-          rate: 1.5,
+          title: "",
+          description: "",
+          quantity: "",
+          rate: "",
           discountPercent: 0,
           taxRatePercent: 18,
         },
@@ -531,9 +552,14 @@ function QuotationsContent() {
       await api.post(`/quotations/${quote._id}/approve`, {
         notes: "Discount approved by Manager/Admin.",
       });
-      alert(
-        "Discount approved successfully! Status is now APPROVED (Ready to send).",
+      const approvedQuote = { ...quote, status: "APPROVED" };
+      setSelectedQuote((prev) => (prev?._id === quote._id ? approvedQuote : prev));
+      setQuotations((prev) =>
+        prev.map((q) => (q._id === quote._id ? approvedQuote : q)),
       );
+      if (statusFilter === "PENDING_DISCOUNT_APPROVAL") {
+        setStatusFilter("APPROVED");
+      }
       await fetchQuotations();
     } catch (err) {
       alert(err.message || "Failed to approve discount");
@@ -546,7 +572,11 @@ function QuotationsContent() {
     try {
       setActionLoading(true);
       await api.post(`/quotations/${quote._id}/reject`, { reason });
-      alert("Quotation discount rejected.");
+      const rejectedQuote = { ...quote, status: "REJECTED" };
+      setSelectedQuote((prev) => (prev?._id === quote._id ? rejectedQuote : prev));
+      setQuotations((prev) =>
+        prev.map((q) => (q._id === quote._id ? rejectedQuote : q)),
+      );
       await fetchQuotations();
     } catch (err) {
       alert(err.message || "Failed to reject discount");
@@ -555,20 +585,35 @@ function QuotationsContent() {
     }
   };
 
-  // Send Quotation to Client
+  // Send Quotation to Client (Executes on first click without blocking modal prompts)
   const handleSendQuotation = async (quote) => {
-    if (
-      !confirm(
-        `Dispatch quotation ${quote.quotationNumber} to customer? Status will change to SENT.`,
-      )
-    )
-      return;
+    if (!quote?._id || actionLoading) return;
     try {
       setActionLoading(true);
       const res = await api.post(`/quotations/${quote._id}/send`);
-      alert(
-        `Quotation dispatched to client successfully! Digital token acceptance link generated: ${res.data?.acceptanceUrl || ""}`,
+      const sentQuotation = res?.data?.quotation || {
+        ...quote,
+        status: "SENT",
+        sentAt: new Date().toISOString(),
+      };
+      const tokenUrl = res?.data?.acceptanceUrl || "";
+      if (tokenUrl) {
+        setDispatchSuccessUrl(tokenUrl);
+      }
+
+      // Optimistically & immediately update UI state on first click
+      setSelectedQuote((prev) =>
+        prev?._id === quote._id ? { ...prev, ...sentQuotation } : prev,
       );
+      setQuotations((prev) =>
+        prev.map((q) => (q._id === quote._id ? { ...q, ...sentQuotation } : q)),
+      );
+
+      // If viewing APPROVED tab, advance filter to SENT so quotation remains selected and active
+      if (statusFilter === "APPROVED") {
+        setStatusFilter("SENT");
+      }
+
       await fetchQuotations();
     } catch (err) {
       alert(err.message || "Failed to send quotation");
@@ -577,38 +622,21 @@ function QuotationsContent() {
     }
   };
 
-  // Open Convert to Order Modal (with item selection and designer assignment)
+  // Open Convert to Commercial Order Modal
   const handleOpenConvertOrder = (quote) => {
     const targetQuote = quote || selectedQuote;
     if (!targetQuote) return;
 
     setConvertQuote(targetQuote);
 
-    // Compute which items in quote.items were already ordered
-    const alreadyOrderedIndexes = new Set();
-    (quoteOrders || []).forEach((ord) => {
-      (ord.items || []).forEach((it) => {
-        if (
-          it.quotationItemIndex !== undefined &&
-          it.quotationItemIndex !== null
-        ) {
-          alreadyOrderedIndexes.add(Number(it.quotationItemIndex));
-        }
-      });
-    });
-
     const items = targetQuote.items || [];
-    // If some items are not yet ordered, default to selecting the remaining unordered items!
-    // If all are ordered or none are ordered, default to all items.
-    const unorderedIndexes = items
-      .map((_, idx) => idx)
-      .filter((idx) => !alreadyOrderedIndexes.has(idx));
-    const initialSelected =
-      unorderedIndexes.length > 0
-        ? unorderedIndexes
-        : items.map((_, idx) => idx);
+    const allTitles = items.map((it) => it.title).filter(Boolean).join(", ");
+    const totalVal = (
+      targetQuote.grandTotalPaise
+        ? targetQuote.grandTotalPaise / 100
+        : targetQuote.totalAmount || 0
+    ).toString();
 
-    // Default dates
     const dDeadline = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
@@ -616,136 +644,145 @@ function QuotationsContent() {
       .toISOString()
       .split("T")[0];
 
-    setConvertForm({
-      selectedItemIndexes: initialSelected,
-      assignedDesignerId: "",
-      designNotes: "",
-      designDeadline: dDeadline,
+    const firstIt = items[0] || {};
+
+    setOrderForm({
+      quotationId: targetQuote._id,
+      selectedItemIndex: "",
+      title: allTitles || firstIt.title || "Commercial Print Order",
+      amount: totalVal,
+      advanceRequiredPercent: 50,
       promisedDeliveryDate: dDelivery,
       deliveryMethod: "PICKUP",
-      advanceRequiredPercent: 50,
-      orderNotes: "",
+      notes: targetQuote.notes || "",
+      width: firstIt.width ? firstIt.width.toString() : "",
+      height: firstIt.height ? firstIt.height.toString() : "",
+      dimensionUnit: firstIt.dimensionUnit || "inch",
+      quantity: firstIt.quantity || 1,
+      material: firstIt.paperType || "",
+      gsm: firstIt.paperGsm ? firstIt.paperGsm.toString() : "",
+      colors: firstIt.colors || "CMYK",
+      printSides: firstIt.printSides || "SINGLE",
+      finishing: firstIt.finishing || [],
     });
 
     setShowConvertOrderModal(true);
   };
 
-  // Submit Create Order from Quotation
-  const handleCreateOrderFromQuote = async (e) => {
+  // Submit Create Commercial Order
+  const handleCreateOrderSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!convertQuote) return;
-    if (
-      !convertForm.selectedItemIndexes ||
-      convertForm.selectedItemIndexes.length === 0
-    ) {
-      alert(
-        "Please select at least one quotation line item to include in this order.",
-      );
-      return;
-    }
+    const activeQuote =
+      quotations.find((q) => q._id === orderForm.quotationId) ||
+      convertQuote ||
+      selectedQuote;
+    if (!activeQuote) return;
 
     try {
       setActionLoading(true);
+      const isSingleItem =
+        orderForm.selectedItemIndex !== "" &&
+        orderForm.selectedItemIndex !== undefined;
+
       const payload = {
-        selectedItemIndexes: convertForm.selectedItemIndexes,
-        assignedDesignerId: convertForm.assignedDesignerId || undefined,
-        designNotes: convertForm.designNotes || "",
-        designDeadline: convertForm.designDeadline || undefined,
-        promisedDeliveryDate: convertForm.promisedDeliveryDate || undefined,
-        deliveryMethod: convertForm.deliveryMethod || "PICKUP",
+        leadId: activeQuote.leadId?._id || activeQuote.leadId || undefined,
+        customerId:
+          activeQuote.customerId?._id ||
+          activeQuote.customerId ||
+          undefined,
+        quotationId: orderForm.quotationId || activeQuote._id,
+        selectedItemIndexes: isSingleItem
+          ? [Number(orderForm.selectedItemIndex)]
+          : undefined,
+        allowMultipleOrders: true,
+        title: orderForm.title || "Commercial Print Order",
+        totalAmount: orderForm.amount ? Number(orderForm.amount) : undefined,
         advanceRequiredPercent:
-          Number(convertForm.advanceRequiredPercent) || 50,
-        notes: convertForm.orderNotes || "",
+          Number(orderForm.advanceRequiredPercent) || 50,
+        promisedDeliveryDate: orderForm.promisedDeliveryDate || undefined,
+        deliveryMethod: orderForm.deliveryMethod || "PICKUP",
+        notes: orderForm.notes || "",
+        // Technical Specifications
+        width: orderForm.width ? Number(orderForm.width) : undefined,
+        height: orderForm.height ? Number(orderForm.height) : undefined,
+        dimensionUnit: orderForm.dimensionUnit || "inch",
+        quantity: orderForm.quantity ? Number(orderForm.quantity) : 1,
+        material: orderForm.material || "Standard Media",
+        gsm: orderForm.gsm ? Number(orderForm.gsm) : undefined,
+        colors: orderForm.colors || "CMYK",
+        printSides: orderForm.printSides || "SINGLE",
+        finishing: orderForm.finishing || [],
       };
 
-      const res = await api.post(
-        `/quotations/${convertQuote._id}/create-order`,
-        payload,
-      );
+      const res = await api.post("/orders", payload);
       alert(
-        `Commercial Order ${res.data?.orderNumber || ""} successfully created for selected item(s)!`,
+        `Commercial Order ${res.data?.orderNumber || ""} successfully created!`,
       );
       setShowConvertOrderModal(false);
+      setSelectedQuote((prev) =>
+        prev?._id === activeQuote._id
+          ? { ...prev, status: "ACCEPTED", acceptedAt: new Date().toISOString() }
+          : prev,
+      );
+      setQuotations((prev) =>
+        prev.map((q) =>
+          q._id === activeQuote._id
+            ? { ...q, status: "ACCEPTED", acceptedAt: new Date().toISOString() }
+            : q,
+        ),
+      );
+      if (statusFilter === "SENT") {
+        setStatusFilter("ACCEPTED");
+      }
       await fetchQuotations();
-      await fetchQuoteOrders(convertQuote._id);
+      await fetchQuoteOrders(activeQuote._id);
     } catch (err) {
-      alert(err.message || "Failed to create order from quotation");
+      alert(err.message || "Failed to create commercial order");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Toggle Item Selection in Direct Payment Modal
-  const handleToggleDirectItem = (idx) => {
-    const targetIdx = Number(idx);
-    const current = (directPaymentForm.selectedItemIndexes || []).map(Number);
-    const next = current.includes(targetIdx)
-      ? current.filter((i) => i !== targetIdx)
-      : [...current, targetIdx];
+  const getQuoteAdvanceRequiredPaise = (quote) =>
+    Number(
+      quote?.advanceRequiredPaise ??
+        Math.round((Number(quote?.grandTotalPaise || 0) * 50) / 100),
+    );
 
-    const newTotal = next.reduce((sum, itemIdx) => {
-      const itemObj = selectedQuote?.items?.[itemIdx];
-      const price = (itemObj?.itemTotalPaise || 0) / 100;
-      const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
-      return sum + Math.max(0, price - paid);
-    }, 0);
+  const getQuotePaymentStage = (quote) =>
+    Number(quote?.advanceReceivedPaise || 0) <
+    getQuoteAdvanceRequiredPaise(quote)
+      ? "ADVANCE"
+      : "BALANCE";
 
-    setDirectPaymentForm((prev) => ({
-      ...prev,
-      selectedItemIndexes: next,
-      amount: newTotal > 0 ? newTotal.toFixed(2) : "0",
-    }));
-  };
+  const hasPendingQuotePayment = (quoteId) =>
+    quotePayments.some(
+      (payment) =>
+        String(payment.quotationId?._id || payment.quotationId) ===
+          String(quoteId) &&
+        payment.status === "PENDING_VERIFICATION",
+    );
 
-  // Open Direct Quotation Payment Modal (Pay directly for products/hardware)
-  const handleOpenDirectPaymentModal = (
-    targetQuote = selectedQuote,
-    specificItemIndex = null,
-  ) => {
-    if (!targetQuote) return;
-    const items = targetQuote.items || [];
-    let initialSelected = [];
-    let initialAmount = "0";
-
-    if (specificItemIndex !== null && specificItemIndex !== undefined) {
-      const sIdx = Number(specificItemIndex);
-      initialSelected = [sIdx];
-      const itemObj = items[sIdx];
-      const price = (itemObj?.itemTotalPaise || 0) / 100;
-      const paid = (itemObj?.directPaymentPaidPaise || 0) / 100;
-      const rem = Math.max(0, price - paid);
-      initialAmount = rem > 0 ? rem.toFixed(2) : (price || 0).toFixed(2);
-    } else {
-      // Default select unpaid direct items (or items where directPaymentStatus !== 'PAID')
-      const unpaidIndexes = items
-        .map((it, idx) => idx)
-        .filter((idx) => items[idx].directPaymentStatus !== "PAID");
-      initialSelected =
-        unpaidIndexes.length > 0 ? unpaidIndexes : items.map((_, idx) => idx);
-
-      // Sum remaining unpaid for selected items
-      const selectedTotal = initialSelected.reduce((sum, idx) => {
-        const it = items[idx];
-        const itemPrice = (it?.itemTotalPaise || 0) / 100;
-        const alreadyPaid = (it?.directPaymentPaidPaise || 0) / 100;
-        return sum + Math.max(0, itemPrice - alreadyPaid);
-      }, 0);
-
-      initialAmount =
-        selectedTotal > 0
-          ? selectedTotal.toFixed(2)
-          : (
-              (targetQuote.directBalancePaise !== undefined
-                ? targetQuote.directBalancePaise
-                : targetQuote.grandTotalPaise || 0) / 100
-            ).toFixed(2);
-    }
+  const handleOpenDirectPaymentModal = (targetQuote = selectedQuote) => {
+    if (!targetQuote || targetQuote.status !== "ACCEPTED") return;
+    const stage = getQuotePaymentStage(targetQuote);
+    const balancePaise = Number(
+      targetQuote.directBalancePaise ?? targetQuote.grandTotalPaise ?? 0,
+    );
+    const remainingAdvancePaise = Math.max(
+      0,
+      getQuoteAdvanceRequiredPaise(targetQuote) -
+        Number(targetQuote.advanceReceivedPaise || 0),
+    );
+    const amountPaise =
+      stage === "ADVANCE"
+        ? Math.min(balancePaise, remainingAdvancePaise)
+        : balancePaise;
 
     setDirectPaymentForm({
-      selectedItemIndexes: initialSelected,
-      amount: initialAmount,
+      amount: (amountPaise / 100).toFixed(2),
       paymentMethod: "CASH",
-      paymentType: "FINAL_SETTLEMENT",
+      paymentType: stage,
       transactionReference: "",
       bankName: "",
       chequeNumber: "",
@@ -757,16 +794,7 @@ function QuotationsContent() {
   // Submit Direct Quotation Payment
   const handleRecordDirectPayment = async (e) => {
     if (e) e.preventDefault();
-    if (!selectedQuote) return;
-    if (
-      !directPaymentForm.selectedItemIndexes ||
-      directPaymentForm.selectedItemIndexes.length === 0
-    ) {
-      alert(
-        "Please select at least one quotation line item for this direct payment.",
-      );
-      return;
-    }
+    if (!selectedQuote || selectedQuote.status !== "ACCEPTED") return;
     const enteredAmt = Number(directPaymentForm.amount);
     if (!enteredAmt || enteredAmt <= 0) {
       alert("Please enter a valid payment amount greater than zero.");
@@ -779,7 +807,6 @@ function QuotationsContent() {
         amount: enteredAmt,
         paymentMethod: directPaymentForm.paymentMethod,
         paymentType: directPaymentForm.paymentType,
-        selectedItemIndexes: directPaymentForm.selectedItemIndexes,
         transactionReference:
           directPaymentForm.transactionReference || undefined,
         bankName: directPaymentForm.bankName || undefined,
@@ -792,7 +819,7 @@ function QuotationsContent() {
         payload,
       );
       alert(
-        `Direct payment of ₹${enteredAmt.toLocaleString("en-IN")} successfully recorded! (Receipt: ${res.data?.receiptNumber || "Confirmed"})`,
+        `Quotation payment of ₹${enteredAmt.toLocaleString("en-IN")} recorded. (Receipt: ${res.data?.receiptNumber || "Confirmed"})`,
       );
       setShowDirectPaymentModal(false);
       await fetchQuotations();
@@ -808,7 +835,7 @@ function QuotationsContent() {
     }
   };
 
-  // Mark Client Accepted (Opens item selection and designer assignment modal)
+  // Mark Client Accepted (Opens item selection and order creation)
   const handleMarkClientAccepted = (quote) => {
     handleOpenConvertOrder(quote);
   };
@@ -929,45 +956,6 @@ function QuotationsContent() {
     return sum + (taxable * taxRate) / 100;
   }, 0);
   const builderGrandTotal = builderTaxable + builderGst;
-
-  // Live calculation of selected items in convertForm
-  const convertSelectedItems = (convertQuote?.items || []).filter((_, idx) =>
-    (convertForm?.selectedItemIndexes || []).includes(idx),
-  );
-
-  const convertSubtotal = convertSelectedItems.reduce((acc, it) => {
-    const gross =
-      (Number(it.quantity) || 1) *
-      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
-    return acc + gross;
-  }, 0);
-
-  const convertDiscount = convertSelectedItems.reduce((acc, it) => {
-    const gross =
-      (Number(it.quantity) || 1) *
-      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
-    const disc = Number(it.discountPercent || 0);
-    return acc + (gross * disc) / 100;
-  }, 0);
-
-  const convertTaxable = Math.max(0, convertSubtotal - convertDiscount);
-
-  const convertGst = convertSelectedItems.reduce((acc, it) => {
-    const gross =
-      (Number(it.quantity) || 1) *
-      (it.unitRatePaise ? it.unitRatePaise / 100 : Number(it.rate) || 0);
-    const disc = Number(it.discountPercent || 0);
-    const taxable = Math.max(0, gross - (gross * disc) / 100);
-    const taxRate = Number(
-      it.taxRatePercent !== undefined ? it.taxRatePercent : 18,
-    );
-    return acc + (taxable * taxRate) / 100;
-  }, 0);
-
-  const convertGrandTotal = convertTaxable + convertGst;
-  const convertAdvanceReq =
-    (convertGrandTotal * (Number(convertForm?.advanceRequiredPercent) || 50)) /
-    100;
 
   // Selected Quote Resolved Values
   const tenantName = currentTenant?.name || "A2V Prints";
@@ -1297,7 +1285,7 @@ function QuotationsContent() {
                           </strong>
                           {item.directPaidPaise > 0 && (
                             <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
-                              Direct Paid: ₹
+                              Paid: ₹
                               {(item.directPaidPaise / 100).toLocaleString(
                                 "en-IN",
                               )}
@@ -1335,26 +1323,6 @@ function QuotationsContent() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          handleOpenDirectPaymentModal(selectedQuote)
-                        }
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                        title="Record direct payment for products (e.g. iron, hardware) without converting to order or assigning to designers"
-                      >
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Record Direct Payment
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenConvertOrder(selectedQuote)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                        title="Create dedicated orders for items in this quotation and assign to designers"
-                      >
-                        <Layers className="w-3.5 h-3.5" />
-                        Create Order (Split Items)
-                      </button>
-
                       {selectedQuote.status !== "ACCEPTED" ? (
                         <button
                           onClick={() => handleOpenEdit(selectedQuote)}
@@ -1493,14 +1461,34 @@ function QuotationsContent() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleSendQuotation(selectedQuote)}
-                        disabled={actionLoading}
-                        className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 transition-all"
-                      >
-                        <Send className="w-4 h-4" />
-                        🚀 Send to Client
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenConvertOrder(selectedQuote)}
+                          disabled={actionLoading}
+                          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                          title="Convert selected quotation items into orders"
+                        >
+                          <Layers className="w-4 h-4" />
+                          Convert Item to Order
+                        </button>
+                        <button
+                          onClick={() => handleSendQuotation(selectedQuote)}
+                          disabled={actionLoading}
+                          className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] disabled:opacity-60 text-white font-bold text-xs shadow-md shadow-orange-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          {actionLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Sending to Client...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              🚀 Send to Client
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1513,21 +1501,23 @@ function QuotationsContent() {
                           <strong className="block text-orange-950 font-bold text-sm">
                             Quotation Sent to Client
                           </strong>
+                          <span className="text-[11px] text-orange-800">
+                            Awaiting client review and digital acceptance.
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
-                       
                         <button
                           onClick={() =>
-                            handleMarkClientAccepted(selectedQuote)
+                            handleOpenConvertOrder(selectedQuote)
                           }
                           disabled={actionLoading}
                           className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                          title="Convert items that need design/fabrication into orders and assign to designers"
+                          title="Convert selected quotation items into orders"
                         >
                           <Layers className="w-4 h-4" />
-                          Convert Items to Order
+                          Convert Item to Order
                         </button>
                         <button
                           onClick={() => handleMarkNotAccepted(selectedQuote)}
@@ -1553,12 +1543,26 @@ function QuotationsContent() {
                           <span className="text-[11px] text-green-800">
                             Commercial deal closed. You can create multiple
                             orders for specific items and assign them to
-                            different designers.
+                            separate orders.
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {Number(selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) > 0 && (
+                          <button
+                            onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
+                            disabled={paymentSubmitting || hasPendingQuotePayment(selectedQuote._id)}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            {hasPendingQuotePayment(selectedQuote._id)
+                              ? "Payment Awaiting Verification"
+                              : getQuotePaymentStage(selectedQuote) === "ADVANCE"
+                                ? "Record Advance Payment"
+                                : "Record Final Payment"}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenConvertOrder(selectedQuote)}
                           className="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
@@ -1573,6 +1577,42 @@ function QuotationsContent() {
                           <ShoppingBag className="w-3.5 h-3.5" />
                           View in Orders →
                         </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedQuote.status === "ACCEPTED" && (
+                    <div className="p-4 bg-white border-b border-slate-200 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <span className="block text-slate-500">Advance Required</span>
+                          <strong className="block mt-1 font-mono text-slate-900">₹{(getQuoteAdvanceRequiredPaise(selectedQuote) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                          <span className="block text-emerald-700">Advance Received</span>
+                          <strong className="block mt-1 font-mono text-emerald-900">₹{((selectedQuote.advanceReceivedPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                          <span className="block text-amber-700">Final Balance Due</span>
+                          <strong className="block mt-1 font-mono text-amber-900">₹{((selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <h4 className="text-xs font-bold text-slate-800">Quotation Payment History</h4>
+                        {quotePaymentsLoading ? (
+                          <p className="text-xs text-slate-500">Loading payment history...</p>
+                        ) : quotePayments.length === 0 ? (
+                          <p className="text-xs text-slate-500">No payments recorded for this quotation.</p>
+                        ) : (
+                          quotePayments.map((payment) => (
+                            <div key={payment._id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                              <span className="font-semibold text-slate-700">
+                                {payment.paymentType === "ADVANCE" ? "Advance" : "Final payment"} · {payment.receiptNumber || "Receipt pending"} · {payment.status?.replace(/_/g, " ")}
+                              </span>
+                              <span className="font-mono font-bold text-slate-900">₹{((payment.amountPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   )}
@@ -1998,9 +2038,22 @@ function QuotationsContent() {
                             </span>
                           </div>
 
+                          {selectedQuote.status === "ACCEPTED" && (
+                            <>
+                              <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                                <span>Advance Received:</span>
+                                <span className="font-mono">₹{((selectedQuote.advanceReceivedPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-amber-50 rounded-xl border border-amber-200">
+                                <span>Balance Due:</span>
+                                <span className="font-mono">₹{((selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </>
+                          )}
+
                           {selectedQuote.directPaidPaise > 0 && (
                             <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
-                              <span>Direct Paid (Products):</span>
+                              <span>Total Received:</span>
                               <span className="font-mono">
                                 ₹
                                 {(
@@ -2015,7 +2068,7 @@ function QuotationsContent() {
 
                           {selectedQuote.directPaidPaise > 0 && (
                             <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-slate-100 rounded-xl border border-slate-200">
-                              <span>Remaining Balance:</span>
+                              <span>Balance Due:</span>
                               <span className="font-mono font-bold text-slate-800">
                                 ₹
                                 {(
@@ -2727,544 +2780,631 @@ function QuotationsContent() {
         </div>
       )}
 
-      {/* DIRECT QUOTATION PAYMENT MODAL (PRODUCTS / HARDWARE WITHOUT ORDERS) */}
+      {/* QUOTATION PAYMENT MODAL */}
       {showDirectPaymentModal && selectedQuote && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-3xl p-6 md:p-8 space-y-6 shadow-2xl animate-scale-up max-h-[92vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-2xs">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Record Direct Payment (Products / Retail)
-                    </h3>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                      {selectedQuote.quotationNumber}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Pay directly for items (e.g. iron rod, hardware, materials)
-                    without sending them to designers or creating production
-                    orders.
-                  </p>
-                </div>
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl animate-scale-up">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {directPaymentForm.paymentType === "ADVANCE" ? "Record Advance Payment" : "Record Final Payment"}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {selectedQuote.quotationNumber} · Accepted quotation payment
+                </p>
               </div>
-              <button
-                onClick={() => setShowDirectPaymentModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-all cursor-pointer"
-              >
+              <button type="button" onClick={() => setShowDirectPaymentModal(false)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Informative Notice */}
-            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                <Check className="w-4 h-4 font-bold" />
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="block text-slate-500">Quotation Total</span>
+                <strong className="block mt-1 font-mono text-slate-900">₹{((selectedQuote.grandTotalPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
               </div>
-              <div className="text-xs">
-                <strong className="block font-bold text-emerald-950">
-                  Direct Payment Flow (Quotation → Payment Only)
-                </strong>
-                <p className="text-emerald-800 text-[11px] mt-0.5 leading-relaxed">
-                  Items selected below will be settled directly. They will{" "}
-                  <strong>NOT</strong> create an order and will{" "}
-                  <strong>NOT</strong> be sent to any designer or production
-                  queue.
-                </p>
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span className="block text-emerald-700">Advance Received</span>
+                <strong className="block mt-1 font-mono text-emerald-900">₹{((selectedQuote.advanceReceivedPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <span className="block text-amber-700">Balance Due</span>
+                <strong className="block mt-1 font-mono text-amber-900">₹{((selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong>
               </div>
             </div>
 
-            <form onSubmit={handleRecordDirectPayment} className="space-y-6">
-              {/* Step 1: Select Items to Pay For */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">
-                      1
-                    </span>
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      Select Quotation Item(s) to Pay For
-                    </h4>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allIdx = (selectedQuote.items || []).map(
-                          (_, i) => i,
-                        );
-                        const selTotal = allIdx.reduce((sum, idx) => {
-                          const it = selectedQuote.items[idx];
-                          const itemPrice = (it?.itemTotalPaise || 0) / 100;
-                          const alreadyPaid =
-                            (it?.directPaymentPaidPaise || 0) / 100;
-                          return sum + Math.max(0, itemPrice - alreadyPaid);
-                        }, 0);
-                        setDirectPaymentForm({
-                          ...directPaymentForm,
-                          selectedItemIndexes: allIdx,
-                          amount:
-                            selTotal > 0
-                              ? selTotal.toFixed(2)
-                              : directPaymentForm.amount,
-                        });
-                      }}
-                      className="text-emerald-700 hover:text-emerald-900 font-semibold cursor-pointer"
-                    >
-                      Select All
-                    </button>
-                    <span className="text-slate-300">|</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDirectPaymentForm({
-                          ...directPaymentForm,
-                          selectedItemIndexes: [],
-                          amount: "0",
-                        })
-                      }
-                      className="text-slate-500 hover:text-slate-700 font-semibold cursor-pointer"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                </div>
+            <p className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900">
+              {directPaymentForm.paymentType === "ADVANCE"
+                ? "Record the quotation advance first. The final balance can be recorded after the advance is verified."
+                : "The advance is complete. Record the remaining quotation balance as the final payment."}
+            </p>
 
-                <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
-                  {(selectedQuote.items || []).map((it, idx) => {
-                    const isSelected = (
-                      directPaymentForm.selectedItemIndexes || []
+            <form onSubmit={handleRecordDirectPayment} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {directPaymentForm.paymentType === "ADVANCE" ? "Advance Amount (₹)" : "Final Payment Amount (₹)"}
+                </label>
+                <input type="number" min="0.01" step="0.01" required value={directPaymentForm.amount} onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, amount: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold" />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Payment Method</label>
+                <select value={directPaymentForm.paymentMethod} onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, paymentMethod: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                  <option value="UPI">UPI</option>
+                  <option value="BANK_TRANSFER_NEFT_RTGS">Bank Transfer</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="CREDIT_CARD">Credit / Debit Card</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Transaction Reference</label>
+                <input value={directPaymentForm.transactionReference} onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, transactionReference: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800" />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Notes</label>
+                <textarea rows={2} value={directPaymentForm.notes} onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, notes: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800" />
+              </div>
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setShowDirectPaymentModal(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100">Cancel</button>
+                <button type="submit" disabled={paymentSubmitting || !Number(directPaymentForm.amount)} className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold">
+                  {paymentSubmitting ? "Recording..." : directPaymentForm.paymentType === "ADVANCE" ? "Record Advance" : "Record Final Payment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* CREATE COMMERCIAL ORDER MODAL */}
+      {showConvertOrderModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Create Commercial Order
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Create commercial order
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConvertOrderModal(false)}
+                className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateOrderSubmit}
+              className="space-y-4 text-xs"
+            >
+              {/* Quotation Selection or Custom */}
+              {quotations.length > 0 && (
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Convert From Quotation (Optional)
+                  </label>
+                  <select
+                    value={orderForm.quotationId || ""}
+                    onChange={(e) => {
+                      const selectedQId = e.target.value;
+                      const q = quotations.find(
+                        (item) => item._id === selectedQId,
+                      );
+                      const it = q?.items?.[0];
+                      const allTitles = (q?.items || []).map((i) => i.title).filter(Boolean).join(", ");
+                      setOrderForm({
+                        ...orderForm,
+                        quotationId: selectedQId,
+                        selectedItemIndex: "",
+                        title: allTitles || it?.title || orderForm.title || "",
+                        amount: q
+                          ? (q.grandTotalPaise
+                              ? q.grandTotalPaise / 100
+                              : q.totalAmount || 0
+                            ).toString()
+                          : orderForm.amount || "",
+                        width: it?.width
+                          ? it.width.toString()
+                          : orderForm.width || "",
+                        height: it?.height
+                          ? it.height.toString()
+                          : orderForm.height || "",
+                        dimensionUnit:
+                          it?.dimensionUnit ||
+                          orderForm.dimensionUnit ||
+                          "inch",
+                        quantity: it?.quantity || orderForm.quantity || 1,
+                        material: it?.paperType || orderForm.material || "",
+                        gsm: it?.paperGsm
+                          ? it.paperGsm.toString()
+                          : orderForm.gsm || "",
+                        colors: it?.colors || orderForm.colors || "CMYK",
+                        printSides:
+                          it?.printSides || orderForm.printSides || "SINGLE",
+                        finishing: it?.finishing || orderForm.finishing || [],
+                      });
+                      if (q) setConvertQuote(q);
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold"
+                  >
+                    <option value="">-- Direct Order (No quotation) --</option>
+                    {quotations.map((q) => (
+                      <option key={q._id} value={q._id}>
+                        {q.quotationNumber || q._id} - ₹
+                        {(q.grandTotalPaise
+                          ? q.grandTotalPaise / 100
+                          : q.totalAmount || 0
+                        ).toLocaleString("en-IN")}{" "}
+                        ({q.status})
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* If quotation has multiple items, allow splitting by selecting specific item */}
+                  {(() => {
+                    const selectedQ =
+                      quotations.find(
+                        (item) => item._id === orderForm.quotationId,
+                      ) || convertQuote || selectedQuote;
+                    if (
+                      !selectedQ ||
+                      !selectedQ.items ||
+                      selectedQ.items.length <= 1
                     )
-                      .map(Number)
-                      .includes(Number(idx));
-                    const itemTotal = (it.itemTotalPaise || 0) / 100;
-                    const alreadyPaid = (it.directPaymentPaidPaise || 0) / 100;
-                    const remainingItemPayable = Math.max(
-                      0,
-                      itemTotal - alreadyPaid,
-                    );
-                    const isFullyPaid =
-                      it.directPaymentStatus === "PAID" ||
-                      remainingItemPayable <= 0.01;
-
+                      return null;
                     return (
-                      <div
-                        key={idx}
-                        onClick={() => handleToggleDirectItem(idx)}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                          isSelected
-                            ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-500/20 shadow-xs"
-                            : "bg-white border-slate-200 hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            id={`direct-chk-${idx}`}
-                            checked={isSelected}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleToggleDirectItem(idx);
-                            }}
-                            className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-xs text-slate-900">
-                                {it.title || "Quotation Item"}
-                              </span>
-                              {isSelected && (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white">
-                                  ✓ Selected for Direct Payment
-                                </span>
-                              )}
-                              {isFullyPaid ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                  ✓ Fully Paid Directly
-                                </span>
-                              ) : it.directPaymentStatus ===
-                                "PARTIALLY_PAID" ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                                  Partially Paid: ₹
-                                  {alreadyPaid.toLocaleString("en-IN")}
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                              <span>
-                                Qty: <strong>{it.quantity}</strong>
-                              </span>
-                              <span>
-                                • Line Total:{" "}
-                                <strong>
-                                  ₹{itemTotal.toLocaleString("en-IN")}
-                                </strong>
-                              </span>
-                              {alreadyPaid > 0 && !isFullyPaid && (
-                                <span className="text-amber-700 font-semibold">
-                                  • Remaining: ₹
-                                  {remainingItemPayable.toLocaleString("en-IN")}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                      <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200">
+                        <label className="text-indigo-950 font-bold block mb-1 text-[11px]">
+                          Select Item from Quotation to Order (Split Mode)
+                        </label>
+                        <select
+                          value={
+                            orderForm.selectedItemIndex !== undefined
+                              ? orderForm.selectedItemIndex
+                              : ""
+                          }
+                          onChange={(e) => {
+                            const itemIdx = e.target.value;
+                            if (itemIdx === "") {
+                              const it0 = selectedQ.items[0];
+                              const allTitles = (selectedQ.items || []).map((i) => i.title).filter(Boolean).join(", ");
+                              setOrderForm({
+                                ...orderForm,
+                                selectedItemIndex: "",
+                                title: allTitles || it0?.title || orderForm.title,
+                                amount: (selectedQ.grandTotalPaise
+                                  ? selectedQ.grandTotalPaise / 100
+                                  : selectedQ.totalAmount || 0
+                                ).toString(),
+                                width: it0?.width ? it0.width.toString() : "",
+                                height: it0?.height ? it0.height.toString() : "",
+                                dimensionUnit: it0?.dimensionUnit || "inch",
+                                quantity: it0?.quantity || 1,
+                                material: it0?.paperType || "",
+                                gsm: it0?.paperGsm ? it0.paperGsm.toString() : "",
+                                colors: it0?.colors || "CMYK",
+                                printSides: it0?.printSides || "SINGLE",
+                                finishing: it0?.finishing || [],
+                              });
+                            } else {
+                              const it = selectedQ.items[Number(itemIdx)];
+                              const gross =
+                                (Number(it.quantity) || 1) *
+                                (it.unitRatePaise
+                                  ? it.unitRatePaise / 100
+                                  : it.rate || 0);
+                              const disc =
+                                (gross * Number(it.discountPercent || 0)) / 100;
+                              const tax =
+                                ((gross - disc) *
+                                  Number(
+                                    it.taxRatePercent !== undefined
+                                      ? it.taxRatePercent
+                                      : 18,
+                                  )) /
+                                100;
+                              const itemTotal = Math.round(gross - disc + tax);
 
-                        <div className="text-right">
-                          <span className="text-xs font-mono font-bold text-slate-900 block">
-                            ₹
-                            {remainingItemPayable.toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            {isFullyPaid ? "Paid in full" : "Payable"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Selected Calculation Summary */}
-                {directPaymentForm.selectedItemIndexes.length > 0 &&
-                  (() => {
-                    const selSum = directPaymentForm.selectedItemIndexes.reduce(
-                      (sum, idx) => {
-                        const it = selectedQuote.items[idx];
-                        const itemPrice = (it?.itemTotalPaise || 0) / 100;
-                        const alreadyPaid =
-                          (it?.directPaymentPaidPaise || 0) / 100;
-                        return sum + Math.max(0, itemPrice - alreadyPaid);
-                      },
-                      0,
-                    );
-
-                    return (
-                      <div className="p-3 bg-emerald-50/80 rounded-xl border border-emerald-200 flex items-center justify-between text-xs">
-                        <span className="text-emerald-900 font-semibold">
-                          Total Remaining Balance for Selected (
-                          {directPaymentForm.selectedItemIndexes.length} item
-                          {directPaymentForm.selectedItemIndexes.length === 1
-                            ? ""
-                            : "s"}
-                          ):
-                        </span>
-                        <strong className="text-emerald-900 font-mono text-sm font-bold">
-                          ₹
-                          {selSum.toLocaleString("en-IN", {
-                            minimumFractionDigits: 2,
+                              setOrderForm({
+                                ...orderForm,
+                                selectedItemIndex: itemIdx,
+                                title:
+                                  it?.title || `Item ${Number(itemIdx) + 1}`,
+                                amount: itemTotal.toString(),
+                                width: it?.width ? it.width.toString() : "",
+                                height: it?.height ? it.height.toString() : "",
+                                dimensionUnit: it?.dimensionUnit || "inch",
+                                quantity: it?.quantity || 1,
+                                material: it?.paperType || "",
+                                gsm: it?.paperGsm ? it.paperGsm.toString() : "",
+                                colors: it?.colors || "CMYK",
+                                printSides: it?.printSides || "SINGLE",
+                                finishing: it?.finishing || [],
+                              });
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-indigo-300 text-slate-800 font-semibold text-xs"
+                        >
+                          <option value="">
+                            -- All Items in Quotation (₹
+                            {(selectedQ.grandTotalPaise
+                              ? selectedQ.grandTotalPaise / 100
+                              : selectedQ.totalAmount || 0
+                            ).toLocaleString("en-IN")}
+                            ) --
+                          </option>
+                          {selectedQ.items.map((it, idx) => {
+                            const gross =
+                              (Number(it.quantity) || 1) *
+                              (it.unitRatePaise
+                                ? it.unitRatePaise / 100
+                                : it.rate || 0);
+                            const disc =
+                              (gross * Number(it.discountPercent || 0)) / 100;
+                            const tax =
+                              ((gross - disc) *
+                                Number(
+                                  it.taxRatePercent !== undefined
+                                    ? it.taxRatePercent
+                                    : 18,
+                                )) /
+                              100;
+                            const itemTotal = Math.round(gross - disc + tax);
+                            return (
+                              <option key={idx} value={idx.toString()}>
+                                Item #{idx + 1}: {it.title} (Qty: {it.quantity}{" "}
+                                • ₹{itemTotal.toLocaleString("en-IN")})
+                              </option>
+                            );
                           })}
-                        </strong>
+                        </select>
                       </div>
                     );
                   })()}
-              </div>
+                </div>
+              )}
 
-              {/* Step 2: Payment Particulars */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center">
-                    2
-                  </span>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Payment Particulars
-                  </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Order Title / Job Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 5000 Brochure Printing"
+                    value={orderForm.title || ""}
+                    onChange={(e) =>
+                      setOrderForm({ ...orderForm, title: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold"
+                  />
                 </div>
 
-                {/* Payment Type Selection (Advance / Part / Full Settlement) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Payment Category
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Total Order Value (₹) *
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    required
+                    placeholder="e.g. 15000"
+                    value={orderForm.amount || ""}
+                    onChange={(e) =>
+                      setOrderForm({ ...orderForm, amount: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* PRODUCT & TECHNICAL SPECIFICATIONS */}
+              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-[#F95721]" />
+                    Product Technical Specifications
+                  </span>
+                </div>
+
+                {/* 1. Size / Dimensions & Quantity */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                  <div className="sm:col-span-1">
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Width
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 8"
+                      value={orderForm.width || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, width: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Height
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 4"
+                      value={orderForm.height || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, height: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Unit
+                    </label>
+                    <select
+                      value={orderForm.dimensionUnit || "inch"}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          dimensionUnit: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    >
+                      <option value="inch">Inches (in)</option>
+                      <option value="ft">Feet (ft)</option>
+                      <option value="mm">Millimeter (mm)</option>
+                      <option value="cm">Centimeter (cm)</option>
+                      <option value="m">Meter (m)</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-1">
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Quantity *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="1"
+                      value={orderForm.quantity ?? 1}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          quantity: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Material & GSM */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                  <div className="md:col-span-2">
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Material / Media Substrate
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Star Flex 440 GSM, Art Card, Vinyl, Canvas..."
+                      value={orderForm.material || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, material: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                    {/* Quick suggestion pills */}
+                    <div className="flex flex-wrap gap-1.5 my-2">
+                      {[
+                        { label: "Star Flex" },
+                        { label: "Vinyl Matte" },
+                        { label: "Normal Flex" },
+                        { label: "Backlit Film" },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() =>
+                            setOrderForm({ ...orderForm, material: item.label })
+                          }
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-[#F95721] text-[11px] text-slate-700 font-medium border border-slate-200 transition-colors cursor-pointer"
+                        >
+                          + {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      GSM / Density
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 440"
+                      value={orderForm.gsm || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, gsm: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Print Sides */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Print Sides
+                    </label>
+                    <select
+                      value={orderForm.printSides || "SINGLE"}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          printSides: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
+                    >
+                      <option value="SINGLE">Single Side (Front Only)</option>
+                      <option value="DOUBLE">
+                        Double Sided (Front &amp; Back)
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Finishing (Post-Press) Selection */}
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1.5">
+                    Finishing / Post-Press Requirements
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
                     {[
-                      {
-                        id: "ADVANCE",
-                        label: "Advance Payment",
-                        desc: "Token / Deposit payment",
-                      },
-                      {
-                        id: "PART_PAYMENT",
-                        label: "Part Payment",
-                        desc: "Partial milestone installment",
-                      },
-                      {
-                        id: "FINAL_SETTLEMENT",
-                        label: "Full Settlement",
-                        desc: "100% total balance",
-                      },
-                    ].map((pt) => {
-                      const isChosen = directPaymentForm.paymentType === pt.id;
+                      "Gloss Lamination",
+                      "Matte Lamination",
+                      "Velvet Lamination",
+                      "UV Coating",
+                      "Die Cut",
+                      "Foiling",
+                    ].map((opt) => {
+                      const isSelected =
+                        Array.isArray(orderForm.finishing) &&
+                        orderForm.finishing.includes(opt);
                       return (
                         <button
-                          key={pt.id}
+                          key={opt}
                           type="button"
                           onClick={() => {
-                            const selSum = (
-                              directPaymentForm.selectedItemIndexes || []
-                            ).reduce((sum, idx) => {
-                              const it = selectedQuote?.items?.[idx];
-                              const price = (it?.itemTotalPaise || 0) / 100;
-                              const paid =
-                                (it?.directPaymentPaidPaise || 0) / 100;
-                              return sum + Math.max(0, price - paid);
-                            }, 0);
-                            let newAmt = directPaymentForm.amount;
-                            if (pt.id === "FINAL_SETTLEMENT") {
-                              newAmt = selSum > 0 ? selSum.toFixed(2) : "0";
-                            } else if (
-                              pt.id === "ADVANCE" &&
-                              (!Number(newAmt) || Number(newAmt) === selSum)
-                            ) {
-                              newAmt = (selSum * 0.5).toFixed(2);
+                            const cur = Array.isArray(orderForm.finishing)
+                              ? orderForm.finishing
+                              : [];
+                            if (cur.includes(opt)) {
+                              setOrderForm({
+                                ...orderForm,
+                                finishing: cur.filter((x) => x !== opt),
+                              });
+                            } else {
+                              setOrderForm({
+                                ...orderForm,
+                                finishing: [...cur, opt],
+                              });
                             }
-                            setDirectPaymentForm({
-                              ...directPaymentForm,
-                              paymentType: pt.id,
-                              amount: newAmt,
-                            });
                           }}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                            isChosen
-                              ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20"
-                              : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-[#F95721] text-white border-[#F95721] shadow-xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
                           }`}
                         >
-                          <div className="font-bold text-xs text-slate-900">
-                            {pt.label}
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">
-                            {pt.desc}
-                          </div>
+                          {isSelected ? "✓ " : "+ "}
+                          {opt}
                         </button>
                       );
                     })}
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Amount with Quick Percentages */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">
-                        Payment Amount (₹){" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-                      {directPaymentForm.selectedItemIndexes.length > 0 &&
-                        (() => {
-                          const selSum =
-                            directPaymentForm.selectedItemIndexes.reduce(
-                              (sum, idx) => {
-                                const it = selectedQuote.items[idx];
-                                const price = (it?.itemTotalPaise || 0) / 100;
-                                const paid =
-                                  (it?.directPaymentPaidPaise || 0) / 100;
-                                return sum + Math.max(0, price - paid);
-                              },
-                              0,
-                            );
-                          return (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setDirectPaymentForm({
-                                    ...directPaymentForm,
-                                    amount: (selSum * 0.5).toFixed(2),
-                                  })
-                                }
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
-                              >
-                                50%
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setDirectPaymentForm({
-                                    ...directPaymentForm,
-                                    amount: selSum.toFixed(2),
-                                  })
-                                }
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold cursor-pointer"
-                              >
-                                100%
-                              </button>
-                            </div>
-                          );
-                        })()}
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="1"
-                        value={directPaymentForm.amount ?? ""}
-                        onChange={(e) =>
-                          setDirectPaymentForm({
-                            ...directPaymentForm,
-                            amount: e.target.value,
-                          })
-                        }
-                        className="w-full pl-8 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs"
-                        placeholder="0.00"
-                        required
-                      />
-                    </div>
-                  </div>
+              
 
-                  {/* Payment Method */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Payment Method <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={directPaymentForm.paymentMethod || "CASH"}
-                      onChange={(e) =>
-                        setDirectPaymentForm({
-                          ...directPaymentForm,
-                          paymentMethod: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:border-emerald-500 shadow-2xs cursor-pointer"
-                    >
-                      <option value="CASH">Cash</option>
-                      <option value="UPI">UPI / QR Code</option>
-                      <option value="BANK_TRANSFER">
-                        Bank Transfer (NEFT/RTGS/IMPS)
-                      </option>
-                      <option value="CHEQUE">Cheque</option>
-                      <option value="CARD">Debit / Credit Card</option>
-                    </select>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Advance Required (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={orderForm.advanceRequiredPercent ?? 50}
+                    onChange={(e) =>
+                      setOrderForm({
+                        ...orderForm,
+                        advanceRequiredPercent: Number(e.target.value),
+                      })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-bold"
+                  />
+                </div>
 
-                  {/* Transaction Ref (for UPI/Bank/Card) */}
-                  {["UPI", "BANK_TRANSFER", "CARD"].includes(
-                    directPaymentForm.paymentMethod,
-                  ) && (
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Transaction Reference / UTR Number
-                      </label>
-                      <input
-                        type="text"
-                        value={directPaymentForm.transactionReference ?? ""}
-                        onChange={(e) =>
-                          setDirectPaymentForm({
-                            ...directPaymentForm,
-                            transactionReference: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. UPI Ref / Bank UTR #12345678"
-                        className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
-                      />
-                    </div>
-                  )}
-
-                  {/* Cheque Details */}
-                  {directPaymentForm.paymentMethod === "CHEQUE" && (
-                    <>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Cheque Number <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={directPaymentForm.chequeNumber ?? ""}
-                          onChange={(e) =>
-                            setDirectPaymentForm({
-                              ...directPaymentForm,
-                              chequeNumber: e.target.value,
-                            })
-                          }
-                          placeholder="e.g. 000123"
-                          className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Bank Name <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={directPaymentForm.bankName ?? ""}
-                          onChange={(e) =>
-                            setDirectPaymentForm({
-                              ...directPaymentForm,
-                              bankName: e.target.value,
-                            })
-                          }
-                          placeholder="e.g. HDFC Bank, SBI"
-                          className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Notes */}
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Internal Notes / Remarks
-                    </label>
-                    <input
-                      type="text"
-                      value={directPaymentForm.notes ?? ""}
-                      onChange={(e) =>
-                        setDirectPaymentForm({
-                          ...directPaymentForm,
-                          notes: e.target.value,
-                        })
-                      }
-                      placeholder="e.g. Direct payment for iron rod (no order / no design)"
-                      className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 shadow-2xs"
-                    />
-                  </div>
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Promised Delivery Date
+                  </label>
+                  <input
+                    type="date"
+                    value={orderForm.promisedDeliveryDate || ""}
+                    onChange={(e) =>
+                      setOrderForm({
+                        ...orderForm,
+                        promisedDeliveryDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono"
+                  />
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Delivery Method
+                </label>
+                <select
+                  value={orderForm.deliveryMethod || "PICKUP"}
+                  onChange={(e) =>
+                    setOrderForm({
+                      ...orderForm,
+                      deliveryMethod: e.target.value,
+                    })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
+                >
+                  <option value="PICKUP">Customer Pickup</option>
+                  <option value="STANDARD_DELIVERY">
+                    Standard Delivery (Doorstep)
+                  </option>
+                  <option value="EXPRESS_COURIER">Express Courier</option>
+                  <option value="SELF_INSTALLATION">
+                    Installation &amp; Fitting
+                  </option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowDirectPaymentModal(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-all cursor-pointer"
+                  onClick={() => setShowConvertOrderModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={
-                    paymentSubmitting ||
-                    directPaymentForm.selectedItemIndexes.length === 0 ||
-                    !Number(directPaymentForm.amount)
-                  }
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+                  disabled={actionLoading}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {paymentSubmitting ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      Recording Payment...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4" />
-                      Record Direct Payment (₹
-                      {Number(directPaymentForm.amount || 0).toLocaleString(
-                        "en-IN",
-                      )}
-                      ) — No Order Created
-                    </>
-                  )}
+                  <ShoppingBag className="w-4 h-4" />
+                  {actionLoading
+                    ? "Creating Commercial Order..."
+                    : "Create Commercial Order"}
                 </button>
               </div>
             </form>

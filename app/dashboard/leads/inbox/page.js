@@ -39,18 +39,29 @@ import {
 export default function LeadInboxPage() {
   const router = useRouter();
   const [leads, setLeads] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL"); // ALL, DATA_OPERATOR, TODAY
   const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [selectedArea, setSelectedArea] = useState("ALL");
+  const [selectedZone, setSelectedZone] = useState("ALL");
 
   // Action states
   const [processingId, setProcessingId] = useState(null);
   const [acceptedLead, setAcceptedLead] = useState(null);
   const [previewPhoto, setPreviewPhoto] = useState(null);
-  const [declineModal, setDeclineModal] = useState({ show: false, lead: null, reason: "" });
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [declineModal, setDeclineModal] = useState({
+    show: false,
+    lead: null,
+    reason: "",
+  });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -67,16 +78,33 @@ export default function LeadInboxPage() {
         if (storedUser) setCurrentUser(JSON.parse(storedUser));
       } catch (e) {}
 
-      // Fetch pending leads
-      const res = await api.get("/leads?acceptanceStatus=PENDING&limit=100&sortBy=createdAt&sortOrder=desc");
+      // Fetch pending leads and areas in parallel
+      const [res, areasRes] = await Promise.all([
+        api.get(
+          "/leads?acceptanceStatus=PENDING&limit=100&sortBy=createdAt&sortOrder=desc",
+        ),
+        api.get("/areas").catch(() => null),
+      ]);
+
       const raw = res?.data;
       const list = Array.isArray(raw) ? raw : raw?.leads || raw?.data || [];
       setLeads(list);
 
+      if (areasRes?.data) {
+        const areaList = Array.isArray(areasRes.data)
+          ? areasRes.data
+          : areasRes.data.areas || [];
+        setAreas(areaList);
+      }
+
       // Trigger sidebar badge update
       if (typeof window !== "undefined") {
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: list.length } }));
+          window.dispatchEvent(
+            new CustomEvent("refresh-inbox-count", {
+              detail: { count: list.length },
+            }),
+          );
         }, 0);
       }
     } catch (err) {
@@ -98,21 +126,31 @@ export default function LeadInboxPage() {
 
     try {
       await api.post(`/leads/${lead._id}/accept`, {});
-      
+
       // Update local state
       setLeads((prev) => prev.filter((item) => item._id !== lead._id));
       if (typeof window !== "undefined") {
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: Math.max(0, leads.length - 1) } }));
-          window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
+          window.dispatchEvent(
+            new CustomEvent("refresh-inbox-count", {
+              detail: { count: Math.max(0, leads.length - 1) },
+            }),
+          );
+          window.dispatchEvent(
+            new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }),
+          );
         }, 0);
       }
       setAcceptedLead(lead);
 
-      showToast(`🎉 "${lead.businessName || lead.contactName || "Lead"}" accepted and transferred to My Leads!`, "success");
+      showToast(
+        `🎉 "${lead.businessName || lead.contactName || "Lead"}" accepted and transferred to My Leads!`,
+        "success",
+      );
     } catch (err) {
       console.error("Failed to accept lead:", err);
-      const msg = err?.response?.data?.message || err?.message || "Failed to accept lead";
+      const msg =
+        err?.response?.data?.message || err?.message || "Failed to accept lead";
       showToast(msg, "error");
     } finally {
       setProcessingId(null);
@@ -133,8 +171,14 @@ export default function LeadInboxPage() {
       setLeads((prev) => prev.filter((item) => item._id !== lead._id));
       if (typeof window !== "undefined") {
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("refresh-inbox-count", { detail: { count: Math.max(0, leads.length - 1) } }));
-          window.dispatchEvent(new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }));
+          window.dispatchEvent(
+            new CustomEvent("refresh-inbox-count", {
+              detail: { count: Math.max(0, leads.length - 1) },
+            }),
+          );
+          window.dispatchEvent(
+            new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }),
+          );
         }, 0);
       }
       setDeclineModal({ show: false, lead: null, reason: "" });
@@ -142,18 +186,164 @@ export default function LeadInboxPage() {
       showToast(`Lead declined.`, "info");
     } catch (err) {
       console.error("Failed to decline lead:", err);
-      const msg = err?.response?.data?.message || err?.message || "Failed to decline lead";
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to decline lead";
       showToast(msg, "error");
     } finally {
       setProcessingId(null);
     }
   };
 
+  // Extract and normalize lead territory
+  const getLeadTerritory = useCallback((lead) => {
+    if (!lead) return { area: "", zone: "", display: "Local Market" };
+    const areaName =
+      (typeof lead.areaId === "object" ? lead.areaId?.name : lead.area) || "";
+    const rawZone = (lead.zone || "").trim();
+
+    // Check if zone contains slash e.g. "burari/baba colony"
+    if (rawZone && rawZone.includes("/")) {
+      const parts = rawZone.split("/");
+      const inferredArea = parts[0].trim();
+      const inferredZone = parts[1].trim();
+      const finalArea = areaName || inferredArea;
+      return {
+        area: finalArea,
+        zone: inferredZone,
+        display: finalArea ? `${finalArea} • ${inferredZone}` : inferredZone,
+      };
+    }
+
+    if (areaName && rawZone) {
+      return {
+        area: areaName,
+        zone: rawZone,
+        display: `${areaName} • ${rawZone}`,
+      };
+    }
+
+    if (rawZone) {
+      return {
+        area: "",
+        zone: rawZone,
+        display: rawZone,
+      };
+    }
+
+    if (areaName) {
+      return {
+        area: areaName,
+        zone: "",
+        display: areaName,
+      };
+    }
+
+    return { area: "", zone: "", display: "Local Market" };
+  }, []);
+
+  // Map counts per area for incoming leads
+  const areaCounts = useMemo(() => {
+    const counts = {};
+    leads.forEach((l) => {
+      const terr = getLeadTerritory(l);
+      if (terr.area) {
+        const key = terr.area.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [leads, getLeadTerritory]);
+
+  // Distinct available Areas from DB and Leads
+  const availableAreas = useMemo(() => {
+    const areaMap = new Map();
+
+    // 1. Registered areas in DB
+    areas.forEach((a) => {
+      if (a?.name) {
+        areaMap.set(a.name.trim().toLowerCase(), a.name.trim());
+      }
+    });
+
+    // 2. Areas discovered on leads
+    leads.forEach((l) => {
+      const terr = getLeadTerritory(l);
+      if (terr.area) {
+        areaMap.set(terr.area.toLowerCase(), terr.area);
+      }
+    });
+
+    return Array.from(areaMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [areas, leads, getLeadTerritory]);
+
+  // Map counts per zone for incoming leads
+  const zoneCounts = useMemo(() => {
+    const counts = {};
+    leads.forEach((l) => {
+      const terr = getLeadTerritory(l);
+      if (terr.zone) {
+        const key = terr.zone.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [leads, getLeadTerritory]);
+
+  // Distinct available Zones, scoped to selected Area if an area is picked
+  const availableZones = useMemo(() => {
+    const zoneMap = new Map();
+
+    if (selectedArea === "ALL") {
+      // All zones across areas
+      areas.forEach((a) => {
+        if (Array.isArray(a.zones)) {
+          a.zones.forEach((z) => {
+            const zName = typeof z === "string" ? z : z?.name;
+            if (zName) zoneMap.set(zName.trim().toLowerCase(), zName.trim());
+          });
+        }
+      });
+      // Plus any zones appearing on leads
+      leads.forEach((l) => {
+        const terr = getLeadTerritory(l);
+        if (terr.zone) {
+          zoneMap.set(terr.zone.toLowerCase(), terr.zone);
+        }
+      });
+    } else {
+      const selAreaLower = selectedArea.toLowerCase();
+
+      // Zones for this area from DB
+      const matchedArea = areas.find(
+        (a) => a.name?.toLowerCase() === selAreaLower,
+      );
+      if (matchedArea && Array.isArray(matchedArea.zones)) {
+        matchedArea.zones.forEach((z) => {
+          const zName = typeof z === "string" ? z : z?.name;
+          if (zName) zoneMap.set(zName.trim().toLowerCase(), zName.trim());
+        });
+      }
+
+      // Plus any zones on leads that match this area
+      leads.forEach((l) => {
+        const terr = getLeadTerritory(l);
+        if (terr.area && terr.area.toLowerCase() === selAreaLower && terr.zone) {
+          zoneMap.set(terr.zone.toLowerCase(), terr.zone);
+        }
+      });
+    }
+
+    return Array.from(zoneMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [areas, leads, selectedArea, getLeadTerritory]);
+
   // Filtered Leads
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       // Source / Tab filter
-      if (activeTab === "DATA_OPERATOR" && lead.source !== "DATA_OPERATOR") return false;
+      if (activeTab === "DATA_OPERATOR" && lead.source !== "DATA_OPERATOR")
+        return false;
       if (activeTab === "TODAY") {
         const leadDate = new Date(lead.createdAt || 0).toDateString();
         const todayDate = new Date().toDateString();
@@ -161,7 +351,57 @@ export default function LeadInboxPage() {
       }
 
       // Priority filter
-      if (priorityFilter !== "ALL" && lead.priority !== priorityFilter) return false;
+      if (priorityFilter !== "ALL" && lead.priority !== priorityFilter)
+        return false;
+
+      const terr = getLeadTerritory(lead);
+
+      // Area filter
+      if (selectedArea !== "ALL") {
+        const selAreaLower = selectedArea.toLowerCase();
+        const leadAreaLower = terr.area.toLowerCase();
+        const leadZoneLower = (lead.zone || "").toLowerCase();
+
+        const directMatch = leadAreaLower === selAreaLower;
+        const zonePrefixMatch =
+          leadZoneLower.startsWith(selAreaLower + "/") ||
+          leadZoneLower === selAreaLower;
+
+        // Check if lead's zone is one of the zones in this DB Area
+        const matchedAreaObj = areas.find(
+          (a) => a.name?.toLowerCase() === selAreaLower,
+        );
+        const inAreaZones = matchedAreaObj?.zones?.some((z) => {
+          const zName = typeof z === "string" ? z : z?.name;
+          return (
+            zName &&
+            (leadZoneLower === zName.toLowerCase() ||
+              leadZoneLower.includes(zName.toLowerCase()))
+          );
+        });
+
+        if (!directMatch && !zonePrefixMatch && !inAreaZones) {
+          return false;
+        }
+      }
+
+      // Zone filter
+      if (selectedZone !== "ALL") {
+        const selZoneLower = selectedZone.toLowerCase();
+        const leadZoneLower = (lead.zone || "").toLowerCase();
+        const resolvedZoneLower = terr.zone.toLowerCase();
+
+        const matchExact =
+          leadZoneLower === selZoneLower || resolvedZoneLower === selZoneLower;
+        const matchIncludes = leadZoneLower.includes(selZoneLower);
+        const matchSlash =
+          leadZoneLower.endsWith("/" + selZoneLower) ||
+          leadZoneLower.startsWith(selZoneLower + "/");
+
+        if (!matchExact && !matchIncludes && !matchSlash) {
+          return false;
+        }
+      }
 
       // Text search
       if (searchQuery.trim()) {
@@ -171,14 +411,52 @@ export default function LeadInboxPage() {
         const matchPhone = (lead.phone || "").includes(q);
         const matchLeadNo = (lead.leadNumber || "").toLowerCase().includes(q);
         const matchZone = (lead.zone || "").toLowerCase().includes(q);
-        const matchArea = (lead.areaId?.name || "").toLowerCase().includes(q);
-        const matchCat = (lead.businessCategory || "").toLowerCase().includes(q);
-        return matchName || matchContact || matchPhone || matchLeadNo || matchZone || matchArea || matchCat;
+        const matchArea = (
+          lead.areaId?.name ||
+          lead.area ||
+          ""
+        ).toLowerCase().includes(q);
+        const matchTerritory = terr.display.toLowerCase().includes(q);
+        const matchCat = (lead.businessCategory || "")
+          .toLowerCase()
+          .includes(q);
+        return (
+          matchName ||
+          matchContact ||
+          matchPhone ||
+          matchLeadNo ||
+          matchZone ||
+          matchArea ||
+          matchTerritory ||
+          matchCat
+        );
       }
 
       return true;
     });
-  }, [leads, activeTab, priorityFilter, searchQuery]);
+  }, [
+    leads,
+    activeTab,
+    priorityFilter,
+    selectedArea,
+    selectedZone,
+    searchQuery,
+    areas,
+    getLeadTerritory,
+  ]);
+
+  const hasActiveFilters =
+    selectedArea !== "ALL" ||
+    selectedZone !== "ALL" ||
+    priorityFilter !== "ALL" ||
+    searchQuery.trim().length > 0;
+
+  const handleResetFilters = () => {
+    setSelectedArea("ALL");
+    setSelectedZone("ALL");
+    setPriorityFilter("ALL");
+    setSearchQuery("");
+  };
 
   const dataOperatorCount = useMemo(() => {
     return leads.filter((l) => l.source === "DATA_OPERATOR").length;
@@ -186,7 +464,9 @@ export default function LeadInboxPage() {
 
   const todayCount = useMemo(() => {
     const today = new Date().toDateString();
-    return leads.filter((l) => new Date(l.createdAt || 0).toDateString() === today).length;
+    return leads.filter(
+      (l) => new Date(l.createdAt || 0).toDateString() === today,
+    ).length;
   }, [leads]);
 
   return (
@@ -198,8 +478,8 @@ export default function LeadInboxPage() {
             toast.type === "error"
               ? "bg-rose-50 border-rose-200 text-rose-700"
               : toast.type === "info"
-              ? "bg-slate-900 border-slate-700 text-white"
-              : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                ? "bg-slate-900 border-slate-700 text-white"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800"
           }`}
         >
           {toast.type === "error" ? (
@@ -223,11 +503,10 @@ export default function LeadInboxPage() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
           <div className="max-w-7xl mx-auto space-y-6">
-
             {/* Header Banner */}
             <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
               <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#F95721]/20 via-indigo-500/10 to-transparent pointer-events-none" />
-              
+
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-3">
@@ -245,7 +524,9 @@ export default function LeadInboxPage() {
                         )}
                       </h1>
                       <p className="text-xs text-slate-300 mt-0.5">
-                        New leads assigned to you by Data Operators. Review details, photos, and requirements, then accept to transfer them into your active pipeline.
+                        New leads assigned to you by Data Operators. Review
+                        details, photos, and requirements, then accept to
+                        transfer them into your active pipeline.
                       </p>
                     </div>
                   </div>
@@ -258,7 +539,9 @@ export default function LeadInboxPage() {
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10 transition-all cursor-pointer"
                     title="Refresh Inbox"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-orange-400" : ""}`} />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${loading ? "animate-spin text-orange-400" : ""}`}
+                    />
                     <span>Refresh</span>
                   </button>
 
@@ -282,10 +565,14 @@ export default function LeadInboxPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-emerald-950">
-                      Accepted: {acceptedLead.businessName || acceptedLead.contactName || acceptedLead.leadNumber}
+                      Accepted:{" "}
+                      {acceptedLead.businessName ||
+                        acceptedLead.contactName ||
+                        acceptedLead.leadNumber}
                     </h4>
                     <p className="text-xs text-emerald-700">
-                      Successfully moved to your active leads source. You can now follow up, call, or create quotations.
+                      Successfully moved to your active leads source. You can
+                      now follow up, call, or create quotations.
                     </p>
                   </div>
                 </div>
@@ -307,54 +594,54 @@ export default function LeadInboxPage() {
               </div>
             )}
 
-            {/* Filter Tabs and Search Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-              {/* Tabs */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-                <button
-                  onClick={() => setActiveTab("ALL")}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                    activeTab === "ALL"
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
-                  }`}
-                >
-                  All Incoming ({leads.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("DATA_OPERATOR")}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                    activeTab === "DATA_OPERATOR"
-                      ? "bg-[#F95721] text-white shadow-xs"
-                      : "bg-orange-50 text-orange-700 hover:bg-orange-100/80 border border-orange-200"
-                  }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  From Data Operator ({dataOperatorCount})
-                </button>
-                <button
-                  onClick={() => setActiveTab("TODAY")}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                    activeTab === "TODAY"
-                      ? "bg-[#F95721] text-white shadow-xs"
-                      : "bg-orange-50 text-orange-700 hover:bg-orange-100/80 border border-orange-200"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  Assigned Today ({todayCount})
-                </button>
-              </div>
+            {/* Filter Tabs and Area / Zone Controls */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                {/* Source Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+                  <button
+                    onClick={() => setActiveTab("ALL")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                      activeTab === "ALL"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
+                    }`}
+                  >
+                    All Incoming ({leads.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("DATA_OPERATOR")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                      activeTab === "DATA_OPERATOR"
+                        ? "bg-[#F95721] text-white shadow-xs"
+                        : "bg-orange-50 text-orange-700 hover:bg-orange-100/80 border border-orange-200"
+                    }`}
+                  >
+                    <Store className="w-3.5 h-3.5" />
+                    From Data Operator ({dataOperatorCount})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("TODAY")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                      activeTab === "TODAY"
+                        ? "bg-[#F95721] text-white shadow-xs"
+                        : "bg-orange-50 text-orange-700 hover:bg-orange-100/80 border border-orange-200"
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    Assigned Today ({todayCount})
+                  </button>
+                </div>
 
-              {/* Search and Priority Filter */}
-              <div className="flex items-center gap-2.5">
-                <div className="relative flex-1 md:w-64">
+                {/* Search Bar */}
+                <div className="relative w-full lg:w-72">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search shop, phone, area..."
-                    className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] transition-all"
+                    placeholder="Search shop, phone, area, zone..."
+                    className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#F95721] transition-all"
                   />
                   {searchQuery && (
                     <button
@@ -365,48 +652,186 @@ export default function LeadInboxPage() {
                     </button>
                   )}
                 </div>
-
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
-                >
-                  <option value="ALL">All Priority</option>
-                  <option value="URGENT">Urgent</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                </select>
               </div>
+
+              {/* Area, Zone & Priority Selectors Strip */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider text-xs flex items-center gap-1 mr-1">
+                    <Filter className="w-3.5 h-3.5 text-[#F95721]" />
+                    Filter by:
+                  </span>
+
+                  {/* Area Filter Dropdown */}
+                  <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-1.5 transition-colors">
+                    <MapPin className="w-3.5 h-3.5 text-[#F95721] mr-2 shrink-0" />
+                    <select
+                      value={selectedArea}
+                      onChange={(e) => {
+                        setSelectedArea(e.target.value);
+                        setSelectedZone("ALL");
+                      }}
+                      className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
+                    >
+                      <option value="ALL">All Areas ({availableAreas.length})</option>
+                      {availableAreas.map((areaName) => {
+                        const cnt = areaCounts[areaName.toLowerCase()] || 0;
+                        return (
+                          <option key={areaName} value={areaName}>
+                            {areaName} {cnt > 0 ? `(${cnt})` : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* Zone Filter Dropdown */}
+                  <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-1.5 transition-colors">
+                    <Layers className="w-3.5 h-3.5 text-indigo-500 mr-2 shrink-0" />
+                    <select
+                      value={selectedZone}
+                      onChange={(e) => setSelectedZone(e.target.value)}
+                      className="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-1"
+                    >
+                      <option value="ALL">
+                        {selectedArea === "ALL"
+                          ? `All Zones (${availableZones.length})`
+                          : `All Zones in ${selectedArea} (${availableZones.length})`}
+                      </option>
+                      {availableZones.map((zoneName) => {
+                        const cnt = zoneCounts[zoneName.toLowerCase()] || 0;
+                        return (
+                          <option key={zoneName} value={zoneName}>
+                            {zoneName} {cnt > 0 ? `(${cnt})` : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  {/* Reset Filters button if any active */}
+                  {hasActiveFilters && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-bold border border-rose-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                      title="Clear all active filters"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Reset Filters</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Results count indicator */}
+                <div className="text-slate-500 font-semibold text-sm ml-auto">
+                  Showing <span className="text-slate-900 font-bold">{filteredLeads.length}</span> of {leads.length} incoming leads
+                </div>
+              </div>
+
+              {/* Active Filter Chips */}
+              {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[11px] text-slate-400 font-medium">Active:</span>
+                  {selectedArea !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-xs font-semibold">
+                      <MapPin className="w-3 h-3 text-orange-600" />
+                      Area: {selectedArea}
+                      <button
+                        onClick={() => {
+                          setSelectedArea("ALL");
+                          setSelectedZone("ALL");
+                        }}
+                        className="hover:text-orange-950 p-0.5 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedZone !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold">
+                      <Layers className="w-3 h-3 text-indigo-600" />
+                      Zone: {selectedZone}
+                      <button
+                        onClick={() => setSelectedZone("ALL")}
+                        className="hover:text-indigo-950 p-0.5 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {priorityFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-800 text-xs font-semibold">
+                      Priority: {priorityFilter}
+                      <button
+                        onClick={() => setPriorityFilter("ALL")}
+                        className="hover:text-slate-950 p-0.5 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-800 text-xs font-semibold">
+                      <Search className="w-3 h-3 text-slate-500" />
+                      &quot;{searchQuery}&quot;
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="hover:text-slate-950 p-0.5 ml-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Leads List / Cards */}
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center space-y-3">
                 <RefreshCw className="w-8 h-8 text-[#F95721] animate-spin" />
-                <p className="text-sm font-semibold text-slate-500">Checking for incoming assigned leads...</p>
+                <p className="text-sm font-semibold text-slate-500">
+                  Checking for incoming assigned leads...
+                </p>
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center space-y-4 shadow-xs">
                 <div className="w-16 h-16 bg-orange-50 text-[#F95721] rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-                  <CheckCircle2 className="w-8 h-8" />
+                  {hasActiveFilters ? (
+                    <Filter className="w-8 h-8" />
+                  ) : (
+                    <CheckCircle2 className="w-8 h-8" />
+                  )}
                 </div>
                 <div className="max-w-md mx-auto space-y-1">
-                  <h3 className="text-lg font-bold text-slate-900">Your Inbox is All Caught Up! 🚀</h3>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {hasActiveFilters
+                      ? "No Leads Match Selected Filter"
+                      : "Your Inbox is All Caught Up! 🚀"}
+                  </h3>
                   <p className="text-xs text-slate-500">
-                    {searchQuery || activeTab !== "ALL" || priorityFilter !== "ALL"
-                      ? "No pending leads match your current filter settings."
-                      : "No pending leads are waiting for your acceptance right now. When a Data Operator assigns leads to you, they will appear here instantly."}
+                    {hasActiveFilters
+                      ? "No incoming leads found matching the selected Area, Zone, or search filters. Try clearing or relaxing your filters."
+                      : "All assigned leads have been accepted or processed. New leads assigned to you will appear here."}
                   </p>
                 </div>
                 <div>
-                  <Link
-                    href="/dashboard/leads"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md"
-                  >
-                    <span>View Active Leads in My Leads</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  {hasActiveFilters ? (
+                    <button
+                      onClick={handleResetFilters}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Reset Filters</span>
+                    </button>
+                  ) : (
+                    <Link
+                      href="/dashboard/leads"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md"
+                    >
+                      <span>View Active Leads in My Leads</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                 </div>
               </div>
             ) : (
@@ -415,12 +840,14 @@ export default function LeadInboxPage() {
                   const isOperating = processingId === lead._id;
                   const photo =
                     lead.shopImageUrl ||
-                    lead.documents?.find((d) => d.category === "PHOTO")?.fileUrl ||
+                    lead.documents?.find((d) => d.category === "PHOTO")
+                      ?.fileUrl ||
                     "";
                   const contactPerson = lead.contactName || "Owner / Manager";
                   const phoneNum = lead.phone || "";
-                  const category = lead.businessCategory || "General Commercial";
-                  const areaName = lead.areaId?.name || lead.zone || "Local Market";
+                  const category =
+                    lead.businessCategory || "General Commercial";
+                  const territory = getLeadTerritory(lead);
                   const leadNo = lead.leadNumber || "NEW-LEAD";
 
                   return (
@@ -433,7 +860,9 @@ export default function LeadInboxPage() {
                         {/* Top Meta Bar */}
                         <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1.5 font-bold text-slate-700">
-                            <span className="font-mono text-[#F95721]">{leadNo}</span>
+                            <span className="font-mono text-[#F95721]">
+                              {leadNo}
+                            </span>
                             <span className="text-slate-300">•</span>
                             <span className="text-[11px] text-slate-500 font-medium">
                               {new Date(lead.createdAt).toLocaleDateString([], {
@@ -469,7 +898,10 @@ export default function LeadInboxPage() {
 
                         {/* Photo Thumbnail if available */}
                         {photo ? (
-                          <div className="relative h-44 bg-slate-900 group/img overflow-hidden cursor-pointer" onClick={() => setPreviewPhoto(photo)}>
+                          <div
+                            className="relative h-44 bg-slate-900 group/img overflow-hidden cursor-pointer"
+                            onClick={() => setPreviewPhoto(photo)}
+                          >
                             <img
                               src={photo}
                               alt={lead.businessName || "Shop"}
@@ -477,7 +909,8 @@ export default function LeadInboxPage() {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end p-3">
                               <span className="text-[11px] text-white font-semibold flex items-center gap-1 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-md">
-                                <Eye className="w-3 h-3" /> Click to enlarge shop photo
+                                <Eye className="w-3 h-3" /> Click to enlarge
+                                shop photo
                               </span>
                             </div>
                             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[10px] font-semibold flex items-center gap-1">
@@ -522,10 +955,22 @@ export default function LeadInboxPage() {
                               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                                 Area / Zone
                               </span>
-                              <span className="font-semibold text-slate-800 truncate block flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
-                                {areaName}
-                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (territory.area) {
+                                    setSelectedArea(territory.area);
+                                    if (territory.zone) setSelectedZone(territory.zone);
+                                  } else if (territory.zone) {
+                                    setSelectedZone(territory.zone);
+                                  }
+                                }}
+                                className="font-semibold text-slate-800 truncate flex items-center gap-1 hover:text-[#F95721] transition-colors text-left group/tz cursor-pointer w-full"
+                                title="Click to filter by this Area / Zone"
+                              >
+                                <MapPin className="w-3 h-3 text-[#F95721] shrink-0 group-hover/tz:scale-110 transition-transform" />
+                                <span className="truncate">{territory.display}</span>
+                              </button>
                             </div>
                           </div>
 
@@ -533,7 +978,8 @@ export default function LeadInboxPage() {
                           {lead.notes && (
                             <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 text-xs text-amber-900 space-y-1">
                               <span className="font-bold text-[10px] uppercase tracking-wider text-amber-700 flex items-center gap-1">
-                                <Store className="w-3 h-3" /> Data Operator Note:
+                                <Store className="w-3 h-3" /> Data Operator
+                                Note:
                               </span>
                               <p className="line-clamp-2 text-xs text-amber-950 font-medium">
                                 {lead.notes}
@@ -586,7 +1032,9 @@ export default function LeadInboxPage() {
                           </button>
 
                           <button
-                            onClick={() => setDeclineModal({ show: true, lead, reason: "" })}
+                            onClick={() =>
+                              setDeclineModal({ show: true, lead, reason: "" })
+                            }
                             disabled={isOperating}
                             className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-700 font-bold text-xs border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
                             title="Decline this lead"
@@ -600,7 +1048,6 @@ export default function LeadInboxPage() {
                 })}
               </div>
             )}
-
           </div>
         </main>
       </div>
@@ -611,14 +1058,21 @@ export default function LeadInboxPage() {
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
           onClick={() => setPreviewPhoto(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setPreviewPhoto(null)}
               className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <img src={previewPhoto} alt="Shop Full Preview" className="w-full h-auto max-h-[80vh] object-contain rounded-xl" />
+            <img
+              src={previewPhoto}
+              alt="Shop Full Preview"
+              className="w-full h-auto max-h-[80vh] object-contain rounded-xl"
+            />
           </div>
         </div>
       )}
@@ -633,7 +1087,9 @@ export default function LeadInboxPage() {
                 <span>Decline Lead Assignment</span>
               </div>
               <button
-                onClick={() => setDeclineModal({ show: false, lead: null, reason: "" })}
+                onClick={() =>
+                  setDeclineModal({ show: false, lead: null, reason: "" })
+                }
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
@@ -643,16 +1099,25 @@ export default function LeadInboxPage() {
             <p className="text-xs text-slate-600">
               Are you sure you want to decline{" "}
               <strong className="text-slate-900">
-                {declineModal.lead?.businessName || declineModal.lead?.contactName || "this lead"}
+                {declineModal.lead?.businessName ||
+                  declineModal.lead?.contactName ||
+                  "this lead"}
               </strong>
               ? It will be removed from your inbox.
             </p>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">Reason for declining (optional):</label>
+              <label className="text-xs font-semibold text-slate-700">
+                Reason for declining (optional):
+              </label>
               <textarea
                 value={declineModal.reason}
-                onChange={(e) => setDeclineModal((prev) => ({ ...prev, reason: e.target.value }))}
+                onChange={(e) =>
+                  setDeclineModal((prev) => ({
+                    ...prev,
+                    reason: e.target.value,
+                  }))
+                }
                 rows={3}
                 placeholder="e.g. Out of my service zone, wrong contact details, etc."
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
@@ -661,7 +1126,9 @@ export default function LeadInboxPage() {
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
-                onClick={() => setDeclineModal({ show: false, lead: null, reason: "" })}
+                onClick={() =>
+                  setDeclineModal({ show: false, lead: null, reason: "" })
+                }
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
               >
                 Cancel

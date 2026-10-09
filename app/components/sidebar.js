@@ -52,10 +52,7 @@ export default function Sidebar({ isMobileOpen = false, onCloseMobile = null } =
     userRole.includes("manager");
 
   // Strictly ONLY a true sales representative on sales-related workflows
-  const isSalesPerson =
-    !isDataOperator &&
-    !isAdminOrManager &&
-    !pathname?.startsWith("/dashboard/designer");
+  const isSalesPerson = normalizeRole(userRole) === "sales";
 
   const [currentUser] = useState(() => {
     if (typeof window !== "undefined") {
@@ -231,10 +228,6 @@ export default function Sidebar({ isMobileOpen = false, onCloseMobile = null } =
                               setCurrentView(item.href.split("?view=")[1]);
                             } else if (item.href === "/dashboard/data-operator") {
                               setCurrentView("");
-                            } else if (item.href.includes("?filter=")) {
-                              setCurrentFilter(item.href.split("?filter=")[1]);
-                            } else if (item.href === "/dashboard/design") {
-                              setCurrentFilter("");
                             }
                           }}
                           className={`relative group flex items-center text-xs font-semibold transition-all duration-150 gap-3 px-3 py-2 mx-2 rounded-xl ${
@@ -345,10 +338,6 @@ export default function Sidebar({ isMobileOpen = false, onCloseMobile = null } =
                           setCurrentView(item.href.split("?view=")[1]);
                         } else if (item.href === "/dashboard/data-operator") {
                           setCurrentView("");
-                        } else if (item.href.includes("?filter=")) {
-                          setCurrentFilter(item.href.split("?filter=")[1]);
-                        } else if (item.href === "/dashboard/design") {
-                          setCurrentFilter("");
                         }
                       }}
                       className={`relative group flex items-center text-xs font-semibold transition-all duration-150 ${

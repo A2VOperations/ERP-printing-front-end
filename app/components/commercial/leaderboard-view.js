@@ -76,7 +76,7 @@ export default function LeaderboardView({ user }) {
           <div className="flex justify-between items-center">
             <div>
               <div className="text-xs uppercase tracking-wider font-semibold text-sky-200">
-                Current Month Target
+                {achievement.periodType === "MONTHLY" ? "Current Month Target" : "Daily Target (Today)"}
               </div>
               <div className="text-3xl font-extrabold mt-1">
                 ₹

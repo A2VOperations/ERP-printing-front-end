@@ -103,8 +103,6 @@ export default function Home() {
         roleNormalized.includes("employee") ||
         roleNormalized.includes("executive")
           ? "/dashboard/sales"
-          : roleNormalized.includes("designer")
-            ? "/dashboard/designer"
             : roleNormalized.includes("admin")
               ? "/dashboard/admin"
               : roleNormalized.includes("manager")
@@ -224,8 +222,6 @@ export default function Home() {
           roleNormalized.includes("employee") ||
           roleNormalized.includes("executive")
             ? "/dashboard/sales"
-            : roleNormalized.includes("designer")
-              ? "/dashboard/designer"
               : roleNormalized.includes("admin")
                 ? "/dashboard/admin"
                 : roleNormalized.includes("manager")

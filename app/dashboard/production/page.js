@@ -44,18 +44,8 @@ export default function ProductionDashboardPage() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [userRole, setUserRole] = useState("admin");
 
-  // Modal for Initialize Production Job
-  const [showHandoffModal, setShowHandoffModal] = useState(false);
-  const [ordersAwaitingProduction, setOrdersAwaitingProduction] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedOrderItemId, setSelectedOrderItemId] = useState("");
-  const [handoffPriority, setHandoffPriority] = useState("NORMAL");
-  const [handoffDueDate, setHandoffDueDate] = useState("");
-  const [handoffSubmitting, setHandoffSubmitting] = useState(false);
-  const [handoffError, setHandoffError] = useState("");
 
-  const isViewOnly = userRole === "sales" || userRole === "designer";
+  const isViewOnly = userRole === "sales";
   const canManage = userRole === "admin" || userRole === "manager";
 
   const loadData = async () => {
@@ -90,74 +80,6 @@ export default function ProductionDashboardPage() {
     loadData();
   }, []);
 
-  const openHandoffModal = async () => {
-    setShowHandoffModal(true);
-    setHandoffError("");
-    setSelectedOrder(null);
-    setSelectedOrderItemId("");
-    try {
-      setLoadingOrders(true);
-      const res = await api.get("/orders");
-      const orderList = Array.isArray(res) ? res : res.data || [];
-      const eligible = orderList.filter(
-        (o) =>
-          !["CANCELLED", "REJECTED", "DELIVERED", "COMPLETED"].includes(
-            o.orderStatus,
-          ),
-      );
-      setOrdersAwaitingProduction(eligible);
-    } catch (err) {
-      console.error("Failed to load eligible orders:", err);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
-
-  const handleSelectOrder = (order) => {
-    setSelectedOrder(order);
-    setSelectedOrderItemId(order.items?.[0]?._id || "");
-    setHandoffPriority(order.priority || "NORMAL");
-    setHandoffDueDate(
-      order.promisedDeliveryDate
-        ? new Date(order.promisedDeliveryDate).toISOString().split("T")[0]
-        : new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
-    );
-  };
-
-  const handleCreateHandoff = async (e) => {
-    e.preventDefault();
-    if (!selectedOrder) return;
-    setHandoffSubmitting(true);
-    setHandoffError("");
-
-    try {
-      const payload = {
-        orderId: selectedOrder._id,
-        orderItemId: selectedOrderItemId || selectedOrder.items?.[0]?._id,
-        priority: handoffPriority || "NORMAL",
-        dueDate: handoffDueDate
-          ? new Date(handoffDueDate).toISOString()
-          : new Date(Date.now() + 3 * 86400000).toISOString(),
-      };
-
-      const res = await api.post("/production-jobs/handoff", payload);
-      alert(
-        res?.isExisting
-          ? "Job already existed for this order item. Opened existing record."
-          : "Production Job successfully initialized!",
-      );
-      setShowHandoffModal(false);
-      setSelectedOrder(null);
-      setSelectedOrderItemId("");
-      loadData();
-    } catch (err) {
-      setHandoffError(
-        err.message || "Failed to initialize production job from handoff",
-      );
-    } finally {
-      setHandoffSubmitting(false);
-    }
-  };
 
   // Filter jobs by active tab and search query
   const filteredJobs = useMemo(() => {
@@ -325,8 +247,7 @@ export default function ProductionDashboardPage() {
                 Outsourced Print Production &amp; Delivery
               </h1>
               <p className="text-xs text-slate-500 mt-1">
-                Production job tracking, file releases, proof snapshots &amp;
-                delivery handoffs
+                Production job history and delivery tracking
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -339,15 +260,6 @@ export default function ProductionDashboardPage() {
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
                 />
               </button>
-              {canManage && (
-                <button
-                  onClick={openHandoffModal}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Initialize Production Job</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -559,18 +471,8 @@ export default function ProductionDashboardPage() {
                           No production jobs found matching this criteria.
                         </p>
                         <p className="text-[11px] text-slate-500 mt-1">
-                          Jobs initialize upon commercial approval and locked
-                          design assets.
+                          Orders remain records until a separate production process is enabled.
                         </p>
-                        {canManage && (
-                          <button
-                            onClick={openHandoffModal}
-                            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Initialize Production Job</span>
-                          </button>
-                        )}
                       </td>
                     </tr>
                   ) : (
@@ -676,201 +578,7 @@ export default function ProductionDashboardPage() {
         </div>
       </main>
 
-      {/* Initialize Production Job Modal */}
-      {showHandoffModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-md w-full max-w-lg p-6 space-y-4 shadow-xl text-slate-800 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Initialize Production Job
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Convert approved commercial order into outsourced job
-                </p>
-              </div>
-              <button
-                onClick={() => setShowHandoffModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {handoffError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                  <span className="font-bold">{handoffError}</span>
-                </div>
-                {handoffError.toLowerCase().includes("lock") && (
-                  <p className="text-[11px] text-slate-600">
-                    Locked artwork is mandatory before production release.
-                    Please open{" "}
-                    <Link
-                      href="/dashboard/design"
-                      className="text-[#F95721] underline font-semibold"
-                    >
-                      Design Studio
-                    </Link>{" "}
-                    to approve client proof and lock production file.
-                  </p>
-                )}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateHandoff} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  1. Select Commercial Order
-                </label>
-                {loadingOrders ? (
-                  <div className="p-4 text-center text-xs text-slate-500">
-                    <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-1 text-[#F95721]" />
-                    Fetching eligible orders...
-                  </div>
-                ) : ordersAwaitingProduction.length === 0 ? (
-                  <p className="text-xs text-slate-500 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    No active orders found for production handoff. Ensure you
-                    have active commercial orders with locked design artwork.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {ordersAwaitingProduction.map((order) => {
-                      const isSelected = selectedOrder?._id === order._id;
-                      const custName =
-                        order.customerId?.displayName ||
-                        order.customerId?.companyName ||
-                        order.customerId?.name ||
-                        "Customer";
-                      const balance = ((order.balancePaise || 0) / 100).toFixed(
-                        2,
-                      );
-                      return (
-                        <div
-                          key={order._id}
-                          onClick={() => handleSelectOrder(order)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-all text-xs ${
-                            isSelected
-                              ? "bg-orange-50/80 border-orange-400 text-slate-900 shadow-2xs"
-                              : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100/70"
-                          }`}
-                        >
-                          <div className="flex justify-between items-center font-bold">
-                            <span className="text-sm text-orange-700">
-                              {order.orderNumber}
-                            </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-orange-50 border border-orange-200 text-orange-700">
-                              {order.orderStatus}
-                            </span>
-                          </div>
-                          <p className="text-slate-900 text-xs font-semibold mt-1">
-                            Client: {custName}
-                          </p>
-                          <div className="flex justify-between items-center text-slate-500 text-[11px] mt-1">
-                            <span>
-                              {order.items?.length || 1} item(s) • ₹
-                              {(
-                                (order.grandTotalPaise || 0) / 100
-                              ).toLocaleString("en-IN")}
-                            </span>
-                            <span
-                              className={
-                                order.balancePaise > 0
-                                  ? "text-amber-700 font-semibold"
-                                  : "text-emerald-700 font-semibold"
-                              }
-                            >
-                              {order.balancePaise > 0
-                                ? `₹${balance} due`
-                                : "Fully Cleared"}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Item selection & job parameters */}
-              {selectedOrder && (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  {selectedOrder.items && selectedOrder.items.length > 1 && (
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                        Select Order Item
-                      </label>
-                      <select
-                        value={selectedOrderItemId}
-                        onChange={(e) => setSelectedOrderItemId(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
-                      >
-                        {selectedOrder.items.map((item, idx) => (
-                          <option key={item._id} value={item._id}>
-                            #{idx + 1}: {item.title} ({item.quantity} units -{" "}
-                            {item.paperType || "Standard"})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                        Production Priority
-                      </label>
-                      <select
-                        value={handoffPriority}
-                        onChange={(e) => setHandoffPriority(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
-                      >
-                        <option value="NORMAL">NORMAL (Standard)</option>
-                        <option value="HIGH">HIGH (Priority)</option>
-                        <option value="URGENT">URGENT (Expedited)</option>
-                        <option value="RUSH">RUSH (Immediate)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                        Target Due Date
-                      </label>
-                      <input
-                        type="date"
-                        value={handoffDueDate}
-                        onChange={(e) => setHandoffDueDate(e.target.value)}
-                        className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs text-slate-800 focus:outline-none focus:border-[#F95721]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-2 flex justify-end gap-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setShowHandoffModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!selectedOrder || handoffSubmitting}
-                  className="px-5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] disabled:opacity-50 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-                >
-                  {handoffSubmitting && (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  )}
-                  <span>Initialize Job</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -96,7 +96,7 @@ export default function PaymentsPage() {
     typeof roleRaw === "string" ? roleRaw : roleRaw?.slug || roleRaw?.name || ""
   ).toUpperCase();
   const isSalesOnly =
-    userRole === "SALES" || userRole === "SALES_REP" || userRole === "DESIGNER";
+    userRole === "SALES" || userRole === "SALES_REP";
   const canVerifyPayment = !isSalesOnly;
 
   const [loadError, setLoadError] = useState(null);

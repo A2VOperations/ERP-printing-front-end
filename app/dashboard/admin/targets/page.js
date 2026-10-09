@@ -18,22 +18,18 @@ import {
   Check,
   X,
   Search,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+const getTodayDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export default function AdminTargetsPage() {
   const router = useRouter();
@@ -44,10 +40,8 @@ export default function AdminTargetsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL"); // ALL, SET, NOT_SET
 
-  // Active Period
-  const now = new Date();
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  // Active Target Date (Daily Target System)
+  const [selectedDate, setSelectedDate] = useState(getTodayDateString);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -55,9 +49,9 @@ export default function AdminTargetsPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [targetForm, setTargetForm] = useState({
     userId: "",
-    targetAmount: 100000,
-    targetOrdersCount: 10,
-    periodType: "MONTHLY",
+    targetAmount: 10000,
+    targetOrdersCount: 2,
+    periodType: "DAILY",
     notes: "",
   });
 
@@ -68,11 +62,50 @@ export default function AdminTargetsPage() {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Date Navigation Helpers
+  const handlePrevDay = () => {
+    const parts = selectedDate.split("-");
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() - 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    setSelectedDate(`${year}-${month}-${day}`);
+  };
+
+  const handleNextDay = () => {
+    const parts = selectedDate.split("-");
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    setSelectedDate(`${year}-${month}-${day}`);
+  };
+
+  const handleToday = () => {
+    setSelectedDate(getTodayDateString());
+  };
+
+  const formattedDateDisplay = useMemo(() => {
+    if (!selectedDate) return "";
+    const parts = selectedDate.split("-");
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const isToday = selectedDate === getTodayDateString();
+    const dateStr = d.toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    return isToday ? `Today (${dateStr})` : dateStr;
+  }, [selectedDate]);
+
   const loadTargets = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get(
-        `/targets?year=${selectedYear}&month=${selectedMonth}`,
+        `/targets?date=${selectedDate}&periodType=DAILY`,
       );
       if (res && res.data) {
         const rawList = res.data.targets || [];
@@ -100,11 +133,11 @@ export default function AdminTargetsPage() {
       }
     } catch (err) {
       console.error("Failed to load targets:", err);
-      showNotification("Failed to load sales targets", "error");
+      showNotification("Failed to load daily sales targets", "error");
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedMonth]);
+  }, [selectedDate]);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -202,10 +235,10 @@ export default function AdminTargetsPage() {
     setSelectedUser(item.user);
     setTargetForm({
       userId: item.user._id,
-      targetAmount: item.targetRupees > 0 ? item.targetRupees : 100000,
+      targetAmount: item.targetRupees > 0 ? item.targetRupees : 10000,
       targetOrdersCount:
-        item.targetOrdersCount > 0 ? item.targetOrdersCount : 10,
-      periodType: item.periodType || "MONTHLY",
+        item.targetOrdersCount > 0 ? item.targetOrdersCount : 2,
+      periodType: "DAILY",
       notes: item.notes || "",
     });
     setShowModal(true);
@@ -219,9 +252,9 @@ export default function AdminTargetsPage() {
       targetsData.find((t) => !t.hasTarget)?.user || usersList[0];
     setTargetForm({
       userId: firstRepWithoutTarget?._id || "",
-      targetAmount: 100000,
-      targetOrdersCount: 10,
-      periodType: "MONTHLY",
+      targetAmount: 10000,
+      targetOrdersCount: 2,
+      periodType: "DAILY",
       notes: "",
     });
     setShowModal(true);
@@ -232,10 +265,10 @@ export default function AdminTargetsPage() {
     setModalMode("BATCH");
     setTargetForm({
       userId: "ALL",
-      targetAmount: 100000,
-      targetOrdersCount: 10,
-      periodType: "MONTHLY",
-      notes: `Standard monthly sales quota for ${MONTHS[selectedMonth]} ${selectedYear}`,
+      targetAmount: 10000,
+      targetOrdersCount: 2,
+      periodType: "DAILY",
+      notes: `Standard daily quota for ${formattedDateDisplay}`,
     });
     setShowModal(true);
   };
@@ -245,40 +278,29 @@ export default function AdminTargetsPage() {
     e.preventDefault();
     try {
       setSaving(true);
-      const pStart = new Date(
-        selectedYear,
-        selectedMonth,
-        1,
-        0,
-        0,
-        0,
-        0,
-      ).toISOString();
-      const pEnd = new Date(
-        selectedYear,
-        selectedMonth + 1,
-        0,
-        23,
-        59,
-        59,
-        999,
-      ).toISOString();
+      const parts = selectedDate.split("-");
+      const year = Number(parts[0]);
+      const month = Number(parts[1]) - 1;
+      const day = Number(parts[2]);
+
+      const pStart = new Date(year, month, day, 0, 0, 0, 0).toISOString();
+      const pEnd = new Date(year, month, day, 23, 59, 59, 999).toISOString();
 
       if (modalMode === "BATCH") {
-        // Apply to all sales reps
+        // Apply to all sales reps for this day
         for (const rep of usersList) {
           await api.post("/targets", {
             userId: rep._id,
             targetAmount: Number(targetForm.targetAmount),
             targetOrdersCount: Number(targetForm.targetOrdersCount),
-            periodType: targetForm.periodType,
+            periodType: "DAILY",
             periodStart: pStart,
             periodEnd: pEnd,
             notes: targetForm.notes,
           });
         }
         showNotification(
-          `Applied targets to all ${usersList.length} sales representatives!`,
+          `Applied daily targets to all ${usersList.length} sales representatives for ${formattedDateDisplay}!`,
         );
       } else {
         if (!targetForm.userId) {
@@ -290,14 +312,14 @@ export default function AdminTargetsPage() {
           userId: targetForm.userId,
           targetAmount: Number(targetForm.targetAmount),
           targetOrdersCount: Number(targetForm.targetOrdersCount),
-          periodType: targetForm.periodType,
+          periodType: "DAILY",
           periodStart: pStart,
           periodEnd: pEnd,
           notes: targetForm.notes,
         });
 
         showNotification(
-          `Target successfully configured for ${selectedUser?.name || "Representative"}!`,
+          `Daily target configured for ${selectedUser?.name || "Representative"} on ${formattedDateDisplay}!`,
         );
       }
 
@@ -305,7 +327,7 @@ export default function AdminTargetsPage() {
       loadTargets();
     } catch (err) {
       console.error("Failed to save target:", err);
-      showNotification(err.message || "Failed to save sales target", "error");
+      showNotification(err.message || "Failed to save daily sales target", "error");
     } finally {
       setSaving(false);
     }
@@ -316,18 +338,18 @@ export default function AdminTargetsPage() {
     if (!item.targetId) return;
     if (
       !window.confirm(
-        `Are you sure you want to remove the target for ${item.user.name}?`,
+        `Are you sure you want to remove the daily target for ${item.user.name}?`,
       )
     )
       return;
 
     try {
       await api.delete(`/targets/${item.targetId}`);
-      showNotification(`Target removed for ${item.user.name}`);
+      showNotification(`Daily target removed for ${item.user.name}`);
       loadTargets();
     } catch (err) {
       console.error("Failed to delete target:", err);
-      showNotification("Failed to remove target", "error");
+      showNotification("Failed to remove daily target", "error");
     }
   };
 
@@ -367,46 +389,56 @@ export default function AdminTargetsPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    Sales Quotas &amp; Targets Management
+                    Daily Sales Targets &amp; Quotas
                   </h1>
                   <p className="text-xs text-slate-500 font-medium">
-                    Configure individual and team revenue goals, track closed
-                    sales, and govern live sales incentives.
+                    Configure daily targets (per day) for sales representatives, track closed
+                    sales won today, and govern real-time daily quota achievements.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Period Selectors */}
+              {/* Daily Date Selector */}
               <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="bg-transparent text-xs font-bold text-slate-700 px-2.5 py-1.5 focus:outline-none cursor-pointer"
+                <button
+                  type="button"
+                  onClick={handlePrevDay}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="Previous Day"
                 >
-                  {MONTHS.map((m, idx) => (
-                    <option key={m} value={idx}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
 
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="bg-transparent text-xs font-bold text-slate-700 px-2 py-1.5 border-l border-slate-200 focus:outline-none cursor-pointer"
+                <div className="flex items-center gap-1.5 px-2">
+                  <Calendar className="w-3.5 h-3.5 text-[#F95721]" />
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleNextDay}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  title="Next Day"
                 >
-                  {[
-                    now.getFullYear() - 1,
-                    now.getFullYear(),
-                    now.getFullYear() + 1,
-                  ].map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                {selectedDate !== getTodayDateString() && (
+                  <button
+                    type="button"
+                    onClick={handleToday}
+                    className="ml-1 px-2 py-1 rounded-lg bg-orange-50 text-[#F95721] text-[10px] font-black hover:bg-orange-100 transition-colors"
+                  >
+                    Today
+                  </button>
+                )}
               </div>
 
               <button
@@ -433,7 +465,7 @@ export default function AdminTargetsPage() {
                 className="px-4 py-2 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
-                Set Representative Target
+                Set Daily Target
               </button>
             </div>
           </div>
@@ -443,7 +475,7 @@ export default function AdminTargetsPage() {
             {/* Total Team Target */}
             <div className="bg-white p-5 rounded-md border border-slate-200 shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Total Team Target
+                Team Daily Target
               </span>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-black text-slate-900">
@@ -451,20 +483,21 @@ export default function AdminTargetsPage() {
                   {summary.totalTarget.toLocaleString("en-IN", {
                     maximumFractionDigits: 0,
                   })}
+                  <span className="text-xs font-normal text-slate-400 ml-1">/day</span>
                 </span>
                 <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center font-bold text-xs">
                   <Target className="w-4 h-4" />
                 </div>
               </div>
               <span className="text-[11px] text-slate-500 block">
-                Goal for {MONTHS[selectedMonth]} {selectedYear}
+                Daily goal for {formattedDateDisplay}
               </span>
             </div>
 
-            {/* Total Closed Sales Won */}
+            {/* Total Closed Sales Won Today */}
             <div className="bg-white p-5 rounded-md border border-slate-200 shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Total Closed Won
+                Achieved Today
               </span>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-black text-emerald-600">
@@ -478,14 +511,14 @@ export default function AdminTargetsPage() {
                 </div>
               </div>
               <span className="text-[11px] text-slate-500 block">
-                {summary.totalOrdersWon} confirmed won orders
+                {summary.totalOrdersWon} confirmed won orders today
               </span>
             </div>
 
             {/* Overall Team Achievement % */}
             <div className="bg-white p-5 rounded-md border border-slate-200 shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Quota Progress
+                Daily Quota Progress
               </span>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-black text-purple-600">
@@ -508,7 +541,7 @@ export default function AdminTargetsPage() {
             {/* Quota Coverage */}
             <div className="bg-white p-5 rounded-md border border-slate-200 shadow-xs space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Target Coverage
+                Daily Target Coverage
               </span>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-black text-indigo-600">
@@ -519,8 +552,7 @@ export default function AdminTargetsPage() {
                 </div>
               </div>
               <span className="text-[11px] text-slate-500 block">
-                {summary.totalReps - summary.repsWithTarget} reps awaiting
-                targets
+                {summary.totalReps - summary.repsWithTarget} reps without daily target
               </span>
             </div>
           </div>
@@ -581,7 +613,7 @@ export default function AdminTargetsPage() {
               {loading ? (
                 <div className="py-16 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2">
                   <RefreshCw className="w-6 h-6 animate-spin text-[#F95721]" />
-                  <span>Loading sales quotas and live performance...</span>
+                  <span>Loading daily quotas and live achievement...</span>
                 </div>
               ) : filteredTargets.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 text-xs space-y-2">
@@ -598,10 +630,10 @@ export default function AdminTargetsPage() {
                   <thead>
                     <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                       <th className="pb-3">Sales Representative</th>
-                      <th className="pb-3">Target Quota</th>
-                      <th className="pb-3">Achieved Won</th>
-                      <th className="pb-3">Progress</th>
-                      <th className="pb-3">Required / Day</th>
+                      <th className="pb-3">Daily Target (Per Day)</th>
+                      <th className="pb-3">Achieved Today</th>
+                      <th className="pb-3">Today's Progress</th>
+                      <th className="pb-3">Daily Status</th>
                       <th className="pb-3">Notes</th>
                       <th className="pb-3 text-right">Actions</th>
                     </tr>
@@ -637,7 +669,7 @@ export default function AdminTargetsPage() {
                             </div>
                           </td>
 
-                          {/* Target Quota */}
+                          {/* Daily Target Quota */}
                           <td className="py-3.5">
                             {hasTarget ? (
                               <div>
@@ -646,19 +678,20 @@ export default function AdminTargetsPage() {
                                   {item.targetRupees.toLocaleString("en-IN", {
                                     maximumFractionDigits: 0,
                                   })}
+                                  <span className="text-slate-400 font-normal text-xs"> / day</span>
                                 </span>
                                 <span className="text-[10px] font-bold text-[#F95721]">
-                                  {item.targetOrdersCount} target orders
+                                  {item.targetOrdersCount} deals / day
                                 </span>
                               </div>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-block">
-                                No Target Configured
+                                No Target Set
                               </span>
                             )}
                           </td>
 
-                          {/* Achieved Won */}
+                          {/* Achieved Won Today */}
                           <td className="py-3.5">
                             <span className="font-black text-emerald-600 text-sm block">
                               ₹
@@ -667,7 +700,7 @@ export default function AdminTargetsPage() {
                               })}
                             </span>
                             <span className="text-[10px] text-slate-500 font-medium">
-                              {item.ordersWonCount} deals closed
+                              {item.ordersWonCount} deals closed today
                             </span>
                           </td>
 
@@ -690,7 +723,9 @@ export default function AdminTargetsPage() {
                                 </span>
                                 <span className="text-[10px] text-slate-400">
                                   {hasTarget
-                                    ? `₹${item.remainingRupees.toLocaleString("en-IN", { maximumFractionDigits: 0 })} left`
+                                    ? item.remainingRupees > 0
+                                      ? `₹${item.remainingRupees.toLocaleString("en-IN", { maximumFractionDigits: 0 })} left`
+                                      : "Met!"
                                     : "-"}
                                 </span>
                               </div>
@@ -711,25 +746,24 @@ export default function AdminTargetsPage() {
                             </div>
                           </td>
 
-                          {/* Required Run Rate */}
+                          {/* Daily Status */}
                           <td className="py-3.5">
                             {hasTarget && item.remainingRupees > 0 ? (
                               <div>
                                 <span className="font-bold text-slate-800 text-xs block">
                                   ₹
-                                  {item.requiredPerDayRupees.toLocaleString(
-                                    "en-IN",
-                                    { maximumFractionDigits: 0 },
-                                  )}{" "}
-                                  / day
+                                  {item.remainingRupees.toLocaleString("en-IN", {
+                                    maximumFractionDigits: 0,
+                                  })}{" "}
+                                  to go
                                 </span>
                                 <span className="text-[10px] text-slate-400">
-                                  {item.daysRemaining} days left
+                                  Target: ₹{item.targetRupees.toLocaleString("en-IN")} / day
                                 </span>
                               </div>
-                            ) : hasTarget && item.remainingRupees === 0 ? (
-                              <span className="text-[10px] font-black text-emerald-600">
-                                Target Met! 🎯
+                            ) : hasTarget && item.remainingRupees <= 0 ? (
+                              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                Daily Target Met! 🎯
                               </span>
                             ) : (
                               <span className="text-slate-300">-</span>
@@ -758,14 +792,14 @@ export default function AdminTargetsPage() {
                                 className="px-3 py-1.5 rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-100 font-bold text-xs transition-colors flex items-center gap-1 shadow-2xs"
                               >
                                 <Edit2 className="w-3 h-3" />
-                                {hasTarget ? "Edit Target" : "Set Target"}
+                                {hasTarget ? "Edit Daily Target" : "Set Daily Target"}
                               </button>
 
                               {hasTarget && (
                                 <button
                                   onClick={() => handleDeleteTarget(item)}
                                   className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                  title="Remove target"
+                                  title="Remove daily target"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -783,7 +817,7 @@ export default function AdminTargetsPage() {
         </div>
       </main>
 
-      {/* Set / Edit Target Modal */}
+      {/* Set / Edit Daily Target Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-100">
@@ -795,13 +829,13 @@ export default function AdminTargetsPage() {
                 <div>
                   <h3 className="font-bold text-slate-900 text-base">
                     {modalMode === "BATCH"
-                      ? "Batch Set Target for All Reps"
+                      ? "Batch Set Daily Target for All Reps"
                       : modalMode === "EDIT"
-                        ? `Edit Target for ${selectedUser?.name}`
-                        : `Configure Sales Target`}
+                        ? `Edit Daily Target for ${selectedUser?.name}`
+                        : `Configure Daily Sales Target`}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Period: {MONTHS[selectedMonth]} {selectedYear}
+                    Target Date: <strong className="text-slate-700">{formattedDateDisplay}</strong>
                   </p>
                 </div>
               </div>
@@ -846,10 +880,10 @@ export default function AdminTargetsPage() {
                 </div>
               )}
 
-              {/* Target Revenue in Rupees */}
+              {/* Target Revenue in Rupees per day */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block">
-                  Target Revenue Quota (₹ Rupees)
+                  Daily Target Revenue Quota (₹ / day)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
@@ -858,7 +892,7 @@ export default function AdminTargetsPage() {
                   <input
                     type="number"
                     min="0"
-                    step="1000"
+                    step="500"
                     required
                     value={targetForm.targetAmount}
                     onChange={(e) =>
@@ -868,16 +902,16 @@ export default function AdminTargetsPage() {
                       }))
                     }
                     className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-black text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
-                    placeholder="100000"
+                    placeholder="10000"
                   />
                 </div>
 
-                {/* Quick Pre-set Chips */}
+                {/* Quick Pre-set Daily Revenue Chips */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
                   <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">
-                    Quick:
+                    Quick Daily:
                   </span>
-                  {[50000, 100000, 200000, 500000, 1000000].map((amt) => (
+                  {[2000, 5000, 10000, 25000, 50000, 100000].map((amt) => (
                     <button
                       type="button"
                       key={amt}
@@ -893,16 +927,16 @@ export default function AdminTargetsPage() {
                           : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                       }`}
                     >
-                      ₹{(amt / 1000).toLocaleString("en-IN")}k
+                      ₹{(amt).toLocaleString("en-IN")}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Target Orders Count */}
+              {/* Target Orders Count per day */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 block">
-                  Target Won Deals / Orders Count
+                  Daily Target Won Deals / Orders Count (orders / day)
                 </label>
                 <input
                   type="number"
@@ -915,8 +949,34 @@ export default function AdminTargetsPage() {
                     }))
                   }
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#F95721] focus:bg-white"
-                  placeholder="10"
+                  placeholder="2"
                 />
+
+                {/* Quick Pre-set Daily Orders Chips */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">
+                    Deals / Day:
+                  </span>
+                  {[1, 2, 3, 5, 10].map((cnt) => (
+                    <button
+                      type="button"
+                      key={cnt}
+                      onClick={() =>
+                        setTargetForm((prev) => ({
+                          ...prev,
+                          targetOrdersCount: cnt,
+                        }))
+                      }
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors ${
+                        Number(targetForm.targetOrdersCount) === cnt
+                          ? "bg-[#F95721] text-white border-[#F95721]"
+                          : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                      }`}
+                    >
+                      {cnt} {cnt === 1 ? "deal" : "deals"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Notes / Strategy Instructions */}
@@ -934,7 +994,7 @@ export default function AdminTargetsPage() {
                     }))
                   }
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#F95721] focus:bg-white"
-                  placeholder="e.g., Focus on corporate catalog accounts and visiting card renewals..."
+                  placeholder="e.g., Focus on today's catalog renewals and visiting card rush deliveries..."
                 />
               </div>
 
@@ -955,12 +1015,12 @@ export default function AdminTargetsPage() {
                   {saving ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Saving Target...
+                      Saving Daily Target...
                     </>
                   ) : (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      Save Target
+                      Save Daily Target
                     </>
                   )}
                 </button>

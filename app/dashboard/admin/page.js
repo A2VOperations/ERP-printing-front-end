@@ -1607,12 +1607,7 @@ export default function AdminOverviewPage() {
                           Design Projects
                         </h4>
                       </div>
-                      <button
-                        onClick={() => router.push("/dashboard/designer")}
-                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
-                      >
-                        View All
-                      </button>
+                      
                     </div>
 
                     <div className="mt-3.5 space-y-2 text-xs">
@@ -1879,17 +1874,7 @@ export default function AdminOverviewPage() {
                   </div>
 
                   <div className="mt-4 pt-2">
-                    <button
-                      onClick={() => router.push("/dashboard/designer")}
-                      className={`w-full py-2 px-3 rounded-xl text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-98 ${
-                        attentionMetrics.criticalCount > 0
-                          ? "bg-[#E11D48] hover:bg-[#BE123C]"
-                          : "bg-slate-800 hover:bg-slate-900"
-                      }`}
-                    >
-                      <span>Resolve Design Approval</span>
-                      <span>→</span>
-                    </button>
+                    
                   </div>
                 </div>
               </div>
@@ -1920,16 +1905,6 @@ export default function AdminOverviewPage() {
                           >
                             Sales Team
                           </button>
-                          <button
-                            onClick={() => setTeamTab("Design Team")}
-                            className={`px-3 py-1 rounded-md transition-all ${
-                              teamTab === "Design Team"
-                                ? "bg-white text-slate-900 shadow-2xs"
-                                : "text-slate-500 hover:text-slate-800"
-                            }`}
-                          >
-                            Design Team
-                          </button>
                         </div>
 
                         <button
@@ -1945,7 +1920,7 @@ export default function AdminOverviewPage() {
 
                     {/* Table View */}
                     <div className="mt-4 overflow-x-auto">
-                      {teamTab === "Sales Team" ? (
+                      {true ? (
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
@@ -2143,12 +2118,7 @@ export default function AdminOverviewPage() {
                                 {act.summary}
                               </p>
                             </div>
-                            <button
-                              onClick={() => router.push("/dashboard/designer")}
-                              className="font-mono text-[11px] font-bold text-indigo-600 hover:text-indigo-800 shrink-0"
-                            >
-                              {act.tag}
-                            </button>
+                            
                           </div>
                         ))
                       )}
@@ -2210,13 +2180,7 @@ export default function AdminOverviewPage() {
                   </button>
 
                   {/* View Approvals */}
-                  <button
-                    onClick={() => router.push("/dashboard/designer")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-xs transition-colors"
-                  >
-                    <Palette className="w-3.5 h-3.5" />
-                    <span>View Approvals ({pendingDesignsCount})</span>
-                  </button>
+                  
 
                   {/* Production Jobs */}
                   <button

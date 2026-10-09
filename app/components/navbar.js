@@ -86,8 +86,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         if (storedRole.includes("admin")) roleDisplay = "Super Admin";
         else if (storedRole.includes("manager")) roleDisplay = "Sales Manager";
         else if (storedRole.includes("sales")) roleDisplay = "Sales Executive";
-        else if (storedRole.includes("designer"))
-          roleDisplay = "Graphic Designer";
         else if (storedRole.includes("operator")) roleDisplay = "Data Operator";
         else roleDisplay = storedRole.toUpperCase();
 
@@ -152,10 +150,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     activeRoleRaw.includes("manager");
 
   // True sales representative on sales workflows
-  const isSalesPerson =
-    !isDataOperator &&
-    !isAdminOrManager &&
-    !pathname?.startsWith("/dashboard/designer");
+  const isSalesPerson = userRoleNorm === "sales";
 
   // Avatar upload & management state
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -210,7 +205,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
       if (storedRole === "admin") roleDisplay = "Super Admin";
       else if (storedRole === "manager") roleDisplay = "Sales Manager";
       else if (storedRole === "sales") roleDisplay = "Sales Executive";
-      else if (storedRole === "designer") roleDisplay = "Graphic Designer";
       else roleDisplay = storedRole.toUpperCase();
 
       const initialName = storedName || "User";
@@ -280,7 +274,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
           if (rawRole === "admin") roleTitle = "Super Admin";
           else if (rawRole === "manager") roleTitle = "Sales Manager";
           else if (rawRole === "sales") roleTitle = "Sales Executive";
-          else if (rawRole === "designer") roleTitle = "Graphic Designer";
           else roleTitle = rawRole.toUpperCase();
 
           const currentCachedAvatar =
@@ -679,7 +672,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
     async (isInitial = false) => {
       try {
         // STRICT ROLE GATE: Only Sales Executives receive incoming assigned lead alerts & notification bar
-        // NEVER show any incoming lead alerts to Data Operators, Admin, Designers, or Managers
+        // NEVER show any incoming lead alerts to Data Operators, Admin, Managers
         if (!isSalesPerson) {
           setAssignedInboxCount(0);
           setAssignedLeads([]);
@@ -1108,8 +1101,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         return "bg-orange-100 text-orange-700 border-orange-200";
       case "sales":
         return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "designer":
-        return "bg-pink-100 text-pink-700 border-pink-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
     }
@@ -1124,8 +1115,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         return "bg-[#F95721]";
       case "sales":
         return "bg-emerald-600";
-      case "designer":
-        return "bg-pink-600";
       default:
         return "bg-teal-600";
     }
@@ -1405,8 +1394,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                       user.role?.includes("employee") ||
                       user.role?.includes("executive")
                         ? "/dashboard/sales"
-                        : user.role === "designer"
-                          ? "/dashboard/designer"
                           : user.role === "data_operator"
                             ? "/dashboard/data-operator"
                             : "/dashboard"
@@ -1452,17 +1439,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                     >
                       <Users className="w-4 h-4 text-slate-400" />
                       <span>Team Performance</span>
-                    </Link>
-                  )}
-
-                  {user.role === "designer" && (
-                    <Link
-                      href="/dashboard/design"
-                      onClick={() => setShowUserDropdown(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-[#F95721] transition-colors"
-                    >
-                      <Palette className="w-4 h-4 text-slate-400" />
-                      <span>My Design Projects</span>
                     </Link>
                   )}
 
@@ -1714,11 +1690,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         name: "Production",
                         href: "/dashboard/production",
                         icon: Layers,
-                      },
-                      {
-                        name: "Design",
-                        href: "/dashboard/design",
-                        icon: Palette,
                       },
                       {
                         name: "Follow-ups",

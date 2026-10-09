@@ -130,10 +130,6 @@ export default function SalesDashboardPage() {
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState([]);
 
-  // Raw JSON Inspector Modal
-  const [inspectingLead, setInspectingLead] = useState(null);
-  const [copiedJson, setCopiedJson] = useState(false);
-
   // Manual Lead Modal
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
@@ -229,21 +225,22 @@ export default function SalesDashboardPage() {
       } catch {}
 
       // 2. Fetch live leads, follow-ups, quotations, orders, users
-      const [leadsRes, flwRes, quoteRes, ordersRes, usersRes] = await Promise.allSettled([
-        api.get("/leads?limit=100&sortBy=createdAt&sortOrder=desc", {
-          silent: true,
-        }),
-        api.get("/followups?limit=50&sortBy=scheduledAt&sortOrder=asc", {
-          silent: true,
-        }),
-        api.get("/quotations?limit=50&sortBy=createdAt&sortOrder=desc", {
-          silent: true,
-        }),
-        api.get("/orders?limit=50&sortBy=createdAt&sortOrder=desc", {
-          silent: true,
-        }),
-        api.get("/users", { silent: true }),
-      ]);
+      const [leadsRes, flwRes, quoteRes, ordersRes, usersRes] =
+        await Promise.allSettled([
+          api.get("/leads?limit=100&sortBy=createdAt&sortOrder=desc", {
+            silent: true,
+          }),
+          api.get("/followups?limit=50&sortBy=scheduledAt&sortOrder=asc", {
+            silent: true,
+          }),
+          api.get("/quotations?limit=50&sortBy=createdAt&sortOrder=desc", {
+            silent: true,
+          }),
+          api.get("/orders?limit=50&sortBy=createdAt&sortOrder=desc", {
+            silent: true,
+          }),
+          api.get("/users", { silent: true }),
+        ]);
 
       if (usersRes.status === "fulfilled" && usersRes.value?.data) {
         const raw = usersRes.value.data;
@@ -291,11 +288,27 @@ export default function SalesDashboardPage() {
   const displayLeads = useMemo(() => {
     return (leads || []).map((l) => {
       const bName =
-        (l.businessName && l.businessName.trim() !== "Direct Lead" && l.businessName.trim() !== "—" ? l.businessName.trim() : null) ||
-        (l.companyName && l.companyName.trim() !== "Direct Lead" && l.companyName.trim() !== "—" ? l.companyName.trim() : "");
+        (l.businessName &&
+        l.businessName.trim() !== "Direct Lead" &&
+        l.businessName.trim() !== "—"
+          ? l.businessName.trim()
+          : null) ||
+        (l.companyName &&
+        l.companyName.trim() !== "Direct Lead" &&
+        l.companyName.trim() !== "—"
+          ? l.companyName.trim()
+          : "");
       const cName =
-        (l.contactName && l.contactName.trim() !== "Direct Lead" && l.contactName.trim() !== "—" ? l.contactName.trim() : null) ||
-        (l.customerName && l.customerName.trim() !== "Direct Lead" && l.customerName.trim() !== "—" ? l.customerName.trim() : "");
+        (l.contactName &&
+        l.contactName.trim() !== "Direct Lead" &&
+        l.contactName.trim() !== "—"
+          ? l.contactName.trim()
+          : null) ||
+        (l.customerName &&
+        l.customerName.trim() !== "Direct Lead" &&
+        l.customerName.trim() !== "—"
+          ? l.customerName.trim()
+          : "");
       const phone = l.phone || l.mobileNumber || "—";
       const areaName = l.area || l.address?.city || l.location || "Burari";
       const zoneName = l.zone || l.address?.state || "Sant Nagar";
@@ -592,16 +605,14 @@ export default function SalesDashboardPage() {
         }
       }
 
-      const bName = (
+      const bName =
         newLeadForm.businessName?.trim() ||
         newLeadForm.companyName?.trim() ||
-        ""
-      );
-      const cName = (
+        "";
+      const cName =
         newLeadForm.customerName?.trim() ||
         newLeadForm.contactName?.trim() ||
-        ""
-      );
+        "";
       await api.post("/leads", {
         businessName: bName,
         companyName: bName,
@@ -621,18 +632,18 @@ export default function SalesDashboardPage() {
         zone: zoneVal,
         acceptanceStatus: "ACCEPTED",
         shopImageUrl: uploadedPhotoUrl || undefined,
-        documents:
-          uploadedPhotoUrl
-            ? [
-                {
-                  title: `Shop Photo - ${resolvedBusinessName || resolvedContactName}`,
-                  category: "PHOTO",
-                  fileUrl: uploadedPhotoUrl,
-                  uploadedByName: currentUser?.name || userName || "Sales Executive",
-                  uploadedAt: new Date(),
-                },
-              ]
-            : [],
+        documents: uploadedPhotoUrl
+          ? [
+              {
+                title: `Shop Photo - ${bName || cName || "Lead"}`,
+                category: "PHOTO",
+                fileUrl: uploadedPhotoUrl,
+                uploadedByName:
+                  currentUser?.name || userName || "Sales Executive",
+                uploadedAt: new Date(),
+              },
+            ]
+          : [],
       });
 
       setShowAddLeadModal(false);
@@ -664,29 +675,6 @@ export default function SalesDashboardPage() {
     }
   };
 
-  // Copy raw JSON to clipboard
-  const handleCopyJson = (jsonObj) => {
-    navigator.clipboard.writeText(JSON.stringify(jsonObj, null, 2));
-    setCopiedJson(true);
-    setTimeout(() => setCopiedJson(false), 2000);
-  };
-
-  // Export raw data as JSON
-  const handleExportJson = () => {
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(leads, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute(
-      "download",
-      `raw_leads_export_${new Date().toISOString().slice(0, 10)}.json`,
-    );
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
   // WhatsApp Launcher
   const handleOpenWhatsApp = (lead) => {
     if (!lead) return;
@@ -700,6 +688,35 @@ export default function SalesDashboardPage() {
     );
     window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
   };
+
+  // Export raw leads to JSON file
+  const handleExportJson = useCallback(() => {
+    try {
+      const exportList =
+        filteredLeads && filteredLeads.length > 0 ? filteredLeads : leads;
+      if (!exportList || exportList.length === 0) {
+        alert("No lead records available to export.");
+        return;
+      }
+
+      const dataStr = JSON.stringify(exportList, null, 2);
+      const blob = new Blob([dataStr], {
+        type: "application/json;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const today = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.setAttribute("download", `raw_leads_export_${today}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to export leads data as JSON.");
+    }
+  }, [filteredLeads, leads]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -717,12 +734,7 @@ export default function SalesDashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Left: Greeting & Subtitle */}
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-[#F95721] border border-orange-200 text-[11px] font-bold">
-                  <Database className="w-3 h-3" />
-                  Live MongoDB Data
-                </span>
-                <span>•</span>
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
                 <span>
                   {greeting}, {userName}
                 </span>
@@ -1056,14 +1068,6 @@ export default function SalesDashboardPage() {
                               <Copy className="w-3 h-3 text-slate-500" />
                               <span>Copy</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => setInspectingLead(item.raw)}
-                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-[10px] flex items-center gap-1"
-                            >
-                              <Code2 className="w-3 h-3" />
-                              <span>JSON</span>
-                            </button>
                           </div>
                         </div>
                       </div>
@@ -1077,78 +1081,71 @@ export default function SalesDashboardPage() {
               ) : (
                 /* Standard Raw Data Table with horizontal scroll */
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs font-mono min-w-[900px]">
+                  <table className="w-full text-left text-sm font-mono min-w-[950px]">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50/80 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        <th className="py-3 px-3">LEAD NUMBER</th>
-                        <th className="py-3 px-3">MONGO _ID</th>
-                        <th className="py-3 px-3 font-sans">
+                      <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        <th className="py-3.5 px-3.5">LEAD NUMBER</th>
+                        <th className="py-3.5 px-3.5 font-sans">
                           CONTACT &amp; BUSINESS
                         </th>
-                        <th className="py-3 px-3">PHONE</th>
-                        <th className="py-3 px-3 font-sans">SOURCE</th>
-                        <th className="py-3 px-3 font-sans">RAW STATUS</th>
-                        <th className="py-3 px-3 font-sans">PRIORITY</th>
-                        <th className="py-3 px-3 font-sans">EXPECTED VALUE</th>
-                        <th className="py-3 px-3 font-sans">ASSIGNED TO</th>
-                        <th className="py-3 px-3">CREATED AT</th>
-                        <th className="py-3 px-3 text-center font-sans">
-                          RAW JSON
+                        <th className="py-3.5 px-3.5">PHONE</th>
+                        <th className="py-3.5 px-3.5 font-sans">SOURCE</th>
+                        <th className="py-3.5 px-3.5 font-sans">RAW STATUS</th>
+                        <th className="py-3.5 px-3.5 font-sans">PRIORITY</th>
+                        <th className="py-3.5 px-3.5 font-sans">EXPECTED VALUE</th>
+                        <th className="py-3.5 px-3.5 font-sans">ASSIGNED TO</th>
+                        <th className="py-3.5 px-3.5">CREATED AT</th>
+                        <th className="py-3.5 px-3.5 text-center font-sans">
+                          Find
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[11px]">
+                    <tbody className="divide-y divide-slate-100 text-sm">
                       {filteredLeads.length > 0 ? (
                         filteredLeads.map((item) => (
                           <tr
                             key={item._id}
                             className="hover:bg-indigo-50/30 transition-colors"
                           >
-                            <td className="py-3 px-3 font-bold text-indigo-700">
+                            <td className="py-3.5 px-3.5 font-bold text-indigo-700 text-sm">
                               {item.leadNumber}
                             </td>
-                            <td
-                              className="py-3 px-3 text-slate-400 select-all"
-                              title={String(item._id)}
-                            >
-                              {String(item._id).slice(0, 10)}…
-                            </td>
-                            <td className="py-3 px-3 font-sans">
-                              <div className="font-bold text-slate-900">
+                            <td className="py-3.5 px-3.5 font-sans">
+                              <div className="font-bold text-slate-900 text-sm">
                                 {item.contactName}
                               </div>
-                              <div className="text-[10px] text-slate-400">
+                              <div className="text-xs text-slate-500 mt-0.5">
                                 {item.businessName || "—"}
                               </div>
                             </td>
-                            <td className="py-3 px-3 text-emerald-700 font-semibold select-all">
+                            <td className="py-3.5 px-3.5 text-emerald-700 font-bold select-all text-sm">
                               {item.phone}
                             </td>
-                            <td className="py-3 px-3 font-sans">
-                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200">
+                            <td className="py-3.5 px-3.5 font-sans">
+                              <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
                                 {item.rawSource}
                               </span>
                             </td>
-                            <td className="py-3 px-3 font-sans">
+                            <td className="py-3.5 px-3.5 font-sans">
                               <span
-                                className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
+                                className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold ${
                                   item.status === "WON"
-                                    ? "bg-emerald-100 text-emerald-800"
+                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                                     : item.status === "NEW"
-                                      ? "bg-blue-100 text-blue-800"
+                                      ? "bg-blue-100 text-blue-800 border border-blue-200"
                                       : item.status === "FOLLOW_UP"
-                                        ? "bg-amber-100 text-amber-800"
+                                        ? "bg-amber-100 text-amber-800 border border-amber-200"
                                         : item.status === "QUOTATION"
-                                          ? "bg-purple-100 text-purple-800"
-                                          : "bg-slate-100 text-slate-800"
+                                          ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                          : "bg-slate-100 text-slate-800 border border-slate-200"
                                 }`}
                               >
                                 {item.rawStatus}
                               </span>
                             </td>
-                            <td className="py-3 px-3 font-sans">
+                            <td className="py-3.5 px-3.5 font-sans">
                               <span
-                                className={`text-[10px] font-bold ${
+                                className={`text-xs font-bold uppercase tracking-wide ${
                                   item.priority === "HIGH"
                                     ? "text-rose-600"
                                     : item.priority === "MEDIUM"
@@ -1159,35 +1156,26 @@ export default function SalesDashboardPage() {
                                 {item.priority}
                               </span>
                             </td>
-                            <td className="py-3 px-3 font-sans text-slate-800 font-bold">
+                            <td className="py-3.5 px-3.5 font-sans text-slate-800 font-bold text-sm">
                               ₹
                               {Number(item.expectedValue).toLocaleString(
                                 "en-IN",
                               )}
                             </td>
-                            <td className="py-3 px-3 font-sans text-slate-600">
+                            <td className="py-3.5 px-3.5 font-sans text-slate-700 font-medium text-sm">
                               {item.assignedToName}
                             </td>
-                            <td className="py-3 px-3 text-slate-500 text-[10px]">
+                            <td className="py-3.5 px-3.5 text-slate-600 text-xs font-medium">
                               {item.createdAtDate}
                             </td>
-                            <td className="py-3 px-3 text-center font-sans">
+                            <td className="py-3.5 px-3.5 text-center font-sans">
                               <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => setInspectingLead(item.raw)}
-                                  className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors"
-                                  title="Inspect raw MongoDB JSON document"
-                                >
-                                  <Code2 className="w-3 h-3" />
-                                  <span>JSON</span>
-                                </button>
                                 <Link
                                   href={`/dashboard/leads/${item._id}`}
-                                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                                  className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
                                   title="Open full Lead Workspace"
                                 >
-                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <ExternalLink className="w-4 h-4" />
                                 </Link>
                               </div>
                             </td>
@@ -1197,7 +1185,7 @@ export default function SalesDashboardPage() {
                         <tr>
                           <td
                             colSpan={11}
-                            className="py-12 text-center text-slate-400 font-sans"
+                            className="py-12 text-center text-slate-400 font-sans text-sm"
                           >
                             No raw database records found matching filter.
                           </td>
@@ -1537,18 +1525,6 @@ export default function SalesDashboardPage() {
                                         </a>
                                       )}
 
-                                      {/* Raw JSON modal trigger */}
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setInspectingLead(item.raw)
-                                        }
-                                        className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-colors cursor-pointer"
-                                        title="Inspect Raw Document"
-                                      >
-                                        <Code2 className="w-3.5 h-3.5" />
-                                      </button>
-
                                       {/* Call Now Button */}
                                       <button
                                         type="button"
@@ -1789,16 +1765,6 @@ export default function SalesDashboardPage() {
                                       {/* Row menu: Raw JSON modal & lead detail link */}
                                       <td className="py-3.5 px-2 text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setInspectingLead(item.raw)
-                                            }
-                                            className="p-1.5 rounded-lg hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
-                                            title="Inspect Raw DB Document"
-                                          >
-                                            <Code2 className="w-3.5 h-3.5" />
-                                          </button>
                                           <Link
                                             href={`/dashboard/leads/${item._id}`}
                                             className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
@@ -2102,7 +2068,9 @@ export default function SalesDashboardPage() {
                     type="text"
                     required
                     placeholder="e.g. Sharma Constructions"
-                    value={newLeadForm.businessName || newLeadForm.companyName || ""}
+                    value={
+                      newLeadForm.businessName || newLeadForm.companyName || ""
+                    }
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLeadForm({
@@ -2121,7 +2089,9 @@ export default function SalesDashboardPage() {
                   <input
                     type="text"
                     placeholder="e.g. Ramesh Sharma"
-                    value={newLeadForm.customerName || newLeadForm.contactName || ""}
+                    value={
+                      newLeadForm.customerName || newLeadForm.contactName || ""
+                    }
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewLeadForm({
@@ -2160,7 +2130,10 @@ export default function SalesDashboardPage() {
                     placeholder="25000"
                     value={newLeadForm.expectedValue}
                     onChange={(e) =>
-                      setNewLeadForm({ ...newLeadForm, expectedValue: e.target.value })
+                      setNewLeadForm({
+                        ...newLeadForm,
+                        expectedValue: e.target.value,
+                      })
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 font-bold"
                   />
@@ -2176,7 +2149,10 @@ export default function SalesDashboardPage() {
                   placeholder="e.g. Flex Banner, Visiting Cards with velvet lamination"
                   value={newLeadForm.requirement}
                   onChange={(e) =>
-                    setNewLeadForm({ ...newLeadForm, requirement: e.target.value })
+                    setNewLeadForm({
+                      ...newLeadForm,
+                      requirement: e.target.value,
+                    })
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
                 />
@@ -2288,7 +2264,10 @@ export default function SalesDashboardPage() {
                   <select
                     value={newLeadForm.priority}
                     onChange={(e) =>
-                      setNewLeadForm({ ...newLeadForm, priority: e.target.value })
+                      setNewLeadForm({
+                        ...newLeadForm,
+                        priority: e.target.value,
+                      })
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold focus:outline-none focus:border-indigo-500"
                   >
@@ -2346,7 +2325,10 @@ export default function SalesDashboardPage() {
                   <select
                     value={newLeadForm.assignedToId}
                     onChange={(e) =>
-                      setNewLeadForm({ ...newLeadForm, assignedToId: e.target.value })
+                      setNewLeadForm({
+                        ...newLeadForm,
+                        assignedToId: e.target.value,
+                      })
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
                   >
@@ -2361,7 +2343,9 @@ export default function SalesDashboardPage() {
                   <div className="w-full px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 font-medium flex items-center justify-between">
                     <div className="flex items-center gap-2 truncate">
                       <div className="w-5 h-5 rounded-full bg-[#F95721] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-                        {(currentUser?.name || userName || "ME").slice(0, 2).toUpperCase()}
+                        {(currentUser?.name || userName || "ME")
+                          .slice(0, 2)
+                          .toUpperCase()}
                       </div>
                       <span className="truncate">
                         {currentUser?.name || userName || "tanya"} (You)
@@ -2382,7 +2366,10 @@ export default function SalesDashboardPage() {
                   type="datetime-local"
                   value={newLeadForm.nextFollowUp}
                   onChange={(e) =>
-                    setNewLeadForm({ ...newLeadForm, nextFollowUp: e.target.value })
+                    setNewLeadForm({
+                      ...newLeadForm,
+                      nextFollowUp: e.target.value,
+                    })
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500"
                 />
@@ -2412,7 +2399,11 @@ export default function SalesDashboardPage() {
                   {isSubmittingLead ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>{isUploadingPhoto ? "Uploading Photo..." : "Creating Lead..."}</span>
+                      <span>
+                        {isUploadingPhoto
+                          ? "Uploading Photo..."
+                          : "Creating Lead..."}
+                      </span>
                     </>
                   ) : (
                     <span>Create Lead</span>
@@ -2475,81 +2466,6 @@ export default function SalesDashboardPage() {
                 className="w-full py-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 font-semibold text-xs transition-colors cursor-pointer"
               >
                 Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL 3: RAW MONGODB JSON INSPECTOR MODAL                                */}
-      {/* ========================================================================= */}
-      {inspectingLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-slate-900 text-slate-100 rounded-2xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl border border-slate-800 space-y-4 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
-                  <Database className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <span>Raw Database Document</span>
-                    <span className="text-[11px] font-mono text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">
-                      {inspectingLead.leadNumber || inspectingLead._id}
-                    </span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Direct MongoDB JSON payload for this lead
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopyJson(inspectingLead)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer transition-colors"
-                >
-                  {copiedJson ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">
-                        Copied!
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy JSON</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInspectingLead(null)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* JSON Code Viewer */}
-            <div className="flex-1 overflow-y-auto bg-slate-950 rounded-xl p-4 border border-slate-800 text-xs font-mono text-emerald-400 select-text leading-relaxed">
-              <pre>{JSON.stringify(inspectingLead, null, 2)}</pre>
-            </div>
-
-            {/* Bottom Bar */}
-            <div className="pt-2 flex items-center justify-between text-xs text-slate-400 shrink-0 border-t border-slate-800">
-              <span className="font-mono text-[11px]">
-                _id: {inspectingLead._id}
-              </span>
-              <button
-                type="button"
-                onClick={() => setInspectingLead(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
-              >
-                Close Inspector
               </button>
             </div>
           </div>

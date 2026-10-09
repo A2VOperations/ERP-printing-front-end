@@ -1159,7 +1159,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
     if (alert.entityType === "Followup") return "/dashboard/followups";
     if (alert.entityType === "Quotation") return "/dashboard/quotations";
     if (alert.entityType === "Order") return "/dashboard/orders";
-    if (alert.entityType === "DesignProject") return "/dashboard/design";
+    if (alert.entityType === "DesignProject") return "/dashboard/orders";
     return "/dashboard";
   };
 
@@ -1169,7 +1169,6 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
   const isAdmin = roleLower === "admin";
   const isManager = roleLower === "manager";
   const isSales = roleLower === "sales";
-  const isDesigner = roleLower === "designer";
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -3102,7 +3101,7 @@ export default function AlertCenterDrawer({ isOpen, onClose, onCountUpdated }) {
                           else if (item.entityType === "Order")
                             router.push("/orders");
                           else if (item.entityType === "DesignProject")
-                            router.push("/design-projects");
+                            router.push("/dashboard/orders");
                         };
 
                         return (

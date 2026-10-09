@@ -1107,7 +1107,7 @@ export default function LeadsDashboardPage() {
           uploadedPhotoUrl
             ? [
                 {
-                  title: `Shop Photo - ${resolvedBusinessName || resolvedContactName}`,
+                  title: `Shop Photo - ${bName || cName || "Lead"}`,
                   category: "PHOTO",
                   fileUrl: uploadedPhotoUrl,
                   uploadedByName: currentUser?.name || "Sales Executive",
@@ -1339,10 +1339,10 @@ export default function LeadsDashboardPage() {
           l._id === quickEditLead._id
             ? {
                 ...l,
-                customerName: resolvedContactName,
-                contactName: resolvedContactName,
-                companyName: resolvedBusinessName,
-                businessName: resolvedBusinessName,
+                customerName: cName || (bName ? "Contact Person" : "Lead Contact"),
+                contactName: cName || (bName ? "Contact Person" : "Lead Contact"),
+                companyName: bName,
+                businessName: bName,
                 phone: quickEditForm.phone,
                 expectedValue: Number(quickEditForm.expectedValue) || 0,
                 requirement: quickEditForm.requirement,
@@ -1463,18 +1463,24 @@ export default function LeadsDashboardPage() {
   // Format Lead Area / Zone (e.g. burari/baba colony)
   const formatLeadTerritory = (lead) => {
     if (!lead) return "";
-    const areaName =
-      (typeof lead.areaId === "object" ? lead.areaId?.name : lead.area) || "";
-    const zoneName = lead.zone || "";
-    const assigned = (
-      typeof lead.assignedToId === "object"
-        ? lead.assignedToId?.name
-        : typeof lead.assignedTo === "object"
-          ? lead.assignedTo?.name
-          : typeof lead.assignedTo === "string"
-            ? lead.assignedTo
-            : ""
-    ).toLowerCase();
+    const areaName = String(
+      (lead.areaId && typeof lead.areaId === "object"
+        ? lead.areaId?.name
+        : lead.area) || ""
+    ).trim();
+    const zoneName = String(lead.zone || "").trim();
+
+    let assignedRaw = "";
+    if (lead.assignedToId && typeof lead.assignedToId === "object") {
+      assignedRaw = lead.assignedToId.name || "";
+    } else if (lead.assignedTo && typeof lead.assignedTo === "object") {
+      assignedRaw = lead.assignedTo.name || "";
+    } else if (typeof lead.assignedTo === "string") {
+      assignedRaw = lead.assignedTo;
+    } else if (typeof lead.assignedToId === "string") {
+      assignedRaw = lead.assignedToId;
+    }
+    const assigned = String(assignedRaw || "").toLowerCase();
 
     // If both area and zone are present
     if (areaName && zoneName) {
@@ -3083,18 +3089,29 @@ export default function LeadsDashboardPage() {
                                             {/* 1. Quotation */}
                                             <button
                                               type="button"
-                                              onClick={() =>
+                                              onClick={() => {
+                                                const bName =
+                                                  lead.businessName ||
+                                                  lead.companyName ||
+                                                  "";
+                                                const cName =
+                                                  lead.contactName ||
+                                                  lead.customerName ||
+                                                  "";
                                                 router.push(
-                                                  `/dashboard/quotations?leadId=${lead._id}&customerName=${encodeURIComponent(
-                                                    lead.customerName ||
-                                                      lead.contactName ||
-                                                      lead.businessName ||
-                                                      "",
+                                                  `/dashboard/quotations?leadId=${lead._id}&businessName=${encodeURIComponent(
+                                                    bName,
+                                                  )}&companyName=${encodeURIComponent(
+                                                    bName,
+                                                  )}&contactPerson=${encodeURIComponent(
+                                                    cName,
+                                                  )}&customerName=${encodeURIComponent(
+                                                    cName || bName,
                                                   )}&phone=${encodeURIComponent(
                                                     lead.phone || "",
                                                   )}`,
-                                                )
-                                              }
+                                                );
+                                              }}
                                               className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/80 border border-emerald-200/90 text-left transition-all cursor-pointer group hover:shadow-xs"
                                               title="Create or send quotation for this lead"
                                             >
@@ -3776,7 +3793,6 @@ export default function LeadsDashboardPage() {
                       if (
                         r.includes("admin") ||
                         r === "manager" ||
-                        r === "designer" ||
                         r === "customer"
                       )
                         return false;

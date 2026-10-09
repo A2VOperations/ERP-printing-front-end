@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function LeaderboardPage() {
-  const [timeframe, setTimeframe] = useState("This Month");
+  const [timeframe, setTimeframe] = useState("Today");
   const [searchQuery, setSearchQuery] = useState("");
   const [performers, setPerformers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +31,13 @@ export default function LeaderboardPage() {
     try {
       setLoading(true);
       const tfParam =
-        timeframe === "All Time"
-          ? "all"
-          : timeframe === "This Quarter"
-            ? "quarter"
-            : "month";
+        timeframe === "Today"
+          ? "today"
+          : timeframe === "All Time"
+            ? "all"
+            : timeframe === "This Quarter"
+              ? "quarter"
+              : "month";
       const res = await api.get(`/targets/leaderboard?timeframe=${tfParam}`);
 
       if (res) {
@@ -267,7 +269,7 @@ export default function LeaderboardPage() {
               </button>
 
               <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-xs">
-                {["This Month", "This Quarter", "All Time"].map((t) => (
+                {["Today", "This Month", "This Quarter", "All Time"].map((t) => (
                   <button
                     key={t}
                     onClick={() => setTimeframe(t)}

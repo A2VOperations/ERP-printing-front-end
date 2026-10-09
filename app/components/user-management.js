@@ -19,7 +19,7 @@ export default function UserManagement({ user: currentUser }) {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState("employee");
+  const [newUserRole, setNewUserRole] = useState("sales");
   const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export default function UserManagement({ user: currentUser }) {
         setNewUserName("");
         setNewUserEmail("");
         setNewUserPassword("");
-        setNewUserRole("employee");
+        setNewUserRole("sales");
       } else {
         setError(res.error || "Failed to create user.");
       }
@@ -377,8 +377,8 @@ export default function UserManagement({ user: currentUser }) {
             className="h-10 px-3 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 bg-white outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 transition-all cursor-pointer min-w-35"
           >
             <option value="all">All Roles</option>
-            <option value="employee">Employee (Default)</option>
-            <option value="designer">Graphic Designer</option>
+            <option value="sales">Sales</option>
+            <option value="data_operator">Data Operator</option>
             <option value="manager">Manager</option>
             <option value="admin">Admin</option>
           </select>
@@ -542,14 +542,12 @@ export default function UserManagement({ user: currentUser }) {
                               ? "bg-sky-50 text-sky-600 border border-sky-100"
                               : currentRole === "manager"
                                 ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                : currentRole === "designer"
-                                  ? "bg-pink-50 text-pink-600 border border-pink-100"
-                                  : "bg-purple-50 text-purple-600 border border-purple-100"
+                                : currentRole === "data_operator"
+                                  ? "bg-purple-50 text-purple-600 border border-purple-100"
+                                  : "bg-orange-50 text-orange-600 border border-orange-100"
                           }`}
                         >
-                          {currentRole === "designer"
-                            ? "Graphic Designer"
-                            : currentRole || "employee"}
+                          {currentRole || "sales"}
                         </span>
                       </td>
 
@@ -568,8 +566,8 @@ export default function UserManagement({ user: currentUser }) {
                                 : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 focus:border-sky-500 cursor-pointer"
                             }`}
                           >
-                            <option value="employee">Employee (Default)</option>
-                            <option value="designer">Graphic Designer</option>
+                            <option value="sales">Sales</option>
+                            <option value="data_operator">Data Operator</option>
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>
                           </select>
@@ -777,8 +775,8 @@ export default function UserManagement({ user: currentUser }) {
                   onChange={(e) => setNewUserRole(e.target.value)}
                   className="w-full h-10 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/10 outline-none transition-all bg-white cursor-pointer"
                 >
-                  <option value="employee">Employee (Default)</option>
-                  <option value="designer">Graphic Designer</option>
+                  <option value="sales">Sales</option>
+                  <option value="data_operator">Data Operator</option>
                   <option value="manager">Manager</option>
                   <option value="admin">Admin</option>
                 </select>

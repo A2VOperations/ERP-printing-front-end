@@ -113,9 +113,6 @@ export default function LeadDetailPage() {
     useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
-  const [showDesignerHandoffModal, setShowDesignerHandoffModal] =
-    useState(false);
-  const [selectedOrderForHandoff, setSelectedOrderForHandoff] = useState(null);
   const [notes, setNotes] = useState([]);
   const [newNoteContent, setNewNoteContent] = useState("");
   const [newNoteCategory, setNewNoteCategory] = useState("GENERAL");
@@ -166,9 +163,6 @@ export default function LeadDetailPage() {
     title: "",
     amount: "",
     advanceRequiredPercent: 50,
-    assignedDesignerId: "",
-    designNotes: "",
-    designDeadline: "",
     promisedDeliveryDate: "",
     deliveryMethod: "PICKUP",
     notes: "",
@@ -181,27 +175,8 @@ export default function LeadDetailPage() {
     colors: "CMYK",
     printSides: "SINGLE",
     finishing: [],
-    briefAttachments: [],
   });
-  const [orderDropzoneActive, setOrderDropzoneActive] = useState(false);
-  const [orderUploading, setOrderUploading] = useState(false);
 
-  // Designer Handoff Form State
-  const [handoffForm, setHandoffForm] = useState({
-    assignedDesignerId: "",
-    designNotes: "",
-    designDeadline: "",
-    priority: "HIGH",
-    briefAttachments: [],
-    width: "",
-    height: "",
-    dimensionUnit: "inch",
-    quantity: 1,
-    material: "",
-    gsm: "",
-    printSides: "SINGLE",
-    finishing: [],
-  });
 
   // Form States
   const [editForm, setEditForm] = useState({
@@ -251,7 +226,7 @@ export default function LeadDetailPage() {
       })
       .catch(() => {});
 
-    // Fetch team members for designer assignment
+    // Fetch team members for lead ownership and reassignment.
     api
       .get("/users?limit=100")
       .then((res) => {
@@ -388,7 +363,7 @@ export default function LeadDetailPage() {
   );
   const isManager = ["SALES_MANAGER", "MANAGER"].includes(userRole);
   const isSalesOnly =
-    userRole === "SALES" || userRole === "SALES_REP" || userRole === "DESIGNER";
+    userRole === "SALES" || userRole === "SALES_REP";
   const isSalesUser =
     userRole.includes("SALES") ||
     userRole.includes("EMPLOYEE") ||
@@ -429,23 +404,6 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Only genuine designers in the designer dropdown
-  const designersList = teamMembers.filter((u) => {
-    const r = (u.roleSlug || u.role?.slug || u.role?.name || u.role || "")
-      .toLowerCase()
-      .trim();
-    if (
-      r.includes("admin") ||
-      r === "manager" ||
-      r === "sales" ||
-      r === "customer" ||
-      r === "operator" ||
-      r === "delivery"
-    )
-      return false;
-    return r.includes("design");
-  });
-
   // Only genuine sales reps in the reassign dropdown
   const salesPersonsList = teamMembers.filter((u) => {
     const r = (u.roleSlug || u.role?.slug || u.role?.name || u.role || "")
@@ -454,7 +412,6 @@ export default function LeadDetailPage() {
     if (
       r.includes("admin") ||
       r === "manager" ||
-      r === "designer" ||
       r === "customer" ||
       r === "operator" ||
       r === "delivery"
@@ -817,11 +774,6 @@ export default function LeadDetailPage() {
           ? quotations[0].grandTotalPaise / 100
           : ""),
       advanceRequiredPercent: 50,
-      assignedDesignerId: designersList.length > 0 ? designersList[0]._id : "",
-      designNotes: lead?.requirement || "",
-      designDeadline: new Date(Date.now() + 86400000 * 3)
-        .toISOString()
-        .slice(0, 10),
       promisedDeliveryDate: new Date(Date.now() + 86400000 * 7)
         .toISOString()
         .slice(0, 10),
@@ -836,7 +788,6 @@ export default function LeadDetailPage() {
       colors: "CMYK",
       printSides: "SINGLE",
       finishing: [],
-      briefAttachments: [],
       ...customFields,
     });
     setShowCreateOrderModal(true);
@@ -860,13 +811,10 @@ export default function LeadDetailPage() {
         title: orderForm.title || lead?.requirement || "Commercial Print Order",
         totalAmount: orderForm.amount ? Number(orderForm.amount) : undefined,
         advanceRequiredPercent: Number(orderForm.advanceRequiredPercent) || 50,
-        assignedDesignerId: orderForm.assignedDesignerId || undefined,
-        designNotes: orderForm.designNotes || "",
-        designDeadline: orderForm.designDeadline || undefined,
         promisedDeliveryDate: orderForm.promisedDeliveryDate || undefined,
         deliveryMethod: orderForm.deliveryMethod || "PICKUP",
         notes: orderForm.notes || "",
-        // Product & Technical Specifications (Step 12 Handoff)
+        // Product & technical specifications for the order.
         width: orderForm.width ? Number(orderForm.width) : undefined,
         height: orderForm.height ? Number(orderForm.height) : undefined,
         dimensionUnit: orderForm.dimensionUnit || "inch",
@@ -876,8 +824,6 @@ export default function LeadDetailPage() {
         colors: orderForm.colors || "CMYK",
         printSides: orderForm.printSides || "SINGLE",
         finishing: orderForm.finishing || [],
-        briefAttachments: orderForm.briefAttachments || [],
-        designBriefAttachments: orderForm.briefAttachments || [],
       };
 
       await api.post("/orders", payload);
@@ -888,9 +834,6 @@ export default function LeadDetailPage() {
         title: "",
         amount: "",
         advanceRequiredPercent: 50,
-        assignedDesignerId: "",
-        designNotes: "",
-        designDeadline: "",
         promisedDeliveryDate: "",
         deliveryMethod: "PICKUP",
         notes: "",
@@ -903,7 +846,6 @@ export default function LeadDetailPage() {
         colors: "CMYK",
         printSides: "SINGLE",
         finishing: [],
-        briefAttachments: [],
       });
       await loadLeadDetails();
       setActiveTab("Orders");
@@ -1105,79 +1047,6 @@ export default function LeadDetailPage() {
       await loadLeadDetails();
     } catch (err) {
       alert(err.message || "Failed to delete document");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Open Designer Handoff Modal
-  const handleOpenDesignerHandoff = (order) => {
-    setSelectedOrderForHandoff(order);
-    const existingAttachments = order.designBriefAttachments || [];
-    const item = order.items && order.items.length > 0 ? order.items[0] : {};
-
-    setHandoffForm({
-      assignedDesignerId:
-        order.assignedDesignerId?._id || order.assignedDesignerId || "",
-      designNotes: order.designNotes || item.specialInstructions || "",
-      designDeadline: order.designDeadline
-        ? new Date(order.designDeadline).toISOString().slice(0, 10)
-        : "",
-      priority: order.priority || "HIGH",
-      briefAttachments: [...existingAttachments],
-      width: item.width !== undefined && item.width !== null ? item.width : "",
-      height:
-        item.height !== undefined && item.height !== null ? item.height : "",
-      dimensionUnit: item.dimensionUnit || "inch",
-      quantity: item.quantity || 1,
-      material: item.paperType || item.material || "",
-      gsm:
-        item.paperGsm !== undefined && item.paperGsm !== null
-          ? String(item.paperGsm)
-          : item.gsm || "",
-      printSides: item.printSides || "SINGLE",
-      finishing: Array.isArray(item.finishing) ? [...item.finishing] : [],
-    });
-    setShowDesignerHandoffModal(true);
-  };
-
-  // Submit Designer Handoff
-  const handleDesignerHandoffSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedOrderForHandoff || !handoffForm.assignedDesignerId) {
-      alert("Please select a designer to assign.");
-      return;
-    }
-
-    try {
-      setActionLoading(true);
-      await api.patch(`/orders/${selectedOrderForHandoff._id}/designer`, {
-        assignedDesignerId: handoffForm.assignedDesignerId,
-        designNotes: handoffForm.designNotes,
-        designDeadline: handoffForm.designDeadline || undefined,
-        priority: handoffForm.priority,
-        briefAttachments: handoffForm.briefAttachments || [],
-        width: handoffForm.width !== "" ? Number(handoffForm.width) : undefined,
-        height:
-          handoffForm.height !== "" ? Number(handoffForm.height) : undefined,
-        dimensionUnit: handoffForm.dimensionUnit || "inch",
-        quantity: handoffForm.quantity ? Number(handoffForm.quantity) : 1,
-        material: handoffForm.material || "",
-        paperType: handoffForm.material || "",
-        gsm: handoffForm.gsm !== "" ? Number(handoffForm.gsm) : undefined,
-        paperGsm: handoffForm.gsm !== "" ? Number(handoffForm.gsm) : undefined,
-        printSides: handoffForm.printSides || "SINGLE",
-        finishing: handoffForm.finishing || [],
-      });
-
-      setShowDesignerHandoffModal(false);
-      setSelectedOrderForHandoff(null);
-      await loadLeadDetails();
-      alert(
-        "Order specifications updated and successfully handed off to designer!",
-      );
-    } catch (err) {
-      alert(err.message || "Failed to hand off order to designer");
     } finally {
       setActionLoading(false);
     }
@@ -1549,7 +1418,7 @@ export default function LeadDetailPage() {
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition-all animate-pulse"
                   title="Reopen this lead for another order"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />↻ Reopen Lead (New Order)
+                  <RotateCcw className="w-3.5 h-3.5" />Reopen Lead (New Order)
                 </button>
               )}
 
@@ -2400,20 +2269,9 @@ export default function LeadDetailPage() {
                                 : o.totalAmount || 0
                               ).toLocaleString("en-IN")}
                             </span>
-                            <span className="font-medium text-indigo-700">
-                              {o.assignedDesignerId?.name
-                                ? `Designer: ${o.assignedDesignerId.name}`
-                                : "No Designer Assigned"}
-                            </span>
                           </div>
 
                           <div className="flex items-center justify-end gap-2.5 pt-1.5 border-t border-slate-200/50">
-                            <button
-                              onClick={() => handleOpenDesignerHandoff(o)}
-                              className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
-                            >
-                              <Palette className="w-3.5 h-3.5" /> Hand Off
-                            </button>
                             <button
                               onClick={async () => {
                                 try {
@@ -2519,7 +2377,6 @@ export default function LeadDetailPage() {
                                   amount: q.grandTotalPaise
                                     ? q.grandTotalPaise / 100
                                     : q.totalAmount || 0,
-                                  designNotes: `Converted from Quotation ${q.quotationNumber}`,
                                 });
                               }}
                               className="text-xs font-bold text-indigo-700 hover:underline flex items-center gap-1"
@@ -2536,7 +2393,7 @@ export default function LeadDetailPage() {
                           No quotations generated yet.
                         </p>
                         <Link
-                          href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
+                          href={`/dashboard/quotations?leadId=${leadId}&businessName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&companyName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&contactPerson=${encodeURIComponent(lead?.contactName || lead?.customerName || "")}&customerName=${encodeURIComponent(lead?.customerName || lead?.contactName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                           className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
                         >
                           <Plus className="w-4 h-4" /> Create Quotation
@@ -2659,18 +2516,18 @@ export default function LeadDetailPage() {
             </div>
           )}
 
-          {/* ORDERS & DESIGNER HANDOFF TAB */}
+          {/* ORDERS TAB */}
           {(activeTab === "Orders" || activeTab.startsWith("Orders")) && (
             <div className="bg-white rounded-md p-6 border border-slate-200 shadow-xs space-y-6 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
                   <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                     <ShoppingBag className="w-5 h-5 text-indigo-600" />
-                    Commercial Orders &amp; Designer Handoff ({orders.length})
+                    Commercial Orders ({orders.length})
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Orders converted, financial fulfillment, and production
-                    artwork handoff to designer
+                    order tracking
                   </p>
                 </div>
 
@@ -2756,7 +2613,6 @@ export default function LeadDetailPage() {
                     const balance = o.balancePaise
                       ? o.balancePaise / 100
                       : Math.max(0, grandTotal - paid);
-                    const designer = o.assignedDesignerId;
 
                     return (
                       <div
@@ -2832,8 +2688,8 @@ export default function LeadDetailPage() {
                           </div>
                         </div>
 
-                        {/* Order Items & Designer Handoff Box */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Order Items */}
+                        <div className="grid grid-cols-1 gap-4">
                           {/* Left: Items Summary */}
                           <div className="p-3.5 rounded-md bg-slate-50/80 border border-slate-200/70 space-y-2">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -2875,132 +2731,7 @@ export default function LeadDetailPage() {
                             </div>
                           </div>
 
-                          {/* Right: Designer Handoff Card */}
-                          <div className="p-3.5 rounded-md bg-indigo-50/50 border border-indigo-100 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
-                                <Palette className="w-3.5 h-3.5 text-indigo-600" />
-                                Designer Handoff &amp; Artwork
-                              </span>
-                              <span
-                                className={`px-2 py-0.5 rounded-md font-bold text-[9px] ${
-                                  designer
-                                    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
-                                    : "bg-amber-100 text-amber-800 border border-amber-200"
-                                }`}
-                              >
-                                {o.designStatus ||
-                                  (designer
-                                    ? "IN_DESIGN"
-                                    : "AWAITING_DESIGNER")}
-                              </span>
-                            </div>
 
-                            {designer ? (
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
-                                    {(designer.name || "DS")
-                                      .slice(0, 2)
-                                      .toUpperCase()}
-                                  </div>
-                                  <div>
-                                    <strong className="text-slate-900 block text-xs">
-                                      {designer.name}
-                                    </strong>
-                                    <span className="text-[10px] text-slate-500">
-                                      {designer.email}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {o.designNotes && (
-                                  <p className="text-[11px] text-slate-700 bg-white p-2 rounded-xl border border-indigo-100">
-                                    <span className="font-semibold text-indigo-900">
-                                      Brief:
-                                    </span>{" "}
-                                    {o.designNotes}
-                                  </p>
-                                )}
-
-                                {o.designDeadline && (
-                                  <span className="text-[10px] text-slate-500 block font-mono">
-                                    Target Proof Deadline:{" "}
-                                    <strong className="text-indigo-900">
-                                      {new Date(
-                                        o.designDeadline,
-                                      ).toLocaleDateString("en-GB")}
-                                    </strong>
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="text-center py-2 space-y-1.5">
-                                <p className="text-slate-500 text-[11px]">
-                                  No designer assigned yet for this order.
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Attached Files & Documents */}
-                            {o.designBriefAttachments &&
-                              o.designBriefAttachments.length > 0 && (
-                                <div className="pt-1.5 space-y-1 border-t border-indigo-100/60">
-                                  <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
-                                    Attached Documents &amp; Artwork (
-                                    {o.designBriefAttachments.length}):
-                                  </span>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {o.designBriefAttachments.map(
-                                      (att, aIdx) => (
-                                        <a
-                                          key={aIdx}
-                                          href={att.fileUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          download
-                                          className="px-2 py-0.5 rounded-lg bg-white hover:bg-indigo-100 text-indigo-800 text-[10px] font-semibold border border-indigo-200 flex items-center gap-1 shadow-2xs"
-                                          title="Click to view/download file"
-                                        >
-                                          📎 {att.fileName || "Asset"}
-                                        </a>
-                                      ),
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                            <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
-                              {designer && (
-                                <Link
-                                  href={`/dashboard/design?orderId=${o._id}`}
-                                  className="px-3 py-1.5 rounded-xl bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 font-bold text-[11px] shadow-2xs flex items-center gap-1.5 transition-all"
-                                  title="View specific live design project & proofs"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-indigo-600" />
-                                  <span>View Design Status →</span>
-                                </Link>
-                              )}
-                              <div className="ml-auto">
-                                {designer && isSalesUser ? (
-                                  <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 font-semibold text-[11px] border border-indigo-200 flex items-center gap-1">
-                                    <Check className="w-3.5 h-3.5 text-indigo-600" />
-                                    Designer Assigned (View Only)
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => handleOpenDesignerHandoff(o)}
-                                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] shadow-xs flex items-center gap-1 transition-all"
-                                  >
-                                    <Palette className="w-3 h-3" />
-                                    {designer
-                                      ? "Reassign / Update Brief"
-                                      : "🎨 Hand Off to Designer"}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
                         </div>
 
                         {/* Order Actions Footer */}
@@ -3068,8 +2799,7 @@ export default function LeadDetailPage() {
                         No commercial orders generated yet
                       </h4>
                       <p className="text-slate-400 text-xs mt-0.5">
-                        Convert an approved quotation or create a new order and
-                        hand off directly to a designer.
+                        Convert an approved quotation or create a new order.
                       </p>
                     </div>
                     <button
@@ -3099,7 +2829,7 @@ export default function LeadDetailPage() {
                   </p>
                 </div>
                 <Link
-                  href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
+                  href={`/dashboard/quotations?leadId=${leadId}&businessName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&companyName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&contactPerson=${encodeURIComponent(lead?.contactName || lead?.customerName || "")}&customerName=${encodeURIComponent(lead?.customerName || lead?.contactName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -3217,13 +2947,12 @@ export default function LeadDetailPage() {
                                     amount: q.grandTotalPaise
                                       ? q.grandTotalPaise / 100
                                       : q.totalAmount || 0,
-                                    designNotes: `Converted from Quotation ${q.quotationNumber}`,
-                                  });
+                                    });
                                 }}
                                 className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
                               >
-                                <Check className="w-3.5 h-3.5" /> Client
-                                Accepted
+                                <ShoppingBag className="w-3.5 h-3.5" /> Convert to
+                                Order
                               </button>
                               <button
                                 onClick={() =>
@@ -3248,7 +2977,6 @@ export default function LeadDetailPage() {
                                   amount: q.grandTotalPaise
                                     ? q.grandTotalPaise / 100
                                     : q.totalAmount || 0,
-                                  designNotes: `Converted from Quotation ${q.quotationNumber}`,
                                 });
                               }}
                               className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
@@ -3293,7 +3021,7 @@ export default function LeadDetailPage() {
                       No quotations generated yet for this lead.
                     </p>
                     <Link
-                      href={`/dashboard/quotations?leadId=${leadId}&customerName=${encodeURIComponent(lead?.contactName || lead?.businessName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
+                      href={`/dashboard/quotations?leadId=${leadId}&businessName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&companyName=${encodeURIComponent(lead?.businessName || lead?.companyName || "")}&contactPerson=${encodeURIComponent(lead?.contactName || lead?.customerName || "")}&customerName=${encodeURIComponent(lead?.customerName || lead?.contactName || "")}&phone=${encodeURIComponent(lead?.phone || "")}`}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -4646,7 +4374,7 @@ export default function LeadDetailPage() {
         </div>
       </main>
 
-      {/* CREATE COMMERCIAL ORDER & DESIGNER HANDOFF MODAL */}
+      {/* CREATE COMMERCIAL ORDER MODAL */}
       {showCreateOrderModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
@@ -4660,7 +4388,7 @@ export default function LeadDetailPage() {
                     Create Commercial Order
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Convert deal to production order &amp; hand off to designer
+                    Create commercial order
                   </p>
                 </div>
               </div>
@@ -4886,12 +4614,12 @@ export default function LeadDetailPage() {
                 </div>
               </div>
 
-              {/* PRODUCT & TECHNICAL SPECIFICATIONS (STEP 12 HANDOFF) */}
+              {/* PRODUCT & TECHNICAL SPECIFICATIONS */}
               <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-[#F95721]" />
-                    Product Technical Specifications (Designer Handoff)
+                    Product Technical Specifications
                   </span>
                 </div>
 
@@ -5102,374 +4830,6 @@ export default function LeadDetailPage() {
                 </div>
               </div>
 
-              {/* Designer Assignment & Brief */}
-              <div className="p-4 rounded-md bg-indigo-50/70 border border-indigo-100 space-y-3">
-                <div className="flex items-center gap-1.5 text-indigo-950 font-bold text-xs">
-                  <Palette className="w-4 h-4 text-indigo-600" />
-                  Designer Handoff &amp; Project Brief
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Assign Designer
-                    </label>
-                    <select
-                      value={orderForm.assignedDesignerId || ""}
-                      onChange={(e) =>
-                        setOrderForm({
-                          ...orderForm,
-                          assignedDesignerId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800 font-semibold"
-                    >
-                      <option value="">-- Assign Later --</option>
-                      {designersList.map((d) => (
-                        <option key={d._id} value={d._id}>
-                          {d.name} ({d.roleSlug || d.role || "Designer"})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Target Proof Deadline
-                    </label>
-                    <input
-                      type="date"
-                      value={orderForm.designDeadline || ""}
-                      onChange={(e) =>
-                        setOrderForm({
-                          ...orderForm,
-                          designDeadline: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800 font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Artwork Brief &amp; Special Instructions
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Enter special artwork instructions, logo requirements, customer text or reference links..."
-                    value={orderForm.designNotes || ""}
-                    onChange={(e) =>
-                      setOrderForm({
-                        ...orderForm,
-                        designNotes: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800"
-                  />
-                </div>
-
-                {/* ATTACH FILES, DOCUMENTS & ARTWORK FOR ORDER */}
-                <div className="space-y-2.5 pt-3 border-t border-indigo-100">
-                  <div className="flex items-center justify-between">
-                    <label className="text-slate-800 font-bold text-xs flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5 text-indigo-600" />
-                      Attach Artwork, Documents &amp; Reference Files (
-                      {orderForm.briefAttachments?.length || 0})
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {orderUploading && (
-                        <span className="text-[10px] text-indigo-600 font-bold animate-pulse flex items-center gap-1">
-                          <RefreshCw className="w-3 h-3 animate-spin" />{" "}
-                          Uploading...
-                        </span>
-                      )}
-                      <label
-                        htmlFor="orderDirectFileInput"
-                        className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer border border-indigo-200 flex items-center gap-1 transition-all"
-                      >
-                        <Plus className="w-3 h-3" />Upload Document
-                      </label>
-                    </div>
-                    <input
-                      type="file"
-                      id="orderDirectFileInput"
-                      multiple
-                      className="hidden"
-                      onChange={async (e) => {
-                        const files = e.target.files;
-                        if (!files || files.length === 0) return;
-                        try {
-                          setOrderUploading(true);
-                          for (const file of Array.from(files)) {
-                            const formData = new FormData();
-                            formData.append("file", file);
-                            formData.append(
-                              "title",
-                              file.name || "Order Attachment",
-                            );
-                            formData.append("category", "ARTWORK");
-                            formData.append(
-                              "description",
-                              "Attached to commercial order.",
-                            );
-                            const res = await api.post(
-                              `/leads/${leadId}/documents`,
-                              formData,
-                            );
-                            const dList = Array.isArray(res.data)
-                              ? res.data
-                              : res.data.records || [];
-                            if (dList.length > 0) {
-                              setDocuments(dList);
-                              const newlyUploaded = dList[0];
-                              setOrderForm((prev) => {
-                                const alreadyAttached = (
-                                  prev.briefAttachments || []
-                                ).some(
-                                  (a) => a.fileUrl === newlyUploaded.fileUrl,
-                                );
-                                if (alreadyAttached) return prev;
-                                return {
-                                  ...prev,
-                                  briefAttachments: [
-                                    ...(prev.briefAttachments || []),
-                                    {
-                                      fileUrl: newlyUploaded.fileUrl,
-                                      fileName:
-                                        newlyUploaded.fileName ||
-                                        newlyUploaded.title,
-                                      fileType: newlyUploaded.fileType,
-                                      fileSizeBytes:
-                                        newlyUploaded.fileSizeBytes,
-                                      cloudinaryPublicId:
-                                        newlyUploaded.cloudinaryPublicId,
-                                    },
-                                  ],
-                                };
-                              });
-                            }
-                          }
-                        } catch (err) {
-                          alert(err.message || "Failed to upload document");
-                        } finally {
-                          setOrderUploading(false);
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {/* Drag and Drop Zone */}
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setOrderDropzoneActive(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      setOrderDropzoneActive(false);
-                    }}
-                    onDrop={async (e) => {
-                      e.preventDefault();
-                      setOrderDropzoneActive(false);
-                      const files = e.dataTransfer.files;
-                      if (!files || files.length === 0) return;
-                      try {
-                        setOrderUploading(true);
-                        for (const file of Array.from(files)) {
-                          const formData = new FormData();
-                          formData.append("file", file);
-                          formData.append(
-                            "title",
-                            file.name || "Order Attachment",
-                          );
-                          formData.append("category", "ARTWORK");
-                          formData.append(
-                            "description",
-                            "Attached to commercial order via drag-and-drop.",
-                          );
-                          const res = await api.post(
-                            `/leads/${leadId}/documents`,
-                            formData,
-                          );
-                          const dList = Array.isArray(res.data)
-                            ? res.data
-                            : res.data.records || [];
-                          if (dList.length > 0) {
-                            setDocuments(dList);
-                            const newlyUploaded = dList[0];
-                            setOrderForm((prev) => {
-                              const alreadyAttached = (
-                                prev.briefAttachments || []
-                              ).some(
-                                (a) => a.fileUrl === newlyUploaded.fileUrl,
-                              );
-                              if (alreadyAttached) return prev;
-                              return {
-                                ...prev,
-                                briefAttachments: [
-                                  ...(prev.briefAttachments || []),
-                                  {
-                                    fileUrl: newlyUploaded.fileUrl,
-                                    fileName:
-                                      newlyUploaded.fileName ||
-                                      newlyUploaded.title,
-                                    fileType: newlyUploaded.fileType,
-                                    fileSizeBytes: newlyUploaded.fileSizeBytes,
-                                    cloudinaryPublicId:
-                                      newlyUploaded.cloudinaryPublicId,
-                                  },
-                                ],
-                              };
-                            });
-                          }
-                        }
-                      } catch (err) {
-                        alert(err.message || "Failed to upload document");
-                      } finally {
-                        setOrderUploading(false);
-                      }
-                    }}
-                    className={`border-2 border-dashed rounded-xl p-3 text-center transition-all cursor-pointer ${
-                      orderDropzoneActive
-                        ? "border-indigo-500 bg-indigo-100/70 scale-[1.01]"
-                        : "border-indigo-200/80 bg-white/70 hover:bg-white hover:border-indigo-300"
-                    }`}
-                    onClick={() => {
-                      const input = document.getElementById(
-                        "orderDirectFileInput",
-                      );
-                      if (input) input.click();
-                    }}
-                  >
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
-                        <Upload className="w-4 h-4" />
-                      </div>
-                      <p className="text-xs font-semibold text-slate-700">
-                        Drag &amp; drop artwork or documents here, or click to
-                        browse
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        Upload artwork proofs, PDF, CDR, PSD, AI, images or ZIP
-                        to attach directly to this order
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Currently Attached Files List */}
-                  {orderForm.briefAttachments &&
-                    orderForm.briefAttachments.length > 0 && (
-                      <div className="space-y-1.5 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100">
-                        <span className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider block">
-                          Attached to this Order (
-                          {orderForm.briefAttachments.length}):
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                          {orderForm.briefAttachments.map((att, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-slate-800 text-[11px] shadow-2xs"
-                            >
-                              <span
-                                className="font-semibold truncate max-w-[200px]"
-                                title={att.fileName || att.title}
-                              >
-                                📎 {att.fileName || att.title || "Attachment"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOrderForm((prev) => ({
-                                    ...prev,
-                                    briefAttachments:
-                                      prev.briefAttachments.filter(
-                                        (_, i) => i !== idx,
-                                      ),
-                                  }));
-                                }}
-                                className="text-slate-400 hover:text-rose-600 font-bold ml-1"
-                                title="Remove file from order"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  {/* Pick from Lead's Uploaded Documents */}
-                  {documents && documents.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
-                      <span className="text-[10px] text-slate-500 font-bold block">
-                        Quick Pick from Lead&apos;s Saved Documents &amp;
-                        Artwork ({documents.length}):
-                      </span>
-                      <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto p-1 bg-white/60 rounded-xl border border-indigo-100/60">
-                        {documents.map((d) => {
-                          const isAttached = orderForm.briefAttachments?.some(
-                            (a) => a.fileUrl === d.fileUrl,
-                          );
-                          return (
-                            <div
-                              key={d._id}
-                              onClick={() => {
-                                if (isAttached) {
-                                  setOrderForm((prev) => ({
-                                    ...prev,
-                                    briefAttachments:
-                                      prev.briefAttachments.filter(
-                                        (a) => a.fileUrl !== d.fileUrl,
-                                      ),
-                                  }));
-                                } else {
-                                  setOrderForm((prev) => ({
-                                    ...prev,
-                                    briefAttachments: [
-                                      ...(prev.briefAttachments || []),
-                                      {
-                                        fileUrl: d.fileUrl,
-                                        fileName: d.fileName || d.title,
-                                        fileType: d.fileType,
-                                        fileSizeBytes: d.fileSizeBytes,
-                                        cloudinaryPublicId:
-                                          d.cloudinaryPublicId,
-                                      },
-                                    ],
-                                  }));
-                                }
-                              }}
-                              className={`p-2 rounded-xl border text-left cursor-pointer transition-all flex items-center gap-2 select-none ${
-                                isAttached
-                                  ? "bg-indigo-50 border-indigo-400 text-indigo-900 font-bold shadow-2xs"
-                                  : "bg-slate-50/80 border-slate-200 text-slate-600 hover:bg-slate-100 font-medium"
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isAttached}
-                                readOnly
-                                className="rounded text-indigo-600 pointer-events-none"
-                              />
-                              <div className="truncate flex-1">
-                                <span className="block text-[11px] truncate">
-                                  {d.title || d.fileName || "Document"}
-                                </span>
-                                <span className="block text-[9px] text-slate-400">
-                                  {d.category || "ARTWORK"}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-700 font-semibold block mb-1">
@@ -5557,557 +4917,6 @@ export default function LeadDetailPage() {
         </div>
       )}
 
-      {/* DESIGNER HANDOFF MODAL */}
-      {showDesignerHandoffModal && selectedOrderForHandoff && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-scale-up max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                  <Palette className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Assign / Hand Off to Designer
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Order:{" "}
-                    <strong className="text-slate-800 font-mono">
-                      {selectedOrderForHandoff.orderNumber ||
-                        selectedOrderForHandoff._id}
-                    </strong>
-                    {selectedOrderForHandoff.title && (
-                      <span className="text-slate-400 ml-1.5 font-medium">
-                        • {selectedOrderForHandoff.title}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowDesignerHandoffModal(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleDesignerHandoffSubmit}
-              className="space-y-4 text-xs"
-            >
-              {/* PRODUCT & TECHNICAL SPECIFICATIONS (DESIGNER HANDOFF) */}
-              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-[#F95721]" />
-                    Product Technical Specifications (Designer Handoff)
-                  </span>
-                </div>
-
-                {/* 1. Size / Dimensions & Quantity */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Width
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g. 8"
-                      value={handoffForm.width ?? ""}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          width: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Height
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g. 4"
-                      value={handoffForm.height ?? ""}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          height: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Unit
-                    </label>
-                    <select
-                      value={handoffForm.dimensionUnit || "inch"}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          dimensionUnit: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    >
-                      <option value="inch">Inches (in)</option>
-                      <option value="ft">Feet (ft)</option>
-                      <option value="mm">Millimeter (mm)</option>
-                      <option value="cm">Centimeter (cm)</option>
-                      <option value="m">Meter (m)</option>
-                    </select>
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      placeholder="1"
-                      value={handoffForm.quantity ?? 1}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          quantity: Number(e.target.value),
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Material & GSM */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                  <div className="md:col-span-2">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Material / Media Substrate
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Star Flex 440 GSM, Art Card, Vinyl, Canvas..."
-                      value={handoffForm.material || ""}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          material: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                    {/* Quick suggestion pills */}
-                    <div className="flex flex-wrap gap-1.5 my-2">
-                      {[
-                        { label: "Star Flex" },
-                        { label: "Vinyl Matte" },
-                        { label: "Normal Flex" },
-                        { label: "Backlit Film" },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={() =>
-                            setHandoffForm({
-                              ...handoffForm,
-                              material: item.label,
-                            })
-                          }
-                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-orange-100 hover:text-orange-800 text-[10px] text-slate-700 font-medium transition-colors"
-                        >
-                          + {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      GSM / Density
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 440"
-                      value={handoffForm.gsm || ""}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          gsm: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Print Sides */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Print Sides
-                    </label>
-                    <select
-                      value={handoffForm.printSides || "SINGLE"}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          printSides: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    >
-                      <option value="SINGLE">Single Side (Front Only)</option>
-                      <option value="DOUBLE">
-                        Double Sided (Front &amp; Back)
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 4. Finishing (Post-Press) Selection */}
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1.5">
-                    Finishing / Post-Press Requirements
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      "Gloss Lamination",
-                      "Matte Lamination",
-                      "Velvet Lamination",
-                      "UV Coating",
-                      "Die Cut",
-                      "Foiling",
-                    ].map((opt) => {
-                      const isSelected =
-                        Array.isArray(handoffForm.finishing) &&
-                        handoffForm.finishing.includes(opt);
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => {
-                            const cur = Array.isArray(handoffForm.finishing)
-                              ? handoffForm.finishing
-                              : [];
-                            if (cur.includes(opt)) {
-                              setHandoffForm({
-                                ...handoffForm,
-                                finishing: cur.filter((x) => x !== opt),
-                              });
-                            } else {
-                              setHandoffForm({
-                                ...handoffForm,
-                                finishing: [...cur, opt],
-                              });
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
-                            isSelected
-                              ? "bg-[#F95721] text-white border-[#F95721] shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          {isSelected ? "✓ " : "+ "}
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* DESIGNER HANDOFF & PROJECT BRIEF */}
-              <div className="p-4 rounded-md bg-indigo-50/70 border border-indigo-100 space-y-3">
-                <div className="flex items-center gap-1.5 text-indigo-950 font-bold text-xs">
-                  <Palette className="w-4 h-4 text-indigo-600" />
-                  Designer Handoff &amp; Project Brief
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Select Designer *
-                  </label>
-                  <select
-                    required
-                    value={handoffForm.assignedDesignerId}
-                    onChange={(e) =>
-                      setHandoffForm({
-                        ...handoffForm,
-                        assignedDesignerId: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-indigo-200 text-slate-800 font-bold"
-                  >
-                    <option value="">-- Choose Designer --</option>
-                    {designersList.map((d) => (
-                      <option key={d._id} value={d._id}>
-                        {d.name} ({d.roleSlug || d.role || "Designer"}) -{" "}
-                        {d.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Target Proof Deadline
-                    </label>
-                    <input
-                      type="date"
-                      value={handoffForm.designDeadline}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          designDeadline: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Priority
-                    </label>
-                    <select
-                      value={handoffForm.priority}
-                      onChange={(e) =>
-                        setHandoffForm({
-                          ...handoffForm,
-                          priority: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-indigo-200 text-slate-800 font-semibold"
-                    >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High (Urgent)</option>
-                      <option value="URGENT">Top Priority (Express)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Artwork Brief &amp; Special Design Instructions
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Enter special artwork instructions, logo requirements, customer text or reference links..."
-                    value={handoffForm.designNotes}
-                    onChange={(e) =>
-                      setHandoffForm({
-                        ...handoffForm,
-                        designNotes: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-indigo-200 text-slate-800"
-                  />
-                </div>
-              </div>
-
-              {/* ATTACH FILES & PHOTOS FOR DESIGNER */}
-              <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <label className="text-slate-800 font-bold flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5 text-indigo-600" />
-                    Attach Reference Files, Photos &amp; Logos (
-                    {handoffForm.briefAttachments?.length || 0})
-                  </label>
-                  <label
-                    htmlFor="handoffDirectFileInput"
-                    className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer border border-indigo-200 flex items-center gap-1 transition-all"
-                  >
-                    <Plus className="w-3 h-3" />Upload New File
-                  </label>
-                  <input
-                    type="file"
-                    id="handoffDirectFileInput"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        setActionLoading(true);
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        formData.append("title", `Brief Asset: ${file.name}`);
-                        formData.append("category", "ARTWORK");
-                        formData.append(
-                          "description",
-                          "Uploaded during designer handoff.",
-                        );
-                        const res = await api.post(
-                          `/leads/${leadId}/documents`,
-                          formData,
-                        );
-                        const dList = Array.isArray(res.data)
-                          ? res.data
-                          : res.data.records || [];
-                        if (dList.length > 0) {
-                          setDocuments(dList);
-                          const newlyUploaded = dList[0];
-                          setHandoffForm((prev) => ({
-                            ...prev,
-                            briefAttachments: [
-                              ...(prev.briefAttachments || []),
-                              {
-                                fileUrl: newlyUploaded.fileUrl,
-                                fileName:
-                                  newlyUploaded.fileName || newlyUploaded.title,
-                                fileType: newlyUploaded.fileType,
-                                fileSizeBytes: newlyUploaded.fileSizeBytes,
-                                cloudinaryPublicId:
-                                  newlyUploaded.cloudinaryPublicId,
-                              },
-                            ],
-                          }));
-                        }
-                      } catch (err) {
-                        alert(err.message || "Failed to upload attachment");
-                      } finally {
-                        setActionLoading(false);
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Currently Attached Files List */}
-                {handoffForm.briefAttachments &&
-                  handoffForm.briefAttachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 p-2 rounded-xl bg-indigo-50/50 border border-indigo-100">
-                      {handoffForm.briefAttachments.map((att, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-slate-800 text-[11px] shadow-2xs"
-                        >
-                          <span
-                            className="font-semibold truncate max-w-[180px]"
-                            title={att.fileName || att.title}
-                          >
-                            📎 {att.fileName || att.title || "Attachment"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHandoffForm((prev) => ({
-                                ...prev,
-                                briefAttachments: prev.briefAttachments.filter(
-                                  (_, i) => i !== idx,
-                                ),
-                              }));
-                            }}
-                            className="text-slate-400 hover:text-rose-600 font-bold ml-1"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                {/* Pick from Lead's Uploaded Documents */}
-                {documents && documents.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[10px] text-slate-400 font-semibold block">
-                      Quick Pick from Lead&apos;s Saved Photos &amp; Client
-                      Work:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-1">
-                      {documents.map((d) => {
-                        const isAttached = handoffForm.briefAttachments?.some(
-                          (a) => a.fileUrl === d.fileUrl,
-                        );
-                        return (
-                          <div
-                            key={d._id}
-                            onClick={() => {
-                              if (isAttached) {
-                                setHandoffForm((prev) => ({
-                                  ...prev,
-                                  briefAttachments:
-                                    prev.briefAttachments.filter(
-                                      (a) => a.fileUrl !== d.fileUrl,
-                                    ),
-                                }));
-                              } else {
-                                setHandoffForm((prev) => ({
-                                  ...prev,
-                                  briefAttachments: [
-                                    ...(prev.briefAttachments || []),
-                                    {
-                                      fileUrl: d.fileUrl,
-                                      fileName: d.fileName || d.title,
-                                      fileType: d.fileType,
-                                      fileSizeBytes: d.fileSizeBytes,
-                                      cloudinaryPublicId: d.cloudinaryPublicId,
-                                    },
-                                  ],
-                                }));
-                              }
-                            }}
-                            className={`p-2 rounded-xl border text-left cursor-pointer transition-all flex items-center gap-2 select-none ${
-                              isAttached
-                                ? "bg-indigo-50 border-indigo-400 text-indigo-900 font-bold"
-                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 font-medium"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isAttached}
-                              readOnly
-                              className="rounded text-indigo-600 pointer-events-none"
-                            />
-                            <div className="truncate flex-1">
-                              <span className="block text-[11px] truncate">
-                                {d.title}
-                              </span>
-                              <span className="text-[9px] text-slate-400 block uppercase font-mono">
-                                {d.category}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDesignerHandoffModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-                >
-                  <Palette className="w-4 h-4" />
-                  {actionLoading ? "Assigning..." : "Hand Off to Designer"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* RECORD ADVANCE PAYMENT MODAL */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -6152,7 +4961,7 @@ export default function LeadDetailPage() {
                     min="1"
                     required
                     placeholder="e.g. 5000"
-                    value={paymentForm.amount}
+                    value={paymentForm.amount ?? ""}
                     onChange={(e) =>
                       setPaymentForm({ ...paymentForm, amount: e.target.value })
                     }
@@ -6165,7 +4974,7 @@ export default function LeadDetailPage() {
                     Payment Method *
                   </label>
                   <select
-                    value={paymentForm.paymentMethod}
+                    value={paymentForm.paymentMethod ?? "UPI"}
                     onChange={(e) =>
                       setPaymentForm({
                         ...paymentForm,
@@ -6191,7 +5000,7 @@ export default function LeadDetailPage() {
                   <input
                     type="text"
                     placeholder="e.g. UPI Ref / Bank UTR / Cheque #"
-                    value={paymentForm.transactionReference}
+                    value={paymentForm.transactionReference ?? ""}
                     onChange={(e) =>
                       setPaymentForm({
                         ...paymentForm,
@@ -6209,7 +5018,7 @@ export default function LeadDetailPage() {
                   <input
                     type="text"
                     placeholder="e.g. HDFC Bank, SBI..."
-                    value={paymentForm.bankName}
+                    value={paymentForm.bankName ?? ""}
                     onChange={(e) =>
                       setPaymentForm({
                         ...paymentForm,
@@ -6231,7 +5040,7 @@ export default function LeadDetailPage() {
                       type="text"
                       required
                       placeholder="6-digit cheque #"
-                      value={paymentForm.chequeNumber}
+                      value={paymentForm.chequeNumber ?? ""}
                       onChange={(e) =>
                         setPaymentForm({
                           ...paymentForm,
@@ -6247,7 +5056,7 @@ export default function LeadDetailPage() {
                     </label>
                     <input
                       type="date"
-                      value={paymentForm.chequeDate}
+                      value={paymentForm.chequeDate ?? ""}
                       onChange={(e) =>
                         setPaymentForm({
                           ...paymentForm,
@@ -6268,7 +5077,7 @@ export default function LeadDetailPage() {
                       Link to Order
                     </label>
                     <select
-                      value={paymentForm.orderId}
+                      value={paymentForm.orderId ?? ""}
                       onChange={(e) =>
                         setPaymentForm({
                           ...paymentForm,
@@ -6304,7 +5113,7 @@ export default function LeadDetailPage() {
                       Link to Quotation
                     </label>
                     <select
-                      value={paymentForm.quotationId}
+                      value={paymentForm.quotationId ?? ""}
                       onChange={(e) => {
                         const qId = e.target.value;
                         const quoteObj = quotations.find((q) => q._id === qId);
@@ -6334,7 +5143,7 @@ export default function LeadDetailPage() {
                 )}
               </div>
 
-              {/* Direct Quotation Item Selection (No Order / No Designer) */}
+              {/* Direct Quotation Item Selection */}
               {paymentForm.quotationId &&
                 (() => {
                   const chosenQuote = quotations.find(
@@ -6350,7 +5159,7 @@ export default function LeadDetailPage() {
                           <input
                             type="checkbox"
                             id="lead-direct-quote-toggle"
-                            checked={paymentForm.isDirectQuotationPayment}
+                            checked={Boolean(paymentForm.isDirectQuotationPayment)}
                             onChange={(e) =>
                               setPaymentForm({
                                 ...paymentForm,
@@ -6433,7 +5242,7 @@ export default function LeadDetailPage() {
                 <textarea
                   rows={2}
                   placeholder="e.g. 50% advance token paid by client for banner printing..."
-                  value={paymentForm.notes}
+                  value={paymentForm.notes ?? ""}
                   onChange={(e) =>
                     setPaymentForm({ ...paymentForm, notes: e.target.value })
                   }
@@ -6697,7 +5506,7 @@ export default function LeadDetailPage() {
                   </label>
                   <input
                     type="tel"
-                    value={editForm.phone}
+                    value={editForm.phone ?? ""}
                     onChange={(e) =>
                       setEditForm({ ...editForm, phone: e.target.value })
                     }
@@ -6710,7 +5519,7 @@ export default function LeadDetailPage() {
                   </label>
                   <input
                     type="tel"
-                    value={editForm.alternatePhone}
+                    value={editForm.alternatePhone ?? ""}
                     onChange={(e) =>
                       setEditForm({
                         ...editForm,
@@ -6728,7 +5537,7 @@ export default function LeadDetailPage() {
                 </label>
                 <textarea
                   rows={2}
-                  value={editForm.requirement}
+                  value={editForm.requirement ?? ""}
                   onChange={(e) =>
                     setEditForm({ ...editForm, requirement: e.target.value })
                   }
@@ -6743,7 +5552,7 @@ export default function LeadDetailPage() {
                   </label>
                   <input
                     type="number"
-                    value={editForm.expectedValue}
+                    value={editForm.expectedValue ?? ""}
                     onChange={(e) =>
                       setEditForm({
                         ...editForm,
@@ -6758,7 +5567,7 @@ export default function LeadDetailPage() {
                     Priority
                   </label>
                   <select
-                    value={editForm.priority}
+                    value={editForm.priority ?? "HIGH"}
                     onChange={(e) =>
                       setEditForm({ ...editForm, priority: e.target.value })
                     }
@@ -6819,7 +5628,7 @@ export default function LeadDetailPage() {
                 <input
                   type="text"
                   required
-                  value={followupForm.title}
+                  value={followupForm.title ?? ""}
                   onChange={(e) =>
                     setFollowupForm({ ...followupForm, title: e.target.value })
                   }
@@ -6834,7 +5643,7 @@ export default function LeadDetailPage() {
                 <input
                   type="datetime-local"
                   required
-                  value={followupForm.scheduledAt}
+                  value={followupForm.scheduledAt ?? ""}
                   onChange={(e) =>
                     setFollowupForm({
                       ...followupForm,
@@ -6851,7 +5660,7 @@ export default function LeadDetailPage() {
                 </label>
                 <textarea
                   rows={2}
-                  value={followupForm.description}
+                  value={followupForm.description ?? ""}
                   onChange={(e) =>
                     setFollowupForm({
                       ...followupForm,
