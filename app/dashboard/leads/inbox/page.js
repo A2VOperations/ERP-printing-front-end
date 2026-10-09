@@ -52,11 +52,6 @@ export default function LeadInboxPage() {
   const [processingId, setProcessingId] = useState(null);
   const [acceptedLead, setAcceptedLead] = useState(null);
   const [previewPhoto, setPreviewPhoto] = useState(null);
-  const [declineModal, setDeclineModal] = useState({
-    show: false,
-    lead: null,
-    reason: "",
-  });
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -151,45 +146,6 @@ export default function LeadInboxPage() {
       console.error("Failed to accept lead:", err);
       const msg =
         err?.response?.data?.message || err?.message || "Failed to accept lead";
-      showToast(msg, "error");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  // Handle Decline / Reject Lead
-  const handleDeclineLead = async () => {
-    const lead = declineModal.lead;
-    if (!lead) return;
-    setProcessingId(lead._id);
-
-    try {
-      await api.post(`/leads/${lead._id}/reject`, {
-        reason: declineModal.reason.trim() || "Declined from Lead Inbox",
-      });
-
-      setLeads((prev) => prev.filter((item) => item._id !== lead._id));
-      if (typeof window !== "undefined") {
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent("refresh-inbox-count", {
-              detail: { count: Math.max(0, leads.length - 1) },
-            }),
-          );
-          window.dispatchEvent(
-            new CustomEvent("lead-accepted", { detail: { leadId: lead._id } }),
-          );
-        }, 0);
-      }
-      setDeclineModal({ show: false, lead: null, reason: "" });
-
-      showToast(`Lead declined.`, "info");
-    } catch (err) {
-      console.error("Failed to decline lead:", err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to decline lead";
       showToast(msg, "error");
     } finally {
       setProcessingId(null);
@@ -1002,37 +958,24 @@ export default function LeadInboxPage() {
                         </div>
                       </div>
 
-                      {/* Card Footer: ACCEPT & Decline Action Buttons */}
-                      <div className="p-4 pt-0 space-y-2">
+                      {/* Card Footer: ACCEPT Action Button */}
+                      <div className="p-4 pt-0">
                         <div className="h-px bg-slate-100 mb-3" />
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleAcceptLead(lead)}
-                            disabled={isOperating}
-                            className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50"
-                          >
-                            {isOperating ? (
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Check className="w-4 h-4 stroke-[3]" />
-                                <span>Accept Lead</span>
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              setDeclineModal({ show: true, lead, reason: "" })
-                            }
-                            disabled={isOperating}
-                            className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-700 font-bold text-xs border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
-                            title="Decline this lead"
-                          >
-                            Decline
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleAcceptLead(lead)}
+                          disabled={isOperating}
+                          className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50"
+                        >
+                          {isOperating ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4 stroke-[3]" />
+                              <span>Accept Lead</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
                   );
@@ -1068,73 +1011,7 @@ export default function LeadInboxPage() {
         </div>
       )}
 
-      {/* Decline Reason Modal */}
-      {declineModal.show && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 text-rose-600 font-bold text-base">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Decline Lead Assignment</span>
-              </div>
-              <button
-                onClick={() =>
-                  setDeclineModal({ show: false, lead: null, reason: "" })
-                }
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <p className="text-xs text-slate-600">
-              Are you sure you want to decline{" "}
-              <strong className="text-slate-900">
-                {declineModal.lead?.businessName ||
-                  declineModal.lead?.contactName ||
-                  "this lead"}
-              </strong>
-              ? It will be removed from your inbox.
-            </p>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700">
-                Reason for declining (optional):
-              </label>
-              <textarea
-                value={declineModal.reason}
-                onChange={(e) =>
-                  setDeclineModal((prev) => ({
-                    ...prev,
-                    reason: e.target.value,
-                  }))
-                }
-                rows={3}
-                placeholder="e.g. Out of my service zone, wrong contact details, etc."
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
-                onClick={() =>
-                  setDeclineModal({ show: false, lead: null, reason: "" })
-                }
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeclineLead}
-                disabled={Boolean(processingId)}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors shadow-md shadow-rose-600/30"
-              >
-                Confirm Decline
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
