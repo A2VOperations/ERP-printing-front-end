@@ -410,21 +410,6 @@ export default function ReceivablesPage() {
                               >
                                 {statusLabel}
                               </span>
-
-                              {custPhone && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    router.push(
-                                      `/dashboard/whatsapp?customerId=${targetCustomerId}&phone=${custPhone}&orderNo=${ordNum}&amount=${balanceRupees}&template=payment_reminder`,
-                                    );
-                                  }}
-                                  className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer"
-                                  title="Follow up balance on WhatsApp"
-                                >
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>

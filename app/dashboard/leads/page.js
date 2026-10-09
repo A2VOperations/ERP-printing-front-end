@@ -1408,18 +1408,7 @@ export default function LeadsDashboardPage() {
     showToast("Phone number copied to clipboard!");
   };
 
-  // WhatsApp Launcher
-  const handleOpenWhatsApp = (lead) => {
-    const rawPhone = lead.phone || "";
-    const cleanPhone = rawPhone.replace(/\D/g, "");
-    const formattedPhone =
-      cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    const name = lead.customerName || lead.contactName || "Customer";
-    const text = encodeURIComponent(
-      `Hello ${name}, this is regarding your printing requirement with us.`,
-    );
-    window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
-  };
+
 
   // Format Next Follow-up Helper
   const formatFollowupDisplay = (dateStr) => {
@@ -2196,17 +2185,7 @@ export default function LeadsDashboardPage() {
                                   <Phone className="w-3.5 h-3.5" />
                                 </button>
 
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenWhatsApp(lead);
-                                  }}
-                                  className="text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 p-1 rounded-md transition-colors cursor-pointer"
-                                  title="WhatsApp Chat"
-                                >
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                </button>
+
 
                                 <div className="relative">
                                   <button
@@ -2638,7 +2617,7 @@ export default function LeadsDashboardPage() {
                                   </div>
                                 </td>
 
-                                {/* Contact info & Direct Call/WhatsApp */}
+                                {/* Contact info & Direct Call */}
                                 <td className="px-3 py-3.5 whitespace-nowrap">
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -3954,22 +3933,14 @@ export default function LeadsDashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="pt-1">
               <a
                 href={`tel:${callingLead.phone}`}
-                className="flex-1 py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Call Device</span>
               </a>
-              <button
-                type="button"
-                onClick={() => handleOpenWhatsApp(callingLead)}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
-              </button>
             </div>
 
             <div className="pt-2">

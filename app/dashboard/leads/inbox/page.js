@@ -997,15 +997,6 @@ export default function LeadInboxPage() {
                                 <Phone className="w-3.5 h-3.5 text-[#F95721]" />
                                 <span>{phoneNum}</span>
                               </a>
-                              <a
-                                href={`https://wa.me/91${phoneNum.replace(/\D/g, "")}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-colors"
-                                title="Chat on WhatsApp"
-                              >
-                                <MessageSquare className="w-4 h-4 text-emerald-600" />
-                              </a>
                             </div>
                           )}
                         </div>

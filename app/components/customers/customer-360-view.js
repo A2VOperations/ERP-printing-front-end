@@ -293,35 +293,7 @@ export default function Customer360View({ customerId, user }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                router.push(`/dashboard/whatsapp?customerId=${customer._id}`)
-              }
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer"
-              title="Open WhatsApp Communication"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp</span>
-            </button>
-            <button
-              onClick={() => router.push(`/dashboard/communication`)}
-              className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-sm font-medium rounded-xl border border-indigo-500/30 transition flex items-center gap-2"
-            >
-              <svg
-                className="w-4 h-4 text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              Communication Hub
-            </button>
+
             <button
               onClick={() => setShowNewFollowupModal(true)}
               className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition flex items-center gap-2"
@@ -413,10 +385,7 @@ export default function Customer360View({ customerId, user }) {
               id: "followups",
               label: `Follow-ups (${recentFollowups.length})`,
             },
-            {
-              id: "communications",
-              label: `Communications (${(data?.communications?.threads || []).length})`,
-            },
+
             {
               id: "activity",
               label: `Timeline & Audit (${activityTimeline.length})`,
@@ -656,82 +625,7 @@ export default function Customer360View({ customerId, user }) {
           </div>
         )}
 
-        {/* Tab: Communications */}
-        {activeTab === "communications" && (
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-md overflow-hidden backdrop-blur-xl shadow-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  Omnichannel Communication Threads
-                </h3>
-                <p className="text-xs text-zinc-400">
-                  Emails, WhatsApp messages, and logged calls for this customer
-                </p>
-              </div>
-              <button
-                onClick={() => router.push(`/dashboard/communication`)}
-                className="px-3.5 py-1.5 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5"
-              >
-                Open Communication Hub
-              </button>
-            </div>
 
-            {!data?.communications?.threads ||
-            data.communications.threads.length === 0 ? (
-              <div className="p-12 text-center text-zinc-400">
-                <p className="text-sm">
-                  No communication threads recorded yet.
-                </p>
-                <button
-                  onClick={() => router.push(`/dashboard/communication`)}
-                  className="mt-3 px-4 py-2 bg-[#F95721] hover:bg-[#e84915] text-white text-xs font-semibold rounded-xl transition"
-                >
-                  Start Conversation
-                </button>
-              </div>
-            ) : (
-              <div className="divide-y divide-zinc-800/60">
-                {data.communications.threads.map((thr) => (
-                  <div
-                    key={thr._id}
-                    className="py-3 flex items-center justify-between hover:bg-zinc-800/30 px-3 rounded-xl transition"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">
-                          {thr.subject || "Conversation Thread"}
-                        </span>
-                        <span className="text-[10px] font-mono text-zinc-500">
-                          {thr.threadNumber}
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-orange-500/10 text-orange-400 border border-orange-500/20 uppercase">
-                          {thr.primaryChannel}
-                        </span>
-                      </div>
-                      <div className="text-xs text-zinc-400">
-                        Status:{" "}
-                        <span className="text-zinc-300 font-medium">
-                          {thr.status}
-                        </span>{" "}
-                        • Last Active:{" "}
-                        {new Date(
-                          thr.lastMessageAt || thr.createdAt,
-                        ).toLocaleString()}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => router.push(`/dashboard/communication`)}
-                      className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-lg border border-zinc-700 transition"
-                    >
-                      View Thread
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Tab 4: Activity Timeline */}
         {activeTab === "activity" && (

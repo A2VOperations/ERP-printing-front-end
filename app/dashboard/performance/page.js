@@ -1418,12 +1418,6 @@ export default function PerformancePage() {
                                   >
                                     Create Quotation
                                   </Link>
-                                  <Link
-                                    href="/dashboard/whatsapp"
-                                    className="w-full block px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 font-medium"
-                                  >
-                                    Chat on WhatsApp
-                                  </Link>
                                 </div>
                               )}
                             </div>

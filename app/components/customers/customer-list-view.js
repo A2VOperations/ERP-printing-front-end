@@ -362,19 +362,7 @@ export default function CustomerListView({ user }) {
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/dashboard/whatsapp?customerId=${c._id}`,
-                            );
-                          }}
-                          className="px-2.5 py-1.5 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-600 rounded-lg text-xs font-medium transition inline-flex items-center gap-1 cursor-pointer"
-                          title="Open WhatsApp Communication"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

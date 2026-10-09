@@ -1160,17 +1160,7 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
         {/* Right: Dynamic Channels, Interactive Notifications & User Profile */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
           <div className="flex items-center gap-0.5 sm:gap-1.5 md:gap-2 text-slate-500">
-            {/* WhatsApp / Messaging Shortcut */}
-            <button
-              onClick={() => router.push("/dashboard/whatsapp")}
-              className="p-1.5 sm:p-2 rounded-xl hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-colors"
-              title="WhatsApp & Omni-Channel Messaging"
-              aria-label="WhatsApp & Omni-Channel Messaging"
-            >
-              <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
-            </button>
-
-            {/*Notification Center  */}
+            {/* Notification Center */}
             {!isDataOperator && (
               <div className="relative">
                 <button
@@ -1697,9 +1687,9 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         icon: PhoneCall,
                       },
                       {
-                        name: "Messages",
-                        href: "/dashboard/communication",
-                        icon: MessageSquare,
+                        name: "Payments",
+                        href: "/dashboard/payments",
+                        icon: CreditCard,
                       },
                     ].map((item) => {
                       const Icon = item.icon;

@@ -675,19 +675,7 @@ export default function SalesDashboardPage() {
     }
   };
 
-  // WhatsApp Launcher
-  const handleOpenWhatsApp = (lead) => {
-    if (!lead) return;
-    const rawPhone = lead.phone || lead.mobileNumber || "";
-    const cleanPhone = String(rawPhone).replace(/\D/g, "");
-    const formattedPhone =
-      cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-    const name = lead.contactName || lead.customerName || "Customer";
-    const text = encodeURIComponent(
-      `Hello ${name}, this is regarding your printing requirement with us.`,
-    );
-    window.open(`https://wa.me/${formattedPhone}?text=${text}`, "_blank");
-  };
+
 
   // Export raw leads to JSON file
   const handleExportJson = useCallback(() => {
@@ -1512,21 +1500,8 @@ export default function SalesDashboardPage() {
                                     </a>
 
                                     <div className="flex items-center gap-1.5">
-                                      {/* Direct WhatsApp Action */}
-                                      {cleanPhone && (
-                                        <a
-                                          href={`https://wa.me/91${cleanPhone}?text=Hello%20${encodeURIComponent(item.contactName)},%20reaching%20out%20from%20A2V%20Prints%20regarding%20your%20inquiry%20for%20${encodeURIComponent(item.requirementTitle)}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 transition-colors cursor-pointer"
-                                          title="Chat on WhatsApp"
-                                        >
-                                          <MessageCircle className="w-3.5 h-3.5" />
-                                        </a>
-                                      )}
-
                                       {/* Call Now Button */}
-                                      <button
+                                        <button
                                         type="button"
                                         onClick={() => setCallingLead(item)}
                                         className="px-3 py-1.5 rounded-xl bg-[#F95721] hover:bg-[#e84915] text-white font-bold text-xs shadow-xs flex items-center gap-1 cursor-pointer transition-transform active:scale-95"
@@ -1973,14 +1948,14 @@ export default function SalesDashboardPage() {
                         </Link>
 
                         <Link
-                          href="/dashboard/whatsapp"
-                          className="p-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition-all flex items-center gap-2.5 group"
+                          href="/dashboard/orders"
+                          className="p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all flex items-center gap-2.5 group"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <MessageCircle className="w-4 h-4" />
+                          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                            <ShoppingBag className="w-4 h-4" />
                           </div>
-                          <span className="text-xs font-bold text-slate-700 group-hover:text-emerald-700 leading-tight">
-                            WhatsApp
+                          <span className="text-xs font-bold text-slate-700 group-hover:text-indigo-700 leading-tight">
+                            Orders
                           </span>
                         </Link>
 
@@ -2015,13 +1990,7 @@ export default function SalesDashboardPage() {
               <Plus className="w-4 h-4" />
               <span>Add Lead</span>
             </button>
-            <Link
-              href="/dashboard/whatsapp"
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs shadow-xs"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp</span>
-            </Link>
+
             <button
               type="button"
               onClick={() => loadDashboardData(true)}
@@ -2437,26 +2406,15 @@ export default function SalesDashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="pt-1">
               <a
                 href={`tel:${callingLead.phone}`}
                 onClick={() => setCallingLead(null)}
-                className="flex-1 py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="w-full py-2.5 bg-[#F95721] hover:bg-[#e84915] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Call Device</span>
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  handleOpenWhatsApp(callingLead);
-                  setCallingLead(null);
-                }}
-                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>WhatsApp</span>
-              </button>
             </div>
 
             <div className="pt-1">
