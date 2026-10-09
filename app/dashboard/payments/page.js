@@ -169,6 +169,8 @@ export default function PaymentsPage() {
       !q ||
       p.customerName?.toLowerCase().includes(q) ||
       p.customerId?.displayName?.toLowerCase().includes(q) ||
+      p.quotationNumber?.toLowerCase().includes(q) ||
+      p.quotationId?.quotationNumber?.toLowerCase().includes(q) ||
       p.orderNumber?.toLowerCase().includes(q) ||
       p.orderId?.orderNumber?.toLowerCase().includes(q) ||
       p.receiptNumber?.toLowerCase().includes(q) ||
@@ -256,6 +258,8 @@ export default function PaymentsPage() {
   const rReceiptNum =
     receiptPayment?.receiptNumber || receiptPayment?.paymentNumber || "N/A";
   const rOrderNum =
+    receiptPayment?.quotationId?.quotationNumber ||
+    receiptPayment?.quotationNumber ||
     rOrder.orderNumber ||
     receiptPayment?.orderNumber ||
     (receiptPayment?.leadId
@@ -382,7 +386,7 @@ export default function PaymentsPage() {
                   <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                     <th className="py-3.5 px-4">Transaction / Receipt</th>
                     <th className="py-3.5 px-4">Customer / Lead</th>
-                    <th className="py-3.5 px-4">Order Number</th>
+                    <th className="py-3.5 px-4">Quotation / Order</th>
                     <th className="py-3.5 px-4">Payment Method</th>
                     <th className="py-3.5 px-4">Amount</th>
                     <th className="py-3.5 px-4">Date</th>
@@ -433,11 +437,17 @@ export default function PaymentsPage() {
                           </td>
 
                           <td className="py-3 px-4 font-mono text-slate-600 font-semibold">
-                            {p.orderId?.orderNumber ||
-                              p.orderNumber ||
-                              (p.leadId
-                                ? `Lead: ${p.leadId?.leadNumber || p.leadId?._id?.slice(-6) || ""}`
-                                : "-")}
+                            {p.quotationId?.quotationNumber || p.quotationNumber ? (
+                              <span className="text-indigo-600 font-bold">
+                                Quote: {p.quotationId?.quotationNumber || p.quotationNumber}
+                              </span>
+                            ) : p.orderId?.orderNumber || p.orderNumber ? (
+                              <span>{p.orderId?.orderNumber || p.orderNumber}</span>
+                            ) : p.leadId ? (
+                              <span className="text-slate-500">Lead: {p.leadId?.leadNumber || p.leadId?._id?.slice(-6)}</span>
+                            ) : (
+                              "-"
+                            )}
                           </td>
 
                           <td className="py-3 px-4 font-bold text-slate-700">

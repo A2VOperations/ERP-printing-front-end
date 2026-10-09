@@ -835,6 +835,25 @@ function QuotationsContent() {
     }
   };
 
+  // Verify Quotation Payment (Manager / Admin)
+  const handleVerifyQuotePayment = async (paymentId) => {
+    if (!confirm("Confirm and verify this quotation payment? The ledger balance will be updated.")) return;
+    try {
+      setActionLoading(true);
+      await api.post(`/payments/${paymentId}/verify`);
+      await fetchQuotations();
+      if (selectedQuote?._id) {
+        await fetchQuotePayments(selectedQuote._id);
+        const updatedRes = await api.get(`/quotations/${selectedQuote._id}`);
+        if (updatedRes.data) setSelectedQuote(updatedRes.data);
+      }
+    } catch (err) {
+      alert(err.message || "Failed to verify quotation payment");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Mark Client Accepted (Opens item selection and order creation)
   const handleMarkClientAccepted = (quote) => {
     handleOpenConvertOrder(quote);
@@ -1283,13 +1302,42 @@ function QuotationsContent() {
                           <strong className="font-mono font-bold text-slate-900 block">
                             ₹{total}
                           </strong>
-                          {item.directPaidPaise > 0 && (
-                            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
-                              Paid: ₹
-                              {(item.directPaidPaise / 100).toLocaleString(
-                                "en-IN",
-                              )}
-                            </span>
+                          {item.status === "ACCEPTED" ? (
+                            (() => {
+                              const bPaise = item.directBalancePaise !== undefined ? item.directBalancePaise : Math.max(0, (item.grandTotalPaise || 0) - (item.directPaidPaise || 0));
+                              const advRec = (item.advanceReceivedPaise || 0) / 100;
+                              const balDue = bPaise / 100;
+                              const isPaid = balDue <= 0 && ((item.directPaidPaise || 0) > 0 || advRec > 0);
+
+                              if (isPaid) {
+                                return (
+                                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 inline-block mt-0.5">
+                                    ✓ Fully Paid
+                                  </span>
+                                );
+                              }
+                              if (advRec > 0) {
+                                return (
+                                  <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 inline-block mt-0.5">
+                                    Adv: ₹{advRec.toLocaleString("en-IN")} · Bal: ₹{balDue.toLocaleString("en-IN")}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block mt-0.5">
+                                  Bal: ₹{balDue.toLocaleString("en-IN")}
+                                </span>
+                              );
+                            })()
+                          ) : (
+                            item.directPaidPaise > 0 && (
+                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">
+                                Paid: ₹
+                                {(item.directPaidPaise / 100).toLocaleString(
+                                  "en-IN",
+                                )}
+                              </span>
+                            )
                           )}
                         </div>
                       </div>
@@ -1549,7 +1597,7 @@ function QuotationsContent() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {Number(selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) > 0 && (
+                        {Number(selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) > 0 ? (
                           <button
                             onClick={() => handleOpenDirectPaymentModal(selectedQuote)}
                             disabled={paymentSubmitting || hasPendingQuotePayment(selectedQuote._id)}
@@ -1560,8 +1608,12 @@ function QuotationsContent() {
                               ? "Payment Awaiting Verification"
                               : getQuotePaymentStage(selectedQuote) === "ADVANCE"
                                 ? "Record Advance Payment"
-                                : "Record Final Payment"}
+                                : "Record Final Balance"}
                           </button>
+                        ) : (
+                          <span className="px-3 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1 border border-emerald-300">
+                            ✓ Fully Paid
+                          </span>
                         )}
                         <button
                           onClick={() => handleOpenConvertOrder(selectedQuote)}
@@ -1605,11 +1657,38 @@ function QuotationsContent() {
                           <p className="text-xs text-slate-500">No payments recorded for this quotation.</p>
                         ) : (
                           quotePayments.map((payment) => (
-                            <div key={payment._id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-                              <span className="font-semibold text-slate-700">
-                                {payment.paymentType === "ADVANCE" ? "Advance" : "Final payment"} · {payment.receiptNumber || "Receipt pending"} · {payment.status?.replace(/_/g, " ")}
-                              </span>
-                              <span className="font-mono font-bold text-slate-900">₹{((payment.amountPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                            <div key={payment._id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                              <div>
+                                <span className="font-semibold text-slate-800 block">
+                                  {payment.paymentType === "ADVANCE" ? "Advance Deposit" : "Final Balance"} · {payment.receiptNumber || "Receipt pending"}
+                                </span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                                    payment.status === "CONFIRMED"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : payment.status === "PENDING_VERIFICATION"
+                                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-slate-100 text-slate-600 border-slate-200"
+                                  }`}>
+                                    {payment.status?.replace(/_/g, " ")}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {payment.paymentMethod} {payment.transactionReference ? `• Ref: ${payment.transactionReference}` : ""}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-slate-900 text-sm">₹{((payment.amountPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                {payment.status === "PENDING_VERIFICATION" && (isManager || isCEOOrAdmin) && (
+                                  <button
+                                    onClick={() => handleVerifyQuotePayment(payment._id)}
+                                    disabled={actionLoading}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+                                  >
+                                    Verify
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           ))
                         )}
@@ -2038,54 +2117,53 @@ function QuotationsContent() {
                             </span>
                           </div>
 
-                          {selectedQuote.status === "ACCEPTED" && (
-                            <>
-                              <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
-                                <span>Advance Received:</span>
-                                <span className="font-mono">₹{((selectedQuote.advanceReceivedPaise || 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-amber-50 rounded-xl border border-amber-200">
-                                <span>Balance Due:</span>
-                                <span className="font-mono">₹{((selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                              </div>
-                            </>
-                          )}
+                          {selectedQuote.status === "ACCEPTED" ? (
+                            (() => {
+                              const advRec = (selectedQuote.advanceReceivedPaise || 0) / 100;
+                              const totPaid = (selectedQuote.directPaidPaise || 0) / 100;
+                              const balDue = (selectedQuote.directBalancePaise !== undefined ? selectedQuote.directBalancePaise : Math.max(0, (selectedQuote.grandTotalPaise || 0) - (selectedQuote.directPaidPaise || 0))) / 100;
+                              const isPaid = balDue <= 0 && (totPaid > 0 || advRec > 0);
 
-                          {selectedQuote.directPaidPaise > 0 && (
-                            <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
-                              <span>Total Received:</span>
-                              <span className="font-mono">
-                                ₹
-                                {(
-                                  selectedQuote.directPaidPaise / 100
-                                ).toLocaleString("en-IN", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </span>
-                            </div>
-                          )}
-
-                          {selectedQuote.directPaidPaise > 0 && (
-                            <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-slate-100 rounded-xl border border-slate-200">
-                              <span>Balance Due:</span>
-                              <span className="font-mono font-bold text-slate-800">
-                                ₹
-                                {(
-                                  (selectedQuote.directBalancePaise !==
-                                  undefined
-                                    ? selectedQuote.directBalancePaise
-                                    : Math.max(
-                                        0,
-                                        (selectedQuote.grandTotalPaise || 0) -
-                                          (selectedQuote.directPaidPaise || 0),
-                                      )) / 100
-                                ).toLocaleString("en-IN", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </span>
-                            </div>
+                              return (
+                                <>
+                                  <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                                    <span>Advance Received:</span>
+                                    <span className="font-mono">₹{advRec.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                  {totPaid > advRec && (
+                                    <div className="flex justify-between items-center text-emerald-900 font-bold text-xs p-2 bg-emerald-100/70 rounded-xl border border-emerald-300">
+                                      <span>Total Paid:</span>
+                                      <span className="font-mono">₹{totPaid.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                  )}
+                                  <div className={`flex justify-between items-center font-bold text-xs p-2 rounded-xl border ${
+                                    isPaid
+                                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                                      : "bg-amber-50 text-amber-900 border-amber-200"
+                                  }`}>
+                                    <span>{isPaid ? "Balance Due (Fully Paid):" : "Balance Due:"}</span>
+                                    <span className="font-mono">₹{balDue.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                </>
+                              );
+                            })()
+                          ) : (
+                            selectedQuote.directPaidPaise > 0 && (
+                              <>
+                                <div className="flex justify-between items-center text-emerald-800 font-bold text-xs p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                                  <span>Total Received:</span>
+                                  <span className="font-mono">
+                                    ₹{(selectedQuote.directPaidPaise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-slate-900 font-bold text-xs p-2 bg-slate-100 rounded-xl border border-slate-200">
+                                  <span>Balance Due:</span>
+                                  <span className="font-mono font-bold text-slate-800">
+                                    ₹{(((selectedQuote.directBalancePaise !== undefined ? selectedQuote.directBalancePaise : Math.max(0, (selectedQuote.grandTotalPaise || 0) - (selectedQuote.directPaidPaise || 0)))) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              </>
+                            )
                           )}
                         </div>
 

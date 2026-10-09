@@ -1052,79 +1052,130 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Submit Record Advance Payment
+  // Open Quotation Payment Modal (Only for ACCEPTED quotations)
+  const handleOpenQuotationPaymentModal = (targetQuotationId) => {
+    const acceptedQuotes = quotations.filter((q) => q.status === "ACCEPTED");
+    if (acceptedQuotes.length === 0) {
+      alert(
+        "Payments can only be recorded after a quotation is accepted. Please approve and accept a quotation first.",
+      );
+      setActiveTab("Quotations");
+      return;
+    }
+    const q = targetQuotationId
+      ? quotations.find((quo) => quo._id === targetQuotationId) || acceptedQuotes[0]
+      : acceptedQuotes[0];
+
+    if (q.status !== "ACCEPTED") {
+      alert("Payments can only be recorded after the quotation is accepted.");
+      return;
+    }
+
+    const qTotal = q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0;
+    const advReq = q.advanceRequiredPaise !== undefined ? q.advanceRequiredPaise / 100 : Math.round(qTotal * 0.5);
+    const advRec = (q.advanceReceivedPaise || 0) / 100;
+    const balPaise = q.directBalancePaise !== undefined ? q.directBalancePaise : Math.max(0, (q.grandTotalPaise || 0) - (q.directPaidPaise || 0));
+    const balDue = balPaise / 100;
+
+    if (balDue <= 0 && ((q.directPaidPaise || 0) > 0 || advRec > 0)) {
+      alert("This quotation has already been fully paid.");
+      return;
+    }
+
+    const stage = advRec < advReq ? "ADVANCE" : "BALANCE";
+    const amt = stage === "ADVANCE" ? Math.min(balDue, Math.max(0, advReq - advRec)) : balDue;
+
+    setPaymentForm({
+      amount: amt > 0 ? amt.toString() : "",
+      paymentMethod: "UPI",
+      paymentType: stage,
+      transactionReference: "",
+      bankName: "",
+      chequeNumber: "",
+      chequeDate: "",
+      quotationId: q._id,
+      orderId: "",
+      selectedItemIndexes: [],
+      isDirectQuotationPayment: true,
+      notes: `Payment for Quotation ${q.quotationNumber || q._id}`,
+    });
+    setShowPaymentModal(true);
+  };
+
+  // Submit Quotation Payment
   const handleRecordPaymentSubmit = async (e) => {
     e.preventDefault();
     const amountNum = Number(paymentForm.amount);
     if (!amountNum || amountNum <= 0) {
-      alert("Please enter a valid advance payment amount.");
+      alert("Please enter a valid payment amount greater than zero.");
       return;
     }
 
-    if (paymentForm.orderId) {
-      const ord = orders.find((o) => o._id === paymentForm.orderId);
-      if (ord) {
-        const balRupees =
-          (ord.balancePaise !== undefined
-            ? ord.balancePaise
-            : ord.grandTotalPaise || 0) / 100;
-        if (amountNum > balRupees) {
-          alert(
-            `Payment Rejected: Overpayment is not allowed.\n\n` +
-              `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
-              `Maximum Allowed Balance: ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
-              `Payments cannot exceed the approved order balance. To bill additional items, please create a new quotation or order.`,
-          );
-          return;
-        }
+    if (!paymentForm.quotationId) {
+      alert("Please select an accepted quotation to record payment.");
+      return;
+    }
+
+    const q = quotations.find((quo) => quo._id === paymentForm.quotationId);
+    if (!q) {
+      alert("Selected quotation was not found.");
+      return;
+    }
+    if (q.status !== "ACCEPTED") {
+      alert("Payments can only be recorded after the quotation is accepted.");
+      return;
+    }
+
+    const qTotalRupees = (q.grandTotalPaise ? q.grandTotalPaise : (q.totalAmount || 0) * 100) / 100;
+    const advReqRupees = (q.advanceRequiredPaise !== undefined ? q.advanceRequiredPaise : Math.round((q.grandTotalPaise || 0) * 0.5)) / 100;
+    const advRecRupees = (q.advanceReceivedPaise || 0) / 100;
+    const balRupees = (q.directBalancePaise !== undefined ? q.directBalancePaise : Math.max(0, (q.grandTotalPaise || 0) - (q.directPaidPaise || 0))) / 100;
+
+    const paymentType = paymentForm.paymentType || (advRecRupees < advReqRupees ? "ADVANCE" : "BALANCE");
+
+    if (paymentType === "ADVANCE") {
+      const remAdv = Math.max(0, advReqRupees - advRecRupees);
+      if (amountNum > remAdv) {
+        alert(
+          `Payment Rejected: Advance payment cannot exceed the remaining advance amount of ₹${remAdv.toLocaleString("en-IN", { minimumFractionDigits: 2 })}.\n\n` +
+            `Once the advance is verified, the final balance of ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })} can be recorded.`,
+        );
+        return;
       }
-    } else if (paymentForm.quotationId) {
-      const q = quotations.find((quo) => quo._id === paymentForm.quotationId);
-      if (q) {
-        const qTotalRupees = q.grandTotalPaise
-          ? q.grandTotalPaise / 100
-          : q.totalAmount || 0;
-        if (amountNum > qTotalRupees) {
-          alert(
-            `Payment Rejected: Overpayment is not allowed.\n\n` +
-              `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
-              `Quotation Total: ₹${qTotalRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
-              `Payments cannot exceed the quotation total. Please create a new quotation for extra amounts.`,
-          );
-          return;
-        }
+    } else {
+      if (amountNum > balRupees) {
+        alert(
+          `Payment Rejected: Overpayment is not allowed.\n\n` +
+            `Entered Amount: ₹${amountNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n` +
+            `Quotation Balance Due: ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}\n\n` +
+            `Payments cannot exceed the remaining quotation balance.`,
+        );
+        return;
       }
     }
 
     try {
       setActionLoading(true);
-      await api.post("/payments", {
-        leadId,
-        customerId: lead?.customerId?._id || lead?.customerId || undefined,
-        quotationId: paymentForm.quotationId || undefined,
-        orderId: paymentForm.isDirectQuotationPayment
-          ? undefined
-          : paymentForm.orderId || undefined,
-        isDirectQuotationPayment: Boolean(paymentForm.isDirectQuotationPayment),
-        selectedItemIndexes:
-          paymentForm.selectedItemIndexes &&
-          paymentForm.selectedItemIndexes.length > 0
-            ? paymentForm.selectedItemIndexes
-            : undefined,
+      const res = await api.post(`/quotations/${paymentForm.quotationId}/payments`, {
         amount: amountNum,
-        paymentType: "ADVANCE",
+        paymentType,
         paymentMethod: paymentForm.paymentMethod,
-        transactionReference: paymentForm.transactionReference,
-        bankName: paymentForm.bankName,
-        chequeNumber: paymentForm.chequeNumber,
+        transactionReference: paymentForm.transactionReference || undefined,
+        bankName: paymentForm.bankName || undefined,
+        chequeNumber: paymentForm.chequeNumber || undefined,
         chequeDate: paymentForm.chequeDate || undefined,
-        notes: paymentForm.notes,
+        notes: paymentForm.notes || undefined,
       });
+
+      alert(
+        `Quotation payment of ₹${amountNum.toLocaleString("en-IN")} recorded successfully! (Receipt: ${res.data?.receiptNumber || "Confirmed"})`,
+      );
 
       setShowPaymentModal(false);
       setPaymentForm({
         amount: "",
         paymentMethod: "UPI",
+        paymentType: "ADVANCE",
         transactionReference: "",
         bankName: "",
         chequeNumber: "",
@@ -1132,12 +1183,12 @@ export default function LeadDetailPage() {
         quotationId: "",
         orderId: "",
         selectedItemIndexes: [],
-        isDirectQuotationPayment: false,
+        isDirectQuotationPayment: true,
         notes: "",
       });
       await loadLeadDetails();
     } catch (err) {
-      alert(err.message || "Failed to record advance payment");
+      alert(err.message || "Failed to record payment");
     } finally {
       setActionLoading(false);
     }
@@ -2120,22 +2171,8 @@ export default function LeadDetailPage() {
                     </Link>
 
                     <button
-                      onClick={() => {
-                        setPaymentForm({
-                          amount: "",
-                          paymentMethod: "UPI",
-                          transactionReference: "",
-                          bankName: "",
-                          chequeNumber: "",
-                          chequeDate: "",
-                          quotationId:
-                            quotations.length > 0 ? quotations[0]._id : "",
-                          orderId: orders.length > 0 ? orders[0]._id : "",
-                          notes: "",
-                        });
-                        setShowPaymentModal(true);
-                      }}
-                      className="p-3 rounded-md bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold flex flex-col items-center gap-1.5 transition-colors"
+                      onClick={() => handleOpenQuotationPaymentModal()}
+                      className="p-3 rounded-md bg-emerald-50/80 hover:bg-emerald-100 text-emerald-700 font-bold flex flex-col items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <CreditCard className="w-5 h-5" />
                       Advance Pay
@@ -2489,22 +2526,8 @@ export default function LeadDetailPage() {
                       <div className="text-center py-5 text-slate-400 space-y-2">
                         <p className="text-sm">No payments recorded yet.</p>
                         <button
-                          onClick={() => {
-                            setPaymentForm({
-                              amount: "",
-                              paymentMethod: "UPI",
-                              transactionReference: "",
-                              bankName: "",
-                              chequeNumber: "",
-                              chequeDate: "",
-                              quotationId:
-                                quotations.length > 0 ? quotations[0]._id : "",
-                              orderId: orders.length > 0 ? orders[0]._id : "",
-                              notes: "",
-                            });
-                            setShowPaymentModal(true);
-                          }}
-                          className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs"
+                          onClick={() => handleOpenQuotationPaymentModal()}
+                          className="px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs cursor-pointer transition-colors"
                         >
                           + Record Advance
                         </button>
@@ -2745,27 +2768,6 @@ export default function LeadDetailPage() {
 
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => {
-                                setPaymentForm({
-                                  amount: balance > 0 ? balance.toString() : "",
-                                  paymentMethod: "UPI",
-                                  transactionReference: "",
-                                  bankName: "",
-                                  chequeNumber: "",
-                                  chequeDate: "",
-                                  quotationId: o.quotationId || "",
-                                  orderId: o._id,
-                                  notes: `Payment for Order ${o.orderNumber}`,
-                                });
-                                setShowPaymentModal(true);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-all flex items-center gap-1"
-                            >
-                              <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
-                              Record Payment
-                            </button>
-
-                            <button
                               onClick={async () => {
                                 try {
                                   await api.downloadPdf(
@@ -2847,6 +2849,26 @@ export default function LeadDetailPage() {
                     const canUserApproveDiscount =
                       isCEOOrAdmin || (isManager && !isExceedingManagerLimit);
 
+                    const quoteTotal = q.grandTotalPaise
+                      ? q.grandTotalPaise / 100
+                      : q.totalAmount || 0;
+                    const advReq =
+                      q.advanceRequiredPaise !== undefined
+                        ? q.advanceRequiredPaise / 100
+                        : Math.round(quoteTotal * 0.5);
+                    const advRec = (q.advanceReceivedPaise || 0) / 100;
+                    const balPaise =
+                      q.directBalancePaise !== undefined
+                        ? q.directBalancePaise
+                        : Math.max(
+                            0,
+                            (q.grandTotalPaise || Math.round(quoteTotal * 100)) -
+                              (q.directPaidPaise || 0),
+                          );
+                    const balDue = balPaise / 100;
+                    const isFullyPaid =
+                      balDue <= 0 && ((q.directPaidPaise || 0) > 0 || advRec > 0);
+
                     return (
                       <div
                         key={q._id}
@@ -2883,17 +2905,35 @@ export default function LeadDetailPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                          <div className="text-right">
+                          <div className="text-right space-y-0.5">
                             <span className="text-[10px] text-slate-400 block font-semibold">
                               Total Amount
                             </span>
-                            <span className="font-mono font-bold text-slate-900 text-sm">
+                            <span className="font-mono font-bold text-slate-900 text-sm block">
                               ₹
-                              {(q.grandTotalPaise
-                                ? q.grandTotalPaise / 100
-                                : q.totalAmount || 0
-                              ).toLocaleString("en-IN")}
+                              {quoteTotal.toLocaleString("en-IN", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
                             </span>
+                            {q.status === "ACCEPTED" && (
+                              <div className="flex flex-col items-end gap-0.5 mt-1">
+                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  Adv Paid: ₹{advRec.toLocaleString("en-IN")}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded border ${
+                                    balDue <= 0
+                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                      : "bg-amber-50 text-amber-800 border border-amber-200"
+                                  }`}
+                                >
+                                  {balDue <= 0
+                                    ? "✓ Balance: ₹0 (Fully Paid)"
+                                    : `Bal Due: ₹${balDue.toLocaleString("en-IN")}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Lifecycle Action Buttons */}
@@ -2967,23 +3007,43 @@ export default function LeadDetailPage() {
                           )}
 
                           {q.status === "ACCEPTED" && (
-                            <button
-                              onClick={() => {
-                                handleOpenCreateOrderModal({
-                                  quotationId: q._id,
-                                  title:
-                                    q.items?.[0]?.title ||
-                                    "Order from Quotation",
-                                  amount: q.grandTotalPaise
-                                    ? q.grandTotalPaise / 100
-                                    : q.totalAmount || 0,
-                                });
-                              }}
-                              className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
-                            >
-                              <ShoppingBag className="w-3.5 h-3.5" /> Convert to
-                              Order
-                            </button>
+                            <>
+                              {balDue > 0 && !isFullyPaid ? (
+                                <button
+                                  onClick={() =>
+                                    handleOpenQuotationPaymentModal(q._id)
+                                  }
+                                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer"
+                                >
+                                  <CreditCard className="w-3.5 h-3.5" />
+                                  {advRec < advReq
+                                    ? "Record Advance"
+                                    : "Record Balance"}
+                                </button>
+                              ) : (
+                                <span className="px-2.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-[11px] border border-emerald-300 flex items-center gap-1">
+                                  ✓ Fully Paid
+                                </span>
+                              )}
+
+                              <button
+                                onClick={() => {
+                                  handleOpenCreateOrderModal({
+                                    quotationId: q._id,
+                                    title:
+                                      q.items?.[0]?.title ||
+                                      "Order from Quotation",
+                                    amount: q.grandTotalPaise
+                                      ? q.grandTotalPaise / 100
+                                      : q.totalAmount || 0,
+                                  });
+                                }}
+                                className="flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5" /> Convert to
+                                Order
+                              </button>
+                            </>
                           )}
 
                           <button
@@ -3173,22 +3233,8 @@ export default function LeadDetailPage() {
 
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => {
-                      setPaymentForm({
-                        amount: "",
-                        paymentMethod: "UPI",
-                        transactionReference: "",
-                        bankName: "",
-                        chequeNumber: "",
-                        chequeDate: "",
-                        quotationId:
-                          quotations.length > 0 ? quotations[0]._id : "",
-                        orderId: orders.length > 0 ? orders[0]._id : "",
-                        notes: "",
-                      });
-                      setShowPaymentModal(true);
-                    }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-all"
+                    onClick={() => handleOpenQuotationPaymentModal()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     Record Advance Payment
@@ -3446,22 +3492,8 @@ export default function LeadDetailPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        setPaymentForm({
-                          amount: "",
-                          paymentMethod: "UPI",
-                          transactionReference: "",
-                          bankName: "",
-                          chequeNumber: "",
-                          chequeDate: "",
-                          quotationId:
-                            quotations.length > 0 ? quotations[0]._id : "",
-                          orderId: orders.length > 0 ? orders[0]._id : "",
-                          notes: "",
-                        });
-                        setShowPaymentModal(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                      onClick={() => handleOpenQuotationPaymentModal()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Record Advance Payment
@@ -4917,374 +4949,398 @@ export default function LeadDetailPage() {
         </div>
       )}
 
-      {/* RECORD ADVANCE PAYMENT MODAL */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Record Advance Payment
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Deposit initially recorded with status:{" "}
-                    <strong className="text-amber-700 font-mono">
-                      PENDING_VERIFICATION
-                    </strong>
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
-              >
-                ✕
-              </button>
-            </div>
+      {/* RECORD QUOTATION PAYMENT MODAL */}
+      {showPaymentModal && (() => {
+        const acceptedQuotes = quotations.filter((q) => q.status === "ACCEPTED");
+        const activeQuote = quotations.find((q) => q._id === paymentForm.quotationId) || acceptedQuotes[0];
+        const qTotal = activeQuote ? (activeQuote.grandTotalPaise ? activeQuote.grandTotalPaise / 100 : activeQuote.totalAmount || 0) : 0;
+        const advReq = activeQuote ? (activeQuote.advanceRequiredPaise !== undefined ? activeQuote.advanceRequiredPaise / 100 : Math.round(qTotal * 0.5)) : 0;
+        const advRec = activeQuote ? (activeQuote.advanceReceivedPaise || 0) / 100 : 0;
+        const totalPaid = activeQuote ? (activeQuote.directPaidPaise || 0) / 100 : advRec;
+        const balDue = activeQuote ? (activeQuote.directBalancePaise !== undefined ? activeQuote.directBalancePaise / 100 : Math.max(0, qTotal - totalPaid)) : 0;
 
-            <form
-              onSubmit={handleRecordPaymentSubmit}
-              className="space-y-3.5 text-xs"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Advance Amount (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    required
-                    placeholder="e.g. 5000"
-                    value={paymentForm.amount ?? ""}
-                    onChange={(e) =>
-                      setPaymentForm({ ...paymentForm, amount: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Payment Method *
-                  </label>
-                  <select
-                    value={paymentForm.paymentMethod ?? "UPI"}
-                    onChange={(e) =>
-                      setPaymentForm({
-                        ...paymentForm,
-                        paymentMethod: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  >
-                    {PAYMENT_METHODS.map((pm) => (
-                      <option key={pm.value} value={pm.value}>
-                        {pm.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Transaction Ref / UTR #
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. UPI Ref / Bank UTR / Cheque #"
-                    value={paymentForm.transactionReference ?? ""}
-                    onChange={(e) =>
-                      setPaymentForm({
-                        ...paymentForm,
-                        transactionReference: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Bank Name (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. HDFC Bank, SBI..."
-                    value={paymentForm.bankName ?? ""}
-                    onChange={(e) =>
-                      setPaymentForm({
-                        ...paymentForm,
-                        bankName: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
-                  />
-                </div>
-              </div>
-
-              {paymentForm.paymentMethod === "CHEQUE" && (
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100">
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Cheque Number *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="6-digit cheque #"
-                      value={paymentForm.chequeNumber ?? ""}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          chequeNumber: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-800 font-mono"
-                    />
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-xs">
+                    <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Cheque Date
-                    </label>
-                    <input
-                      type="date"
-                      value={paymentForm.chequeDate ?? ""}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          chequeDate: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-800 font-mono"
-                    />
+                    <h3 className="text-base font-bold text-slate-900">
+                      Record Quotation Payment
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Receipt recorded with status:{" "}
+                      <strong className="text-amber-700 font-mono">
+                        PENDING_VERIFICATION
+                      </strong>
+                    </p>
                   </div>
                 </div>
-              )}
-
-              {/* Order / Quotation Linking */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {orders.length > 0 && !paymentForm.isDirectQuotationPayment && (
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Link to Order
-                    </label>
-                    <select
-                      value={paymentForm.orderId ?? ""}
-                      onChange={(e) =>
-                        setPaymentForm({
-                          ...paymentForm,
-                          orderId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
-                    >
-                      <option value="">-- Direct Lead Payment --</option>
-                      {orders.map((o) => (
-                        <option key={o._id} value={o._id}>
-                          {o.orderNumber || o._id} (₹
-                          {(o.grandTotalPaise
-                            ? o.grandTotalPaise / 100
-                            : o.totalAmount || 0
-                          ).toLocaleString("en-IN")}
-                          )
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {quotations.length > 0 && (
-                  <div
-                    className={
-                      orders.length > 0 && !paymentForm.isDirectQuotationPayment
-                        ? ""
-                        : "md:col-span-2"
-                    }
-                  >
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Link to Quotation
-                    </label>
-                    <select
-                      value={paymentForm.quotationId ?? ""}
-                      onChange={(e) => {
-                        const qId = e.target.value;
-                        const quoteObj = quotations.find((q) => q._id === qId);
-                        const items = quoteObj?.items || [];
-                        setPaymentForm({
-                          ...paymentForm,
-                          quotationId: qId,
-                          selectedItemIndexes: items.map((_, i) => i),
-                          isDirectQuotationPayment: qId ? true : false,
-                          orderId: qId ? "" : paymentForm.orderId,
-                        });
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
-                    >
-                      <option value="">-- No specific quote --</option>
-                      {quotations.map((q) => (
-                        <option key={q._id} value={q._id}>
-                          {q.quotationNumber || q._id} - ₹
-                          {(q.grandTotalPaise
-                            ? q.grandTotalPaise / 100
-                            : q.totalAmount || 0
-                          ).toLocaleString("en-IN")}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              {/* Direct Quotation Item Selection */}
-              {paymentForm.quotationId &&
-                (() => {
-                  const chosenQuote = quotations.find(
-                    (q) => q._id === paymentForm.quotationId,
-                  );
-                  const qItems = chosenQuote?.items || [];
-                  if (qItems.length === 0) return null;
-
-                  return (
-                    <div className="space-y-2 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="checkbox"
-                            id="lead-direct-quote-toggle"
-                            checked={Boolean(paymentForm.isDirectQuotationPayment)}
-                            onChange={(e) =>
-                              setPaymentForm({
-                                ...paymentForm,
-                                isDirectQuotationPayment: e.target.checked,
-                                orderId: e.target.checked
-                                  ? ""
-                                  : paymentForm.orderId,
-                              })
-                            }
-                            className="rounded text-emerald-600 focus:ring-emerald-500"
-                          />
-                          <label
-                            htmlFor="lead-direct-quote-toggle"
-                            className="text-xs font-bold text-emerald-950 cursor-pointer"
-                          >
-                            Direct Payment for Product Items (Do NOT Create
-                            Order)
-                          </label>
-                        </div>
-                        <span className="text-[10px] text-emerald-800 font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">
-                          Quotation → Payment Only
-                        </span>
-                      </div>
-
-                      {paymentForm.isDirectQuotationPayment && (
-                        <div className="space-y-1.5 max-h-36 overflow-y-auto pt-1">
-                          {qItems.map((it, idx) => {
-                            const isSel = (
-                              paymentForm.selectedItemIndexes || []
-                            )
-                              .map(Number)
-                              .includes(Number(idx));
-                            const itTot = (it.itemTotalPaise || 0) / 100;
-                            return (
-                              <div
-                                key={idx}
-                                onClick={() => {
-                                  const cur = (
-                                    paymentForm.selectedItemIndexes || []
-                                  ).map(Number);
-                                  const next = cur.includes(idx)
-                                    ? cur.filter((i) => i !== idx)
-                                    : [...cur, idx];
-                                  setPaymentForm({
-                                    ...paymentForm,
-                                    selectedItemIndexes: next,
-                                  });
-                                }}
-                                className={`p-2 rounded-xl border flex items-center justify-between text-xs cursor-pointer ${
-                                  isSel
-                                    ? "bg-white border-emerald-400 font-bold shadow-2xs"
-                                    : "bg-white/60 border-slate-200 text-slate-600"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSel}
-                                    onChange={() => {}}
-                                    className="rounded text-emerald-600 focus:ring-emerald-500"
-                                  />
-                                  <span>{it.title || `Item #${idx + 1}`}</span>
-                                </div>
-                                <span className="font-mono text-emerald-800">
-                                  ₹{itTot.toLocaleString("en-IN")}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  Notes / Remarks
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. 50% advance token paid by client for banner printing..."
-                  value={paymentForm.notes ?? ""}
-                  onChange={(e) =>
-                    setPaymentForm({ ...paymentForm, notes: e.target.value })
-                  }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 space-y-1">
-                <span className="font-bold text-slate-700 block">
-                  Verification Governance Notice:
-                </span>
-                <p>
-                  This entry will be created in{" "}
-                  <strong className="text-amber-700">
-                    PENDING_VERIFICATION
-                  </strong>{" "}
-                  state. Manager or Admin will verify the deposit before
-                  crediting to the order balance.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold"
+                  className="text-slate-400 hover:text-slate-700 font-bold p-1 rounded-lg hover:bg-slate-100"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {actionLoading ? "Recording..." : "Record Advance"}
+                  ✕
                 </button>
               </div>
-            </form>
+
+              {!activeQuote || acceptedQuotes.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2 text-xs">
+                  <div className="font-bold flex items-center gap-1.5 text-sm text-amber-950">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" /> No Accepted Quotation Available
+                  </div>
+                  <p>
+                    Payments are strictly recorded on accepted quotations. Please open the Quotations tab and mark a quotation as <strong>ACCEPTED</strong> first.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setActiveTab("Quotations");
+                    }}
+                    className="mt-2 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                  >
+                    Go to Quotations Tab
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleRecordPaymentSubmit} className="space-y-4 text-xs">
+                  {/* Quotation Selector & Financial Breakdown */}
+                  <div className="p-3.5 bg-gradient-to-br from-slate-50 to-slate-100/80 rounded-2xl border border-slate-200/90 space-y-3">
+                    {acceptedQuotes.length > 1 ? (
+                      <div>
+                        <label className="text-slate-700 font-bold block mb-1">
+                          Select Accepted Quotation
+                        </label>
+                        <select
+                          value={paymentForm.quotationId || activeQuote._id}
+                          onChange={(e) => {
+                            const newQId = e.target.value;
+                            const newQ = quotations.find((q) => q._id === newQId);
+                            if (newQ) {
+                              const nTot = newQ.grandTotalPaise ? newQ.grandTotalPaise / 100 : newQ.totalAmount || 0;
+                              const nAdvReq = newQ.advanceRequiredPaise !== undefined ? newQ.advanceRequiredPaise / 100 : Math.round(nTot * 0.5);
+                              const nAdvRec = (newQ.advanceReceivedPaise || 0) / 100;
+                              const nBal = newQ.directBalancePaise !== undefined ? newQ.directBalancePaise / 100 : Math.max(0, nTot - ((newQ.directPaidPaise || 0) / 100));
+                              const nStage = nAdvRec < nAdvReq ? "ADVANCE" : "BALANCE";
+                              const nDefaultAmt = nStage === "ADVANCE" ? Math.min(nBal, Math.max(0, nAdvReq - nAdvRec)) : nBal;
+
+                              setPaymentForm({
+                                ...paymentForm,
+                                quotationId: newQId,
+                                paymentType: nStage,
+                                amount: nDefaultAmt > 0 ? nDefaultAmt.toString() : "",
+                                notes: `Payment for Quotation ${newQ.quotationNumber || newQ._id}`,
+                              });
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 font-semibold"
+                        >
+                          {acceptedQuotes.map((q) => (
+                            <option key={q._id} value={q._id}>
+                              {q.quotationNumber || q._id} (₹{(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0).toLocaleString("en-IN")})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800">
+                          Quotation: <span className="font-mono text-indigo-700">{activeQuote.quotationNumber || activeQuote._id}</span>
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          ACCEPTED
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 3-metric financial breakdown */}
+                    <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                      <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                        <div className="text-[10px] uppercase font-bold text-slate-400">Grand Total</div>
+                        <div className="text-xs font-black text-slate-900 mt-0.5 font-mono">
+                          ₹{qTotal.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 shadow-2xs">
+                        <div className="text-[10px] uppercase font-bold text-emerald-700">Advance Paid</div>
+                        <div className="text-xs font-black text-emerald-900 mt-0.5 font-mono">
+                          ₹{advRec.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 shadow-2xs">
+                        <div className="text-[10px] uppercase font-bold text-amber-700">Balance Due</div>
+                        <div className="text-xs font-black text-amber-900 mt-0.5 font-mono">
+                          ₹{balDue.toLocaleString("en-IN", { minimumFractionDigits: 0 })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Type Selection (Advance vs Final Balance) */}
+                  <div>
+                    <label className="text-slate-700 font-bold block mb-1.5">
+                      Payment Type *
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const halfAmt = Math.min(balDue, Math.max(0, advReq - advRec || Math.round(qTotal * 0.5)));
+                          setPaymentForm({
+                            ...paymentForm,
+                            paymentType: "ADVANCE",
+                            amount: halfAmt > 0 ? halfAmt.toString() : paymentForm.amount,
+                          });
+                        }}
+                        className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                          paymentForm.paymentType === "ADVANCE"
+                            ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-950 font-bold"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold">1. Advance / Half</span>
+                          {advRec >= advReq && <span className="text-[9px] bg-emerald-200 text-emerald-800 px-1 rounded font-bold">Done</span>}
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">
+                          Deposit / Token before starting
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentForm({
+                            ...paymentForm,
+                            paymentType: "BALANCE",
+                            amount: balDue > 0 ? balDue.toString() : paymentForm.amount,
+                          });
+                        }}
+                        className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                          paymentForm.paymentType === "BALANCE"
+                            ? "bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold">2. Final Balance</span>
+                          {balDue <= 0 && <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1 rounded font-bold">Cleared</span>}
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">
+                          Full settlement upon completion
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Amount and Payment Method */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-slate-700 font-bold block">
+                          Amount (₹) *
+                        </label>
+                        {paymentForm.paymentType === "ADVANCE" && balDue > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const half = Math.round(qTotal * 0.5);
+                              setPaymentForm({ ...paymentForm, amount: half.toString() });
+                            }}
+                            className="text-[10px] text-emerald-600 hover:underline font-bold"
+                          >
+                            Set 50% (₹{Math.round(qTotal * 0.5).toLocaleString("en-IN")})
+                          </button>
+                        )}
+                        {paymentForm.paymentType === "BALANCE" && balDue > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentForm({ ...paymentForm, amount: balDue.toString() });
+                            }}
+                            className="text-[10px] text-indigo-600 hover:underline font-bold"
+                          >
+                            Full Balance (₹{balDue.toLocaleString("en-IN")})
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="1"
+                        max={balDue > 0 ? balDue : undefined}
+                        required
+                        placeholder="e.g. 1000"
+                        value={paymentForm.amount ?? ""}
+                        onChange={(e) =>
+                          setPaymentForm({ ...paymentForm, amount: e.target.value })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-700 font-bold block mb-1">
+                        Payment Method *
+                      </label>
+                      <select
+                        value={paymentForm.paymentMethod ?? "UPI"}
+                        onChange={(e) =>
+                          setPaymentForm({
+                            ...paymentForm,
+                            paymentMethod: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      >
+                        {PAYMENT_METHODS.map((pm) => (
+                          <option key={pm.value} value={pm.value}>
+                            {pm.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Ref / UTR & Bank */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-slate-700 font-semibold block mb-1">
+                        Transaction Ref / UTR #
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. UPI Ref / Bank UTR #"
+                        value={paymentForm.transactionReference ?? ""}
+                        onChange={(e) =>
+                          setPaymentForm({
+                            ...paymentForm,
+                            transactionReference: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-slate-700 font-semibold block mb-1">
+                        Bank Name (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. HDFC Bank, SBI..."
+                        value={paymentForm.bankName ?? ""}
+                        onChange={(e) =>
+                          setPaymentForm({
+                            ...paymentForm,
+                            bankName: e.target.value,
+                          })
+                        }
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  {paymentForm.paymentMethod === "CHEQUE" && (
+                    <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Cheque Number *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="6-digit cheque #"
+                          value={paymentForm.chequeNumber ?? ""}
+                          onChange={(e) =>
+                            setPaymentForm({
+                              ...paymentForm,
+                              chequeNumber: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-800 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Cheque Date
+                        </label>
+                        <input
+                          type="date"
+                          value={paymentForm.chequeDate ?? ""}
+                          onChange={(e) =>
+                            setPaymentForm({
+                              ...paymentForm,
+                              chequeDate: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-800 font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Notes / Remarks
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. 50% advance token paid by client..."
+                      value={paymentForm.notes ?? ""}
+                      onChange={(e) =>
+                        setPaymentForm({ ...paymentForm, notes: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-500 space-y-1">
+                    <span className="font-bold text-slate-700 block">
+                      Verification Governance Notice:
+                    </span>
+                    <p>
+                      This entry will be created in{" "}
+                      <strong className="text-amber-700">
+                        PENDING_VERIFICATION
+                      </strong>{" "}
+                      state. Manager or Admin will verify the deposit before
+                      crediting to the quotation balance.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(false)}
+                      className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={actionLoading || balDue <= 0}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      {actionLoading
+                        ? "Recording..."
+                        : paymentForm.paymentType === "ADVANCE"
+                        ? "Record Advance Payment"
+                        : "Record Final Balance"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* COMPLETE FOLLOW-UP MODAL */}
       {showCompleteFollowupModal && completeTargetFollowup && (
