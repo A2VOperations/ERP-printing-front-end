@@ -2225,18 +2225,22 @@ export default function LeadsDashboardPage() {
                       return (
                         <div
                           key={lead._id}
-                          className={`rounded-2xl border shadow-xs hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between ${statusStyle.gridBg}`}
+                          className={`rounded-2xl border shadow-xs hover:shadow-md transition-all relative ${
+                            activeStatusDropdownId === lead._id
+                              ? "overflow-visible z-30"
+                              : "overflow-hidden"
+                          } flex flex-col justify-between ${statusStyle.gridBg}`}
                         >
                           {/* Corner Ribbons */}
                           {isTopTicket && (
-                            <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none z-10">
+                            <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none z-10 rounded-tr-2xl">
                               <div className="bg-emerald-600 text-white text-[9px] font-black uppercase py-1 text-center rotate-45 translate-x-7 translate-y-4 w-36 shadow-sm tracking-wider">
                                 TOP TICKET
                               </div>
                             </div>
                           )}
                           {!isTopTicket && isHotDeal && (
-                            <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none z-10">
+                            <div className="absolute top-0 right-0 overflow-hidden w-28 h-28 pointer-events-none z-10 rounded-tr-2xl">
                               <div className="bg-[#4F46E5] text-white text-[9px] font-black uppercase py-1 text-center rotate-45 translate-x-7 translate-y-4 w-36 shadow-sm tracking-wider">
                                 HOT DEAL
                               </div>
@@ -2249,7 +2253,11 @@ export default function LeadsDashboardPage() {
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {/* Status Selector Dropdown */}
                                 <div
-                                  className="relative inline-block"
+                                  className={`relative inline-block ${
+                                    activeStatusDropdownId === lead._id
+                                      ? "z-40"
+                                      : ""
+                                  }`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <button
@@ -2310,7 +2318,7 @@ export default function LeadsDashboardPage() {
                                   </button>
 
                                   {activeStatusDropdownId === lead._id && (
-                                    <div className="absolute left-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-1 space-y-0.5 text-xs font-semibold">
+                                    <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 p-1 space-y-0.5 text-xs font-semibold animate-scale-up">
                                       {STATUS_OPTIONS.map((st) => (
                                         <button
                                           key={st.id}
@@ -2634,7 +2642,13 @@ export default function LeadsDashboardPage() {
               {/* List View */}
               {viewMode === "list" && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-xs">
-                  <div className="overflow-x-auto scrollbar-thin">
+                  <div
+                    className={`overflow-x-auto scrollbar-thin ${
+                      activeStatusDropdownId || activeMenuLeadId
+                        ? "pb-36"
+                        : "pb-4"
+                    }`}
+                  >
                     <table className="w-full text-left text-xs min-w-[1100px]">
                       <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-bold whitespace-nowrap">
                         <tr>
@@ -2669,7 +2683,10 @@ export default function LeadsDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {filteredLeads.map((lead) => {
+                        {filteredLeads.map((lead, leadIdx) => {
+                          const isNearBottom =
+                            leadIdx >= filteredLeads.length - 2 &&
+                            filteredLeads.length > 2;
                           const val =
                             Number(lead.expectedValue) ||
                             Number(lead.estimatedBudget) ||
@@ -2712,6 +2729,10 @@ export default function LeadsDashboardPage() {
                           };
                           const areaText = formatLeadTerritory(lead);
 
+                          const isRowActive =
+                            activeStatusDropdownId === lead._id ||
+                            activeMenuLeadId === lead._id;
+
                           return (
                             <React.Fragment key={lead._id}>
                               <tr
@@ -2719,7 +2740,12 @@ export default function LeadsDashboardPage() {
                                   isExpanded
                                     ? statusStyle.expandedBg
                                     : statusStyle.rowBg
-                                }`}
+                                } ${isRowActive ? "relative z-30" : ""}`}
+                                style={
+                                  isRowActive
+                                    ? { position: "relative", zIndex: 30 }
+                                    : undefined
+                                }
                               >
                                 {/* Expand chevron */}
                                 <td
@@ -2940,9 +2966,29 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Interactive Status Selector Pill */}
-                                <td className="px-3 py-3.5 whitespace-nowrap">
+                                <td
+                                  className={`px-3 py-3.5 whitespace-nowrap ${
+                                    activeStatusDropdownId === lead._id
+                                      ? "relative z-40"
+                                      : ""
+                                  }`}
+                                  style={
+                                    activeStatusDropdownId === lead._id
+                                      ? { position: "relative", zIndex: 40 }
+                                      : undefined
+                                  }
+                                >
                                   <div
-                                    className="relative inline-block"
+                                    className={`relative inline-block ${
+                                      activeStatusDropdownId === lead._id
+                                        ? "z-50"
+                                        : ""
+                                    }`}
+                                    style={
+                                      activeStatusDropdownId === lead._id
+                                        ? { position: "relative", zIndex: 50 }
+                                        : undefined
+                                    }
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <button
@@ -2979,7 +3025,13 @@ export default function LeadsDashboardPage() {
 
                                     {/* Status Popup Menu */}
                                     {activeStatusDropdownId === lead._id && (
-                                      <div className="absolute left-0 top-full mt-1.5 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-0.5 space-y-0.5 animate-scale-up text-xs font-semibold">
+                                      <div
+                                        className={`absolute left-0 ${
+                                          isNearBottom
+                                            ? "bottom-full mb-1.5"
+                                            : "top-full mt-1.5"
+                                        } w-44 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 p-0.5 space-y-0.5 animate-scale-up text-xs font-semibold`}
+                                      >
                                         <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-100 mb-1">
                                           Change Status
                                         </div>
@@ -3017,7 +3069,18 @@ export default function LeadsDashboardPage() {
                                 </td>
 
                                 {/* Quick Actions Toolbar */}
-                                <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                <td
+                                  className={`px-4 py-3.5 text-right whitespace-nowrap ${
+                                    activeMenuLeadId === lead._id
+                                      ? "relative z-40"
+                                      : ""
+                                  }`}
+                                  style={
+                                    activeMenuLeadId === lead._id
+                                      ? { position: "relative", zIndex: 40 }
+                                      : undefined
+                                  }
+                                >
                                   <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                                     {/* Call Button */}
                                     <button
@@ -3053,7 +3116,18 @@ export default function LeadsDashboardPage() {
                                     </button>
 
                                     {/* More Menu Dropdown */}
-                                    <div className="relative">
+                                    <div
+                                      className={`relative ${
+                                        activeMenuLeadId === lead._id
+                                          ? "z-50"
+                                          : ""
+                                      }`}
+                                      style={
+                                        activeMenuLeadId === lead._id
+                                          ? { position: "relative", zIndex: 50 }
+                                          : undefined
+                                      }
+                                    >
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -3073,7 +3147,11 @@ export default function LeadsDashboardPage() {
                                       {activeMenuLeadId === lead._id && (
                                         <div
                                           onClick={(e) => e.stopPropagation()}
-                                          className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-30 py-1 text-xs"
+                                          className={`absolute right-0 ${
+                                            isNearBottom
+                                              ? "bottom-full mb-1"
+                                              : "top-full mt-1"
+                                          } w-48 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1 text-xs`}
                                         >
                                           <Link
                                             href={`/dashboard/leads/${lead._id}`}

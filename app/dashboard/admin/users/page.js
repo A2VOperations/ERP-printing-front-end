@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
+
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -23,11 +23,6 @@ import {
   Check,
   X,
   AlertTriangle,
-  ChevronDown,
-  Mail,
-  Phone,
-  Building,
-  MapPin,
 } from "lucide-react";
 
 const ALLOWED_ROLES = [
@@ -183,44 +178,6 @@ export default function UsersDirectoryPage() {
       (currentLoggedInEmail && uEmail && currentLoggedInEmail === uEmail) ||
       (currentLoggedInName && uName && currentLoggedInName === uName)
     );
-  };
-
-  const getUserTerritoryPath = (u) => {
-    if (!u) return null;
-    const uId = (u._id || u.id || '').toString();
-    // 1. Check if user is assigned to any zone in areas
-    for (const a of areas) {
-      if (Array.isArray(a.zones)) {
-        const foundZone = a.zones.find((z) => {
-          const repId = typeof z.assignedSalesId === 'object' ? z.assignedSalesId?._id : z.assignedSalesId;
-          return repId && repId.toString() === uId;
-        });
-        if (foundZone) {
-          const zName = foundZone.name || '';
-          return zName.toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
-            ? zName.toLowerCase()
-            : `${(a.name || '').toLowerCase()}/${zName.toLowerCase()}`;
-        }
-      }
-    }
-    // 2. Tanya special rule (e.g. Baba Colony in Burari)
-    const email = (u.email || '').toLowerCase();
-    const name = (u.name || '').toLowerCase();
-    if (email.includes('tanya') || name.includes('tanya')) {
-      return 'burari/baba colony';
-    }
-    // 3. User direct areaIds
-    if (Array.isArray(u.areaIds) && u.areaIds.length > 0) {
-      const rawId = typeof u.areaIds[0] === 'object' ? u.areaIds[0]._id : u.areaIds[0];
-      const foundArea = areas.find((a) => (a._id || a.id) === rawId);
-      if (foundArea) {
-        if (Array.isArray(foundArea.zones) && foundArea.zones.length > 0) {
-          return `${(foundArea.name || '').toLowerCase()}/${(foundArea.zones[0].name || '').toLowerCase()}`;
-        }
-        return (foundArea.name || '').toLowerCase();
-      }
-    }
-    return null;
   };
 
   const fetchUsersData = async () => {
@@ -641,10 +598,17 @@ export default function UsersDirectoryPage() {
                 className="bg-white border border-slate-200 text-xs font-semibold px-3 py-2 rounded-xl text-slate-700 shadow-xs"
               >
                 <option value="ALL">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="sales">Sales</option>
-                <option value="data_operator">Data Operator</option>
+                {roles && roles.length > 0
+                  ? roles.map((r) => (
+                      <option key={r._id || r.slug} value={r.slug}>
+                        {r.name || r.label || r.slug}
+                      </option>
+                    ))
+                  : ALLOWED_ROLES.map((r) => (
+                      <option key={r.slug} value={r.slug}>
+                        {r.label}
+                      </option>
+                    ))}
               </select>
 
               <select
@@ -722,12 +686,6 @@ export default function UsersDirectoryPage() {
                                   <span className="text-[10px] text-slate-400">
                                     {u.phone || "No phone"}
                                   </span>
-                                  {getUserTerritoryPath(u) && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-mono font-bold">
-                                      <MapPin className="w-2.5 h-2.5 text-teal-600" />
-                                      {getUserTerritoryPath(u)}
-                                    </span>
-                                  )}
                                 </div>
                               </div>
                             </div>
@@ -950,9 +908,9 @@ export default function UsersDirectoryPage() {
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-semibold"
                   >
-                    {ALLOWED_ROLES.map((r) => (
-                      <option key={r.slug} value={r.slug}>
-                        {r.label}
+                    {(roles && roles.length > 0 ? roles : ALLOWED_ROLES).map((r) => (
+                      <option key={r._id || r.slug} value={r.slug}>
+                        {r.name || r.label || r.slug}
                       </option>
                     ))}
                   </select>
@@ -992,17 +950,16 @@ export default function UsersDirectoryPage() {
                   {areas.map((a) => (
                     <React.Fragment key={a._id}>
                       <option value={a._id} className="font-bold">
-                        📍 {a.name} ({a.city || "Delhi"})
+                        📍 {a.name}{a.city ? ` (${a.city})` : ""}
                       </option>
                       {Array.isArray(a.zones) &&
                         a.zones.map((z) => {
                           const fullPath = (z.name || '').toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
                             ? (z.name || '').toLowerCase()
                             : `${(a.name || '').toLowerCase()}/${(z.name || '').toLowerCase()}`;
-                          const isTanya = fullPath.includes('baba colony') || (z.assignedSalesId?.name || '').toLowerCase().includes('tanya');
                           return (
                             <option key={`${a._id}::${z.name}`} value={a._id}>
-                              &nbsp;&nbsp;↳ {fullPath} {isTanya ? '(Tanya)' : ''}
+                              &nbsp;&nbsp;↳ {fullPath}
                             </option>
                           );
                         })}
@@ -1108,9 +1065,9 @@ export default function UsersDirectoryPage() {
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-[#F95721] font-semibold"
                 >
-                  {ALLOWED_ROLES.map((r) => (
-                    <option key={r.slug} value={r.slug}>
-                      {r.label}
+                  {(roles && roles.length > 0 ? roles : ALLOWED_ROLES).map((r) => (
+                    <option key={r._id || r.slug} value={r.slug}>
+                      {r.name || r.label || r.slug}
                     </option>
                   ))}
                 </select>
@@ -1141,17 +1098,16 @@ export default function UsersDirectoryPage() {
                   {areas.map((a) => (
                     <React.Fragment key={a._id}>
                       <option value={a._id} className="font-bold">
-                        📍 {a.name} ({a.city || "Delhi"})
+                        📍 {a.name}{a.city ? ` (${a.city})` : ""}
                       </option>
                       {Array.isArray(a.zones) &&
                         a.zones.map((z) => {
                           const fullPath = (z.name || '').toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
                             ? (z.name || '').toLowerCase()
                             : `${(a.name || '').toLowerCase()}/${(z.name || '').toLowerCase()}`;
-                          const isTanya = fullPath.includes('baba colony') || (z.assignedSalesId?.name || '').toLowerCase().includes('tanya');
                           return (
                             <option key={`${a._id}::${z.name}`} value={a._id}>
-                              &nbsp;&nbsp;↳ {fullPath} {isTanya ? '(Tanya)' : ''}
+                              &nbsp;&nbsp;↳ {fullPath}
                             </option>
                           );
                         })}
