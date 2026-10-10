@@ -1677,11 +1677,6 @@ export default function Navbar({ showNotificationCenter = true } = {}) {
                         icon: ShoppingBag,
                       },
                       {
-                        name: "Production",
-                        href: "/dashboard/production",
-                        icon: Layers,
-                      },
-                      {
                         name: "Follow-ups",
                         href: "/dashboard/followups",
                         icon: PhoneCall,

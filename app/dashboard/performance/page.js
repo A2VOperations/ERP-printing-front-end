@@ -75,11 +75,21 @@ export default function PerformancePage() {
     return `${day} ${month} ${year}, ${weekday}`;
   }, [selectedDateObj]);
 
-  // Fetch real data from live backend
+  // Fetch real data from live backend with dynamic target parameters
   const fetchPerformanceData = useCallback(async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) setIsRefreshing(true);
       else setLoading(true);
+
+      const dateStr = selectedDateObj.toISOString().split("T")[0];
+      const periodTypeParam =
+        activeTab === "Today"
+          ? "DAILY"
+          : activeTab === "Weekly"
+          ? "WEEKLY"
+          : activeTab === "Monthly"
+          ? "MONTHLY"
+          : "ALL";
 
       const [leadsRes, ordersRes, quotesRes, followupsRes, targetRes, activitiesRes] =
         await Promise.allSettled([
@@ -87,7 +97,7 @@ export default function PerformancePage() {
           api.get("/orders?limit=150&sortBy=createdAt&sortOrder=desc", { silent: true }),
           api.get("/quotations?limit=150&sortBy=createdAt&sortOrder=desc", { silent: true }),
           api.get("/followups?limit=150&sortBy=scheduledAt&sortOrder=desc", { silent: true }),
-          api.get("/targets/my-achievement", { silent: true }),
+          api.get(`/targets/my-achievement?periodType=${periodTypeParam}&date=${dateStr}`, { silent: true }),
           api.get("/activities?limit=150", { silent: true }),
         ]);
 
@@ -98,17 +108,17 @@ export default function PerformancePage() {
       }
       if (ordersRes.status === "fulfilled" && ordersRes.value?.data) {
         const raw = ordersRes.value.data;
-        const list = Array.isArray(raw) ? raw : raw.orders || raw.data || [];
+        const list = Array.isArray(raw) ? raw : raw.orders || raw.items || raw.data || [];
         setRealOrders(list);
       }
       if (quotesRes.status === "fulfilled" && quotesRes.value?.data) {
         const raw = quotesRes.value.data;
-        const list = Array.isArray(raw) ? raw : raw.records || raw.quotations || raw.data || [];
+        const list = Array.isArray(raw) ? raw : raw.records || raw.quotations || raw.items || raw.data || [];
         setRealQuotations(list);
       }
       if (followupsRes.status === "fulfilled" && followupsRes.value?.data) {
         const raw = followupsRes.value.data;
-        const list = Array.isArray(raw) ? raw : raw.followups || raw.followUps || raw.data || [];
+        const list = Array.isArray(raw) ? raw : raw.followups || raw.followUps || raw.items || raw.data || [];
         setRealFollowups(list);
       }
       if (targetRes.status === "fulfilled" && targetRes.value?.data) {
@@ -125,7 +135,7 @@ export default function PerformancePage() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [activeTab, selectedDateObj]);
 
   useEffect(() => {
     fetchPerformanceData();
@@ -149,11 +159,13 @@ export default function PerformancePage() {
       }
 
       if (activeTab === "Weekly") {
-        // Last 7 days from selected date
+        // Last 7 days ending on selected date
+        const weekEnd = new Date(refDate);
+        weekEnd.setHours(23, 59, 59, 999);
         const weekStart = new Date(refDate);
-        weekStart.setDate(refDate.getDate() - 7);
+        weekStart.setDate(refDate.getDate() - 6);
         weekStart.setHours(0, 0, 0, 0);
-        return targetDate >= weekStart && targetDate <= refDate;
+        return targetDate >= weekStart && targetDate <= weekEnd;
       }
 
       if (activeTab === "Monthly") {
@@ -170,31 +182,28 @@ export default function PerformancePage() {
     [activeTab, selectedDateObj]
   );
 
-  // Dynamic filtered datasets based on active timeframe
+  // Dynamic filtered datasets based on active timeframe (truthful, accurate counts)
   const filteredData = useMemo(() => {
-    const periodLeads = realLeads.filter((l) => isDateInActivePeriod(l.createdAt));
-    const periodOrders = realOrders.filter((o) =>
+    const leads = realLeads.filter(
+      (l) =>
+        isDateInActivePeriod(l.createdAt) ||
+        isDateInActivePeriod(l.updatedAt) ||
+        isDateInActivePeriod(l.assignedAt)
+    );
+    const orders = realOrders.filter((o) =>
       isDateInActivePeriod(o.orderDate || o.createdAt)
     );
-    const periodQuotations = realQuotations.filter((q) =>
+    const quotations = realQuotations.filter((q) =>
       isDateInActivePeriod(q.createdAt)
     );
-    const periodFollowups = realFollowups.filter((f) =>
+    const followups = realFollowups.filter((f) =>
       isDateInActivePeriod(f.scheduledAt || f.createdAt)
     );
-    const periodActivities = realActivities.filter((a) =>
+    const activities = realActivities.filter((a) =>
       isDateInActivePeriod(a.occurredAt || a.createdAt)
     );
 
-    // If period filter yields 0 due to date gaps, fall back smoothly to all available records
-    const hasData = periodLeads.length > 0 || periodOrders.length > 0 || periodFollowups.length > 0;
-    const leads = hasData ? periodLeads : realLeads;
-    const orders = hasData ? periodOrders : realOrders;
-    const quotations = hasData ? periodQuotations : realQuotations;
-    const followups = hasData ? periodFollowups : realFollowups;
-    const activities = hasData ? periodActivities : realActivities;
-
-    return { leads, orders, quotations, followups, activities, isExactDateMatch: hasData };
+    return { leads, orders, quotations, followups, activities };
   }, [
     realLeads,
     realOrders,
@@ -204,26 +213,24 @@ export default function PerformancePage() {
     isDateInActivePeriod,
   ]);
 
-  // Compute 6 KPI metrics dynamically
+  // Compute 6 KPI metrics dynamically from real data
   const metrics = useMemo(() => {
     const leadsAssigned = filteredData.leads.length;
 
-    // Calls made: activities with call/followup or followups marked completed
-    const callsMade =
-      filteredData.followups.filter((f) => f.status === "COMPLETED").length ||
-      filteredData.activities.filter(
-        (a) =>
-          a.eventType?.includes("CALL") ||
-          a.eventType?.includes("FOLLOWUP") ||
-          a.entityType === "FOLLOWUP"
-      ).length ||
-      Math.min(leadsAssigned, Math.max(1, Math.round(leadsAssigned * 0.75)));
+    // Calls made: activities with call/followup or followups marked completed or scheduled in period
+    const callActivities = filteredData.activities.filter(
+      (a) =>
+        a.eventType?.includes("CALL") ||
+        a.eventType?.includes("FOLLOWUP") ||
+        a.entityType === "FOLLOWUP"
+    ).length;
+    const completedFollowups = filteredData.followups.filter((f) => f.status === "COMPLETED").length;
+    const callsMade = Math.max(callActivities, completedFollowups, filteredData.followups.length);
 
-    // Connected: calls resulting in connected/scheduled or leads moved forward
-    const connected =
-      filteredData.leads.filter(
-        (l) => l.status && l.status !== "NEW" && l.status !== "LOST"
-      ).length || Math.max(1, Math.round(callsMade * 0.65));
+    // Connected: calls resulting in connected/scheduled or leads moved forward from NEW
+    const connected = filteredData.leads.filter(
+      (l) => l.status && !["NEW", "LOST"].includes(l.status)
+    ).length;
 
     const connectedRate =
       callsMade > 0 ? `${Math.round((connected / callsMade) * 100)}%` : "0%";
@@ -231,25 +238,25 @@ export default function PerformancePage() {
 
     const quotationsSent = filteredData.quotations.length;
     const ordersReceived =
-      filteredData.orders.length ||
-      filteredData.leads.filter((l) => l.status === "WON").length;
+      filteredData.orders.length +
+      filteredData.quotations.filter((q) => q.status === "ACCEPTED").length;
 
-    // Sales Amount calculation
+    // Sales Amount calculation from accepted quotations + orders
     const totalOrderRupees = filteredData.orders.reduce((sum, o) => {
       const amt =
-        Number(o.grandTotalPaise ? o.grandTotalPaise / 100 : o.totalAmount || 0) ||
-        0;
+        Number(o.grandTotalPaise ? o.grandTotalPaise / 100 : o.totalAmount || 0) || 0;
       return sum + amt;
     }, 0);
 
-    const totalQuotationRupees = filteredData.quotations.reduce((sum, q) => {
-      const amt =
-        Number(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0) ||
-        0;
-      return sum + amt;
-    }, 0);
+    const totalQuotationRupees = filteredData.quotations
+      .filter((q) => q.status === "ACCEPTED")
+      .reduce((sum, q) => {
+        const amt =
+          Number(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0) || 0;
+        return sum + amt;
+      }, 0);
 
-    const salesAmountNum = totalOrderRupees || Math.round(totalQuotationRupees * 0.8) || 0;
+    const salesAmountNum = totalOrderRupees + totalQuotationRupees;
     const salesAmount = `₹ ${salesAmountNum.toLocaleString("en-IN")}`;
 
     const periodSubtext =
@@ -398,37 +405,124 @@ export default function PerformancePage() {
     return Math.max(max, 5);
   }, [timelineData]);
 
-  // Target Progress parameters from live targets and orders
+  // Target Progress parameters dynamically computed from live targets and orders
   const targetData = useMemo(() => {
-    const rawTarget = myTarget?.targetPaise ? Math.round(myTarget.targetPaise / 100) : 50000;
-    const monthlyTarget = rawTarget > 0 ? rawTarget : 50000;
+    // 1. Determine target label and target amount based on activeTab
+    let targetLabel = "Monthly Target";
+    let targetRupees = 0;
+    let dailyQuotaRupees = 0;
+    let monthlyQuotaRupees = 0;
 
-    // Achieved from orders or target
-    const ordersTotal = realOrders.reduce((sum, o) => {
+    const dailyPaise =
+      myTarget?.dailyTargetPaise ||
+      (myTarget?.periodType === "DAILY" ? myTarget?.targetPaise : 0) ||
+      0;
+    const monthlyPaise =
+      myTarget?.monthlyTargetPaise ||
+      (myTarget?.periodType === "MONTHLY" ? myTarget?.targetPaise : 0) ||
+      0;
+
+    dailyQuotaRupees = Math.round(dailyPaise / 100);
+    monthlyQuotaRupees = Math.round(monthlyPaise / 100);
+
+    // Days in current selected month
+    const now = new Date(selectedDateObj);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const todayDateNum = new Date().getDate();
+    const daysLeftInMonth = Math.max(1, lastDayOfMonth - todayDateNum);
+
+    if (activeTab === "Today") {
+      targetLabel = "Daily Target";
+      targetRupees =
+        dailyQuotaRupees > 0
+          ? dailyQuotaRupees
+          : myTarget?.targetPaise
+          ? Math.round(myTarget.targetPaise / 100)
+          : 0;
+    } else if (activeTab === "Weekly") {
+      targetLabel = "Weekly Target";
+      targetRupees =
+        dailyQuotaRupees > 0
+          ? dailyQuotaRupees * 7
+          : myTarget?.targetPaise
+          ? Math.round(myTarget.targetPaise / 100)
+          : 0;
+    } else if (activeTab === "Monthly") {
+      targetLabel = "Monthly Target";
+      targetRupees =
+        monthlyQuotaRupees > 0
+          ? monthlyQuotaRupees
+          : dailyQuotaRupees > 0
+          ? dailyQuotaRupees * lastDayOfMonth
+          : myTarget?.targetPaise
+          ? Math.round(myTarget.targetPaise / 100)
+          : 0;
+    } else {
+      targetLabel = "Overall Target";
+      targetRupees =
+        monthlyQuotaRupees > 0 ? monthlyQuotaRupees : dailyQuotaRupees * lastDayOfMonth;
+    }
+
+    // 2. Achieved revenue for this active period
+    const periodWonQuotations = filteredData.quotations
+      .filter((q) => q.status === "ACCEPTED")
+      .reduce(
+        (sum, q) =>
+          sum + (Number(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.totalAmount || 0) || 0),
+        0
+      );
+
+    const periodWonOrders = filteredData.orders.reduce((sum, o) => {
       const amt = Number(o.grandTotalPaise ? o.grandTotalPaise / 100 : o.totalAmount || 0) || 0;
       return sum + amt;
     }, 0);
 
-    const achieved = myTarget?.achievedPaise
-      ? Math.round(myTarget.achievedPaise / 100)
-      : ordersTotal || 12500;
+    const achievedFromPeriod = periodWonQuotations + periodWonOrders;
 
-    const remaining = Math.max(0, monthlyTarget - achieved);
-    const pct = monthlyTarget > 0 ? Math.min(100, Math.round((achieved / monthlyTarget) * 100)) : 0;
+    const achieved =
+      myTarget?.achievedPaise !== undefined && myTarget.achievedPaise > 0
+        ? Math.round(myTarget.achievedPaise / 100)
+        : achievedFromPeriod;
 
-    // Calculate days left in the month dynamically
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysLeft = Math.max(1, lastDay - now.getDate());
+    const remaining = Math.max(0, targetRupees - achieved);
+    const pct =
+      targetRupees > 0
+        ? Math.min(100, Math.round((achieved / targetRupees) * 100))
+        : achieved > 0
+        ? 100
+        : 0;
+
+    let statusFooter = "";
+    if (activeTab === "Today") {
+      statusFooter =
+        targetRupees > 0
+          ? achieved >= targetRupees
+            ? "Target Met! 🎯"
+            : achieved > 0
+            ? "In Progress"
+            : "Pending"
+          : "No Quota Set";
+    } else if (activeTab === "Weekly") {
+      statusFooter = "7-Day Goal";
+    } else {
+      statusFooter = `${daysLeftInMonth} Days Left`;
+    }
 
     return {
-      monthlyTarget: `₹ ${monthlyTarget.toLocaleString("en-IN")}`,
+      targetLabel,
+      targetAmount:
+        targetRupees > 0 ? `₹ ${targetRupees.toLocaleString("en-IN")}` : "Not Set",
+      dailyQuotaDisplay:
+        dailyQuotaRupees > 0 ? `₹ ${dailyQuotaRupees.toLocaleString("en-IN")}/day` : null,
       achieved: `₹ ${achieved.toLocaleString("en-IN")}`,
       percentage: pct,
       remaining: `₹ ${remaining.toLocaleString("en-IN")}`,
-      daysLeft: `${daysLeft} Days Left`,
+      statusFooter,
+      daysLeft: `${daysLeftInMonth} Days Left`,
+      rawTarget: targetRupees,
+      rawAchieved: achieved,
     };
-  }, [myTarget, realOrders]);
+  }, [activeTab, myTarget, filteredData, selectedDateObj]);
 
   // Lead status distribution breakdown computed from live leads
   const statusDistribution = useMemo(() => {
@@ -575,7 +669,8 @@ export default function PerformancePage() {
 
   // Handled leads list from real database leads
   const handledLeads = useMemo(() => {
-    return filteredData.leads.slice(0, 10).map((l, idx) => {
+    const list = filteredData.leads.length > 0 ? filteredData.leads : realLeads;
+    return list.slice(0, 10).map((l, idx) => {
       const createdD = l.createdAt ? new Date(l.createdAt) : new Date();
       const timeStr = createdD.toLocaleTimeString("en-US", {
         hour: "2-digit",
@@ -1019,18 +1114,29 @@ export default function PerformancePage() {
             {/* 2. Target Progress */}
             <div className="lg:col-span-3 bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-xs flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Target className="w-4 h-4" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                      Target Progress
+                    </h3>
                   </div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                    Target Progress
-                  </h3>
+                  {targetData.dailyQuotaDisplay && activeTab === "Monthly" && (
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                      Daily: {targetData.dailyQuotaDisplay}
+                    </span>
+                  )}
                 </div>
 
                 <div className="mb-2">
-                  <p className="text-[11px] font-semibold text-slate-400">Monthly Target</p>
-                  <p className="text-lg font-black text-slate-900">{targetData.monthlyTarget}</p>
+                  <p className="text-[11px] font-semibold text-slate-400">
+                    {targetData.targetLabel}
+                  </p>
+                  <p className="text-lg font-black text-slate-900">
+                    {targetData.targetAmount}
+                  </p>
                 </div>
               </div>
 
@@ -1051,7 +1157,7 @@ export default function PerformancePage() {
                     cx="60"
                     cy="60"
                     r="48"
-                    stroke="#10B981"
+                    stroke={targetData.percentage >= 100 ? "#059669" : "#10B981"}
                     strokeWidth="12"
                     strokeDasharray={2 * Math.PI * 48}
                     strokeDashoffset={2 * Math.PI * 48 * (1 - targetData.percentage / 100)}
@@ -1080,7 +1186,14 @@ export default function PerformancePage() {
                   <span className="text-[10px] text-slate-400 font-medium">Remaining</span>
                 </div>
                 <div className="text-right">
-                  <span className="font-semibold text-slate-600 block">{targetData.daysLeft}</span>
+                  <span className="font-semibold text-slate-600 block">{targetData.statusFooter}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {activeTab === "Today"
+                      ? "Status"
+                      : activeTab === "Weekly"
+                      ? "Period"
+                      : "Timeline"}
+                  </span>
                 </div>
               </div>
             </div>

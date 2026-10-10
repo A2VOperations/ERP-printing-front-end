@@ -74,7 +74,6 @@ export default function AdminOverviewPage() {
   const [payments, setPayments] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [designProjects, setDesignProjects] = useState([]);
-  const [productionJobs, setProductionJobs] = useState([]);
   const [followups, setFollowups] = useState([]);
   const [activities, setActivities] = useState([]);
   const [users, setUsers] = useState([]);
@@ -117,7 +116,6 @@ export default function AdminOverviewPage() {
         paymentsRes,
         quotationsRes,
         designProjectsRes,
-        productionJobsRes,
       ] = await Promise.allSettled([
         api.get("/leads?limit=100"),
         api.get("/followups?limit=100"),
@@ -130,7 +128,6 @@ export default function AdminOverviewPage() {
         api.get("/payments?limit=100", { silent: true }),
         api.get("/quotations?limit=500", { silent: true }),
         api.get("/design-projects?limit=50", { silent: true }),
-        api.get("/production-jobs?limit=50", { silent: true }),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
@@ -184,12 +181,6 @@ export default function AdminOverviewPage() {
         setDesignProjects(
           designProjectsRes.value.data || designProjectsRes.value.projects,
         );
-      }
-      if (
-        productionJobsRes.status === "fulfilled" &&
-        productionJobsRes.value?.data
-      ) {
-        setProductionJobs(productionJobsRes.value.data);
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -407,21 +398,8 @@ export default function AdminOverviewPage() {
     ).length;
   }, [designProjects]);
 
-  // 6. Production Jobs
-  const jobsInProductionCount = useMemo(() => {
-    return productionJobs.filter((j) =>
-      ["IN_PRODUCTION", "PROCESSING", "PRINTING"].includes(
-        j.productionStatus || j.status,
-      ),
-    ).length;
-  }, [productionJobs]);
-
-  // Secondary Operations Status Bar metrics
-  const readyForReleaseCount = useMemo(() => {
-    return productionJobs.filter((j) =>
-      ["READY_FOR_RELEASE", "READY"].includes(j.productionStatus || j.status),
-    ).length;
-  }, [productionJobs]);
+  const jobsInProductionCount = 0;
+  const readyForReleaseCount = 0;
 
   const readyForDispatchCount = useMemo(() => {
     return orders.filter((o) =>
@@ -502,12 +480,8 @@ export default function AdminOverviewPage() {
     const appr = designProjects.filter(
       (d) => d.status === "CLIENT_REVIEW" || d.status === "PENDING_APPROVAL",
     ).length;
-    const prod = productionJobs.filter(
-      (j) => j.productionStatus === "IN_PRODUCTION",
-    ).length;
-    const rdy = productionJobs.filter(
-      (j) => j.productionStatus === "READY_FOR_RELEASE",
-    ).length;
+    const prod = 0;
+    const rdy = 0;
     const dsp = orders.filter((o) => o.orderStatus === "DISPATCHED").length;
     const delv = orders.filter((o) => o.orderStatus === "DELIVERED").length;
 
@@ -529,7 +503,7 @@ export default function AdminOverviewPage() {
       maxVal,
       bottleneckText: bottleneck,
     };
-  }, [orders, designProjects, productionJobs]);
+  }, [orders, designProjects]);
 
   // Design Projects Detail Metrics
   const designProjectStats = useMemo(() => {
@@ -1013,8 +987,8 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
 
-              {/* 6 PRIMARY KPI CARDS ROW */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+              {/* 5 PRIMARY KPI CARDS ROW */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                 {/* 1. TOTAL LEADS */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
                   <div className="flex items-center justify-between">
@@ -1163,33 +1137,7 @@ export default function AdminOverviewPage() {
                     <span>{pendingDesignsCount > 0 ? "In client review" : "None pending"}</span>
                     <span className={`w-1.5 h-1.5 rounded-full ${pendingDesignsCount > 0 ? "bg-amber-500" : "bg-emerald-500"}`} />
                   </div>
-                </div>
-
-                {/* 6. JOBS IN PRODUCTION */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                      <Factory className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                      0%
-                    </span>
                   </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      JOBS IN PRODUCTION
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      {jobsInProductionCount}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>0 in factory queue</span>
-                    <span className="text-[10px] text-slate-400 font-semibold px-1 rounded bg-slate-50 border border-slate-100">
-                      Idle
-                    </span>
-                  </div>
-                </div>
               </div>
 
               {/* SECONDARY OPERATIONS STATUS BAR (Horizontal Strip) */}
@@ -1595,8 +1543,8 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
 
-              {/* OPERATIONS & APPROVALS (4-COLUMN GRID) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* OPERATIONS & APPROVALS (3-COLUMN GRID) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* CARD 1: Design Projects */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
                   <div>
@@ -1684,63 +1632,7 @@ export default function AdminOverviewPage() {
                   </div>
                 </div>
 
-                {/* CARD 2: Production Overview */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Factory className="w-3.5 h-3.5 text-slate-600" />
-                        <h4 className="text-xs font-bold text-slate-900">
-                          Production Overview
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() => router.push("/dashboard/production")}
-                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
-                      >
-                        View All
-                      </button>
-                    </div>
 
-                    <div className="mt-3.5 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Ready for Release</span>
-                        <span className="font-bold text-slate-900">{readyForReleaseCount}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Sent to Production</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">In Active Production</span>
-                        <span className="font-bold text-slate-900">{jobsInProductionCount}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Ready for Dispatch</span>
-                        <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Dispatched</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Delivered Today</span>
-                        <span className="font-bold text-slate-900">{deliveredTodayCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Empty state box */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 text-center py-2">
-                    <CheckCircle2 className="w-4 h-4 text-slate-400 mx-auto mb-1 stroke-1" />
-                    <p className="text-[11px] text-slate-600 font-medium">
-                      No active production jobs in queue.
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      Floor capacity: 100% available
-                    </p>
-                  </div>
-                </div>
 
                 {/* CARD 3: Dispatch & Delivery */}
                 <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
@@ -1854,14 +1746,7 @@ export default function AdminOverviewPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Production jobs overdue</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.jobsOverdue}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Jobs awaiting release</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.jobsAwaitingRelease}</span>
-                      </div>
+
                       <div className="flex items-center justify-between py-0.5">
                         <span className="text-slate-500">Failed deliveries</span>
                         <span className="font-bold text-slate-700">{attentionMetrics.failedDeliveries}</span>
@@ -2182,14 +2067,7 @@ export default function AdminOverviewPage() {
                   {/* View Approvals */}
                   
 
-                  {/* Production Jobs */}
-                  <button
-                    onClick={() => router.push("/dashboard/production")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs transition-colors"
-                  >
-                    <Factory className="w-3.5 h-3.5" />
-                    <span>Production Jobs</span>
-                  </button>
+
 
                   {/* Deliveries Hub */}
                   <button

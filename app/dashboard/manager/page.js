@@ -987,32 +987,7 @@ export default function ManagerDashboardPage() {
                   </div>
                 </div>
 
-                {/* 6. Production Released Artworks */}
-                <div className="flex items-center justify-between p-2 rounded-xl bg-cyan-50/70 border border-cyan-200">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
-                    <div>
-                      <strong className="text-slate-900 text-[11px] block">
-                        {productionLockedCount} Production Locked
-                      </strong>
-                      <span className="text-[9px] text-slate-500">
-                        Ready for preview &amp; mail dispatch
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-cyan-600 text-white font-bold text-[9px] flex items-center justify-center">
-                      {productionLockedCount}
-                    </span>
-                    <Link
-                      href="/dashboard/production"
-                      className="px-2 py-0.5 rounded-lg bg-cyan-600 text-white font-bold text-[10px] hover:bg-cyan-700 shadow-xs flex items-center gap-1"
-                    >
-                      <Mail className="w-3 h-3" />
-                      Dispatch
-                    </Link>
-                  </div>
-                </div>
+
               </div>
             </div>
 
@@ -1220,23 +1195,7 @@ export default function ManagerDashboardPage() {
                 {/* 6. Open Design Studio */}
                 
 
-                {/* 7. Production Releases */}
-                <Link
-                  href="/dashboard/production"
-                  className="p-2.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100 border border-cyan-100 flex items-center gap-2.5 transition-colors"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-cyan-600 text-white flex items-center justify-center shrink-0">
-                    <Lock className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <strong className="text-slate-900 text-[11px] block">
-                      Production Releases
-                    </strong>
-                    <span className="text-[9px] text-slate-500">
-                      Send print emails
-                    </span>
-                  </div>
-                </Link>
+
               </div>
             </div>
           </div>
@@ -1405,115 +1364,7 @@ export default function ManagerDashboardPage() {
             </div>
           </div>
 
-          {/* ROW 5: Production Released Artworks (Ready for Vendor / Press Dispatch) */}
-          <div className="bg-white rounded-md p-5 border border-slate-200/90 shadow-xs space-y-3.5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-600">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-xs">
-                    Final Production Released Artworks ({productionLockedCount})
-                  </h3>
-                  <p className="text-[10px] text-slate-500">
-                    Locked master files verified by client. Preview designs and
-                    dispatch specifications directly to press or vendors.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/dashboard/production"
-                className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-[11px] font-bold transition-all shadow-xs flex items-center gap-1.5"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                Open Dispatch Center →
-              </Link>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                    <th className="pb-2">Job Number</th>
-                    <th className="pb-2">Title &amp; Customer</th>
-                    <th className="pb-2">Specifications</th>
-                    <th className="pb-2">Preflight Status</th>
-                    <th className="pb-2">SHA-256 Checksum</th>
-                    <th className="pb-2 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-[11px]">
-                  {productionLockedProjects.length > 0 ? (
-                    productionLockedProjects.slice(0, 5).map((p) => {
-                      const brief = p.brief || {};
-                      const sha =
-                        p.currentVersionId?.sha256 || "SHA_LOCKED_PASS";
-                      return (
-                        <tr
-                          key={p._id}
-                          className="hover:bg-slate-50 transition-colors"
-                        >
-                          <td className="py-2.5 font-bold font-mono text-cyan-700">
-                            {p.projectNumber}
-                          </td>
-                          <td className="py-2.5">
-                            <div className="font-bold text-slate-900">
-                              {p.title}
-                            </div>
-                            <div className="text-[10px] text-slate-500">
-                              {p.customerId?.businessName ||
-                                p.customerId?.displayName ||
-                                "Client"}
-                            </div>
-                          </td>
-                          <td className="py-2.5">
-                            <span className="font-semibold text-slate-700">
-                              {brief.productDimensions?.width &&
-                              brief.productDimensions?.height
-                                ? `${brief.productDimensions.width}×${brief.productDimensions.height} ${brief.productDimensions.unit || "in"}`
-                                : "Custom"}
-                            </span>
-                            <span className="text-[10px] text-slate-500 block">
-                              {brief.material || "Star Flex"}{" "}
-                              {brief.gsm ? `(${brief.gsm} GSM)` : ""}
-                            </span>
-                          </td>
-                          <td className="py-2.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                              <ShieldCheck className="w-3 h-3" />
-                              PASS (300 DPI)
-                            </span>
-                          </td>
-                          <td className="py-2.5 font-mono text-[10px] text-slate-500 max-w-[140px] truncate">
-                            {sha.substring(0, 16)}...
-                          </td>
-                          <td className="py-2.5 text-right">
-                            <Link
-                              href="/dashboard/production"
-                              className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] inline-flex items-center gap-1 shadow-xs"
-                            >
-                              <Mail className="w-3 h-3 text-cyan-400" />
-                              Send Mail
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="py-8 text-center text-slate-400 text-xs"
-                      >
-                        No production locked designs pending dispatch.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </main>
     </div>
