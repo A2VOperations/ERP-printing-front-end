@@ -93,7 +93,7 @@ export default function PerformancePage() {
 
       const [leadsRes, ordersRes, quotesRes, followupsRes, targetRes, activitiesRes] =
         await Promise.allSettled([
-          api.get("/leads?limit=300&sortBy=createdAt&sortOrder=desc", { silent: true }),
+          api.get("/leads?limit=250&sortBy=createdAt&sortOrder=desc", { silent: true }),
           api.get("/orders?limit=150&sortBy=createdAt&sortOrder=desc", { silent: true }),
           api.get("/quotations?limit=150&sortBy=createdAt&sortOrder=desc", { silent: true }),
           api.get("/followups?limit=150&sortBy=scheduledAt&sortOrder=desc", { silent: true }),

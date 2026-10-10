@@ -80,7 +80,7 @@ export default function ExportDataView({
       setLoading(true);
       try {
         const [leadsRes, areasRes, repsRes] = await Promise.all([
-          api.get("/leads?limit=300").catch(() => null),
+          api.get("/leads?limit=250").catch(() => null),
           api.get("/areas").catch(() => null),
           api.get("/users?role=sales").catch(() => null),
         ]);

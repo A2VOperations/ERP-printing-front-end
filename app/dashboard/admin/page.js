@@ -13,9 +13,6 @@ import {
   FileText,
   Package,
   CreditCard,
-  Palette,
-  Factory,
-  Truck,
   AlertTriangle,
   ArrowUpRight,
   ArrowDownRight,
@@ -28,6 +25,19 @@ import {
   Clock,
   Check,
   Loader2,
+  Phone,
+  Mail,
+  UserCheck,
+  Shield,
+  ExternalLink,
+  Filter,
+  Eye,
+  X,
+  ArrowRight,
+  Database,
+  Sparkles,
+  Activity,
+  PhoneCall,
 } from "lucide-react";
 
 export default function AdminOverviewPage() {
@@ -63,7 +73,13 @@ export default function AdminOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeView, setActiveView] = useState("team");
   const [teamTab, setTeamTab] = useState("Sales Team");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [selectedStaffMember, setSelectedStaffMember] = useState(null);
+  const [inspectionTab, setInspectionTab] = useState("leads");
+  const [activityCategoryFilter, setActivityCategoryFilter] = useState("all");
+  const [activitySearch, setActivitySearch] = useState("");
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [creatingLead, setCreatingLead] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -73,9 +89,9 @@ export default function AdminOverviewPage() {
   const [orders, setOrders] = useState([]);
   const [payments, setPayments] = useState([]);
   const [quotations, setQuotations] = useState([]);
-  const [designProjects, setDesignProjects] = useState([]);
   const [followups, setFollowups] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [users, setUsers] = useState([]);
   const [targetProgress, setTargetProgress] = useState(null);
   const [topPerformers, setTopPerformers] = useState([]);
@@ -115,29 +131,35 @@ export default function AdminOverviewPage() {
         activitiesRes,
         paymentsRes,
         quotationsRes,
-        designProjectsRes,
+        auditRes,
       ] = await Promise.allSettled([
-        api.get("/leads?limit=100"),
-        api.get("/followups?limit=100"),
-        api.get("/orders?limit=100"),
+        api.get("/leads?limit=250"),
+        api.get("/followups?limit=200"),
+        api.get("/orders?limit=200"),
         api.get("/targets/my-achievement", { silent: true }),
         api.get("/targets/leaderboard", { silent: true }),
         api.get("/users"),
         api.get("/auth/me"),
-        api.get("/activities?limit=20", { silent: true }),
-        api.get("/payments?limit=100", { silent: true }),
+        api.get("/activities?limit=100", { silent: true }),
+        api.get("/payments?limit=200", { silent: true }),
         api.get("/quotations?limit=500", { silent: true }),
-        api.get("/design-projects?limit=50", { silent: true }),
+        api.get("/audit-logs?limit=50", { silent: true }),
       ]);
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
-        setLeads(leadsRes.value.data);
+        const raw = leadsRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw?.leads || raw?.records || raw?.data || [];
+        setLeads(list);
       }
       if (followupsRes.status === "fulfilled" && followupsRes.value?.data) {
-        setFollowups(followupsRes.value.data);
+        const raw = followupsRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw?.followups || raw?.records || raw?.data || [];
+        setFollowups(list);
       }
       if (ordersRes.status === "fulfilled" && ordersRes.value?.data) {
-        setOrders(ordersRes.value.data);
+        const raw = ordersRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw?.orders || raw?.records || raw?.data || [];
+        setOrders(list);
       }
       if (targetRes.status === "fulfilled" && targetRes.value?.data) {
         setTargetProgress(targetRes.value.data);
@@ -148,7 +170,11 @@ export default function AdminOverviewPage() {
         setTopPerformers(list);
       }
       if (usersRes.status === "fulfilled" && usersRes.value?.data) {
-        setUsers(usersRes.value.data);
+        const rawUsers = usersRes.value.data;
+        const usersList = Array.isArray(rawUsers)
+          ? rawUsers
+          : rawUsers?.users || rawUsers?.records || [];
+        setUsers(usersList);
       }
       if (meRes.status === "fulfilled" && meRes.value?.data) {
         const me = meRes.value.data.user || meRes.value.data;
@@ -162,10 +188,14 @@ export default function AdminOverviewPage() {
         }
       }
       if (activitiesRes.status === "fulfilled" && activitiesRes.value?.data) {
-        setActivities(activitiesRes.value.data);
+        const raw = activitiesRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw?.activities || raw?.records || raw?.data || [];
+        setActivities(list);
       }
       if (paymentsRes.status === "fulfilled" && paymentsRes.value?.data) {
-        setPayments(paymentsRes.value.data);
+        const raw = paymentsRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw?.payments || raw?.records || raw?.data || [];
+        setPayments(list);
       }
       if (quotationsRes.status === "fulfilled" && quotationsRes.value?.data) {
         const rawQ = quotationsRes.value.data;
@@ -174,13 +204,12 @@ export default function AdminOverviewPage() {
           : rawQ?.records || rawQ?.quotations || rawQ?.data || [];
         setQuotations(list);
       }
-      if (
-        designProjectsRes.status === "fulfilled" &&
-        (designProjectsRes.value?.data || designProjectsRes.value?.projects)
-      ) {
-        setDesignProjects(
-          designProjectsRes.value.data || designProjectsRes.value.projects,
-        );
+      if (auditRes.status === "fulfilled" && auditRes.value?.data) {
+        const rawA = auditRes.value.data;
+        const list = Array.isArray(rawA)
+          ? rawA
+          : rawA?.logs || rawA?.records || rawA?.data || [];
+        setAuditLogs(list);
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -327,11 +356,7 @@ export default function AdminOverviewPage() {
     ).length || orders.length;
   }, [orders]);
 
-  const ordersInProductionCount = useMemo(() => {
-    return orders.filter((o) =>
-      ["IN_PRODUCTION", "PROCESSING", "PRINTING"].includes(o.orderStatus),
-    ).length;
-  }, [orders]);
+
 
   // 4. Financial Calculations
   const totalOrderValueRupees = useMemo(() => {
@@ -384,39 +409,7 @@ export default function AdminOverviewPage() {
       }, 0);
   }, [payments]);
 
-  // 5. Designs Pending
-  const pendingDesignsCount = useMemo(() => {
-    return designProjects.filter((d) =>
-      [
-        "IN_PROGRESS",
-        "REVIEW",
-        "PENDING",
-        "CLIENT_REVIEW",
-        "PENDING_APPROVAL",
-        "REVISION_REQUESTED",
-      ].includes(d.status),
-    ).length;
-  }, [designProjects]);
 
-  const jobsInProductionCount = 0;
-  const readyForReleaseCount = 0;
-
-  const readyForDispatchCount = useMemo(() => {
-    return orders.filter((o) =>
-      ["READY_FOR_DISPATCH", "DISPATCH_READY"].includes(
-        o.orderStatus || o.shippingStatus,
-      ),
-    ).length;
-  }, [orders]);
-
-  const deliveredTodayCount = useMemo(() => {
-    const todayStr = new Date().toDateString();
-    return orders.filter((o) => {
-      if (o.orderStatus !== "DELIVERED") return false;
-      const d = o.deliveryDate || o.updatedAt || o.createdAt;
-      return d && new Date(d).toDateString() === todayStr;
-    }).length;
-  }, [orders]);
 
   const todayRevenueRupees = useMemo(() => {
     const todayStr = new Date().toDateString();
@@ -471,88 +464,6 @@ export default function AdminOverviewPage() {
     };
   }, [leads, orders]);
 
-  // Order Lifecycle Stages
-  const orderLifecycleMetrics = useMemo(() => {
-    const prep = orders.filter(
-      (o) => !o.orderStatus || ["PENDING", "CONFIRMED", "PREPARATION"].includes(o.orderStatus),
-    ).length;
-    const dsgn = designProjects.filter((d) => d.status === "IN_PROGRESS").length;
-    const appr = designProjects.filter(
-      (d) => d.status === "CLIENT_REVIEW" || d.status === "PENDING_APPROVAL",
-    ).length;
-    const prod = 0;
-    const rdy = 0;
-    const dsp = orders.filter((o) => o.orderStatus === "DISPATCHED").length;
-    const delv = orders.filter((o) => o.orderStatus === "DELIVERED").length;
-
-    const maxVal = Math.max(1, prep, dsgn, appr, prod, rdy, dsp, delv);
-
-    let bottleneck = "None";
-    if (prep > 0) {
-      bottleneck = `None • ${prep} Ready for Prep`;
-    }
-
-    return {
-      prep,
-      dsgn,
-      appr,
-      prod,
-      rdy,
-      dsp,
-      delv,
-      maxVal,
-      bottleneckText: bottleneck,
-    };
-  }, [orders, designProjects]);
-
-  // Design Projects Detail Metrics
-  const designProjectStats = useMemo(() => {
-    const total = designProjects.length;
-    const unassigned = designProjects.filter(
-      (d) => !d.assignedDesignerId && !d.assignedDesigner,
-    ).length;
-    const inProgress = designProjects.filter(
-      (d) => d.status === "IN_PROGRESS",
-    ).length;
-    const clientReview = designProjects.filter((d) =>
-      [
-        "CLIENT_REVIEW",
-        "PENDING_APPROVAL",
-      ].includes(d.status),
-    ).length;
-    const revisionRequested = designProjects.filter(
-      (d) => d.status === "REVISION_REQUESTED",
-    ).length;
-    const approved = designProjects.filter((d) =>
-      ["APPROVED", "PRODUCTION_LOCKED", "READY_FOR_PRODUCTION"].includes(
-        d.status,
-      ),
-    ).length;
-    const readyForProduction = designProjects.filter(
-      (d) => d.status === "READY_FOR_PRODUCTION",
-    ).length;
-    const productionLocked = designProjects.filter(
-      (d) => d.status === "PRODUCTION_LOCKED",
-    ).length;
-
-    const approvedRate =
-      total > 0 ? Math.round((approved / total) * 100) : 0;
-    const pendingSignoffs = pendingDesignsCount;
-
-    return {
-      total,
-      unassigned,
-      inProgress,
-      clientReview,
-      revisionRequested,
-      approved,
-      readyForProduction,
-      productionLocked,
-      approvedRate,
-      pendingSignoffs,
-    };
-  }, [designProjects, pendingDesignsCount]);
-
   // Attention Required Metrics
   const attentionMetrics = useMemo(() => {
     const overdueFollowups = followups.filter((f) => {
@@ -569,14 +480,9 @@ export default function AdminOverviewPage() {
       ["PENDING", "VERIFICATION_PENDING"].includes(p.status),
     ).length;
 
-    const designsAwaiting = pendingDesignsCount;
-    const jobsOverdue = 0;
-    const jobsAwaitingRelease = readyForReleaseCount;
-    const failedDeliveries = 0;
     const outstandingPayments = outstandingBalanceRupees > 0 ? 1 : 0;
 
     let criticalCount = 0;
-    if (designsAwaiting > 0) criticalCount++;
     if (overdueFollowups > 0) criticalCount++;
     if (quotesAwaiting > 0) criticalCount++;
     if (paymentsPending > 0) criticalCount++;
@@ -586,54 +492,48 @@ export default function AdminOverviewPage() {
       overdueFollowups,
       quotesAwaiting,
       paymentsPending,
-      designsAwaiting,
-      jobsOverdue,
-      jobsAwaitingRelease,
-      failedDeliveries,
       outstandingPayments,
     };
   }, [
     followups,
     quotations,
     payments,
-    pendingDesignsCount,
-    readyForReleaseCount,
     outstandingBalanceRupees,
   ]);
 
-  // Team Performance Data
+  // Extract ID and Name helpers
+  const extractId = useCallback((val) => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "object") {
+      if (val._id) return String(val._id);
+      if (val.id) return String(val.id);
+    }
+    return String(val);
+  }, []);
+
+  const extractName = useCallback((val) => {
+    if (!val) return "";
+    if (typeof val === "string") return val.toLowerCase();
+    if (typeof val === "object") {
+      if (val.name) return String(val.name).toLowerCase();
+      if (val.displayName) return String(val.displayName).toLowerCase();
+    }
+    return "";
+  }, []);
+
+  // 1. Sales Team Performance Data
   const salesTeamMembers = useMemo(() => {
-    const extractId = (val) => {
-      if (!val) return "";
-      if (typeof val === "string") return val;
-      if (typeof val === "object") {
-        if (val._id) return String(val._id);
-        if (val.id) return String(val.id);
-      }
-      return String(val);
-    };
-
-    const extractName = (val) => {
-      if (!val) return "";
-      if (typeof val === "string") return val.toLowerCase();
-      if (typeof val === "object") {
-        if (val.name) return String(val.name).toLowerCase();
-        if (val.displayName) return String(val.displayName).toLowerCase();
-      }
-      return "";
-    };
-
-    // Only sales users - strictly exclude admin and super admin
     const salesUsers = users.filter((u) => {
       const role = String(u.roleSlug || u.role || "").toLowerCase();
       const name = String(u.name || "").toLowerCase();
       const email = String(u.email || "").toLowerCase();
 
-      // Strictly exclude any admin
       if (
         role.includes("admin") ||
         name.includes("admin") ||
-        email.includes("admin")
+        email.includes("admin") ||
+        role.includes("operator")
       ) {
         return false;
       }
@@ -642,7 +542,8 @@ export default function AdminOverviewPage() {
         role.includes("sales") ||
         role.includes("rep") ||
         role === "telecaller" ||
-        role === "executive"
+        role === "executive" ||
+        role === "manager"
       );
     });
 
@@ -650,7 +551,6 @@ export default function AdminOverviewPage() {
       const uIdStr = extractId(u._id || u.id);
       const uNameStr = String(u.name || "").toLowerCase();
 
-      // Filter leads specifically assigned to this sales rep
       const userLeads = leads.filter((l) => {
         const assignedId =
           extractId(l.assignedToId) ||
@@ -666,7 +566,6 @@ export default function AdminOverviewPage() {
         );
       });
 
-      // If user is the only sales rep and leads haven't populated assignedId, link them to the sales rep
       const effectiveLeads =
         userLeads.length > 0
           ? userLeads
@@ -678,9 +577,27 @@ export default function AdminOverviewPage() {
         effectiveLeads.map((l) => extractId(l._id || l.id)),
       );
 
-      // Filter accepted quotations belonging to this sales rep (by assignedSalesId, createdBy, or linked leadId)
+      // Follow-ups for this sales user
+      const userFollowups = followups.filter((f) => {
+        const fRepId = extractId(f.assignedToId || f.salesRepId || f.createdById || f.userId);
+        const fRepName = extractName(f.assignedToName || f.createdByName);
+        const leadMatch = f.leadId && userLeadIdSet.has(extractId(f.leadId));
+        return (
+          (fRepId && fRepId === uIdStr) ||
+          (fRepName && fRepName === uNameStr) ||
+          leadMatch
+        );
+      });
+
+      const activeFollowups = userFollowups.filter((f) => f.status !== "COMPLETED" && f.status !== "CANCELLED").length;
+      const overdueFollowups = userFollowups.filter((f) => {
+        if (f.status === "COMPLETED" || f.status === "CANCELLED") return false;
+        const d = f.scheduledAt || f.dueDate || f.createdAt;
+        return d && new Date(d) < new Date();
+      }).length;
+
+      // Accepted quotations belonging to this sales rep
       const userQuotations = quotations.filter((q) => {
-        if (q.status !== "ACCEPTED") return false;
         const repId =
           extractId(q.assignedSalesId) ||
           extractId(q.salesRepId) ||
@@ -693,21 +610,20 @@ export default function AdminOverviewPage() {
 
         return (
           (repId && repId === uIdStr) ||
-          (repName &&
-            (repName === uNameStr || repName.includes(uNameStr))) ||
+          (repName && (repName === uNameStr || repName.includes(uNameStr))) ||
           (createdById && createdById === uIdStr) ||
           (quoteLeadId && userLeadIdSet.has(quoteLeadId))
         );
       });
 
+      const acceptedQuotes = userQuotations.filter((q) => q.status === "ACCEPTED");
       const effectiveQuotations =
-        userQuotations.length > 0
-          ? userQuotations
+        acceptedQuotes.length > 0
+          ? acceptedQuotes
           : salesUsers.length === 1 && quotations.filter((q) => q.status === "ACCEPTED").length > 0
             ? quotations.filter((q) => q.status === "ACCEPTED")
             : [];
 
-      // Calculate revenue specifically earned by this sales rep from accepted quotations
       const userRevenue = effectiveQuotations.reduce((sum, q) => {
         const val = q.grandTotalPaise
           ? q.grandTotalPaise / 100
@@ -728,6 +644,8 @@ export default function AdminOverviewPage() {
         String(u.name || "").toLowerCase().includes("tanya")
       ) {
         roleDisplay = "Lead Sales Director";
+      } else if (r.includes("manager")) {
+        roleDisplay = "Sales Manager";
       } else if (r.includes("senior")) {
         roleDisplay = "Senior Sales Executive";
       }
@@ -735,145 +653,241 @@ export default function AdminOverviewPage() {
       return {
         id: u._id || u.id,
         name: u.name,
+        email: u.email || "—",
+        phone: u.phone || "—",
         role: roleDisplay,
+        canonicalRole: "sales",
         initials: (u.name || "S").slice(0, 2).toUpperCase(),
         avatarUrl: u.avatarUrl || null,
+        status: u.status || "ACTIVE",
+        isOnline: Boolean(u.isOnline),
+        lastActiveAt: u.lastActiveAt,
         leads: leadsCount,
         orders: ordersCount,
+        quotationsCount: userQuotations.length,
+        activeFollowups,
+        overdueFollowups,
         revenue: userRevenue,
         conversion: conversionRate,
+        assignedLeadsList: effectiveLeads,
+        userType: "sales",
       };
     });
-  }, [users, leads, orders, quotations]);
+  }, [users, leads, quotations, followups, extractId, extractName]);
 
-  const designTeamMembers = useMemo(() => {
-    const extractId = (val) => {
-      if (!val) return "";
-      if (typeof val === "string") return val;
-      if (typeof val === "object") {
-        if (val._id) return String(val._id);
-        if (val.id) return String(val.id);
-      }
-      return String(val);
-    };
-
-    const extractName = (val) => {
-      if (!val) return "";
-      if (typeof val === "string") return val.toLowerCase();
-      if (typeof val === "object") {
-        if (val.name) return String(val.name).toLowerCase();
-        if (val.displayName) return String(val.displayName).toLowerCase();
-      }
-      return "";
-    };
-
-    // Only designers - strictly exclude admin
-    const designers = users.filter((u) => {
-      const r = String(u.roleSlug || u.role || "").toLowerCase();
-      const name = String(u.name || "").toLowerCase();
-      const email = String(u.email || "").toLowerCase();
-
-      if (
-        r.includes("admin") ||
-        name.includes("admin") ||
-        email.includes("admin")
-      ) {
-        return false;
-      }
-      return r.includes("designer") || r.includes("design");
+  // 2. Data Operators Performance Data
+  const dataOperatorsList = useMemo(() => {
+    const operatorUsers = users.filter((u) => {
+      const role = String(u.roleSlug || u.role || "").toLowerCase();
+      return role.includes("operator") || role === "data_operator";
     });
 
-    return designers.map((u) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const todayStr = now.toDateString();
+
+    return operatorUsers.map((u) => {
       const uIdStr = extractId(u._id || u.id);
       const uNameStr = String(u.name || "").toLowerCase();
 
-      // Projects assigned to or created by this designer
-      const userProjects = designProjects.filter((d) => {
-        const assignedId =
-          extractId(d.assignedDesignerId) ||
-          extractId(d.assignedDesigner);
-        const assignedName =
-          extractName(d.assignedDesignerId) ||
-          extractName(d.assignedDesigner);
-        return (
-          (assignedId && assignedId === uIdStr) ||
-          (assignedName &&
-            (assignedName === uNameStr || assignedName.includes(uNameStr)))
-        );
+      const sourcedLeads = leads.filter((l) => {
+        const cId = extractId(l.createdById || l.createdBy || l.userId);
+        const cName = extractName(l.uploadedByName || l.createdByName);
+        const isOperatorSource = l.source === "DATA_OPERATOR";
+
+        if (cId && cId === uIdStr) return true;
+        if (cName && (cName === uNameStr || cName.includes(uNameStr))) return true;
+        if (operatorUsers.length === 1 && isOperatorSource) return true;
+        return false;
       });
 
-      // If projects exist for this designer, compute directly; otherwise compute for studio
-      const projectsList =
-        userProjects.length > 0
-          ? userProjects
-          : designers.length === 1 && designProjects.length > 0
-            ? designProjects
-            : [];
-      const projectsCount = projectsList.length;
-      const approvedCount = projectsList.filter((d) =>
-        [
-          "APPROVED",
-          "PRODUCTION_LOCKED",
-          "READY_FOR_PRODUCTION",
-        ].includes(d.status),
+      const totalSourced = sourcedLeads.length;
+      const todaySourced = sourcedLeads.filter((l) => {
+        const d = l.createdAt ? new Date(l.createdAt) : null;
+        return d && d.toDateString() === todayStr;
+      }).length;
+
+      const monthSourced = sourcedLeads.filter((l) => {
+        const d = l.createdAt ? new Date(l.createdAt) : null;
+        return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      }).length;
+
+      const withPhotosCount = sourcedLeads.filter((l) => Boolean(l.shopImageUrl || (l.attachments && l.attachments.length > 0))).length;
+
+      const convertedBySalesCount = sourcedLeads.filter((l) =>
+        ["QUALIFIED", "QUOTED", "WON"].includes(l.status) ||
+        quotations.some((q) => extractId(q.leadId) === extractId(l._id || l.id) && q.status === "ACCEPTED")
       ).length;
-      const pendingCount = projectsList.filter((d) =>
-        [
-          "IN_PROGRESS",
-          "CLIENT_REVIEW",
-          "PENDING_APPROVAL",
-          "REVIEW",
-        ].includes(d.status),
-      ).length;
-      const rate =
-        projectsCount > 0
-          ? Math.round((approvedCount / projectsCount) * 100)
-          : 100;
+
+      const conversionRate = totalSourced > 0 ? Math.round((convertedBySalesCount / totalSourced) * 100) : 0;
+
+      const areasCovered = Array.from(
+        new Set(sourcedLeads.map((l) => l.areaName || l.zoneName || l.areaId).filter(Boolean))
+      );
 
       return {
         id: u._id || u.id,
         name: u.name,
-        role: "Graphic Designer",
-        initials: (u.name || "BH").slice(0, 2).toUpperCase(),
+        email: u.email || "—",
+        phone: u.phone || "—",
+        role: "Data Operator",
+        canonicalRole: "data_operator",
+        initials: (u.name || "DO").slice(0, 2).toUpperCase(),
         avatarUrl: u.avatarUrl || null,
-        projects: projectsCount,
-        approved: approvedCount,
-        pending: pendingCount,
-        rate,
+        status: u.status || "ACTIVE",
+        isOnline: Boolean(u.isOnline),
+        lastActiveAt: u.lastActiveAt,
+        totalSourced,
+        todaySourced,
+        monthSourced,
+        withPhotosCount,
+        convertedBySalesCount,
+        conversion: conversionRate,
+        areasCovered,
+        assignedLeadsList: sourcedLeads,
+        userType: "operator",
       };
     });
-  }, [users, designProjects]);
+  }, [users, leads, quotations, extractId, extractName]);
 
-  // Recent System Activity items
-  const recentActivitiesList = useMemo(() => {
-    if (activities.length > 0) {
-      return activities.slice(0, 4).map((act, idx) => {
-        const d = new Date(act.occurredAt || act.createdAt || 0);
-        const timeStr = d.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-        });
-        const eventCode = act.action || act.entityType || "ACTIVITY_LOGGED";
-        const summary =
-          act.summary ||
-          act.description ||
-          "Activity recorded in system.";
-        const tag = act.entityId
-          ? `${act.entityType || "Entity"} #${String(act.entityId).slice(-6).toUpperCase()}`
-          : `Event #${idx + 1}`;
+  // 3. Consolidated All Team Members
+  const allStaffMembers = useMemo(() => {
+    return [...salesTeamMembers, ...dataOperatorsList];
+  }, [salesTeamMembers, dataOperatorsList]);
 
-        return {
-          id: act._id || `act-${idx}`,
-          timeStr,
-          eventCode,
-          summary,
-          tag,
-        };
-      });
+  // 4. Filtered Staff Members by Tab & Search
+  const filteredStaffMembers = useMemo(() => {
+    let list = [];
+    if (teamTab === "Sales Team") list = salesTeamMembers;
+    else if (teamTab === "Data Operators") list = dataOperatorsList;
+    else list = allStaffMembers;
+
+    if (!teamSearch.trim()) return list;
+    const query = teamSearch.toLowerCase().trim();
+    return list.filter(
+      (m) =>
+        m.name?.toLowerCase().includes(query) ||
+        m.email?.toLowerCase().includes(query) ||
+        m.phone?.toLowerCase().includes(query) ||
+        m.role?.toLowerCase().includes(query)
+    );
+  }, [teamTab, salesTeamMembers, dataOperatorsList, allStaffMembers, teamSearch]);
+
+  // 5. Consolidated System Live Activity Stream
+  const combinedSystemEvents = useMemo(() => {
+    const rawEvents = (activities || []).map((act, idx) => {
+      const d = new Date(act.occurredAt || act.createdAt || 0);
+      const isOperator =
+        act.actorRole?.toLowerCase().includes("operator") ||
+        act.summary?.toLowerCase().includes("operator") ||
+        act.description?.toLowerCase().includes("operator");
+
+      let category = "sales";
+      if (act.entityType === "PAYMENT" || act.action?.includes("PAYMENT")) category = "payments";
+      else if (["QUOTATION", "ORDER"].includes(act.entityType) || act.action?.includes("ORDER") || act.action?.includes("QUOTE")) category = "orders";
+      else if (isOperator || act.action?.includes("FIELD") || act.action?.includes("UPLOAD")) category = "operators";
+
+      return {
+        id: act._id || `act-${idx}`,
+        timeStr: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        timestamp: d,
+        eventCode: act.action || act.entityType || "ACTIVITY_LOGGED",
+        actorName: act.actorName || act.createdByName || (isOperator ? "Data Operator" : "Sales Team"),
+        actorRole: act.actorRole || (isOperator ? "Data Operator" : "Sales Executive"),
+        summary: act.summary || act.description || "Activity logged in system.",
+        tag: act.entityId ? `${act.entityType || "Entity"} #${String(act.entityId).slice(-6).toUpperCase()}` : `Event #${idx + 1}`,
+        category,
+        entityType: act.entityType,
+        entityId: act.entityId,
+      };
+    });
+
+    const leadEvents = (leads || []).slice(0, 25).map((l, idx) => {
+      const isOperator = l.source === "DATA_OPERATOR" || l.uploadedByName?.toLowerCase().includes("operator");
+      const d = new Date(l.createdAt || 0);
+      return {
+        id: `lead-evt-${l._id || idx}`,
+        timeStr: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        timestamp: d,
+        eventCode: isOperator ? "FIELD_LEAD_CAPTURED" : "LEAD_CREATED",
+        actorName: l.uploadedByName || l.createdByName || (isOperator ? "Field Operator" : "Sales Rep"),
+        actorRole: isOperator ? "Data Operator" : "Sales Executive",
+        summary: `${isOperator ? "Captured field inquiry" : "Created lead"} for "${l.businessName || l.contactName || l.name || "New Client"}"${l.areaName ? ` (${l.areaName})` : ""}${l.estimatedBudget ? ` • ₹${Number(l.estimatedBudget).toLocaleString("en-IN")}` : ""}`,
+        tag: `Lead #${String(l._id || idx).slice(-6).toUpperCase()}`,
+        category: isOperator ? "operators" : "sales",
+        entityType: "LEAD",
+        entityId: l._id || l.id,
+      };
+    });
+
+    const quoteEvents = (quotations || []).slice(0, 15).map((q, idx) => {
+      const d = new Date(q.updatedAt || q.createdAt || 0);
+      const isAccepted = q.status === "ACCEPTED";
+      return {
+        id: `quote-evt-${q._id || idx}`,
+        timeStr: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        timestamp: d,
+        eventCode: isAccepted ? "QUOTE_ACCEPTED" : "QUOTATION_ISSUED",
+        actorName: q.salesRep || q.assignedSalesName || "Sales Executive",
+        actorRole: "Sales Executive",
+        summary: `Quotation ${q.quotationNumber || `#${String(q._id || idx).slice(-4)}`} ${isAccepted ? "WON & ACCEPTED" : "generated"} for ₹${(q.grandTotalPaise ? q.grandTotalPaise / 100 : q.grandTotal || 0).toLocaleString("en-IN")}`,
+        tag: `Quote #${String(q._id || idx).slice(-6).toUpperCase()}`,
+        category: "orders",
+        entityType: "QUOTATION",
+        entityId: q._id || q.id,
+      };
+    });
+
+    const payEvents = (payments || []).slice(0, 15).map((p, idx) => {
+      const d = new Date(p.paymentDate || p.createdAt || 0);
+      const isConfirmed = p.status === "CONFIRMED" || p.status === "COMPLETED";
+      return {
+        id: `pay-evt-${p._id || idx}`,
+        timeStr: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        timestamp: d,
+        eventCode: isConfirmed ? "PAYMENT_CONFIRMED" : "PAYMENT_RECORDED",
+        actorName: p.verifiedByName || p.receivedByName || "Accounts / Cashier",
+        actorRole: "Finance & Sales",
+        summary: `Received ₹${(p.amountPaise ? p.amountPaise / 100 : p.amount || 0).toLocaleString("en-IN")} via ${p.paymentMode || "Bank"} (${isConfirmed ? "Verified" : "Pending Audit"})`,
+        tag: `Payment #${String(p._id || idx).slice(-6).toUpperCase()}`,
+        category: "payments",
+        entityType: "PAYMENT",
+        entityId: p._id || p.id,
+      };
+    });
+
+    const merged = [...rawEvents, ...leadEvents, ...quoteEvents, ...payEvents];
+    const seen = new Set();
+    const unique = [];
+    for (const item of merged) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        unique.push(item);
+      }
     }
+    unique.sort((a, b) => b.timestamp - a.timestamp);
+    return unique;
+  }, [activities, leads, quotations, payments]);
 
-    return [];
-  }, [activities]);
+  // 6. Filtered System Events by Category & Search
+  const filteredSystemEvents = useMemo(() => {
+    return combinedSystemEvents.filter((ev) => {
+      if (activityCategoryFilter !== "all" && ev.category !== activityCategoryFilter) {
+        return false;
+      }
+      if (activitySearch.trim()) {
+        const q = activitySearch.toLowerCase();
+        return (
+          ev.actorName?.toLowerCase().includes(q) ||
+          ev.summary?.toLowerCase().includes(q) ||
+          ev.eventCode?.toLowerCase().includes(q) ||
+          ev.tag?.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [combinedSystemEvents, activityCategoryFilter, activitySearch]);
 
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen text-slate-800 font-sans antialiased">
@@ -882,1232 +896,981 @@ export default function AdminOverviewPage() {
       <main className="flex-1 flex flex-col min-w-0">
         <Navbar />
 
-        <div className="p-4 sm:p-6 lg:p-7 space-y-5 max-w-[1580px] mx-auto w-full">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1580px] mx-auto w-full">
           {loading ? (
             <DashboardSkeleton />
           ) : (
             <>
-              {/* TOP HEADER CONTROLS BAR */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200/90 rounded-2xl px-4 py-2.5 shadow-2xs">
-                {/* Search Input */}
-                <div className="flex-1 flex items-center gap-2 max-w-xl">
-                  <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search leads, invoices, phone numbers, or artwork jobs (Press '⌘K')..."
-                    className="w-full text-xs text-slate-700 placeholder-slate-400 focus:outline-none bg-transparent"
-                  />
-                  <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-100 rounded border border-slate-200">
-                    ⌘K
-                  </kbd>
-                </div>
-
-                {/* Right Action Widgets */}
-                <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
-                  {/* Live Clock Pill */}
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] font-bold text-emerald-800">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                    <span>LIVE</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="font-mono">{liveClockFormatted}</span>
-                  </div>
-
-                  {/* Filter Dropdown */}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 cursor-pointer transition-colors">
-                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{currentMonthYearBadge}</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
-                  </div>
-
-                  {/* Refresh Button */}
-                  <button
-                    onClick={() => loadDashboardData(true)}
-                    title="Refresh data"
-                    className="p-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-colors"
-                  >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-[#F95721]" : ""}`}
-                    />
-                  </button>
-
-                  {/* Add Lead Button */}
-                  <button
-                    onClick={() => setShowAddLeadModal(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all active:scale-95"
-                  >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Add Lead</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* GREETING BANNER */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+              {/* HEADER / EXECUTIVE GREETING BAR */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 border-b border-slate-200/80">
                 <div>
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-                      Good {timeOfDay},{" "}
-                      <span className="font-extrabold text-slate-950">
-                        {userName || "Ravinder"}
-                      </span>
-                      !
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                      Admin Executive Overview
                     </h1>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      All Systems Operational
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Ops
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 font-normal">
-                    Here&apos;s what&apos;s happening across sales, studio design, and
-                    factory production today.
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Good {timeOfDay}, <span className="font-semibold text-slate-700">{userName}</span>. Complete oversight of sales executives, field data operators, and live company operations.
                   </p>
                 </div>
 
-                {/* Right Date and Actions */}
+                {/* Right Quick Actions & Date */}
                 <div className="flex items-center gap-2.5 flex-wrap shrink-0">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-2xs">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>{liveDateHeader}</span>
                   </div>
 
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer shadow-2xs">
-                    <span>This Month</span>
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </div>
+                  <button
+                    onClick={() => loadDashboardData(true)}
+                    disabled={refreshing}
+                    title="Refresh data"
+                    className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 shadow-2xs transition disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-orange-600" : ""}`} />
+                  </button>
 
                   <button
                     onClick={() => router.push("/dashboard/quotations")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs font-semibold shadow-2xs transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold shadow-2xs transition hover:border-slate-400"
                   >
-                    <Plus className="w-3.5 h-3.5 text-slate-600 stroke-[2.5]" />
-                    <span>New Quotation</span>
+                    <FileText className="w-3.5 h-3.5 text-slate-500" />
+                    <span>New Quote</span>
                   </button>
-                </div>
-              </div>
 
-              {/* 5 PRIMARY KPI CARDS ROW */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                {/* 1. TOTAL LEADS */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F95721] flex items-center justify-center">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    {totalLeadsCount > 0 ? (
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                        <ArrowUpRight className="w-3 h-3" />
-                        +100%
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                        0%
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      TOTAL LEADS
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      {totalLeadsCount}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>+{leadsThisMonthCount} this month</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  </div>
-                </div>
-
-                {/* 2. OPEN QUOTATIONS */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                      0%
-                    </span>
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      OPEN QUOTATIONS
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      {openQuotationsCount}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>{openQuotationsCount} awaiting approval</span>
-                    <span className="text-[10px] text-slate-400 font-semibold px-1 rounded bg-slate-50 border border-slate-100">
-                      Clear
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3. ACTIVE ORDERS */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    {activeOrdersCount > 0 ? (
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                        <ArrowUpRight className="w-3 h-3" />
-                        +100%
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                        0%
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      ACTIVE ORDERS
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      {activeOrdersCount}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>{ordersInProductionCount} in production</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  </div>
-                </div>
-
-                {/* 4. OUTSTANDING REC. */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                      <CreditCard className="w-4 h-4" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                      0%
-                    </span>
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                      OUTSTANDING REC.
-                    </span>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5">
-                      ₹ {outstandingBalanceRupees.toLocaleString("en-IN")}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>0 orders pending</span>
-                    <span className="text-[10px] text-emerald-600 font-bold px-1 rounded bg-emerald-50 border border-emerald-100">
-                      Settled
-                    </span>
-                  </div>
-                </div>
-
-                {/* 5. DESIGNS PENDING */}
-                <div className={`rounded-2xl p-4 shadow-xs flex flex-col justify-between transition-all ${
-                  pendingDesignsCount > 0
-                    ? "bg-amber-50/20 border-2 border-amber-300"
-                    : "bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                      <Palette className="w-4 h-4" />
-                    </div>
-                    {pendingDesignsCount > 0 ? (
-                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                        ! Action
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">
-                        0%
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                      DESIGNS PENDING
-                    </span>
-                    <h3 className={`text-2xl font-black tracking-tight mt-0.5 ${
-                      pendingDesignsCount > 0 ? "text-rose-600" : "text-slate-900"
-                    }`}>
-                      {pendingDesignsCount}
-                    </h3>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                    <span>{pendingDesignsCount > 0 ? "In client review" : "None pending"}</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${pendingDesignsCount > 0 ? "bg-amber-500" : "bg-emerald-500"}`} />
-                  </div>
-                  </div>
-              </div>
-
-              {/* SECONDARY OPERATIONS STATUS BAR (Horizontal Strip) */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl px-5 py-2.5 shadow-2xs flex items-center justify-between flex-wrap gap-y-2 text-xs">
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Ready for Release</span>
-                  <span className="font-bold text-slate-900">{readyForReleaseCount}</span>
-                </div>
-
-                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
-
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Ready for Dispatch</span>
-                  <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
-                </div>
-
-                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
-
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Delivered Today</span>
-                  <span className="font-bold text-slate-900">{deliveredTodayCount}</span>
-                </div>
-
-                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
-
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  <span>Today&apos;s Revenue</span>
-                  <span className="font-bold text-slate-900">
-                    ₹ {todayRevenueRupees.toLocaleString("en-IN")}
-                  </span>
-                </div>
-
-                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
-
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>Overdue Orders</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {overdueOrdersCount} All OK
-                  </span>
-                </div>
-
-                <div className="hidden sm:block w-px h-3.5 bg-slate-200" />
-
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                  <span>Payment Audit</span>
-                  <span className="font-bold text-slate-900">{paymentAuditCount}</span>
-                </div>
-              </div>
-
-              {/* MIDDLE SECTION (3 CARDS) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {/* 1. Sales Pipeline */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-slate-600" />
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Sales Pipeline
-                        </h3>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
-                        THIS MONTH
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Lead qualification to confirmed customer order conversion velocity.
-                    </p>
-
-                    {/* 4 Pipeline Stage Bars */}
-                    <div className="grid grid-cols-4 gap-3 mt-7 items-end h-32 px-2">
-                      {/* LEADS */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-xs font-bold text-slate-800">
-                          {pipelineMetrics.leads}
-                        </span>
-                        <div
-                          className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
-                          style={{
-                            height: pipelineMetrics.leads > 0
-                              ? `${Math.max(8, (pipelineMetrics.leads / pipelineMetrics.maxVal) * 85)}%`
-                              : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                          LEADS
-                        </span>
-                      </div>
-
-                      {/* INT */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-xs font-bold text-slate-800">
-                          {pipelineMetrics.int}
-                        </span>
-                        <div
-                          className="w-full bg-emerald-500 rounded-t-md transition-all duration-500"
-                          style={{
-                            height: pipelineMetrics.int > 0
-                              ? `${Math.max(8, (pipelineMetrics.int / pipelineMetrics.maxVal) * 85)}%`
-                              : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                          INT
-                        </span>
-                      </div>
-
-                      {/* QUOTE */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-xs font-bold text-slate-800">
-                          {pipelineMetrics.quote}
-                        </span>
-                        <div
-                          className="w-full bg-amber-500 rounded-t-md transition-all duration-500"
-                          style={{
-                            height: pipelineMetrics.quote > 0
-                              ? `${Math.max(8, (pipelineMetrics.quote / pipelineMetrics.maxVal) * 85)}%`
-                              : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                          QUOTE
-                        </span>
-                      </div>
-
-                      {/* ORDER */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-xs font-bold text-slate-800">
-                          {pipelineMetrics.order}
-                        </span>
-                        <div
-                          className="w-full bg-rose-500 rounded-t-md transition-all duration-500"
-                          style={{
-                            height: pipelineMetrics.order > 0
-                              ? `${Math.max(8, (pipelineMetrics.order / pipelineMetrics.maxVal) * 85)}%`
-                              : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                          ORDER
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Pipeline Conversion Rate:
-                    </span>
-                    <span className="font-bold text-emerald-600">
-                      {pipelineMetrics.winRate}% Win Velocity
-                    </span>
-                  </div>
-                </div>
-
-                {/* 2. Order Lifecycle */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-slate-600" />
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Order Lifecycle
-                        </h3>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
-                        ALL ORDERS
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Current batch distribution through studio prep and factory gates.
-                    </p>
-
-                    {/* 7 Lifecycle Bars */}
-                    <div className="grid grid-cols-7 gap-2 mt-7 items-end h-32 px-1">
-                      {/* Prep */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-xs font-bold text-slate-800">
-                          {orderLifecycleMetrics.prep}
-                        </span>
-                        <div
-                          className="w-full bg-indigo-500 rounded-t-md transition-all duration-500"
-                          style={{
-                            height: orderLifecycleMetrics.prep > 0
-                              ? `${Math.max(8, (orderLifecycleMetrics.prep / orderLifecycleMetrics.maxVal) * 85)}%`
-                              : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Prep
-                        </span>
-                      </div>
-
-                      {/* Dsgn */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.dsgn}
-                        </span>
-                        <div
-                          className="w-full bg-orange-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.dsgn > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Dsgn
-                        </span>
-                      </div>
-
-                      {/* Appr */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.appr}
-                        </span>
-                        <div
-                          className="w-full bg-teal-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.appr > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Appr
-                        </span>
-                      </div>
-
-                      {/* Prod */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.prod}
-                        </span>
-                        <div
-                          className="w-full bg-amber-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.prod > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Prod
-                        </span>
-                      </div>
-
-                      {/* Rdy */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.rdy}
-                        </span>
-                        <div
-                          className="w-full bg-emerald-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.rdy > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Rdy
-                        </span>
-                      </div>
-
-                      {/* Dsp */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.dsp}
-                        </span>
-                        <div
-                          className="w-full bg-indigo-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.dsp > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Dsp
-                        </span>
-                      </div>
-
-                      {/* Delv */}
-                      <div className="flex flex-col items-center gap-1.5 h-full justify-end">
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {orderLifecycleMetrics.delv}
-                        </span>
-                        <div
-                          className="w-full bg-cyan-400/30 rounded-t-md"
-                          style={{
-                            height: orderLifecycleMetrics.delv > 0 ? "30%" : "4px",
-                          }}
-                        />
-                        <span className="text-[9px] font-medium text-slate-400 mt-1">
-                          Delv
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Current Factory Bottleneck:
-                    </span>
-                    <span className="font-bold text-slate-800">
-                      {orderLifecycleMetrics.bottleneckText}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3. Financial Overview */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-slate-600" />
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Financial Overview
-                        </h3>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
-                        THIS MONTH
-                      </span>
-                    </div>
-
-                    {/* Financial Line Items */}
-                    <div className="mt-5 space-y-3">
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="text-slate-500 font-medium">
-                          Total Order Value
-                        </span>
-                        <span className="font-black text-slate-900 text-sm">
-                          ₹ {totalOrderValueRupees.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="text-slate-500 font-medium">
-                          Payment Received
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-black text-slate-900 text-sm">
-                            ₹ {totalPaymentsReceivedRupees.toLocaleString("en-IN")}
-                          </span>
-                          <span className="text-[11px] font-bold text-emerald-600 flex items-center">
-                            <ArrowUpRight className="w-3 h-3" />
-                            {paymentCoveragePercent}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="text-slate-500 font-medium">
-                          Outstanding Balance
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-black text-slate-900 text-sm">
-                            ₹ {outstandingBalanceRupees.toLocaleString("en-IN")}
-                          </span>
-                          <span className="text-[11px] font-semibold text-slate-400 flex items-center">
-                            <ArrowDownRight className="w-3 h-3" />
-                            0%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="text-slate-500 font-medium">
-                          Overdue Receivables
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-black text-slate-900 text-sm">
-                            ₹ {overdueReceivablesRupees}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
-                            Aging Normal
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs py-1">
-                        <span className="text-slate-500 font-medium">
-                          Pending Verification
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-black text-slate-900 text-sm">
-                            ₹ {pendingVerificationRupees}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Audit OK
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Collection Health
-                    </span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Fully Reconciled
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* OPERATIONS & APPROVALS (3-COLUMN GRID) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* CARD 1: Design Projects */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5 text-slate-600" />
-                        <h4 className="text-xs font-bold text-slate-900">
-                          Design Projects
-                        </h4>
-                      </div>
-                      
-                    </div>
-
-                    <div className="mt-3.5 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Total Projects</span>
-                        <span className="font-bold text-slate-900">
-                          {designProjectStats.total}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Unassigned</span>
-                        <span className="font-bold text-slate-900">
-                          {designProjectStats.unassigned}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">In Progress</span>
-                        <span className="font-bold text-[#F95721]">
-                          {designProjectStats.inProgress}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-rose-600 font-medium">
-                          Client Review (Pending)
-                        </span>
-                        <span className="font-bold text-rose-600">
-                          {designProjectStats.clientReview}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Revision Requested</span>
-                        <span className="font-bold text-slate-900">
-                          {designProjectStats.revisionRequested}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Approved</span>
-                        <span className="font-bold text-emerald-600">
-                          {designProjectStats.approved}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Ready for Production</span>
-                        <span className="font-bold text-slate-900">
-                          {designProjectStats.readyForProduction}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Production Locked</span>
-                        <span className="font-bold text-emerald-600">
-                          {designProjectStats.productionLocked}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar Footer */}
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden flex">
-                      {designProjectStats.total > 0 ? (
-                        <>
-                          <div
-                            className="h-full bg-emerald-500"
-                            style={{ width: `${designProjectStats.approvedRate}%` }}
-                          />
-                          <div className="h-full bg-amber-400 flex-1" />
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium mt-1.5">
-                      <span>{designProjectStats.approvedRate}% approved rate</span>
-                      <span>{designProjectStats.pendingSignoffs} pending signoff</span>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                {/* CARD 3: Dispatch & Delivery */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Truck className="w-3.5 h-3.5 text-slate-600" />
-                        <h4 className="text-xs font-bold text-slate-900">
-                          Dispatch &amp; Delivery
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() => router.push("/dashboard/orders")}
-                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-0.5"
-                      >
-                        View All
-                      </button>
-                    </div>
-
-                    <div className="mt-3.5 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Ready for Dispatch</span>
-                        <span className="font-bold text-slate-900">{readyForDispatchCount}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Dispatched Today</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Out for Delivery</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Delivery Failed</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Fitting Scheduled</span>
-                        <span className="font-bold text-slate-900">0</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">Delivered Today</span>
-                        <span className="font-bold text-emerald-600">{deliveredTodayCount}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 text-[11px]">Fleet Logistics</span>
-                    <span className="font-semibold text-emerald-600 text-[11px]">
-                      All Couriers Synced
-                    </span>
-                  </div>
-                </div>
-
-                {/* CARD 4: Attention Required (Alert Style) */}
-                <div className={`bg-white rounded-2xl p-4 shadow-2xs flex flex-col justify-between border ${
-                  attentionMetrics.criticalCount > 0 ? "border-rose-200" : "border-slate-200/90"
-                }`}>
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <AlertTriangle className={`w-3.5 h-3.5 ${
-                          attentionMetrics.criticalCount > 0 ? "text-rose-500" : "text-slate-400"
-                        }`} />
-                        <h4 className="text-xs font-bold text-slate-900">
-                          Attention Required
-                        </h4>
-                      </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        attentionMetrics.criticalCount > 0
-                          ? "text-rose-600 bg-rose-50 border-rose-200"
-                          : "text-emerald-700 bg-emerald-50 border-emerald-200"
-                      }`}>
-                        {attentionMetrics.criticalCount > 0 ? `${attentionMetrics.criticalCount} Critical` : "All Clear"}
-                      </span>
-                    </div>
-
-                    <div className="mt-3.5 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Follow-ups overdue</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.overdueFollowups}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Quotations awaiting approval</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.quotesAwaiting}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Payments awaiting verification</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.paymentsPending}</span>
-                      </div>
-
-                      {/* Highlighted Designs Awaiting Row */}
-                      <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border ${
-                        attentionMetrics.designsAwaiting > 0
-                          ? "bg-rose-50/80 border-rose-200"
-                          : "bg-slate-50 border-slate-100"
-                      }`}>
-                        <span className={`font-semibold text-xs flex items-center gap-1.5 ${
-                          attentionMetrics.designsAwaiting > 0 ? "text-rose-700" : "text-slate-600"
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-sm ${
-                            attentionMetrics.designsAwaiting > 0 ? "bg-rose-500" : "bg-slate-400"
-                          }`} />
-                          Designs awaiting client approval
-                        </span>
-                        <span className={`font-black ${
-                          attentionMetrics.designsAwaiting > 0 ? "text-rose-700" : "text-slate-700"
-                        }`}>
-                          {attentionMetrics.designsAwaiting}
-                        </span>
-                      </div>
-
-
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Failed deliveries</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.failedDeliveries}</span>
-                      </div>
-                      <div className="flex items-center justify-between py-0.5">
-                        <span className="text-slate-500">Outstanding payments</span>
-                        <span className="font-bold text-slate-700">{attentionMetrics.outstandingPayments}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-2">
-                    
-                  </div>
-                </div>
-              </div>
-
-              {/* LOWER 2 COLUMNS: Team Performance & Recent System Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* 1. Team Performance */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-slate-600" />
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Team Performance
-                        </h3>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Tab toggles */}
-                        <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 text-xs font-semibold">
-                          <button
-                            onClick={() => setTeamTab("Sales Team")}
-                            className={`px-3 py-1 rounded-md transition-all ${
-                              teamTab === "Sales Team"
-                                ? "bg-white text-slate-900 shadow-2xs"
-                                : "text-slate-500 hover:text-slate-800"
-                            }`}
-                          >
-                            Sales Team
-                          </button>
-                        </div>
-
-                        <button
-                          onClick={() => router.push("/dashboard/admin/user-dashboards")}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition border border-indigo-200 shadow-2xs"
-                          title="Open User Dashboards Hub"
-                        >
-                          <span>User Dashboards</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Table View */}
-                    <div className="mt-4 overflow-x-auto">
-                      {true ? (
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                              <th className="py-2.5 pr-4">OPERATOR / REP</th>
-                              <th className="py-2.5 px-3 text-center">LEADS</th>
-                              <th className="py-2.5 px-3 text-center">ORDERS</th>
-                              <th className="py-2.5 px-3 text-right">REVENUE</th>
-                              <th className="py-2.5 pl-3 text-right">CONVERSION</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {salesTeamMembers.length === 0 ? (
-                              <tr>
-                                <td colSpan={5} className="py-8 text-center text-slate-400">
-                                  No sales representatives registered yet.
-                                </td>
-                              </tr>
-                            ) : (
-                              salesTeamMembers.map((member) => (
-                                <tr
-                                  key={member.id}
-                                  onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
-                                  className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
-                                  title={`Open ${member.name}'s Dashboard`}
-                                >
-                                  <td className="py-3 pr-4">
-                                    <div className="flex items-center gap-2.5">
-                                      <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
-                                        {member.avatarUrl ? (
-                                          <img
-                                            src={member.avatarUrl}
-                                            alt={member.name}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          member.initials
-                                        )}
-                                      </div>
-                                      <div>
-                                        <div className="font-bold text-slate-900">
-                                          {member.name}
-                                        </div>
-                                        <div className="text-[10px] text-slate-400">
-                                          {member.role}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                    {member.leads}
-                                  </td>
-                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                    {member.orders}
-                                  </td>
-                                  <td className="py-3 px-3 text-right font-black text-slate-900">
-                                    ₹ {member.revenue.toLocaleString("en-IN")}
-                                  </td>
-                                  <td className="py-3 pl-3 text-right">
-                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      {member.conversion}%
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
-                              <th className="py-2.5 pr-4">DESIGNER / ARTIST</th>
-                              <th className="py-2.5 px-3 text-center">PROJECTS</th>
-                              <th className="py-2.5 px-3 text-center">APPROVED</th>
-                              <th className="py-2.5 px-3 text-center">PENDING</th>
-                              <th className="py-2.5 pl-3 text-right">APPROVAL RATE</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {designTeamMembers.length === 0 ? (
-                              <tr>
-                                <td colSpan={5} className="py-8 text-center text-slate-400">
-                                  No designers registered yet.
-                                </td>
-                              </tr>
-                            ) : (
-                              designTeamMembers.map((member) => (
-                                <tr
-                                  key={member.id}
-                                  onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
-                                  className="hover:bg-indigo-50/60 cursor-pointer transition-colors"
-                                  title={`Open ${member.name}'s Dashboard`}
-                                >
-                                  <td className="py-3 pr-4">
-                                    <div className="flex items-center gap-2.5">
-                                      <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
-                                        {member.avatarUrl ? (
-                                          <img
-                                            src={member.avatarUrl}
-                                            alt={member.name}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        ) : (
-                                          member.initials
-                                        )}
-                                      </div>
-                                      <div>
-                                        <div className="font-bold text-slate-900">
-                                          {member.name}
-                                        </div>
-                                        <div className="text-[10px] text-slate-400">
-                                          {member.role}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                                    {member.projects}
-                                  </td>
-                                  <td className="py-3 px-3 text-center font-semibold text-emerald-600">
-                                    {member.approved}
-                                  </td>
-                                  <td className="py-3 px-3 text-center font-semibold text-rose-600">
-                                    {member.pending}
-                                  </td>
-                                  <td className="py-3 pl-3 text-right">
-                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      {member.rate}%
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Quota Attainment: {targetProgress?.achievementPercent !== undefined ? `${targetProgress.achievementPercent}%` : "0%"} of monthly baseline
-                    </span>
-                    <button
-                      onClick={() => router.push("/dashboard/admin/targets")}
-                      className="font-bold text-slate-700 hover:text-slate-900 flex items-center gap-0.5"
-                    >
-                      Manage Rep Targets →
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Recent System Activity */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-slate-600" />
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Recent System Activity
-                        </h3>
-                      </div>
-                      <button
-                        onClick={() => router.push("/dashboard/admin/audit")}
-                        className="text-xs font-semibold text-slate-500 hover:text-slate-800"
-                      >
-                        View Full Audit
-                      </button>
-                    </div>
-
-                    {/* Activity Feed */}
-                    <div className="mt-4 space-y-3">
-                      {recentActivitiesList.length === 0 ? (
-                        <div className="py-8 text-center text-slate-400">
-                          <CheckCircle2 className="w-6 h-6 mx-auto mb-1 stroke-1 text-slate-300" />
-                          <p className="text-xs font-medium text-slate-500">No recent system activity</p>
-                          <p className="text-[10px] text-slate-400">New activities and audit events will appear here.</p>
-                        </div>
-                      ) : (
-                        recentActivitiesList.map((act) => (
-                          <div
-                            key={act.id}
-                            className="flex items-start justify-between gap-3 text-xs py-1"
-                          >
-                            <div className="space-y-0.5 flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-400 font-mono">
-                                  {act.timeStr}
-                                </span>
-                                <span className="font-mono text-[11px] font-bold text-slate-800">
-                                  {act.eventCode}
-                                </span>
-                              </div>
-                              <p className="text-slate-500 text-[11px] truncate">
-                                {act.summary}
-                              </p>
-                            </div>
-                            
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">
-                      Atlas Real-time Stream: {activities.length} events past 60m
-                    </span>
-                    <span className="font-bold text-emerald-600 flex items-center gap-1.5 text-xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Listening
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* DOCKED QUICK ACTIONS HUB */}
-              <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-xl border border-slate-800">
-                <div className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-3 px-1">
-                  QUICK ACTIONS HUB
-                </div>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Add Lead */}
                   <button
                     onClick={() => setShowAddLeadModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F95721] hover:bg-[#e44d1c] text-white text-xs font-semibold shadow-xs transition active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Add Lead</span>
                   </button>
+                </div>
+              </div>
 
-                  {/* Create Customer */}
+              {/* 4 CLEAN HERO KPI CARDS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Total Collections */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Total Collections
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="my-3">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      ₹ {totalPaymentsReceivedRupees.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>Today&apos;s collections</span>
+                    <span className="font-bold text-emerald-600">
+                      ₹ {todayRevenueRupees.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Total Leads Pipeline */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Active Leads Pipeline
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="my-3">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      {totalLeadsCount} <span className="text-sm font-semibold text-slate-400">Leads</span>
+                    </div>
+                  </div>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>+{leadsThisMonthCount} this month</span>
+                    <span className="font-semibold text-indigo-600">
+                      {pipelineMetrics.winRate}% win rate
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Orders Booked */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Orders Booked
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <Package className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="my-3">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      {activeOrdersCount} <span className="text-sm font-semibold text-slate-400">Orders</span>
+                    </div>
+                  </div>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>Total booking value</span>
+                    <span className="font-bold text-slate-900">
+                      ₹ {totalOrderValueRupees.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Outstanding Receivables */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs hover:shadow-xs transition flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                      Outstanding Balance
+                    </span>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      attentionMetrics.paymentsPending > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-600"
+                    }`}>
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="my-3">
+                    <div className="text-2xl font-black text-slate-900 tracking-tight">
+                      ₹ {outstandingBalanceRupees.toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>Pending verification</span>
+                    <span className={`font-semibold ${attentionMetrics.paymentsPending > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                      {attentionMetrics.paymentsPending} audits pending
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* PRIMARY VIEW NAVIGATION TABS */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
+                <div className="flex items-center gap-2 overflow-x-auto">
                   <button
-                    onClick={() => router.push("/dashboard/customers")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                    onClick={() => setActiveView("team")}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeView === "team"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50"
+                    }`}
                   >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Create Customer</span>
+                    <Users className="w-4 h-4" />
+                    <span>Team &amp; Staff Performance</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                      activeView === "team" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-700"
+                    }`}>
+                      {allStaffMembers.length}
+                    </span>
                   </button>
 
-                  {/* New Quotation */}
                   <button
-                    onClick={() => router.push("/dashboard/quotations")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                    onClick={() => setActiveView("operations")}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeView === "operations"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50"
+                    }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>New Quotation</span>
+                    <Package className="w-4 h-4" />
+                    <span>Operations &amp; Attention Items</span>
+                    {attentionMetrics.criticalCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-black animate-pulse">
+                        {attentionMetrics.criticalCount}
+                      </span>
+                    )}
                   </button>
 
-                  {/* Verify Payments */}
                   <button
-                    onClick={() => router.push("/dashboard/payments")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                    onClick={() => setActiveView("activity")}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      activeView === "activity"
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50"
+                    }`}
                   >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Verify Payments</span>
+                    <Activity className="w-4 h-4 text-emerald-500" />
+                    <span>Live Activity &amp; Audit Stream</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                      activeView === "activity" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-700"
+                    }`}>
+                      {filteredSystemEvents.length}
+                    </span>
                   </button>
+                </div>
 
-                  {/* View Approvals */}
-                  
-
-
-
-                  {/* Deliveries Hub */}
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => router.push("/dashboard/orders")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-xs transition-colors"
+                    onClick={() => router.push("/dashboard/admin/user-dashboards")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
                   >
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>Deliveries Hub</span>
-                  </button>
-
-                  {/* Manage Users */}
-                  <button
-                    onClick={() => router.push("/dashboard/admin/users")}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold shadow-xs transition-colors"
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Manage Users</span>
+                    <span>User Dashboards Hub</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
+              {/* TAB 1: TEAM & STAFF DIRECTORY */}
+              {activeView === "team" && (
+                <div className="space-y-4">
+                  {/* Sub-Filters and Search */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                    {/* Role Filter Pills */}
+                    <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80 text-xs font-semibold">
+                      <button
+                        onClick={() => setTeamTab("Sales Team")}
+                        className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
+                          teamTab === "Sales Team"
+                            ? "bg-white text-slate-900 shadow-2xs font-bold"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        <span>Sales Executives</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                          teamTab === "Sales Team" ? "bg-indigo-50 text-indigo-700 font-bold" : "bg-slate-200/70 text-slate-600"
+                        }`}>
+                          {salesTeamMembers.length}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setTeamTab("Data Operators")}
+                        className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
+                          teamTab === "Data Operators"
+                            ? "bg-white text-slate-900 shadow-2xs font-bold"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        <span>Field Data Operators</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                          teamTab === "Data Operators" ? "bg-teal-50 text-teal-700 font-bold" : "bg-slate-200/70 text-slate-600"
+                        }`}>
+                          {dataOperatorsList.length}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setTeamTab("All Team")}
+                        className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
+                          teamTab === "All Team"
+                            ? "bg-white text-slate-900 shadow-2xs font-bold"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        <span>All Staff</span>
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/70 text-slate-600">
+                          {allStaffMembers.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Staff Search Input */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex-1 max-w-sm">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={teamSearch}
+                        onChange={(e) => setTeamSearch(e.target.value)}
+                        placeholder="Search staff by name, email, or phone..."
+                        className="w-full text-xs text-slate-700 bg-transparent focus:outline-none placeholder-slate-400"
+                      />
+                      {teamSearch && (
+                        <button
+                          onClick={() => setTeamSearch("")}
+                          className="text-slate-400 hover:text-slate-600 text-xs px-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Context Metrics Strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {teamTab === "Sales Team" ? (
+                      <>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Reps</span>
+                          <span className="font-extrabold text-slate-900 text-base mt-0.5 block">{salesTeamMembers.length} Executives</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Leads</span>
+                          <span className="font-extrabold text-indigo-600 text-base mt-0.5 block">{leads.length} Leads</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Won Deals</span>
+                          <span className="font-extrabold text-emerald-600 text-base mt-0.5 block">{orders.length} Closed</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Revenue Won</span>
+                          <span className="font-extrabold text-slate-900 text-base mt-0.5 block">₹ {totalOrderValueRupees.toLocaleString("en-IN")}</span>
+                        </div>
+                      </>
+                    ) : teamTab === "Data Operators" ? (
+                      <>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Field Operators</span>
+                          <span className="font-extrabold text-slate-900 text-base mt-0.5 block">{dataOperatorsList.length} Active</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Leads Sourced</span>
+                          <span className="font-extrabold text-indigo-600 text-base mt-0.5 block">{dataOperatorsList.reduce((acc, o) => acc + o.totalSourced, 0)}</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sourced Today</span>
+                          <span className="font-extrabold text-emerald-600 text-base mt-0.5 block">{dataOperatorsList.reduce((acc, o) => acc + o.todaySourced, 0)} today</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Photos Captured</span>
+                          <span className="font-extrabold text-teal-600 text-base mt-0.5 block">{dataOperatorsList.reduce((acc, o) => acc + o.withPhotosCount, 0)} Photos</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Staff</span>
+                          <span className="font-extrabold text-slate-900 text-base mt-0.5 block">{allStaffMembers.length} Members</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Online Now</span>
+                          <span className="font-extrabold text-emerald-600 text-base mt-0.5 block">{allStaffMembers.filter((m) => m.isOnline).length} Active</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pipeline Leads</span>
+                          <span className="font-extrabold text-indigo-600 text-base mt-0.5 block">{leads.length}</span>
+                        </div>
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Confirmed Orders</span>
+                          <span className="font-extrabold text-slate-900 text-base mt-0.5 block">{orders.length}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Clean Staff Table */}
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                            <th className="py-3 px-4">Staff Member</th>
+                            <th className="py-3 px-3">Role</th>
+                            {teamTab === "Sales Team" ? (
+                              <>
+                                <th className="py-3 px-3 text-center">Leads Handled</th>
+                                <th className="py-3 px-3 text-center">Follow-ups</th>
+                                <th className="py-3 px-3 text-center">Orders Closed</th>
+                                <th className="py-3 px-3 text-right">Revenue Generated</th>
+                                <th className="py-3 px-3 text-right">Conversion Rate</th>
+                              </>
+                            ) : teamTab === "Data Operators" ? (
+                              <>
+                                <th className="py-3 px-3 text-center">Total Sourced</th>
+                                <th className="py-3 px-3 text-center">Today</th>
+                                <th className="py-3 px-3 text-center">Photos Attached</th>
+                                <th className="py-3 px-3 text-center">Converted to Won</th>
+                                <th className="py-3 px-3 text-right">Quality Rate</th>
+                              </>
+                            ) : (
+                              <>
+                                <th className="py-3 px-3 text-center">Leads / Sourced</th>
+                                <th className="py-3 px-3 text-center">Status</th>
+                                <th className="py-3 px-3 text-right">Conversion %</th>
+                              </>
+                            )}
+                            <th className="py-3 px-4 text-center">Actions</th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredStaffMembers.length === 0 ? (
+                            <tr>
+                              <td colSpan={8} className="py-12 text-center text-slate-400">
+                                <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-1" />
+                                <p className="text-xs font-semibold text-slate-600">No staff members match your filter.</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Try clearing your search query.</p>
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredStaffMembers.map((member) => (
+                              <tr
+                                key={member.id}
+                                className="hover:bg-slate-50/80 transition-colors group"
+                              >
+                                {/* Member Profile */}
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="relative shrink-0">
+                                      <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 overflow-hidden">
+                                        {member.avatarUrl ? (
+                                          <img
+                                            src={member.avatarUrl}
+                                            alt={member.name}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          member.initials
+                                        )}
+                                      </div>
+                                      <span
+                                        className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                                          member.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                                        }`}
+                                        title={member.isOnline ? "Online" : "Offline"}
+                                      />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-slate-900 truncate">
+                                        {member.name}
+                                      </div>
+                                      <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                                        {member.email && member.email !== "—" && (
+                                          <span className="truncate">{member.email}</span>
+                                        )}
+                                        {member.phone && member.phone !== "—" && (
+                                          <span className="font-mono text-slate-400">• {member.phone}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Role Badge */}
+                                <td className="py-3 px-3">
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                                    member.userType === "operator"
+                                      ? "bg-teal-50 text-teal-700 border-teal-200"
+                                      : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                  }`}>
+                                    {member.role}
+                                  </span>
+                                </td>
+
+                                {/* Tab Specific Columns */}
+                                {teamTab === "Sales Team" ? (
+                                  <>
+                                    <td className="py-3 px-3 text-center font-bold text-slate-900">
+                                      {member.leads}
+                                    </td>
+                                    <td className="py-3 px-3 text-center">
+                                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                        member.overdueFollowups > 0
+                                          ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                          : "bg-slate-100 text-slate-700"
+                                      }`}>
+                                        {member.activeFollowups} {member.overdueFollowups > 0 ? `(${member.overdueFollowups} overdue)` : ""}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-3 text-center font-bold text-slate-900">
+                                      {member.orders}
+                                    </td>
+                                    <td className="py-3 px-3 text-right font-black text-slate-900">
+                                      ₹ {member.revenue.toLocaleString("en-IN")}
+                                    </td>
+                                    <td className="py-3 px-3 text-right">
+                                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        {member.conversion}%
+                                      </span>
+                                    </td>
+                                  </>
+                                ) : teamTab === "Data Operators" ? (
+                                  <>
+                                    <td className="py-3 px-3 text-center font-bold text-slate-900">
+                                      {member.totalSourced}
+                                    </td>
+                                    <td className="py-3 px-3 text-center">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        +{member.todaySourced} today
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                                      {member.withPhotosCount}
+                                    </td>
+                                    <td className="py-3 px-3 text-center font-bold text-indigo-700">
+                                      {member.convertedBySalesCount}
+                                    </td>
+                                    <td className="py-3 px-3 text-right">
+                                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                                        {member.conversion}%
+                                      </span>
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="py-3 px-3 text-center font-bold text-slate-900">
+                                      {member.userType === "operator" ? member.totalSourced : member.leads}
+                                    </td>
+                                    <td className="py-3 px-3 text-center">
+                                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                        member.isOnline ? "text-emerald-700 bg-emerald-50 border border-emerald-200" : "text-slate-500 bg-slate-100"
+                                      }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${member.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+                                        {member.isOnline ? "Online" : "Offline"}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-3 text-right">
+                                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        {member.conversion}%
+                                      </span>
+                                    </td>
+                                  </>
+                                )}
+
+                                {/* Actions Column */}
+                                <td className="py-3 px-4 text-center">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      onClick={() => setSelectedStaffMember(member)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 text-[11px] font-bold transition flex items-center gap-1"
+                                      title="Inspect User Details"
+                                    >
+                                      <Eye className="w-3.5 h-3.5" />
+                                      <span>Details</span>
+                                    </button>
+
+                                    {member.phone && member.phone !== "—" && (
+                                      <a
+                                        href={`tel:${member.phone}`}
+                                        className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition"
+                                        title={`Call ${member.name}`}
+                                      >
+                                        <Phone className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+
+                                    {member.email && member.email !== "—" && (
+                                      <a
+                                        href={`mailto:${member.email}`}
+                                        className="p-1.5 rounded-lg hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition"
+                                        title={`Email ${member.name}`}
+                                      >
+                                        <Mail className="w-3.5 h-3.5" />
+                                      </a>
+                                    )}
+
+                                    <button
+                                      onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${member.id}`)}
+                                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
+                                      title="Open Full Dashboard"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: OPERATIONS & ATTENTION ITEMS */}
+              {activeView === "operations" && (
+                <div className="space-y-6">
+                  {/* Action Items Pending Review */}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">
+                      Action Items Requiring Attention
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* Overdue Follow-ups */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Overdue Follow-ups</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              attentionMetrics.overdueFollowups > 0 ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-emerald-50 text-emerald-700"
+                            }`}>
+                              {attentionMetrics.overdueFollowups > 0 ? "Action Required" : "All Clear"}
+                            </span>
+                          </div>
+                          <div className="text-3xl font-black text-slate-900 mt-2">
+                            {attentionMetrics.overdueFollowups}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">Pending client calls or scheduled meetings past due date.</p>
+                        </div>
+                        <button
+                          onClick={() => router.push("/dashboard/followups")}
+                          className="mt-4 w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition"
+                        >
+                          Review Follow-ups →
+                        </button>
+                      </div>
+
+                      {/* Quotations Awaiting Approval */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Quotes In Approval</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              attentionMetrics.quotesAwaiting > 0 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-emerald-50 text-emerald-700"
+                            }`}>
+                              {attentionMetrics.quotesAwaiting > 0 ? "Pending" : "Cleared"}
+                            </span>
+                          </div>
+                          <div className="text-3xl font-black text-slate-900 mt-2">
+                            {attentionMetrics.quotesAwaiting}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">Price estimates or discounts awaiting customer signoff.</p>
+                        </div>
+                        <button
+                          onClick={() => router.push("/dashboard/quotations")}
+                          className="mt-4 w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition"
+                        >
+                          Review Quotations →
+                        </button>
+                      </div>
+
+                      {/* Payments Pending Verification */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Payments to Audit</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              attentionMetrics.paymentsPending > 0 ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-emerald-50 text-emerald-700"
+                            }`}>
+                              {attentionMetrics.paymentsPending > 0 ? "Needs Audit" : "Reconciled"}
+                            </span>
+                          </div>
+                          <div className="text-3xl font-black text-slate-900 mt-2">
+                            {attentionMetrics.paymentsPending}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">Cash, UPI, or Bank transfers awaiting accounts verification.</p>
+                        </div>
+                        <button
+                          onClick={() => router.push("/dashboard/payments")}
+                          className="mt-4 w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition"
+                        >
+                          Verify Payments →
+                        </button>
+                      </div>
+
+                      {/* Active In-Progress Orders */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-500">Active Orders</span>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">
+                              Active Ops
+                            </span>
+                          </div>
+                          <div className="text-3xl font-black text-slate-900 mt-2">
+                            {activeOrdersCount}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">Confirmed client print jobs currently in progress.</p>
+                        </div>
+                        <button
+                          onClick={() => router.push("/dashboard/orders")}
+                          className="mt-4 w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 transition"
+                        >
+                          Manage Orders →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2-Column: Pipeline Funnel + Financial Overview */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Pipeline Funnel */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">Sales Conversion Funnel</h4>
+                          <p className="text-xs text-slate-500">End-to-end pipeline progression from inquiry to won order.</p>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {pipelineMetrics.winRate}% Win Velocity
+                        </span>
+                      </div>
+
+                      <div className="space-y-4 pt-2">
+                        {/* Step 1: Leads */}
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                            <span>1. Inquiries &amp; Sourced Leads</span>
+                            <span>{pipelineMetrics.leads} Leads</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: "100%" }} />
+                          </div>
+                        </div>
+
+                        {/* Step 2: Qualified */}
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                            <span>2. Qualified / Interested</span>
+                            <span>{pipelineMetrics.int} Leads</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div
+                              className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pipelineMetrics.leads > 0 ? (pipelineMetrics.int / pipelineMetrics.leads) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Step 3: Quoted */}
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                            <span>3. Quotations Generated</span>
+                            <span>{pipelineMetrics.quote} Quotes</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div
+                              className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pipelineMetrics.leads > 0 ? (pipelineMetrics.quote / pipelineMetrics.leads) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Step 4: Closed Won */}
+                        <div>
+                          <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                            <span>4. Closed Won Orders</span>
+                            <span>{pipelineMetrics.order} Orders</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                            <div
+                              className="bg-rose-500 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pipelineMetrics.leads > 0 ? (pipelineMetrics.order / pipelineMetrics.leads) * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financial Overview */}
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">Financial Balance Sheet</h4>
+                            <p className="text-xs text-slate-500">Order revenue, verified collections, and balance.</p>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                            {paymentCoveragePercent}% Collected
+                          </span>
+                        </div>
+
+                        <div className="space-y-3 pt-1">
+                          <div className="flex items-center justify-between py-2 border-b border-slate-100 text-xs">
+                            <span className="text-slate-500 font-medium">Total Booked Value</span>
+                            <span className="font-black text-slate-900 text-sm">₹ {totalOrderValueRupees.toLocaleString("en-IN")}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-2 border-b border-slate-100 text-xs">
+                            <span className="text-slate-500 font-medium">Collections Verified</span>
+                            <span className="font-black text-emerald-600 text-sm">₹ {totalPaymentsReceivedRupees.toLocaleString("en-IN")}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-2 border-b border-slate-100 text-xs">
+                            <span className="text-slate-500 font-medium">Outstanding Balance</span>
+                            <span className="font-black text-slate-900 text-sm">₹ {outstandingBalanceRupees.toLocaleString("en-IN")}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between py-2 text-xs">
+                            <span className="text-slate-500 font-medium">Collections Pending Verification</span>
+                            <span className="font-black text-purple-600 text-sm">₹ {pendingVerificationRupees.toLocaleString("en-IN")}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Settlement Status:</span>
+                        <span className="font-bold text-emerald-600 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          Ledgers Synchronized
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: LIVE ACTIVITY & AUDIT STREAM */}
+              {activeView === "activity" && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 space-y-4">
+                  {/* Category filters & Search */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-semibold">
+                      <button
+                        onClick={() => setActivityCategoryFilter("all")}
+                        className={`px-3 py-1.5 rounded-xl transition ${
+                          activityCategoryFilter === "all"
+                            ? "bg-slate-900 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        All ({combinedSystemEvents.length})
+                      </button>
+
+                      <button
+                        onClick={() => setActivityCategoryFilter("sales")}
+                        className={`px-3 py-1.5 rounded-xl transition ${
+                          activityCategoryFilter === "sales"
+                            ? "bg-indigo-600 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        Sales Team
+                      </button>
+
+                      <button
+                        onClick={() => setActivityCategoryFilter("operators")}
+                        className={`px-3 py-1.5 rounded-xl transition ${
+                          activityCategoryFilter === "operators"
+                            ? "bg-teal-600 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        Data Operators
+                      </button>
+
+                      <button
+                        onClick={() => setActivityCategoryFilter("orders")}
+                        className={`px-3 py-1.5 rounded-xl transition ${
+                          activityCategoryFilter === "orders"
+                            ? "bg-amber-600 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        Quotes &amp; Orders
+                      </button>
+
+                      <button
+                        onClick={() => setActivityCategoryFilter("payments")}
+                        className={`px-3 py-1.5 rounded-xl transition ${
+                          activityCategoryFilter === "payments"
+                            ? "bg-purple-600 text-white font-bold"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        Payments
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs max-w-xs w-full">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={activitySearch}
+                        onChange={(e) => setActivitySearch(e.target.value)}
+                        placeholder="Search audit events..."
+                        className="w-full text-xs text-slate-700 bg-transparent focus:outline-none placeholder-slate-400"
+                      />
+                      {activitySearch && (
+                        <button
+                          onClick={() => setActivitySearch("")}
+                          className="text-slate-400 hover:text-slate-600 text-xs px-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Activity Timeline List */}
+                  <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1">
+                    {filteredSystemEvents.length === 0 ? (
+                      <div className="py-16 text-center text-slate-400">
+                        <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-1" />
+                        <p className="text-xs font-semibold text-slate-600">No events found in this category.</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Real-time interactions will appear here automatically.</p>
+                      </div>
+                    ) : (
+                      filteredSystemEvents.map((act) => (
+                        <div
+                          key={act.id}
+                          className="p-3 rounded-xl bg-slate-50/70 hover:bg-slate-100/80 border border-slate-200/70 transition flex items-start gap-3 text-xs"
+                        >
+                          <div className="pt-0.5 shrink-0">
+                            <span
+                              className={`w-2 h-2 rounded-full block ${
+                                act.category === "operators"
+                                  ? "bg-teal-500"
+                                  : act.category === "orders"
+                                  ? "bg-amber-500"
+                                  : act.category === "payments"
+                                  ? "bg-purple-500"
+                                  : "bg-indigo-500"
+                              }`}
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900">{act.actorName}</span>
+                                <span className={`px-2 py-0.2 rounded text-[10px] font-bold border ${
+                                  act.category === "operators"
+                                    ? "bg-teal-50 text-teal-700 border-teal-200"
+                                    : act.category === "payments"
+                                    ? "bg-purple-50 text-purple-700 border-purple-200"
+                                    : "bg-slate-100 text-slate-700 border-slate-200"
+                                }`}>
+                                  {act.actorRole}
+                                </span>
+                                <span className="font-mono text-[10px] font-semibold text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                                  {act.eventCode}
+                                </span>
+                              </div>
+
+                              <span className="text-[11px] text-slate-400 font-mono">
+                                {act.timeStr}
+                              </span>
+                            </div>
+
+                            <p className="text-slate-600 text-xs leading-relaxed">
+                              {act.summary}
+                            </p>
+
+                            {act.tag && (
+                              <div className="pt-0.5">
+                                <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 inline-block">
+                                  {act.tag}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>Showing {filteredSystemEvents.length} live records</span>
+                    <button
+                      onClick={() => router.push("/dashboard/admin/audit")}
+                      className="font-bold text-indigo-600 hover:text-indigo-800"
+                    >
+                      Open Full Audit Log Hub →
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* FOOTER SYSTEM STATUS */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500 pt-2 pb-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 pt-2 pb-4 border-t border-slate-200/80">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-700">
-                    A2V Studio PrintFlow CRM
-                  </span>
+                  <span className="font-semibold text-slate-700">A2V CRM Platform</span>
                   <span>•</span>
-                  <span>Version 4.8.2-prod</span>
+                  <span>Version 4.8.2</span>
                   <span>•</span>
                   <span className="flex items-center gap-1 text-emerald-600 font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    MongoDB Atlas Active
+                    Database Active
                   </span>
                 </div>
                 <div>
-                  Signed in as{" "}
-                  <span className="font-semibold text-slate-700">
-                    {currentUser?.email || "tanya@a2vstudio.in"}
-                  </span>
+                  Signed in as <span className="font-semibold text-slate-700">{currentUser?.email || "admin@a2vstudio.in"}</span>
                 </div>
               </div>
             </>
@@ -2293,7 +2056,7 @@ export default function AdminOverviewPage() {
                   type="button"
                   disabled={creatingLead}
                   onClick={() => setShowAddLeadModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -2320,6 +2083,281 @@ export default function AdminOverviewPage() {
           </div>
         </div>
       )}
+
+      {/* STAFF MEMBER DEEP INSPECTION MODAL */}
+      {selectedStaffMember && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-700 font-extrabold text-base flex items-center justify-center border-2 border-white shadow-xs overflow-hidden">
+                    {selectedStaffMember.avatarUrl ? (
+                      <img
+                        src={selectedStaffMember.avatarUrl}
+                        alt={selectedStaffMember.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      selectedStaffMember.initials
+                    )}
+                  </div>
+                  <span
+                    className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                      selectedStaffMember.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+                    }`}
+                    title={selectedStaffMember.isOnline ? "Online" : "Offline"}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-extrabold text-slate-900">
+                      {selectedStaffMember.name}
+                    </h3>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      selectedStaffMember.userType === "operator"
+                        ? "bg-teal-50 text-teal-700 border-teal-200"
+                        : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                    }`}>
+                      {selectedStaffMember.role}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      selectedStaffMember.isOnline
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}>
+                      {selectedStaffMember.isOnline ? "Online" : "Offline"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                    {selectedStaffMember.email && selectedStaffMember.email !== "—" && (
+                      <a
+                        href={`mailto:${selectedStaffMember.email}`}
+                        className="flex items-center gap-1 hover:text-indigo-600 transition"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{selectedStaffMember.email}</span>
+                      </a>
+                    )}
+                    {selectedStaffMember.phone && selectedStaffMember.phone !== "—" && (
+                      <a
+                        href={`tel:${selectedStaffMember.phone}`}
+                        className="flex items-center gap-1 hover:text-indigo-600 font-mono transition"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{selectedStaffMember.phone}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedStaffMember(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quick KPI Stat Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50/70 border-b border-slate-100 text-xs">
+              {selectedStaffMember.userType === "sales" ? (
+                <>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Leads</span>
+                    <span className="text-lg font-black text-slate-900">{selectedStaffMember.leads}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Follow-ups</span>
+                    <span className="text-lg font-black text-amber-600">{selectedStaffMember.activeFollowups} Active</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Orders Won</span>
+                    <span className="text-lg font-black text-emerald-600">{selectedStaffMember.orders}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
+                    <span className="text-lg font-black text-slate-900">₹ {selectedStaffMember.revenue.toLocaleString("en-IN")}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Sourced</span>
+                    <span className="text-lg font-black text-slate-900">{selectedStaffMember.totalSourced}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Today Sourced</span>
+                    <span className="text-lg font-black text-emerald-600">+{selectedStaffMember.todaySourced}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Photos Attached</span>
+                    <span className="text-lg font-black text-indigo-600">{selectedStaffMember.withPhotosCount}</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Converted by Sales</span>
+                    <span className="text-lg font-black text-emerald-600">{selectedStaffMember.convertedBySalesCount} ({selectedStaffMember.conversion}%)</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Sub-Tabs: Associated Leads vs User Activity */}
+            <div className="px-5 pt-3 border-b border-slate-100 flex items-center gap-3 text-xs font-bold">
+              <button
+                onClick={() => setInspectionTab("leads")}
+                className={`pb-2.5 transition border-b-2 ${
+                  inspectionTab === "leads"
+                    ? "border-indigo-600 text-indigo-700 font-black"
+                    : "border-transparent text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                {selectedStaffMember.userType === "operator" ? "Sourced Field Leads" : "Assigned Pipeline Leads"} ({selectedStaffMember.assignedLeadsList?.length || 0})
+              </button>
+
+              <button
+                onClick={() => setInspectionTab("activity")}
+                className={`pb-2.5 transition border-b-2 ${
+                  inspectionTab === "activity"
+                    ? "border-indigo-600 text-indigo-700 font-black"
+                    : "border-transparent text-slate-400 hover:text-slate-700"
+                }`}
+              >
+                User Activity Stream
+              </button>
+            </div>
+
+            {/* Sub-Tab Content */}
+            <div className="p-5 flex-1 overflow-y-auto max-h-[350px]">
+              {inspectionTab === "leads" ? (
+                selectedStaffMember.assignedLeadsList?.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400">
+                    <Users className="w-8 h-8 mx-auto mb-2 stroke-1 text-slate-300" />
+                    <p className="text-xs font-semibold text-slate-600">No leads associated with this user yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedStaffMember.assignedLeadsList.map((lead, idx) => (
+                      <div
+                        key={lead._id || idx}
+                        onClick={() => router.push(`/dashboard/leads?id=${lead._id || lead.id}`)}
+                        className="p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/70 transition flex items-center justify-between gap-3 text-xs cursor-pointer group"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition">
+                              {lead.businessName || lead.companyName || lead.contactName || lead.name || "Inquiry"}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white border border-slate-200 text-slate-600">
+                              {lead.status || "NEW"}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+                            <span>Contact: {lead.contactName || lead.phone || "—"}</span>
+                            {lead.phone && <span className="font-mono">{lead.phone}</span>}
+                            {lead.areaName && <span>• {lead.areaName}</span>}
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="font-bold text-slate-800 text-xs block">
+                            ₹ {Number(lead.expectedValuePaise ? lead.expectedValuePaise / 100 : lead.estimatedBudget || lead.expectedValue || 0).toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" }) : "Recent"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                /* Activity Tab */
+                <div className="space-y-2">
+                  {combinedSystemEvents
+                    .filter(
+                      (act) =>
+                        act.actorName?.toLowerCase().includes(selectedStaffMember.name.toLowerCase()) ||
+                        extractId(act.actorId) === selectedStaffMember.id
+                    )
+                    .map((act) => (
+                      <div
+                        key={act.id}
+                        className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 flex items-start gap-2.5 text-xs"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900">{act.eventCode}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">{act.timeStr}</span>
+                          </div>
+                          <p className="text-slate-600 text-[11px] mt-0.5">{act.summary}</p>
+                        </div>
+                      </div>
+                    ))}
+                  {combinedSystemEvents.filter(
+                    (act) =>
+                      act.actorName?.toLowerCase().includes(selectedStaffMember.name.toLowerCase()) ||
+                      extractId(act.actorId) === selectedStaffMember.id
+                  ).length === 0 && (
+                    <div className="py-8 text-center text-slate-400">
+                      <Clock className="w-6 h-6 mx-auto mb-1 stroke-1 text-slate-300" />
+                      <p className="text-xs font-semibold text-slate-600">No recent activity logged for this user.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Controls */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                {selectedStaffMember.phone && selectedStaffMember.phone !== "—" && (
+                  <a
+                    href={`tel:${selectedStaffMember.phone}`}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Call Staff</span>
+                  </a>
+                )}
+                {selectedStaffMember.email && selectedStaffMember.email !== "—" && (
+                  <a
+                    href={`mailto:${selectedStaffMember.email}`}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email</span>
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${selectedStaffMember.id}`)}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>Open Full Dashboard</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStaffMember(null)}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
