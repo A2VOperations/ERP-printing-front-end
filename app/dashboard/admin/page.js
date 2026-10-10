@@ -2339,6 +2339,28 @@ export default function AdminOverviewPage() {
 
               <div className="flex items-center gap-2">
                 <button
+                  onClick={() => {
+                    const param = selectedStaffMember.userType === "operator" ? `createdById=${selectedStaffMember.id}` : `assignedToId=${selectedStaffMember.id}`;
+                    router.push(`/dashboard/leads?${param}`);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition flex items-center gap-1.5 shadow-2xs"
+                  title="Open Leads filtered to this user"
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Filtered Leads</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const param = selectedStaffMember.userType === "operator" ? `createdById=${selectedStaffMember.id}` : `assignedToId=${selectedStaffMember.id}`;
+                    router.push(`/dashboard/followups?${param}`);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 transition flex items-center gap-1.5 shadow-2xs"
+                  title="Open Follow-ups filtered to this user"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Filtered Follow-ups</span>
+                </button>
+                <button
                   onClick={() => router.push(`/dashboard/admin/user-dashboards?userId=${selectedStaffMember.id}`)}
                   className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition flex items-center gap-1.5 shadow-xs"
                 >
