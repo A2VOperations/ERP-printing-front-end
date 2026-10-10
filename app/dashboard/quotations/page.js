@@ -40,7 +40,10 @@ import {
   Palette,
   CreditCard,
   Receipt,
+  Truck,
 } from "lucide-react";
+import CreateCommercialOrderModal from "@/app/components/commercial/CreateCommercialOrderModal";
+import JobCardModal from "@/app/components/commercial/JobCardModal";
 
 const formatDate = (dateVal) => {
   if (!dateVal) return "-";
@@ -171,6 +174,10 @@ function QuotationsContent() {
   const [quoteOrdersLoading, setQuoteOrdersLoading] = useState(false);
   const [showConvertOrderModal, setShowConvertOrderModal] = useState(false);
   const [convertQuote, setConvertQuote] = useState(null);
+  const [createdOrderResult, setCreatedOrderResult] = useState(null);
+  const [showCreatedOrderSuccessModal, setShowCreatedOrderSuccessModal] = useState(false);
+  const [showJobCardModal, setShowJobCardModal] = useState(false);
+  const [selectedOrderForJobCard, setSelectedOrderForJobCard] = useState(null);
   const [orderForm, setOrderForm] = useState({
     quotationId: "",
     selectedItemIndex: "",
@@ -645,6 +652,7 @@ function QuotationsContent() {
       .split("T")[0];
 
     const firstIt = items[0] || {};
+    const cust = targetQuote.customerSnapshot || {};
 
     setOrderForm({
       quotationId: targetQuote._id,
@@ -664,6 +672,41 @@ function QuotationsContent() {
       colors: firstIt.colors || "CMYK",
       printSides: firstIt.printSides || "SINGLE",
       finishing: firstIt.finishing || [],
+      // Job Card (Designer & Production - Image 2)
+      priority: "Normal",
+      clientBusiness: cust.displayName || cust.companyName || cust.contactPerson || "",
+      contactNo: cust.phone || "",
+      area: cust.billingAddress?.city || "",
+      address:
+        cust.billingAddress?.street ||
+        (typeof cust.billingAddress === "string" ? cust.billingAddress : "") ||
+        "",
+      workType: [firstIt.title || "Visiting Card"],
+      workTypeOther: "",
+      frame: "",
+      designRequired: "Yes",
+      designer: "",
+      salesExecutive: targetQuote.assignedSalesId?.name || "",
+      salesExecutiveOther: "",
+      // Vendor Job Card (Logistics - Image 1)
+      includeVendorJobCard: false,
+      vendorName: "",
+      vendorContact: "",
+      vendorLocation: "",
+      goToFor: ["Print"],
+      vendorWorkDetails: [firstIt.title || "Visiting Card"],
+      vendorItemToCollect: ["Printed Material"],
+      vendorSpecialInstructions: targetQuote.notes || "",
+      vendorRouteStop1GoTo: "",
+      vendorRouteStop1Work: "",
+      vendorRouteStop2GoTo: "",
+      vendorRouteStop2Work: "",
+      vendorRouteStop3DeliverTo: cust.displayName || cust.companyName || "",
+      vendorRouteStop3Work: "Delivery & Handover",
+      vendorPaymentAmount: "",
+      vendorPaymentMode: "Cash",
+      vendorAssignedToName: "",
+      vendorAssignedToContact: "",
     });
 
     setShowConvertOrderModal(true);
@@ -712,13 +755,64 @@ function QuotationsContent() {
         colors: orderForm.colors || "CMYK",
         printSides: orderForm.printSides || "SINGLE",
         finishing: orderForm.finishing || [],
+        // Detailed Job Cards (Image 2 and Image 1)
+        jobCard: {
+          priority: orderForm.priority || "Normal",
+          clientBusiness: orderForm.clientBusiness || "",
+          area: orderForm.area || "",
+          contactNo: orderForm.contactNo || "",
+          address: orderForm.address || "",
+          workType: orderForm.workType || [orderForm.title || "Visiting Card"],
+          workTypeOther: orderForm.workTypeOther || "",
+          size: orderForm.width && orderForm.height ? `${orderForm.width} x ${orderForm.height} ${orderForm.dimensionUnit || "inch"}` : "",
+          qty: String(orderForm.quantity || "1"),
+          materialGsm: [orderForm.material, orderForm.gsm ? `${orderForm.gsm} GSM` : ""].filter(Boolean).join(" "),
+          printType: orderForm.colors === "1C" || orderForm.colors === "BW" ? "B/W" : "Colour",
+          finishing: orderForm.finishing || [],
+          frame: orderForm.frame || "",
+          designRequired: orderForm.designRequired || "Yes",
+          designer: orderForm.designer || "",
+          status: "Pending",
+          amountTotal: orderForm.amount ? Number(orderForm.amount) : undefined,
+          deliveryRequired: orderForm.deliveryMethod === "PICKUP" ? "No" : "Yes",
+          deliveryDate: orderForm.promisedDeliveryDate || "",
+          salesExecutive: orderForm.salesExecutive || "",
+          salesExecutiveOther: orderForm.salesExecutiveOther || "",
+        },
+        vendorJobCard: orderForm.includeVendorJobCard ? {
+          vendorName: orderForm.vendorName || "",
+          vendorContact: orderForm.vendorContact || "",
+          vendorLocation: orderForm.vendorLocation || "",
+          goToFor: orderForm.goToFor || ["Print"],
+          workDetails: orderForm.vendorWorkDetails || orderForm.workType || [],
+          size: orderForm.width && orderForm.height ? `${orderForm.width} x ${orderForm.height} ${orderForm.dimensionUnit || "inch"}` : "",
+          quantity: String(orderForm.quantity || "1"),
+          materialGsm: [orderForm.material, orderForm.gsm ? `${orderForm.gsm} GSM` : ""].filter(Boolean).join(" "),
+          print: ["Colour", orderForm.printSides === "DOUBLE" ? "Both Side" : "Single Side"],
+          finishing: orderForm.finishing || [],
+          specialInstructions: orderForm.vendorSpecialInstructions || orderForm.notes || "",
+          itemToCollect: orderForm.vendorItemToCollect || ["Printed Material"],
+          route: {
+            stop1GoTo: orderForm.vendorRouteStop1GoTo || "",
+            stop1Work: orderForm.vendorRouteStop1Work || "",
+            stop2GoTo: orderForm.vendorRouteStop2GoTo || "",
+            stop2Work: orderForm.vendorRouteStop2Work || "",
+            stop3DeliverTo: orderForm.vendorRouteStop3DeliverTo || orderForm.clientBusiness || "",
+            stop3Work: orderForm.vendorRouteStop3Work || "Delivery & Handover",
+          },
+          paymentAmount: orderForm.vendorPaymentAmount || "",
+          paymentMode: orderForm.vendorPaymentMode || "Cash",
+          assignedToName: orderForm.vendorAssignedToName || "",
+          assignedToContact: orderForm.vendorAssignedToContact || "",
+          officeGivenBy: orderForm.salesExecutive || "",
+        } : undefined,
       };
 
       const res = await api.post("/orders", payload);
-      alert(
-        `Commercial Order ${res.data?.orderNumber || ""} successfully created!`,
-      );
+      const createdOrd = res.data || res.order;
       setShowConvertOrderModal(false);
+      setCreatedOrderResult(createdOrd);
+      setShowCreatedOrderSuccessModal(true);
       setSelectedQuote((prev) =>
         prev?._id === activeQuote._id
           ? { ...prev, status: "ACCEPTED", acceptedAt: new Date().toISOString() }
@@ -2933,7 +3027,35 @@ function QuotationsContent() {
         </div>
       )}
       {/* CREATE COMMERCIAL ORDER MODAL */}
-      {showConvertOrderModal && (
+      <CreateCommercialOrderModal
+        isOpen={showConvertOrderModal}
+        onClose={() => setShowConvertOrderModal(false)}
+        lead={convertQuote?.leadId || selectedQuote?.leadId}
+        customer={convertQuote?.customerId || selectedQuote?.customerId}
+        quotations={quotations}
+        initialQuotationId={convertQuote?._id || selectedQuote?._id}
+        currentUser={currentUser}
+        onSuccess={async () => {
+          const qId = convertQuote?._id || selectedQuote?._id;
+          if (qId) {
+            setSelectedQuote((prev) =>
+              prev?._id === qId
+                ? { ...prev, status: "ACCEPTED", acceptedAt: new Date().toISOString() }
+                : prev,
+            );
+            setQuotations((prev) =>
+              prev.map((q) =>
+                q._id === qId
+                  ? { ...q, status: "ACCEPTED", acceptedAt: new Date().toISOString() }
+                  : q,
+              ),
+            );
+            await fetchQuoteOrders(qId);
+          }
+          await fetchQuotations();
+        }}
+      />
+      {false && showConvertOrderModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -3466,6 +3588,399 @@ function QuotationsContent() {
                 </select>
               </div>
 
+              {/* JOB CARD PRODUCTION DETAILS (Image 2) */}
+              <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-200/80 space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-orange-200">
+                  <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Printer className="w-4 h-4 text-[#F95721]" />
+                    Job Card Specifications (Designer &amp; Floor Print)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-slate-600">Priority:</span>
+                    {["Normal", "Urgent"].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setOrderForm({ ...orderForm, priority: p })}
+                        className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold border transition-all cursor-pointer ${
+                          orderForm.priority === p
+                            ? p === "Urgent"
+                              ? "bg-rose-500 text-white border-rose-600"
+                              : "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Client / Business Name
+                    </label>
+                    <input
+                      type="text"
+                      value={orderForm.clientBusiness || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, clientBusiness: e.target.value })
+                      }
+                      placeholder="e.g. Acme Prints"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Contact No.
+                    </label>
+                    <input
+                      type="text"
+                      value={orderForm.contactNo || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, contactNo: e.target.value })
+                      }
+                      placeholder="e.g. 9876543210"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Area / Locality
+                    </label>
+                    <input
+                      type="text"
+                      value={orderForm.area || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, area: e.target.value })
+                      }
+                      placeholder="e.g. Sector 18"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Delivery / Installation Address
+                    </label>
+                    <input
+                      type="text"
+                      value={orderForm.address || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, address: e.target.value })
+                      }
+                      placeholder="e.g. Shop #4, Market Road"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                {/* Work Type Checkboxes */}
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1.5">
+                    Work Type
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Visiting Card",
+                      "Flex / Board",
+                      "Vinyl",
+                      "Sticker / Label",
+                      "Pamphlet",
+                      "Brochure / Catalogue",
+                      "Menu Card",
+                      "Bill Book",
+                      "T-Shirt / Mug",
+                    ].map((wt) => {
+                      const isSel =
+                        Array.isArray(orderForm.workType) &&
+                        orderForm.workType.includes(wt);
+                      return (
+                        <button
+                          key={wt}
+                          type="button"
+                          onClick={() => {
+                            const cur = Array.isArray(orderForm.workType)
+                              ? orderForm.workType
+                              : [];
+                            setOrderForm({
+                              ...orderForm,
+                              workType: cur.includes(wt)
+                                ? cur.filter((x) => x !== wt)
+                                : [...cur, wt],
+                            });
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                            isSel
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          {isSel ? "✓ " : ""}
+                          {wt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Frame Structure
+                    </label>
+                    <select
+                      value={orderForm.frame || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, frame: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                    >
+                      <option value="">No Frame</option>
+                      <option value="Iron">Iron Frame</option>
+                      <option value="Wooden">Wooden Frame</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Design Required?
+                    </label>
+                    <select
+                      value={orderForm.designRequired || "Yes"}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, designRequired: e.target.value })
+                      }
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                    >
+                      <option value="Yes">Yes (Need Designer)</option>
+                      <option value="No">No (Ready Print File)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-700 font-semibold block mb-1">
+                      Assigned Designer
+                    </label>
+                    <input
+                      type="text"
+                      value={orderForm.designer || ""}
+                      onChange={(e) =>
+                        setOrderForm({ ...orderForm, designer: e.target.value })
+                      }
+                      placeholder="e.g. Rahul Designer"
+                      className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-700 font-semibold block mb-1">
+                    Sales Executive Attribution
+                  </label>
+                  <div className="flex gap-2">
+                    {["Roshni", "Tanya", "Other"].map((exec) => {
+                      const isSel =
+                        exec === "Other"
+                          ? orderForm.salesExecutive !== "Roshni" && orderForm.salesExecutive !== "Tanya"
+                          : orderForm.salesExecutive === exec;
+                      return (
+                        <button
+                          key={exec}
+                          type="button"
+                          onClick={() =>
+                            setOrderForm({
+                              ...orderForm,
+                              salesExecutive: exec === "Other" ? (orderForm.salesExecutiveOther || "") : exec,
+                            })
+                          }
+                          className={`flex-1 py-1 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                            isSel
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "bg-white text-slate-700 border-slate-200"
+                          }`}
+                        >
+                          {isSel ? "✓ " : ""}
+                          {exec}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* VENDOR JOB CARD TOGGLE & LOGISTICS (Image 1) */}
+              <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200/80 space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-indigo-200">
+                  <span className="text-xs font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-indigo-600" />
+                    Vendor Job Card (Outsourcing &amp; Delivery Logistics)
+                  </span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={orderForm.includeVendorJobCard || false}
+                      onChange={(e) =>
+                        setOrderForm({
+                          ...orderForm,
+                          includeVendorJobCard: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-indigo-900">
+                      Enable Vendor Card
+                    </span>
+                  </label>
+                </div>
+
+                {orderForm.includeVendorJobCard && (
+                  <div className="space-y-3 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Vendor Name
+                        </label>
+                        <input
+                          type="text"
+                          value={orderForm.vendorName || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorName: e.target.value })
+                          }
+                          placeholder="e.g. Star Printers"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Vendor Contact No.
+                        </label>
+                        <input
+                          type="text"
+                          value={orderForm.vendorContact || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorContact: e.target.value })
+                          }
+                          placeholder="e.g. 9811002200"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Location / Area
+                        </label>
+                        <input
+                          type="text"
+                          value={orderForm.vendorLocation || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorLocation: e.target.value })
+                          }
+                          placeholder="e.g. Okhla Phase 2"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-1">
+                        <span className="font-bold text-slate-800 text-[11px]">1. First Stop</span>
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop1GoTo || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop1GoTo: e.target.value })
+                          }
+                          placeholder="Go To: e.g. Paper Shop"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop1Work || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop1Work: e.target.value })
+                          }
+                          placeholder="Work: Collect Paper"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs"
+                        />
+                      </div>
+
+                      <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-1">
+                        <span className="font-bold text-slate-800 text-[11px]">2. Second Stop</span>
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop2GoTo || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop2GoTo: e.target.value })
+                          }
+                          placeholder="Go To: Lamination Shop"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop2Work || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop2Work: e.target.value })
+                          }
+                          placeholder="Work: Matte Lamination"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs"
+                        />
+                      </div>
+
+                      <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-1">
+                        <span className="font-bold text-slate-800 text-[11px]">3. Final Deliver To</span>
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop3DeliverTo || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop3DeliverTo: e.target.value })
+                          }
+                          placeholder="Client / Final Address"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs font-semibold"
+                        />
+                        <input
+                          type="text"
+                          value={orderForm.vendorRouteStop3Work || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorRouteStop3Work: e.target.value })
+                          }
+                          placeholder="Delivery & Handover"
+                          className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Assigned Logistics Rider / Driver Name
+                        </label>
+                        <input
+                          type="text"
+                          value={orderForm.vendorAssignedToName || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorAssignedToName: e.target.value })
+                          }
+                          placeholder="e.g. Sonu (Delivery Boy)"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-slate-700 font-semibold block mb-1">
+                          Driver Contact Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={orderForm.vendorAssignedToContact || ""}
+                          onChange={(e) =>
+                            setOrderForm({ ...orderForm, vendorAssignedToContact: e.target.value })
+                          }
+                          placeholder="e.g. 9811223344"
+                          className="w-full px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
@@ -3477,18 +3992,134 @@ function QuotationsContent() {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <ShoppingBag className="w-4 h-4" />
+                  <Printer className="w-4 h-4 text-orange-400" />
                   {actionLoading
-                    ? "Creating Commercial Order..."
-                    : "Create Commercial Order"}
+                    ? "Generating Order & Job Cards..."
+                    : "Create Order & Generate Job Cards"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* SUCCESS MODAL AFTER CREATING ORDER */}
+      {showCreatedOrderSuccessModal && createdOrderResult && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl text-center animate-scale-up">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">
+                Order &amp; Job Cards Created Successfully!
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Order <strong className="text-slate-900 font-mono">{createdOrderResult.orderNumber}</strong> has been generated with complete print specifications.
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-left text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Order Number:</span>
+                <strong className="font-mono text-slate-900">{createdOrderResult.orderNumber}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Value:</span>
+                <strong className="font-bold text-slate-900">₹{((createdOrderResult.grandTotalPaise || 0) / 100).toFixed(2)}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Job Card Priority:</span>
+                <span className="font-bold text-orange-600">{createdOrderResult.jobCard?.priority || "Normal"}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.downloadPdf(
+                      `/orders/${createdOrderResult._id}/job-card`,
+                      `Job-Card-${createdOrderResult.orderNumber}.pdf`
+                    );
+                  } catch (err) {
+                    alert(err.message || "Failed to download Job Card");
+                  }
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-[#F95721] hover:bg-[#e04512] text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Download Designer / Main Job Card (PDF)
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.downloadPdf(
+                      `/orders/${createdOrderResult._id}/vendor-job-card`,
+                      `Vendor-Job-Card-${createdOrderResult.orderNumber}.pdf`
+                    );
+                  } catch (err) {
+                    alert(err.message || "Failed to download Vendor Job Card");
+                  }
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Download Vendor Job Card (PDF)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedOrderForJobCard(createdOrderResult);
+                  setShowCreatedOrderSuccessModal(false);
+                  setShowJobCardModal(true);
+                }}
+                className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-slate-500" />
+                Review &amp; Edit Job Card Details
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => setShowCreatedOrderSuccessModal(false)}
+                className="text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+              >
+                Dismiss
+              </button>
+              <Link
+                href="/dashboard/orders"
+                className="text-xs text-[#F95721] hover:underline font-bold flex items-center gap-1"
+              >
+                Go to Orders Studio →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REUSABLE JOB CARD PRODUCTION MODAL */}
+      <JobCardModal
+        isOpen={showJobCardModal}
+        onClose={() => {
+          setShowJobCardModal(false);
+          setSelectedOrderForJobCard(null);
+        }}
+        order={selectedOrderForJobCard}
+        onSaved={(updatedOrder) => {
+          setSelectedOrderForJobCard(updatedOrder);
+          fetchQuotations();
+        }}
+      />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import Link from "next/link";
 import Sidebar from "@/app/components/sidebar";
 import Navbar from "@/app/components/navbar";
 import { api } from "@/lib/api";
+import CreateCommercialOrderModal from "@/app/components/commercial/CreateCommercialOrderModal";
+import JobCardModal from "@/app/components/commercial/JobCardModal";
 import {
   User,
   Phone,
@@ -113,6 +115,8 @@ export default function LeadDetailPage() {
     useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
+  const [selectedOrderForJobCard, setSelectedOrderForJobCard] = useState(null);
+  const [showJobCardModal, setShowJobCardModal] = useState(false);
   const [notes, setNotes] = useState([]);
   const [newNoteContent, setNewNoteContent] = useState("");
   const [newNoteCategory, setNewNoteCategory] = useState("GENERAL");
@@ -2308,24 +2312,44 @@ export default function LeadDetailPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-end gap-2.5 pt-1.5 border-t border-slate-200/50">
+                          <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-200/50">
                             <button
                               onClick={async () => {
                                 try {
                                   await api.downloadPdf(
-                                    `/orders/${o._id}/invoice`,
-                                    `Invoice-${o.orderNumber || o._id}.pdf`,
+                                    `/orders/${o._id}/job-card`,
+                                    `JobCard-${o.orderNumber || o._id}.pdf`,
                                   );
                                 } catch (err) {
                                   alert(
                                     err.message ||
-                                      "Failed to download Invoice",
+                                      "Failed to download Job Card",
                                   );
                                 }
                               }}
-                              className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                              className="text-xs font-bold text-orange-600 hover:underline flex items-center gap-1"
+                              title="Download Designer / Main Job Card (PDF)"
                             >
-                              <Download className="w-3.5 h-3.5" /> Invoice
+                              <Download className="w-3.5 h-3.5" /> Job Card
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.downloadPdf(
+                                    `/orders/${o._id}/vendor-job-card`,
+                                    `VendorJobCard-${o.orderNumber || o._id}.pdf`,
+                                  );
+                                } catch (err) {
+                                  alert(
+                                    err.message ||
+                                      "Failed to download Vendor Job Card",
+                                  );
+                                }
+                              }}
+                              className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                              title="Download Vendor Job Card (PDF)"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Vendor Card
                             </button>
                           </div>
                         </div>
@@ -2771,20 +2795,52 @@ export default function LeadDetailPage() {
                               onClick={async () => {
                                 try {
                                   await api.downloadPdf(
-                                    `/orders/${o._id}/invoice`,
-                                    `Invoice-${o.orderNumber || o._id}.pdf`,
+                                    `/orders/${o._id}/job-card`,
+                                    `JobCard-${o.orderNumber || o._id}.pdf`,
                                   );
                                 } catch (err) {
                                   alert(
                                     err.message ||
-                                      "Failed to download invoice",
+                                      "Failed to download Job Card",
                                   );
                                 }
                               }}
-                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#F95721] font-semibold text-xs border border-orange-200 transition-all flex items-center gap-1 cursor-pointer"
+                              title="Download Designer / Main Job Card (PDF)"
                             >
-                              <Download className="w-3.5 h-3.5 text-slate-500" />
-                              Tax Invoice
+                              <Download className="w-3.5 h-3.5 text-orange-500" />
+                              Job Card
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.downloadPdf(
+                                    `/orders/${o._id}/vendor-job-card`,
+                                    `VendorJobCard-${o.orderNumber || o._id}.pdf`,
+                                  );
+                                } catch (err) {
+                                  alert(
+                                    err.message ||
+                                      "Failed to download Vendor Job Card",
+                                  );
+                                }
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer"
+                              title="Download Vendor Job Card (PDF)"
+                            >
+                              <Download className="w-3.5 h-3.5 text-indigo-500" />
+                              Vendor Card
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedOrderForJobCard(o);
+                                setShowJobCardModal(true);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs border border-slate-300 transition-all flex items-center gap-1 cursor-pointer"
+                              title="View & Edit Job Card Details"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-slate-600" />
+                              Edit Cards
                             </button>
                           </div>
                         </div>
@@ -4406,548 +4462,32 @@ export default function LeadDetailPage() {
         </div>
       </main>
 
-      {/* CREATE COMMERCIAL ORDER MODAL */}
-      {showCreateOrderModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-xl p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Create Commercial Order
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Create commercial order
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCreateOrderModal(false)}
-                className="text-slate-400 hover:text-slate-700 font-bold"
-              >
-                ✕
-              </button>
-            </div>
+      {/* CREATE COMMERCIAL ORDER & JOB CARDS MODAL */}
+      <CreateCommercialOrderModal
+        isOpen={showCreateOrderModal}
+        onClose={() => setShowCreateOrderModal(false)}
+        lead={lead}
+        customer={lead?.customerId}
+        quotations={quotations}
+        currentUser={currentUser}
+        onSuccess={async () => {
+          await loadLeadDetails();
+          setActiveTab("Orders");
+        }}
+      />
 
-            <form
-              onSubmit={handleCreateOrderSubmit}
-              className="space-y-4 text-xs"
-            >
-              {/* Quotation Selection or Custom */}
-              {quotations.length > 0 && (
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Convert From Quotation (Optional)
-                  </label>
-                  <select
-                    value={orderForm.quotationId || ""}
-                    onChange={(e) => {
-                      const selectedQId = e.target.value;
-                      const q = quotations.find(
-                        (item) => item._id === selectedQId,
-                      );
-                      const it = q?.items?.[0];
-                      setOrderForm({
-                        ...orderForm,
-                        quotationId: selectedQId,
-                        selectedItemIndex: "",
-                        title: it?.title || orderForm.title || "",
-                        amount: q
-                          ? (q.grandTotalPaise
-                              ? q.grandTotalPaise / 100
-                              : q.totalAmount || 0
-                            ).toString()
-                          : orderForm.amount || "",
-                        width: it?.width
-                          ? it.width.toString()
-                          : orderForm.width || "",
-                        height: it?.height
-                          ? it.height.toString()
-                          : orderForm.height || "",
-                        dimensionUnit:
-                          it?.dimensionUnit ||
-                          orderForm.dimensionUnit ||
-                          "inch",
-                        quantity: it?.quantity || orderForm.quantity || 1,
-                        material: it?.paperType || orderForm.material || "",
-                        gsm: it?.paperGsm
-                          ? it.paperGsm.toString()
-                          : orderForm.gsm || "",
-                        colors: it?.colors || orderForm.colors || "CMYK",
-                        printSides:
-                          it?.printSides || orderForm.printSides || "SINGLE",
-                        finishing: it?.finishing || orderForm.finishing || [],
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold"
-                  >
-                    <option value="">-- Direct Order (No quotation) --</option>
-                    {quotations.map((q) => (
-                      <option key={q._id} value={q._id}>
-                        {q.quotationNumber || q._id} - ₹
-                        {(q.grandTotalPaise
-                          ? q.grandTotalPaise / 100
-                          : q.totalAmount || 0
-                        ).toLocaleString("en-IN")}{" "}
-                        ({q.status})
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* If quotation has multiple items, allow splitting by selecting specific item */}
-                  {(() => {
-                    const selectedQ = quotations.find(
-                      (item) => item._id === orderForm.quotationId,
-                    );
-                    if (
-                      !selectedQ ||
-                      !selectedQ.items ||
-                      selectedQ.items.length <= 1
-                    )
-                      return null;
-                    return (
-                      <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/70 border border-indigo-200">
-                        <label className="text-indigo-950 font-bold block mb-1 text-[11px]">
-                          Select Item from Quotation to Order (Split Mode)
-                        </label>
-                        <select
-                          value={
-                            orderForm.selectedItemIndex !== undefined
-                              ? orderForm.selectedItemIndex
-                              : ""
-                          }
-                          onChange={(e) => {
-                            const itemIdx = e.target.value;
-                            if (itemIdx === "") {
-                              const it0 = selectedQ.items[0];
-                              setOrderForm({
-                                ...orderForm,
-                                selectedItemIndex: "",
-                                title: it0?.title || orderForm.title,
-                                amount: (selectedQ.grandTotalPaise
-                                  ? selectedQ.grandTotalPaise / 100
-                                  : selectedQ.totalAmount || 0
-                                ).toString(),
-                              });
-                            } else {
-                              const it = selectedQ.items[Number(itemIdx)];
-                              const gross =
-                                (Number(it.quantity) || 1) *
-                                (it.unitRatePaise
-                                  ? it.unitRatePaise / 100
-                                  : it.rate || 0);
-                              const disc =
-                                (gross * Number(it.discountPercent || 0)) / 100;
-                              const tax =
-                                ((gross - disc) *
-                                  Number(
-                                    it.taxRatePercent !== undefined
-                                      ? it.taxRatePercent
-                                      : 18,
-                                  )) /
-                                100;
-                              const itemTotal = gross - disc + tax;
-
-                              setOrderForm({
-                                ...orderForm,
-                                selectedItemIndex: itemIdx,
-                                title:
-                                  it?.title || `Item ${Number(itemIdx) + 1}`,
-                                amount: Math.round(itemTotal).toString(),
-                                width: it?.width ? it.width.toString() : "",
-                                height: it?.height ? it.height.toString() : "",
-                                dimensionUnit: it?.dimensionUnit || "inch",
-                                quantity: it?.quantity || 1,
-                                material: it?.paperType || "",
-                                gsm: it?.paperGsm ? it.paperGsm.toString() : "",
-                                colors: it?.colors || "CMYK",
-                                printSides: it?.printSides || "SINGLE",
-                                finishing: it?.finishing || [],
-                              });
-                            }
-                          }}
-                          className="w-full px-3 py-2 rounded-lg bg-white border border-indigo-300 text-slate-800 font-semibold text-xs"
-                        >
-                          <option value="">
-                            -- All Items in Quotation (₹
-                            {(selectedQ.grandTotalPaise
-                              ? selectedQ.grandTotalPaise / 100
-                              : selectedQ.totalAmount || 0
-                            ).toLocaleString("en-IN")}
-                            ) --
-                          </option>
-                          {selectedQ.items.map((it, idx) => {
-                            const gross =
-                              (Number(it.quantity) || 1) *
-                              (it.unitRatePaise
-                                ? it.unitRatePaise / 100
-                                : it.rate || 0);
-                            const disc =
-                              (gross * Number(it.discountPercent || 0)) / 100;
-                            const tax =
-                              ((gross - disc) *
-                                Number(
-                                  it.taxRatePercent !== undefined
-                                    ? it.taxRatePercent
-                                    : 18,
-                                )) /
-                              100;
-                            const itemTotal = Math.round(gross - disc + tax);
-                            return (
-                              <option key={idx} value={idx.toString()}>
-                                Item #{idx + 1}: {it.title} (Qty: {it.quantity}{" "}
-                                • ₹{itemTotal.toLocaleString("en-IN")})
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Order Title / Job Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 5000 Brochure Printing"
-                    value={orderForm.title || ""}
-                    onChange={(e) =>
-                      setOrderForm({ ...orderForm, title: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-semibold"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Total Order Value (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    required
-                    placeholder="e.g. 15000"
-                    value={orderForm.amount || ""}
-                    onChange={(e) =>
-                      setOrderForm({ ...orderForm, amount: e.target.value })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* PRODUCT & TECHNICAL SPECIFICATIONS */}
-              <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-[#F95721]" />
-                    Product Technical Specifications
-                  </span>
-                </div>
-
-                {/* 1. Size / Dimensions & Quantity */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Width
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g. 8"
-                      value={orderForm.width || ""}
-                      onChange={(e) =>
-                        setOrderForm({ ...orderForm, width: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Height
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g. 4"
-                      value={orderForm.height || ""}
-                      onChange={(e) =>
-                        setOrderForm({ ...orderForm, height: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Unit
-                    </label>
-                    <select
-                      value={orderForm.dimensionUnit || "inch"}
-                      onChange={(e) =>
-                        setOrderForm({
-                          ...orderForm,
-                          dimensionUnit: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    >
-                      <option value="inch">Inches (in)</option>
-                      <option value="ft">Feet (ft)</option>
-                      <option value="mm">Millimeter (mm)</option>
-                      <option value="cm">Centimeter (cm)</option>
-                      <option value="m">Meter (m)</option>
-                    </select>
-                  </div>
-
-                  <div className="sm:col-span-1">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Quantity *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      placeholder="1"
-                      value={orderForm.quantity ?? 1}
-                      onChange={(e) =>
-                        setOrderForm({
-                          ...orderForm,
-                          quantity: Number(e.target.value),
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Material & GSM */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                  <div className="md:col-span-2">
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Material / Media Substrate
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Star Flex 440 GSM, Art Card, Vinyl, Canvas..."
-                      value={orderForm.material || ""}
-                      onChange={(e) =>
-                        setOrderForm({ ...orderForm, material: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                    {/* Quick suggestion pills */}
-                    <div className="flex flex-wrap gap-1.5 my-2">
-                      {[
-                        { label: "Star Flex" },
-                        { label: "Vinyl Matte" },
-                        { label: "Normal Flex" },
-                        { label: "Backlit Film" },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={() =>
-                            setOrderForm({ ...orderForm, material: item.label })
-                          }
-                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-orange-100 hover:text-orange-800 text-[10px] text-slate-700 font-medium transition-colors"
-                        >
-                          + {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      GSM / Density
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 440"
-                      value={orderForm.gsm || ""}
-                      onChange={(e) =>
-                        setOrderForm({ ...orderForm, gsm: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Print Sides */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-
-                  <div>
-                    <label className="text-slate-700 font-semibold block mb-1">
-                      Print Sides
-                    </label>
-                    <select
-                      value={orderForm.printSides || "SINGLE"}
-                      onChange={(e) =>
-                        setOrderForm({
-                          ...orderForm,
-                          printSides: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold"
-                    >
-                      <option value="SINGLE">Single Side (Front Only)</option>
-                      <option value="DOUBLE">
-                        Double Sided (Front &amp; Back)
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 4. Finishing (Post-Press) Selection */}
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1.5">
-                    Finishing / Post-Press Requirements
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      "Gloss Lamination",
-                      "Matte Lamination",
-                      "Velvet Lamination",
-                      "UV Coating",
-                      "Die Cut",
-                      "Foiling",
-                    ].map((opt) => {
-                      const isSelected =
-                        Array.isArray(orderForm.finishing) &&
-                        orderForm.finishing.includes(opt);
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => {
-                            const cur = Array.isArray(orderForm.finishing)
-                              ? orderForm.finishing
-                              : [];
-                            if (cur.includes(opt)) {
-                              setOrderForm({
-                                ...orderForm,
-                                finishing: cur.filter((x) => x !== opt),
-                              });
-                            } else {
-                              setOrderForm({
-                                ...orderForm,
-                                finishing: [...cur, opt],
-                              });
-                            }
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all ${
-                            isSelected
-                              ? "bg-[#F95721] text-white border-[#F95721] shadow-xs"
-                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          {isSelected ? "✓ " : "+ "}
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Advance Required (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={orderForm.advanceRequiredPercent ?? 50}
-                    onChange={(e) =>
-                      setOrderForm({
-                        ...orderForm,
-                        advanceRequiredPercent: Number(e.target.value),
-                      })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">
-                    Promised Delivery Date
-                  </label>
-                  <input
-                    type="date"
-                    value={orderForm.promisedDeliveryDate || ""}
-                    onChange={(e) =>
-                      setOrderForm({
-                        ...orderForm,
-                        promisedDeliveryDate: e.target.value,
-                      })
-                    }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  Delivery Method
-                </label>
-                <select
-                  value={orderForm.deliveryMethod || "PICKUP"}
-                  onChange={(e) =>
-                    setOrderForm({
-                      ...orderForm,
-                      deliveryMethod: e.target.value,
-                    })
-                  }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
-                >
-                  <option value="PICKUP">Customer Pickup</option>
-                  <option value="STANDARD_DELIVERY">
-                    Standard Delivery (Doorstep)
-                  </option>
-                  <option value="EXPRESS_COURIER">Express Courier</option>
-                  <option value="SELF_INSTALLATION">
-                    Installation &amp; Fitting
-                  </option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateOrderModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  {actionLoading
-                    ? "Creating Order..."
-                    : "Confirm & Create Order"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* JOB CARD VIEW / EDIT MODAL FOR EXISTING ORDERS */}
+      <JobCardModal
+        isOpen={showJobCardModal}
+        onClose={() => {
+          setShowJobCardModal(false);
+          setSelectedOrderForJobCard(null);
+        }}
+        order={selectedOrderForJobCard}
+        onSaved={async () => {
+          await loadLeadDetails();
+        }}
+      />
 
       {/* RECORD QUOTATION PAYMENT MODAL */}
       {showPaymentModal && (() => {

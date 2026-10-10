@@ -24,6 +24,7 @@ import {
   MessageSquare,
   X,
 } from "lucide-react";
+import JobCardModal from "@/app/components/commercial/JobCardModal";
 
 export default function OrdersBillingPage() {
   const router = useRouter();
@@ -31,6 +32,9 @@ export default function OrdersBillingPage() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState("admin");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [selectedJobCardOrder, setSelectedJobCardOrder] = useState(null);
+  const [showJobCardModal, setShowJobCardModal] = useState(false);
 
   useEffect(() => {
     const stored = (localStorage.getItem("userRole") || "admin").toLowerCase();
@@ -312,36 +316,61 @@ export default function OrdersBillingPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="pt-1 flex items-center gap-2">
+                    {/* Action Buttons: Job Cards */}
+                    <div className="pt-2 flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => handleOpenSpecsModal(ord)}
-                        className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-semibold transition-colors cursor-pointer"
-                        title="Edit product specifications"
+                        onClick={() => {
+                          setSelectedJobCardOrder(ord);
+                          setShowJobCardModal(true);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                        title="Open Job Card & Vendor Card details"
                       >
-                        <Layers className="w-3.5 h-3.5" />
-                        Specs
+                        <Printer className="w-3.5 h-3.5 text-orange-400" />
+                        Job Card
                       </button>
 
                       <button
+                        type="button"
                         onClick={async () => {
                           try {
                             await api.downloadPdf(
-                              `/orders/${ord._id}/invoice`,
-                              `TaxInvoice-${ord.orderNumber || ord._id}.pdf`,
+                              `/orders/${ord._id}/job-card`,
+                              `Job-Card-${ord.orderNumber || ord._id}.pdf`
                             );
                           } catch (err) {
                             alert(
-                              err.message || "Failed to download Invoice",
+                              err.message || "Failed to download Job Card"
                             );
                           }
                         }}
-                        className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
-                        title="Download Tax Invoice"
+                        className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#F95721] text-xs font-bold border border-orange-200 transition-colors cursor-pointer"
+                        title="Download Designer / Main Job Card (PDF)"
                       >
                         <Download className="w-3.5 h-3.5" />
-                        Invoice
+                        Designer PDF
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await api.downloadPdf(
+                              `/orders/${ord._id}/vendor-job-card`,
+                              `Vendor-Job-Card-${ord.orderNumber || ord._id}.pdf`
+                            );
+                          } catch (err) {
+                            alert(
+                              err.message || "Failed to download Vendor Job Card"
+                            );
+                          }
+                        }}
+                        className="flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 transition-colors cursor-pointer"
+                        title="Download Vendor Job Card (PDF)"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Vendor PDF
                       </button>
                     </div>
                   </div>
@@ -580,8 +609,26 @@ export default function OrdersBillingPage() {
         </div>
       )}
 
-      {/* Specific Design Status & Customer Contact Modal */}
-
+      {/* Job Card Production Control Modal (Designer & Vendor Job Cards) */}
+      <JobCardModal
+        isOpen={showJobCardModal}
+        onClose={() => {
+          setShowJobCardModal(false);
+          setSelectedJobCardOrder(null);
+        }}
+        order={selectedJobCardOrder}
+        onSaved={(updatedOrder) => {
+          if (updatedOrder) {
+            setOrders((prev) =>
+              prev.map((o) =>
+                o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o
+              )
+            );
+            setSelectedJobCardOrder(updatedOrder);
+          }
+          loadOrders(true);
+        }}
+      />
     </div>
   );
 }
