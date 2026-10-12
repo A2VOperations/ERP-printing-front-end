@@ -421,7 +421,6 @@ export default function AreasTerritoriesPage() {
                             </span>
                             <div>
                               <div className="text-slate-900 font-bold">{a.name}</div>
-                              
                             </div>
                           </div>
                         </td>

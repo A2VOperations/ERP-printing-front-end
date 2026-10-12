@@ -182,6 +182,8 @@ export default function LeadDetailPage() {
   });
 
 
+  const [areas, setAreas] = useState([]);
+
   // Form States
   const [editForm, setEditForm] = useState({
     contactName: "",
@@ -194,6 +196,7 @@ export default function LeadDetailPage() {
     expectedValue: "",
     priority: "HIGH",
     notes: "",
+    territory: "",
   });
 
   const [statusForm, setStatusForm] = useState({
@@ -212,6 +215,127 @@ export default function LeadDetailPage() {
     type: "CALL",
     description: "",
   });
+
+  // Territory Options (Areas & Zones)
+  const territoryOptions = useMemo(() => {
+    if (!Array.isArray(areas) || areas.length === 0) {
+      return [];
+    }
+
+    const options = [];
+    areas.forEach((area) => {
+      const areaName = (area.name || "").trim();
+      if (!areaName) return;
+
+      const validZones = Array.isArray(area.zones)
+        ? area.zones.filter((z) => z && z.isActive !== false)
+        : [];
+
+      if (validZones.length > 0) {
+        validZones.forEach((zone) => {
+          const zoneName = (zone.name || "").trim();
+          if (!zoneName) return;
+
+          let assignedUser = null;
+          if (zone.assignedSalesId && typeof zone.assignedSalesId === "object") {
+            assignedUser = zone.assignedSalesId;
+          } else if (zone.assignedSalesId) {
+            assignedUser = teamMembers.find((u) => u._id === zone.assignedSalesId);
+          } else if (zone.assignedSalesUser) {
+            assignedUser = zone.assignedSalesUser;
+          }
+
+          const repName = assignedUser?.name || "";
+          const val = `${areaName.toLowerCase()}/${zoneName.toLowerCase()}`;
+          const label = repName
+            ? `${val} (Assigned to ${repName})`
+            : val;
+
+          options.push({
+            value: val,
+            label,
+            areaName,
+            zoneName,
+            areaId: area._id,
+            assignedToId: assignedUser?._id || zone.assignedSalesId || "",
+          });
+        });
+
+        // General area option
+        let areaManager = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaManager = area.managerId;
+        } else if (area.managerId) {
+          areaManager = teamMembers.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaManager?.name
+            ? `${areaVal} (General - Manager: ${areaManager.name})`
+            : `${areaVal} (General)`,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaManager?._id || area.managerId || "",
+        });
+      } else {
+        let areaManager = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaManager = area.managerId;
+        } else if (area.managerId) {
+          areaManager = teamMembers.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaManager?.name
+            ? `${areaVal} (General - Manager: ${areaManager.name})`
+            : areaVal,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaManager?._id || area.managerId || "",
+        });
+      }
+    });
+
+    return options;
+  }, [areas, teamMembers]);
+
+  // Format Lead Area / Zone (e.g. burari/sant nagar)
+  const formatLeadTerritory = useCallback((l) => {
+    if (!l) return "";
+    let areaName = String(
+      (l.areaId && typeof l.areaId === "object"
+        ? l.areaId?.name
+        : l.area) || ""
+    ).trim();
+    if (!areaName && l.areaId && typeof l.areaId === "string") {
+      const foundArea = areas.find((a) => a._id === l.areaId);
+      if (foundArea) areaName = (foundArea.name || "").trim();
+    }
+    const zoneName = String(l.zone || "").trim();
+
+    if (areaName && zoneName) {
+      if (zoneName.toLowerCase().startsWith(areaName.toLowerCase() + "/")) {
+        return zoneName.toLowerCase();
+      }
+      return `${areaName.toLowerCase()}/${zoneName.toLowerCase()}`;
+    }
+
+    if (zoneName) {
+      return zoneName.toLowerCase();
+    }
+
+    if (areaName) {
+      return areaName.toLowerCase();
+    }
+
+    return "";
+  }, [areas]);
 
   // Load current user profile from localStorage and API
   useEffect(() => {
@@ -239,6 +363,19 @@ export default function LeadDetailPage() {
             ? res.data
             : res.data.records || [];
           setTeamMembers(list);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch areas for territory assignment
+    api
+      .get("/areas")
+      .then((res) => {
+        if (res && res.data) {
+          const list = Array.isArray(res.data)
+            ? res.data
+            : res.data.records || [];
+          setAreas(list);
         }
       })
       .catch(() => {});
@@ -479,6 +616,7 @@ export default function LeadDetailPage() {
           expectedValue: l.expectedValue || l.estimatedBudget || 0,
           priority: l.priority || "HIGH",
           notes: l.notes || "",
+          territory: formatLeadTerritory(l),
         });
       } else {
         setErrorMsg("Lead details could not be loaded.");
@@ -1241,12 +1379,67 @@ export default function LeadDetailPage() {
     }
   };
 
+  // Open Edit Lead Modal with latest values
+  const handleOpenEditModal = () => {
+    if (lead) {
+      const bName = (
+        (lead.businessName && lead.businessName.trim() !== "Direct Lead" && lead.businessName.trim() !== "—" ? lead.businessName.trim() : null) ||
+        (lead.companyName && lead.companyName.trim() !== "Direct Lead" && lead.companyName.trim() !== "—" ? lead.companyName.trim() : null) ||
+        ""
+      );
+      const cName = (
+        (lead.contactName && lead.contactName.trim() !== "Direct Lead" && lead.contactName.trim() !== "—" ? lead.contactName.trim() : null) ||
+        (lead.customerName && lead.customerName.trim() !== "Direct Lead" && lead.customerName.trim() !== "—" ? lead.customerName.trim() : null) ||
+        ""
+      );
+      setEditForm({
+        contactName: cName,
+        businessName: bName,
+        phone: lead.phone || "",
+        email: lead.email || "",
+        alternatePhone: lead.alternatePhone || "",
+        source: lead.source || "WALK_IN",
+        requirement: lead.requirement || "",
+        expectedValue: lead.expectedValue || lead.estimatedBudget || "",
+        priority: lead.priority || "HIGH",
+        notes: lead.notes || "",
+        territory: formatLeadTerritory(lead) || (territoryOptions[0]?.value || ""),
+      });
+    }
+    setShowEditModal(true);
+  };
+
   // Update Lead Details
   const handleUpdateLead = async (e) => {
     e.preventDefault();
     try {
+      setActionLoading(true);
       const bName = editForm.businessName?.trim() || "";
       const cName = editForm.contactName?.trim() || "";
+
+      const rawTerr = (editForm.territory || "").trim();
+      let areaVal = undefined;
+      let zoneVal = undefined;
+      let areaIdVal = undefined;
+
+      if (rawTerr) {
+        const terrStr = rawTerr.toLowerCase();
+        const matchedOpt = territoryOptions.find(
+          (o) => o.value.toLowerCase() === terrStr
+        );
+
+        const parts = terrStr.split("/");
+        areaVal = matchedOpt
+          ? matchedOpt.areaName
+          : parts[0]
+            ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+            : "";
+        zoneVal = matchedOpt
+          ? matchedOpt.zoneName || matchedOpt.areaName
+          : parts[1] || parts[0] || "";
+        areaIdVal = matchedOpt?.areaId || undefined;
+      }
+
       await api.patch(`/leads/${leadId}`, {
         contactName: cName,
         customerName: cName,
@@ -1260,12 +1453,17 @@ export default function LeadDetailPage() {
         expectedValue: Number(editForm.expectedValue) || 0,
         priority: editForm.priority,
         notes: editForm.notes,
+        ...(areaIdVal !== undefined ? { areaId: areaIdVal } : {}),
+        ...(areaVal !== undefined ? { area: areaVal } : {}),
+        ...(zoneVal !== undefined ? { zone: zoneVal } : {}),
       });
 
       setShowEditModal(false);
-      loadLeadDetails();
+      await loadLeadDetails();
     } catch (err) {
       alert(err.message || "Failed to update lead");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -1487,8 +1685,8 @@ export default function LeadDetailPage() {
               )}
 
               <button
-                onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all"
+                onClick={handleOpenEditModal}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5 text-slate-500" />
                 Edit Lead
@@ -1812,11 +2010,13 @@ export default function LeadDetailPage() {
                       Territory / Area
                     </th>
                     <td className="px-3.5 py-2.5 bg-white border border-slate-200 font-medium text-slate-800">
-                      <span className="flex items-center gap-1 text-sm">
+                      <span className="flex items-center gap-1.5 text-sm">
                         <MapPin className="w-5 h-5 text-orange-500 shrink-0" />
-                        {lead.areaId?.name
-                          ? `${lead.areaId.name}${lead.areaId.city ? `, ${lead.areaId.city}` : ""}`
-                          : lead.city || lead.zone || "Territory Assigned"}
+                        <span className="font-semibold text-slate-900">
+                          {lead.areaId?.name
+                            ? `${lead.areaId.name}${lead.zone ? ` / ${lead.zone}` : ""}${lead.areaId.city ? ` (${lead.areaId.city})` : ""}`
+                            : formatLeadTerritory(lead) || lead.zone || lead.city || "Not Assigned"}
+                        </span>
                       </span>
                     </td>
 
@@ -2074,6 +2274,14 @@ export default function LeadDetailPage() {
                       <span className="text-slate-500 font-medium">Lead Source</span>
                       <span className="font-bold text-slate-800">
                         {lead.source || "MANUAL"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500 font-medium">Territory / Area</span>
+                      <span className="font-bold text-slate-800 text-right">
+                        {lead.areaId?.name
+                          ? `${lead.areaId.name}${lead.zone ? ` / ${lead.zone}` : ""}`
+                          : formatLeadTerritory(lead) || lead.zone || "Not Assigned"}
                       </span>
                     </div>
                     <div className="pt-2 border-t border-slate-100">
@@ -5104,14 +5312,14 @@ export default function LeadDetailPage() {
       {/* EDIT MODAL */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900">
                 Edit Lead Details
               </h3>
               <button
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 ✕
               </button>
@@ -5200,6 +5408,38 @@ export default function LeadDetailPage() {
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800"
                 />
+              </div>
+
+              <div>
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Territory (Area / Zone)
+                </label>
+                <select
+                  value={
+                    editForm.territory ||
+                    (territoryOptions.length > 0 ? territoryOptions[0].value : "")
+                  }
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      territory: e.target.value,
+                    })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium cursor-pointer"
+                >
+                  {territoryOptions.length === 0 ? (
+                    <option value="">No areas configured in Admin &gt; Areas</option>
+                  ) : (
+                    territoryOptions.map((opt) => (
+                      <option
+                        key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                        value={opt.value}
+                      >
+                        {opt.label}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
