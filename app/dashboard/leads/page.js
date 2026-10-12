@@ -301,6 +301,7 @@ export default function LeadsDashboardPage() {
   const [leads, setLeads] = useState([]);
   const [followups, setFollowups] = useState([]);
   const [users, setUsers] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [pendingInboxCount, setPendingInboxCount] = useState(0);
 
@@ -406,7 +407,7 @@ export default function LeadsDashboardPage() {
         !currentStoredRole.includes("admin") &&
         !currentStoredRole.includes("operator");
 
-      const [leadsRes, flwRes, usersRes, meRes, inboxRes] =
+      const [leadsRes, flwRes, usersRes, meRes, inboxRes, areasRes] =
         await Promise.allSettled([
           api.get("/leads?limit=100"),
           api.get("/followups?limit=100"),
@@ -415,6 +416,7 @@ export default function LeadsDashboardPage() {
           isSales
             ? api.get("/leads?acceptanceStatus=PENDING&assignedToId=my&limit=1")
             : Promise.resolve({ data: null }),
+          api.get("/areas").catch(() => null),
         ]);
 
       if (leadsRes.status === "fulfilled") {
@@ -442,6 +444,11 @@ export default function LeadsDashboardPage() {
         const raw = usersRes.value?.data;
         const arr = Array.isArray(raw) ? raw : raw?.users || raw?.data || [];
         setUsers(arr);
+      }
+      if (areasRes.status === "fulfilled" && areasRes.value?.data) {
+        const raw = areasRes.value.data;
+        const arr = Array.isArray(raw) ? raw : raw?.areas || raw?.data || [];
+        setAreas(arr);
       }
       if (meRes.status === "fulfilled" && meRes.value?.data) {
         const me = meRes.value.data.user || meRes.value.data;
@@ -528,6 +535,120 @@ export default function LeadsDashboardPage() {
   const myUserId = useMemo(() => {
     return String(currentUser?._id || currentUser?.id || "");
   }, [currentUser]);
+
+  // Dynamic Territory (Area / Zone) options derived from Areas master
+  const territoryOptions = useMemo(() => {
+    if (!areas || areas.length === 0) {
+      return [
+        {
+          value: "burari/baba colony",
+          label: "burari/baba colony (Assigned to Tanya)",
+          areaName: "Burari",
+          zoneName: "Baba colony",
+          assignedToId:
+            users.find((u) => (u.name || "").toLowerCase().includes("tanya"))
+              ?._id || "",
+        },
+        {
+          value: "burari/sant nagar",
+          label: "burari/sant nagar",
+          areaName: "Burari",
+          zoneName: "Sant nagar",
+          assignedToId: "",
+        },
+        {
+          value: "burari",
+          label: "burari (General)",
+          areaName: "Burari",
+          zoneName: "",
+          assignedToId: "",
+        },
+      ];
+    }
+
+    const options = [];
+    areas.forEach((area) => {
+      const areaName = (area.name || "").trim();
+      if (!areaName) return;
+
+      const validZones = Array.isArray(area.zones)
+        ? area.zones.filter((z) => z && z.isActive !== false)
+        : [];
+
+      if (validZones.length > 0) {
+        validZones.forEach((zone) => {
+          const zoneName = (zone.name || "").trim();
+          if (!zoneName) return;
+
+          let assignedUser = null;
+          if (zone.assignedSalesId && typeof zone.assignedSalesId === "object") {
+            assignedUser = zone.assignedSalesId;
+          } else if (zone.assignedSalesId) {
+            assignedUser = users.find((u) => u._id === zone.assignedSalesId);
+          } else if (zone.assignedSalesUser) {
+            assignedUser = zone.assignedSalesUser;
+          }
+
+          const repName = assignedUser?.name || "";
+          const val = `${areaName.toLowerCase()}/${zoneName.toLowerCase()}`;
+          const label = repName
+            ? `${val} (Assigned to ${repName})`
+            : val;
+
+          options.push({
+            value: val,
+            label,
+            areaName,
+            zoneName,
+            areaId: area._id,
+            assignedToId: assignedUser?._id || zone.assignedSalesId || "",
+          });
+        });
+
+        // General area option
+        let areaManager = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaManager = area.managerId;
+        } else if (area.managerId) {
+          areaManager = users.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaManager?.name
+            ? `${areaVal} (General - Manager: ${areaManager.name})`
+            : `${areaVal} (General)`,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaManager?._id || "",
+        });
+      } else {
+        // Area without sub-zones
+        let areaRep = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaRep = area.managerId;
+        } else if (area.managerId) {
+          areaRep = users.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaRep?.name
+            ? `${areaVal} (Assigned to ${areaRep.name})`
+            : `${areaVal} (General)`,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaRep?._id || "",
+        });
+      }
+    });
+
+    return options;
+  }, [areas, users]);
 
   // Scoped leads: ONLY Admin and Manager can see all the leads.
   // Everyone else (Sales, etc.) strictly only sees leads assigned to themselves.
@@ -1142,14 +1263,26 @@ export default function LeadsDashboardPage() {
         ? newLead.assignedToId || undefined
         : currentUser?._id || currentUser?.id || undefined;
 
-      const terrStr = (newLead.territory || "burari/baba colony")
-        .toLowerCase()
-        .trim();
+      const rawTerr = (
+        newLead.territory ||
+        territoryOptions[0]?.value ||
+        "burari/baba colony"
+      ).trim();
+      const terrStr = rawTerr.toLowerCase();
+      const matchedOpt = territoryOptions.find(
+        (o) => o.value.toLowerCase() === terrStr
+      );
+
       const parts = terrStr.split("/");
-      const areaVal = parts[0]
-        ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-        : "Burari";
-      const zoneVal = parts[1] || parts[0] || "Baba colony";
+      const areaVal = matchedOpt
+        ? matchedOpt.areaName
+        : parts[0]
+          ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+          : "Burari";
+      const zoneVal = matchedOpt
+        ? matchedOpt.zoneName || matchedOpt.areaName
+        : parts[1] || parts[0] || "Baba colony";
+      const areaIdVal = matchedOpt?.areaId || undefined;
 
       // Upload shop photo if selected
       let uploadedPhotoUrl = "";
@@ -1197,6 +1330,7 @@ export default function LeadsDashboardPage() {
         expectedValue: Number(newLead.expectedValue) || 0,
         priority: newLead.priority,
         assignedToId: assignedTarget,
+        areaId: areaIdVal,
         nextFollowUp: newLead.nextFollowUp || undefined,
         notes: newLead.notes,
         area: areaVal,
@@ -1231,7 +1365,7 @@ export default function LeadsDashboardPage() {
         expectedValue: "",
         priority: "HIGH",
         assignedToId: "",
-        territory: "burari/baba colony",
+        territory: territoryOptions[0]?.value || "burari/baba colony",
         nextFollowUp: "",
         notes: "",
       });
@@ -1407,14 +1541,26 @@ export default function LeadsDashboardPage() {
     if (!quickEditLead) return;
     try {
       setSavingQuickEdit(true);
-      const terrStr = (quickEditForm.territory || "burari/baba colony")
-        .toLowerCase()
-        .trim();
+      const rawTerr = (
+        quickEditForm.territory ||
+        territoryOptions[0]?.value ||
+        "burari/baba colony"
+      ).trim();
+      const terrStr = rawTerr.toLowerCase();
+      const matchedOpt = territoryOptions.find(
+        (o) => o.value.toLowerCase() === terrStr
+      );
+
       const parts = terrStr.split("/");
-      const areaVal = parts[0]
-        ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-        : "Burari";
-      const zoneVal = parts[1] || parts[0] || "Baba colony";
+      const areaVal = matchedOpt
+        ? matchedOpt.areaName
+        : parts[0]
+          ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+          : "Burari";
+      const zoneVal = matchedOpt
+        ? matchedOpt.zoneName || matchedOpt.areaName
+        : parts[1] || parts[0] || "Baba colony";
+      const areaIdVal = matchedOpt?.areaId || undefined;
 
       const bName = (quickEditForm.businessName || "").trim();
       const cName = (quickEditForm.contactName || "").trim();
@@ -1430,6 +1576,7 @@ export default function LeadsDashboardPage() {
         priority: quickEditForm.priority,
         area: areaVal,
         zone: zoneVal,
+        ...(areaIdVal ? { areaId: areaIdVal } : {}),
       });
 
       // Optimistic update
@@ -1551,11 +1698,15 @@ export default function LeadsDashboardPage() {
   // Format Lead Area / Zone (e.g. burari/baba colony)
   const formatLeadTerritory = (lead) => {
     if (!lead) return "";
-    const areaName = String(
+    let areaName = String(
       (lead.areaId && typeof lead.areaId === "object"
         ? lead.areaId?.name
         : lead.area) || ""
     ).trim();
+    if (!areaName && lead.areaId && typeof lead.areaId === "string") {
+      const foundArea = areas.find((a) => a._id === lead.areaId);
+      if (foundArea) areaName = (foundArea.name || "").trim();
+    }
     const zoneName = String(lead.zone || "").trim();
 
     let assignedRaw = "";
@@ -3820,11 +3971,20 @@ export default function LeadsDashboardPage() {
                   Territory (Area / Zone) *
                 </label>
                 <select
-                  value={newLead.territory || "burari/baba colony"}
+                  value={
+                    newLead.territory ||
+                    territoryOptions[0]?.value ||
+                    "burari/baba colony"
+                  }
                   onChange={(e) => {
                     const val = e.target.value;
+                    const matched = territoryOptions.find(
+                      (o) => o.value.toLowerCase() === val.toLowerCase()
+                    );
                     let targetAssignee = newLead.assignedToId;
-                    if (val.includes("baba colony")) {
+                    if (matched?.assignedToId) {
+                      targetAssignee = matched.assignedToId;
+                    } else if (val.includes("baba colony")) {
                       const tanya = users.find(
                         (u) =>
                           (u.name || "").toLowerCase().includes("tanya") ||
@@ -3840,11 +4000,24 @@ export default function LeadsDashboardPage() {
                   }}
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="burari/baba colony">
-                    burari/baba colony (Assigned to Tanya)
-                  </option>
-                  <option value="burari/sant nagar">burari/sant nagar</option>
-                  <option value="burari">burari (General)</option>
+                  {territoryOptions.map((opt) => (
+                    <option
+                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                      value={opt.value}
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                  {newLead.territory &&
+                    !territoryOptions.some(
+                      (o) =>
+                        o.value.toLowerCase() ===
+                        newLead.territory.toLowerCase()
+                    ) && (
+                      <option value={newLead.territory}>
+                        {newLead.territory}
+                      </option>
+                    )}
                 </select>
               </div>
 
@@ -4427,7 +4600,11 @@ export default function LeadsDashboardPage() {
                   Territory (Area / Zone)
                 </label>
                 <select
-                  value={quickEditForm.territory || "burari/baba colony"}
+                  value={
+                    quickEditForm.territory ||
+                    territoryOptions[0]?.value ||
+                    "burari/baba colony"
+                  }
                   onChange={(e) =>
                     setQuickEditForm({
                       ...quickEditForm,
@@ -4436,11 +4613,24 @@ export default function LeadsDashboardPage() {
                   }
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium"
                 >
-                  <option value="burari/baba colony">
-                    burari/baba colony (Tanya)
-                  </option>
-                  <option value="burari/sant nagar">burari/sant nagar</option>
-                  <option value="burari">burari (General)</option>
+                  {territoryOptions.map((opt) => (
+                    <option
+                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                      value={opt.value}
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                  {quickEditForm.territory &&
+                    !territoryOptions.some(
+                      (o) =>
+                        o.value.toLowerCase() ===
+                        quickEditForm.territory.toLowerCase()
+                    ) && (
+                      <option value={quickEditForm.territory}>
+                        {quickEditForm.territory}
+                      </option>
+                    )}
                 </select>
               </div>
 

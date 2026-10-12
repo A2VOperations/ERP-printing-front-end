@@ -705,7 +705,7 @@ export default function AdminTargetsPage() {
                           </td>
 
                           {/* Progress */}
-                          <td className="py-3.5 min-w-[140px]">
+                          <td className="py-3.5 min-w-[140px] px-3">
                             <div className="space-y-1">
                               <div className="flex items-center justify-between text-[11px]">
                                 <span

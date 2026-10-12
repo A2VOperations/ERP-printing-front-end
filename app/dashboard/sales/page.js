@@ -88,6 +88,7 @@ export default function SalesDashboardPage() {
   const [followups, setFollowups] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -195,6 +196,120 @@ export default function SalesDashboardPage() {
     return `${day} ${month} ${year}, ${weekday}`;
   }, []);
 
+  // Dynamic Territory (Area / Zone) options derived from Areas master
+  const territoryOptions = useMemo(() => {
+    if (!areas || areas.length === 0) {
+      return [
+        {
+          value: "burari/baba colony",
+          label: "burari/baba colony (Assigned to Tanya)",
+          areaName: "Burari",
+          zoneName: "Baba colony",
+          assignedToId:
+            users.find((u) => (u.name || "").toLowerCase().includes("tanya"))
+              ?._id || "",
+        },
+        {
+          value: "burari/sant nagar",
+          label: "burari/sant nagar",
+          areaName: "Burari",
+          zoneName: "Sant nagar",
+          assignedToId: "",
+        },
+        {
+          value: "burari",
+          label: "burari (General)",
+          areaName: "Burari",
+          zoneName: "",
+          assignedToId: "",
+        },
+      ];
+    }
+
+    const options = [];
+    areas.forEach((area) => {
+      const areaName = (area.name || "").trim();
+      if (!areaName) return;
+
+      const validZones = Array.isArray(area.zones)
+        ? area.zones.filter((z) => z && z.isActive !== false)
+        : [];
+
+      if (validZones.length > 0) {
+        validZones.forEach((zone) => {
+          const zoneName = (zone.name || "").trim();
+          if (!zoneName) return;
+
+          let assignedUser = null;
+          if (zone.assignedSalesId && typeof zone.assignedSalesId === "object") {
+            assignedUser = zone.assignedSalesId;
+          } else if (zone.assignedSalesId) {
+            assignedUser = users.find((u) => u._id === zone.assignedSalesId);
+          } else if (zone.assignedSalesUser) {
+            assignedUser = zone.assignedSalesUser;
+          }
+
+          const repName = assignedUser?.name || "";
+          const val = `${areaName.toLowerCase()}/${zoneName.toLowerCase()}`;
+          const label = repName
+            ? `${val} (Assigned to ${repName})`
+            : val;
+
+          options.push({
+            value: val,
+            label,
+            areaName,
+            zoneName,
+            areaId: area._id,
+            assignedToId: assignedUser?._id || zone.assignedSalesId || "",
+          });
+        });
+
+        // General area option
+        let areaManager = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaManager = area.managerId;
+        } else if (area.managerId) {
+          areaManager = users.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaManager?.name
+            ? `${areaVal} (General - Manager: ${areaManager.name})`
+            : `${areaVal} (General)`,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaManager?._id || "",
+        });
+      } else {
+        // Area without sub-zones
+        let areaRep = null;
+        if (area.managerId && typeof area.managerId === "object") {
+          areaRep = area.managerId;
+        } else if (area.managerId) {
+          areaRep = users.find((u) => u._id === area.managerId);
+        }
+
+        const areaVal = areaName.toLowerCase();
+        options.push({
+          value: areaVal,
+          label: areaRep?.name
+            ? `${areaVal} (Assigned to ${areaRep.name})`
+            : `${areaVal} (General)`,
+          areaName,
+          zoneName: "",
+          areaId: area._id,
+          assignedToId: areaRep?._id || "",
+        });
+      }
+    });
+
+    return options;
+  }, [areas, users]);
+
   // Load Sales Data
   const loadDashboardData = useCallback(async (isManualRefresh = false) => {
     try {
@@ -224,8 +339,8 @@ export default function SalesDashboardPage() {
         }
       } catch {}
 
-      // 2. Fetch live leads, follow-ups, quotations, orders, users
-      const [leadsRes, flwRes, quoteRes, ordersRes, usersRes] =
+      // 2. Fetch live leads, follow-ups, quotations, orders, users, areas
+      const [leadsRes, flwRes, quoteRes, ordersRes, usersRes, areasRes] =
         await Promise.allSettled([
           api.get("/leads?limit=100&sortBy=createdAt&sortOrder=desc", {
             silent: true,
@@ -240,12 +355,19 @@ export default function SalesDashboardPage() {
             silent: true,
           }),
           api.get("/users", { silent: true }),
+          api.get("/areas", { silent: true }).catch(() => null),
         ]);
 
       if (usersRes.status === "fulfilled" && usersRes.value?.data) {
         const raw = usersRes.value.data;
         const list = Array.isArray(raw) ? raw : raw.users || raw.records || [];
         setUsers(list);
+      }
+
+      if (areasRes.status === "fulfilled" && areasRes.value?.data) {
+        const raw = areasRes.value.data;
+        const list = Array.isArray(raw) ? raw : raw.areas || raw.records || [];
+        setAreas(list);
       }
 
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
@@ -574,14 +696,26 @@ export default function SalesDashboardPage() {
         ? newLeadForm.assignedToId || undefined
         : currentUser?._id || currentUser?.id || undefined;
 
-      const terrStr = (newLeadForm.territory || "burari/baba colony")
-        .toLowerCase()
-        .trim();
+      const rawTerr = (
+        newLeadForm.territory ||
+        territoryOptions[0]?.value ||
+        "burari/baba colony"
+      ).trim();
+      const terrStr = rawTerr.toLowerCase();
+      const matchedOpt = territoryOptions.find(
+        (o) => o.value.toLowerCase() === terrStr
+      );
+
       const parts = terrStr.split("/");
-      const areaVal = parts[0]
-        ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-        : "Burari";
-      const zoneVal = parts[1] || parts[0] || "Baba colony";
+      const areaVal = matchedOpt
+        ? matchedOpt.areaName
+        : parts[0]
+          ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
+          : "Burari";
+      const zoneVal = matchedOpt
+        ? matchedOpt.zoneName || matchedOpt.areaName
+        : parts[1] || parts[0] || "Baba colony";
+      const areaIdVal = matchedOpt?.areaId || undefined;
 
       // Upload shop photo if selected
       let uploadedPhotoUrl = "";
@@ -626,6 +760,7 @@ export default function SalesDashboardPage() {
         expectedValue: Number(newLeadForm.expectedValue) || 0,
         priority: newLeadForm.priority || "HIGH",
         assignedToId: assignedTarget,
+        areaId: areaIdVal,
         nextFollowUp: newLeadForm.nextFollowUp || undefined,
         notes: newLeadForm.notes?.trim() || undefined,
         area: areaVal,
@@ -661,7 +796,7 @@ export default function SalesDashboardPage() {
         expectedValue: "",
         priority: "HIGH",
         assignedToId: "",
-        territory: "burari/baba colony",
+        territory: territoryOptions[0]?.value || "burari/baba colony",
         nextFollowUp: "",
         notes: "",
       });
@@ -2253,11 +2388,20 @@ export default function SalesDashboardPage() {
                   Territory (Area / Zone) *
                 </label>
                 <select
-                  value={newLeadForm.territory || "burari/baba colony"}
+                  value={
+                    newLeadForm.territory ||
+                    territoryOptions[0]?.value ||
+                    "burari/baba colony"
+                  }
                   onChange={(e) => {
                     const val = e.target.value;
+                    const matched = territoryOptions.find(
+                      (o) => o.value.toLowerCase() === val.toLowerCase()
+                    );
                     let targetAssignee = newLeadForm.assignedToId;
-                    if (val.includes("baba colony")) {
+                    if (matched?.assignedToId) {
+                      targetAssignee = matched.assignedToId;
+                    } else if (val.includes("baba colony")) {
                       const tanya = users.find(
                         (u) =>
                           (u.name || "").toLowerCase().includes("tanya") ||
@@ -2273,11 +2417,24 @@ export default function SalesDashboardPage() {
                   }}
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="burari/baba colony">
-                    burari/baba colony (Assigned to Tanya)
-                  </option>
-                  <option value="burari/sant nagar">burari/sant nagar</option>
-                  <option value="burari">burari (General)</option>
+                  {territoryOptions.map((opt) => (
+                    <option
+                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                      value={opt.value}
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                  {newLeadForm.territory &&
+                    !territoryOptions.some(
+                      (o) =>
+                        o.value.toLowerCase() ===
+                        newLeadForm.territory.toLowerCase()
+                    ) && (
+                      <option value={newLeadForm.territory}>
+                        {newLeadForm.territory}
+                      </option>
+                    )}
                 </select>
               </div>
 
