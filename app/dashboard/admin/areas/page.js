@@ -421,18 +421,7 @@ export default function AreasTerritoriesPage() {
                             </span>
                             <div>
                               <div className="text-slate-900 font-bold">{a.name}</div>
-                              {Array.isArray(a.zones) && a.zones.length > 0 && (
-                                <div className="text-[10px] text-teal-700 font-mono font-medium">
-                                  {a.zones
-                                    .map((z) => {
-                                      const zName = z.name || '';
-                                      return zName.toLowerCase().startsWith((a.name || '').toLowerCase() + '/')
-                                        ? zName.toLowerCase()
-                                        : `${(a.name || '').toLowerCase()}/${zName.toLowerCase()}`;
-                                    })
-                                    .join(' • ')}
-                                </div>
-                              )}
+                              
                             </div>
                           </div>
                         </td>
