@@ -147,7 +147,7 @@ export default function SalesDashboardPage() {
     expectedValue: "",
     priority: "HIGH",
     assignedToId: "",
-    territory: "burari/baba colony",
+    territory: "",
     nextFollowUp: "",
     notes: "",
   });
@@ -196,34 +196,10 @@ export default function SalesDashboardPage() {
     return `${day} ${month} ${year}, ${weekday}`;
   }, []);
 
-  // Dynamic Territory (Area / Zone) options derived from Areas master
+  // Dynamic Territory (Area / Zone) options derived directly from Admin Area & Zone Master
   const territoryOptions = useMemo(() => {
-    if (!areas || areas.length === 0) {
-      return [
-        {
-          value: "burari/baba colony",
-          label: "burari/baba colony (Assigned to Tanya)",
-          areaName: "Burari",
-          zoneName: "Baba colony",
-          assignedToId:
-            users.find((u) => (u.name || "").toLowerCase().includes("tanya"))
-              ?._id || "",
-        },
-        {
-          value: "burari/sant nagar",
-          label: "burari/sant nagar",
-          areaName: "Burari",
-          zoneName: "Sant nagar",
-          assignedToId: "",
-        },
-        {
-          value: "burari",
-          label: "burari (General)",
-          areaName: "Burari",
-          zoneName: "",
-          assignedToId: "",
-        },
-      ];
+    if (!Array.isArray(areas) || areas.length === 0) {
+      return [];
     }
 
     const options = [];
@@ -309,6 +285,30 @@ export default function SalesDashboardPage() {
 
     return options;
   }, [areas, users]);
+
+  // Synchronize default territory with the first admin area zone once loaded
+  useEffect(() => {
+    if (territoryOptions.length > 0) {
+      setNewLeadForm((prev) => {
+        if (
+          !prev.territory ||
+          !territoryOptions.some(
+            (o) => o.value.toLowerCase() === prev.territory.toLowerCase()
+          )
+        ) {
+          return {
+            ...prev,
+            territory: territoryOptions[0].value,
+            assignedToId:
+              prev.assignedToId ||
+              territoryOptions[0].assignedToId ||
+              prev.assignedToId,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [territoryOptions]);
 
   // Load Sales Data
   const loadDashboardData = useCallback(async (isManualRefresh = false) => {
@@ -714,7 +714,7 @@ export default function SalesDashboardPage() {
           : "Burari";
       const zoneVal = matchedOpt
         ? matchedOpt.zoneName || matchedOpt.areaName
-        : parts[1] || parts[0] || "Baba colony";
+        : parts[1] || parts[0] || "";
       const areaIdVal = matchedOpt?.areaId || undefined;
 
       // Upload shop photo if selected
@@ -796,7 +796,7 @@ export default function SalesDashboardPage() {
         expectedValue: "",
         priority: "HIGH",
         assignedToId: "",
-        territory: territoryOptions[0]?.value || "burari/baba colony",
+        territory: territoryOptions[0]?.value || "",
         nextFollowUp: "",
         notes: "",
       });
@@ -2391,7 +2391,7 @@ export default function SalesDashboardPage() {
                   value={
                     newLeadForm.territory ||
                     territoryOptions[0]?.value ||
-                    "burari/baba colony"
+                    ""
                   }
                   onChange={(e) => {
                     const val = e.target.value;
@@ -2401,13 +2401,6 @@ export default function SalesDashboardPage() {
                     let targetAssignee = newLeadForm.assignedToId;
                     if (matched?.assignedToId) {
                       targetAssignee = matched.assignedToId;
-                    } else if (val.includes("baba colony")) {
-                      const tanya = users.find(
-                        (u) =>
-                          (u.name || "").toLowerCase().includes("tanya") ||
-                          (u.email || "").toLowerCase().includes("tanya"),
-                      );
-                      if (tanya) targetAssignee = tanya._id;
                     }
                     setNewLeadForm({
                       ...newLeadForm,
@@ -2415,26 +2408,20 @@ export default function SalesDashboardPage() {
                       assignedToId: targetAssignee,
                     });
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
-                  {territoryOptions.map((opt) => (
-                    <option
-                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
-                      value={opt.value}
-                    >
-                      {opt.label}
-                    </option>
-                  ))}
-                  {newLeadForm.territory &&
-                    !territoryOptions.some(
-                      (o) =>
-                        o.value.toLowerCase() ===
-                        newLeadForm.territory.toLowerCase()
-                    ) && (
-                      <option value={newLeadForm.territory}>
-                        {newLeadForm.territory}
+                  {territoryOptions.length === 0 ? (
+                    <option value="">No areas configured in Admin &gt; Areas</option>
+                  ) : (
+                    territoryOptions.map((opt) => (
+                      <option
+                        key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                        value={opt.value}
+                      >
+                        {opt.label}
                       </option>
-                    )}
+                    ))
+                  )}
                 </select>
               </div>
 

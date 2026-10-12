@@ -355,7 +355,7 @@ export default function LeadsDashboardPage() {
     expectedValue: "",
     priority: "HIGH",
     assignedToId: "",
-    territory: "burari/baba colony",
+    territory: "",
     nextFollowUp: "",
     notes: "",
   });
@@ -536,34 +536,10 @@ export default function LeadsDashboardPage() {
     return String(currentUser?._id || currentUser?.id || "");
   }, [currentUser]);
 
-  // Dynamic Territory (Area / Zone) options derived from Areas master
+  // Dynamic Territory (Area / Zone) options derived directly from Admin Area & Zone Master
   const territoryOptions = useMemo(() => {
-    if (!areas || areas.length === 0) {
-      return [
-        {
-          value: "burari/baba colony",
-          label: "burari/baba colony (Assigned to Tanya)",
-          areaName: "Burari",
-          zoneName: "Baba colony",
-          assignedToId:
-            users.find((u) => (u.name || "").toLowerCase().includes("tanya"))
-              ?._id || "",
-        },
-        {
-          value: "burari/sant nagar",
-          label: "burari/sant nagar",
-          areaName: "Burari",
-          zoneName: "Sant nagar",
-          assignedToId: "",
-        },
-        {
-          value: "burari",
-          label: "burari (General)",
-          areaName: "Burari",
-          zoneName: "",
-          assignedToId: "",
-        },
-      ];
+    if (!Array.isArray(areas) || areas.length === 0) {
+      return [];
     }
 
     const options = [];
@@ -649,6 +625,30 @@ export default function LeadsDashboardPage() {
 
     return options;
   }, [areas, users]);
+
+  // Synchronize default territory with the first admin area zone once loaded
+  useEffect(() => {
+    if (territoryOptions.length > 0) {
+      setNewLead((prev) => {
+        if (
+          !prev.territory ||
+          !territoryOptions.some(
+            (o) => o.value.toLowerCase() === prev.territory.toLowerCase()
+          )
+        ) {
+          return {
+            ...prev,
+            territory: territoryOptions[0].value,
+            assignedToId:
+              prev.assignedToId ||
+              territoryOptions[0].assignedToId ||
+              prev.assignedToId,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [territoryOptions]);
 
   // Scoped leads: ONLY Admin and Manager can see all the leads.
   // Everyone else (Sales, etc.) strictly only sees leads assigned to themselves.
@@ -1278,10 +1278,10 @@ export default function LeadsDashboardPage() {
         ? matchedOpt.areaName
         : parts[0]
           ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-          : "Burari";
+          : "";
       const zoneVal = matchedOpt
         ? matchedOpt.zoneName || matchedOpt.areaName
-        : parts[1] || parts[0] || "Baba colony";
+        : parts[1] || parts[0] || "";
       const areaIdVal = matchedOpt?.areaId || undefined;
 
       // Upload shop photo if selected
@@ -1365,7 +1365,7 @@ export default function LeadsDashboardPage() {
         expectedValue: "",
         priority: "HIGH",
         assignedToId: "",
-        territory: territoryOptions[0]?.value || "burari/baba colony",
+        territory: territoryOptions[0]?.value || "",
         nextFollowUp: "",
         notes: "",
       });
@@ -1523,7 +1523,7 @@ export default function LeadsDashboardPage() {
   const handleOpenQuickEdit = (lead) => {
     setSelectedLead(lead);
     setQuickEditLead(lead);
-    const initialTerritory = formatLeadTerritory(lead) || "burari/baba colony";
+    const initialTerritory = formatLeadTerritory(lead) || (territoryOptions[0]?.value || "");
     setQuickEditForm({
       contactName: lead.customerName || lead.contactName || "",
       businessName: lead.companyName || lead.businessName || "",
@@ -1544,7 +1544,7 @@ export default function LeadsDashboardPage() {
       const rawTerr = (
         quickEditForm.territory ||
         territoryOptions[0]?.value ||
-        "burari/baba colony"
+        ""
       ).trim();
       const terrStr = rawTerr.toLowerCase();
       const matchedOpt = territoryOptions.find(
@@ -1556,10 +1556,10 @@ export default function LeadsDashboardPage() {
         ? matchedOpt.areaName
         : parts[0]
           ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1)
-          : "Burari";
+          : "";
       const zoneVal = matchedOpt
         ? matchedOpt.zoneName || matchedOpt.areaName
-        : parts[1] || parts[0] || "Baba colony";
+        : parts[1] || parts[0] || "";
       const areaIdVal = matchedOpt?.areaId || undefined;
 
       const bName = (quickEditForm.businessName || "").trim();
@@ -1729,13 +1729,7 @@ export default function LeadsDashboardPage() {
       return `${areaName.toLowerCase()}/${zoneName.toLowerCase()}`;
     }
 
-    // Tanya assignment or Baba colony
-    if (assigned.includes("tanya") || zoneName.toLowerCase().includes("baba")) {
-      return "burari/baba colony";
-    }
-
     if (zoneName) {
-      if (zoneName.toLowerCase().includes("sant")) return "burari/sant nagar";
       return zoneName.toLowerCase();
     }
 
@@ -3974,7 +3968,7 @@ export default function LeadsDashboardPage() {
                   value={
                     newLead.territory ||
                     territoryOptions[0]?.value ||
-                    "burari/baba colony"
+                    ""
                   }
                   onChange={(e) => {
                     const val = e.target.value;
@@ -3984,13 +3978,6 @@ export default function LeadsDashboardPage() {
                     let targetAssignee = newLead.assignedToId;
                     if (matched?.assignedToId) {
                       targetAssignee = matched.assignedToId;
-                    } else if (val.includes("baba colony")) {
-                      const tanya = users.find(
-                        (u) =>
-                          (u.name || "").toLowerCase().includes("tanya") ||
-                          (u.email || "").toLowerCase().includes("tanya"),
-                      );
-                      if (tanya) targetAssignee = tanya._id;
                     }
                     setNewLead({
                       ...newLead,
@@ -3998,26 +3985,20 @@ export default function LeadsDashboardPage() {
                       assignedToId: targetAssignee,
                     });
                   }}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
-                  {territoryOptions.map((opt) => (
-                    <option
-                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
-                      value={opt.value}
-                    >
-                      {opt.label}
-                    </option>
-                  ))}
-                  {newLead.territory &&
-                    !territoryOptions.some(
-                      (o) =>
-                        o.value.toLowerCase() ===
-                        newLead.territory.toLowerCase()
-                    ) && (
-                      <option value={newLead.territory}>
-                        {newLead.territory}
+                  {territoryOptions.length === 0 ? (
+                    <option value="">No areas configured in Admin &gt; Areas</option>
+                  ) : (
+                    territoryOptions.map((opt) => (
+                      <option
+                        key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                        value={opt.value}
+                      >
+                        {opt.label}
                       </option>
-                    )}
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -4603,7 +4584,7 @@ export default function LeadsDashboardPage() {
                   value={
                     quickEditForm.territory ||
                     territoryOptions[0]?.value ||
-                    "burari/baba colony"
+                    ""
                   }
                   onChange={(e) =>
                     setQuickEditForm({
@@ -4611,26 +4592,20 @@ export default function LeadsDashboardPage() {
                       territory: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-mono font-medium cursor-pointer"
                 >
-                  {territoryOptions.map((opt) => (
-                    <option
-                      key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
-                      value={opt.value}
-                    >
-                      {opt.label}
-                    </option>
-                  ))}
-                  {quickEditForm.territory &&
-                    !territoryOptions.some(
-                      (o) =>
-                        o.value.toLowerCase() ===
-                        quickEditForm.territory.toLowerCase()
-                    ) && (
-                      <option value={quickEditForm.territory}>
-                        {quickEditForm.territory}
+                  {territoryOptions.length === 0 ? (
+                    <option value="">No areas configured in Admin &gt; Areas</option>
+                  ) : (
+                    territoryOptions.map((opt) => (
+                      <option
+                        key={`${opt.areaId || opt.areaName}-${opt.zoneName || "gen"}-${opt.value}`}
+                        value={opt.value}
+                      >
+                        {opt.label}
                       </option>
-                    )}
+                    ))
+                  )}
                 </select>
               </div>
 
