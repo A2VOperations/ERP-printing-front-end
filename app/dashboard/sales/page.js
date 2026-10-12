@@ -85,6 +85,7 @@ export default function SalesDashboardPage() {
 
   // Live Backend Data
   const [leads, setLeads] = useState([]);
+  const [totalLeadsCount, setTotalLeadsCount] = useState(0);
   const [followups, setFollowups] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -342,7 +343,7 @@ export default function SalesDashboardPage() {
       // 2. Fetch live leads, follow-ups, quotations, orders, users, areas
       const [leadsRes, flwRes, quoteRes, ordersRes, usersRes, areasRes] =
         await Promise.allSettled([
-          api.get("/leads?limit=100&sortBy=createdAt&sortOrder=desc", {
+          api.get("/leads?limit=10&sortBy=updatedAt&sortOrder=desc", {
             silent: true,
           }),
           api.get("/followups?limit=50&sortBy=scheduledAt&sortOrder=asc", {
@@ -373,7 +374,25 @@ export default function SalesDashboardPage() {
       if (leadsRes.status === "fulfilled" && leadsRes.value?.data) {
         const raw = leadsRes.value.data;
         const list = Array.isArray(raw) ? raw : raw.records || raw.leads || [];
-        setLeads(list);
+        const total =
+          leadsRes.value?.meta?.totalRecords ??
+          raw.pagination?.totalRecords ??
+          list.length;
+        setTotalLeadsCount(total);
+
+        // Sort strictly by latest updated or created timestamp descending, and slice to 10
+        const sorted = [...list].sort((a, b) => {
+          const timeA = Math.max(
+            new Date(a.updatedAt || a.createdAt || 0).getTime(),
+            new Date(a.createdAt || 0).getTime(),
+          );
+          const timeB = Math.max(
+            new Date(b.updatedAt || b.createdAt || 0).getTime(),
+            new Date(b.createdAt || 0).getTime(),
+          );
+          return timeB - timeA;
+        });
+        setLeads(sorted.slice(0, 10));
       }
       if (flwRes.status === "fulfilled" && flwRes.value?.data) {
         const raw = flwRes.value.data;
@@ -406,9 +425,21 @@ export default function SalesDashboardPage() {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // Normalise backend leads for UI display
+  // Normalise backend leads for UI display - 10 recent updated or added leads
   const displayLeads = useMemo(() => {
-    return (leads || []).map((l) => {
+    const sorted = [...(leads || [])].sort((a, b) => {
+      const timeA = Math.max(
+        new Date(a.updatedAt || a.createdAt || 0).getTime(),
+        new Date(a.createdAt || 0).getTime(),
+      );
+      const timeB = Math.max(
+        new Date(b.updatedAt || b.createdAt || 0).getTime(),
+        new Date(b.createdAt || 0).getTime(),
+      );
+      return timeB - timeA;
+    });
+
+    return sorted.slice(0, 10).map((l) => {
       const bName =
         (l.businessName &&
         l.businessName.trim() !== "Direct Lead" &&
@@ -467,14 +498,22 @@ export default function SalesDashboardPage() {
         srcType = "MANUAL";
       }
 
-      // Time formatting
-      const createdDate = l.createdAt ? new Date(l.createdAt) : new Date();
-      const timeStr = createdDate.toLocaleTimeString("en-US", {
+      // Time formatting - using latest of updatedAt or createdAt
+      const latestDate =
+        l.updatedAt && new Date(l.updatedAt) > new Date(l.createdAt || 0)
+          ? new Date(l.updatedAt)
+          : (l.createdAt ? new Date(l.createdAt) : new Date());
+      const isUpdated = Boolean(
+        l.updatedAt &&
+        l.createdAt &&
+        new Date(l.updatedAt).getTime() - new Date(l.createdAt).getTime() > 1000,
+      );
+      const timeStr = latestDate.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
       });
-      const dateStr = createdDate.toLocaleDateString("en-IN", {
+      const dateStr = latestDate.toLocaleDateString("en-IN", {
         month: "short",
         day: "numeric",
       });
@@ -530,6 +569,7 @@ export default function SalesDashboardPage() {
         sourceType: srcType,
         createdAtTime: timeStr,
         createdAtDate: dateStr,
+        isUpdated: isUpdated,
         status: statusKey,
         statusLabel: statusLabel,
         priority: l.priority || "HIGH",
@@ -568,41 +608,43 @@ export default function SalesDashboardPage() {
     };
   }, [displayLeads]);
 
-  // Filtered Leads according to active tab, search text, and priority
+  // Filtered Leads according to active tab, search text, and priority (max 10 recent)
   const filteredLeads = useMemo(() => {
-    return displayLeads.filter((l) => {
-      // Tab filter
-      if (activeTab !== "ALL" && l.status !== activeTab) return false;
+    return displayLeads
+      .filter((l) => {
+        // Tab filter
+        if (activeTab !== "ALL" && l.status !== activeTab) return false;
 
-      // Priority filter
-      if (priorityFilter !== "ALL" && l.priority !== priorityFilter)
-        return false;
+        // Priority filter
+        if (priorityFilter !== "ALL" && l.priority !== priorityFilter)
+          return false;
 
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = l.businessName.toLowerCase().includes(q);
-        const matchContact = l.contactName.toLowerCase().includes(q);
-        const matchPhone = l.phone.includes(q);
-        const matchArea = l.area.toLowerCase().includes(q);
-        const matchZone = l.zone.toLowerCase().includes(q);
-        const matchReq = l.requirementTitle.toLowerCase().includes(q);
-        const matchNum = l.leadNumber.toLowerCase().includes(q);
-        const matchId = String(l._id).toLowerCase().includes(q);
-        return (
-          matchName ||
-          matchContact ||
-          matchPhone ||
-          matchArea ||
-          matchZone ||
-          matchReq ||
-          matchNum ||
-          matchId
-        );
-      }
+        // Search query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchName = l.businessName.toLowerCase().includes(q);
+          const matchContact = l.contactName.toLowerCase().includes(q);
+          const matchPhone = l.phone.includes(q);
+          const matchArea = l.area.toLowerCase().includes(q);
+          const matchZone = l.zone.toLowerCase().includes(q);
+          const matchReq = l.requirementTitle.toLowerCase().includes(q);
+          const matchNum = l.leadNumber.toLowerCase().includes(q);
+          const matchId = String(l._id).toLowerCase().includes(q);
+          return (
+            matchName ||
+            matchContact ||
+            matchPhone ||
+            matchArea ||
+            matchZone ||
+            matchReq ||
+            matchNum ||
+            matchId
+          );
+        }
 
-      return true;
-    });
+        return true;
+      })
+      .slice(0, 10);
   }, [displayLeads, activeTab, priorityFilter, searchQuery]);
 
   // Toggle selection
@@ -626,7 +668,7 @@ export default function SalesDashboardPage() {
     const followupsDue = followups.length || tabCounts.FOLLOW_UP;
     const quotationPending = quotations.length || tabCounts.QUOTATION;
     const ordersConfirmed = orders.length || tabCounts.WON;
-    const totalLeads = leads.length;
+    const totalLeads = totalLeadsCount || leads.length;
 
     return {
       totalLeads,
@@ -635,7 +677,7 @@ export default function SalesDashboardPage() {
       quotationPending,
       ordersConfirmed,
     };
-  }, [tabCounts, followups.length, quotations.length, orders.length, leads]);
+  }, [tabCounts, followups.length, quotations.length, orders.length, leads, totalLeadsCount]);
 
   // Dynamic Recent Activity stream from live records
   const recentActivities = useMemo(() => {
@@ -1073,12 +1115,11 @@ export default function SalesDashboardPage() {
                       Raw Database Records
                     </h2>
                     <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
-                      leads collection
+                      10 Recent
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 font-normal mt-0.5">
-                    Viewing raw MongoDB documents directly as stored in the
-                    backend database.
+                    Viewing the 10 most recently updated or added leads directly as stored in the backend database.
                   </p>
                 </div>
 
@@ -1217,7 +1258,7 @@ export default function SalesDashboardPage() {
                         <th className="py-3.5 px-3.5 font-sans">PRIORITY</th>
                         <th className="py-3.5 px-3.5 font-sans">EXPECTED VALUE</th>
                         <th className="py-3.5 px-3.5 font-sans">ASSIGNED TO</th>
-                        <th className="py-3.5 px-3.5">CREATED AT</th>
+                        <th className="py-3.5 px-3.5">LAST UPDATED / ADDED</th>
                         <th className="py-3.5 px-3.5 text-center font-sans">
                           Find
                         </th>
@@ -1289,7 +1330,15 @@ export default function SalesDashboardPage() {
                               {item.assignedToName}
                             </td>
                             <td className="py-3.5 px-3.5 text-slate-600 text-xs font-medium">
-                              {item.createdAtDate}
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-800">{item.createdAtTime}</span>
+                                {item.isUpdated && (
+                                  <span className="text-[9px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded border border-emerald-200">
+                                    Updated
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-400">{item.createdAtDate}</div>
                             </td>
                             <td className="py-3.5 px-3.5 text-center font-sans">
                               <div className="flex items-center justify-center gap-1.5">
@@ -1383,11 +1432,16 @@ export default function SalesDashboardPage() {
                       {/* Header: Title + Search & Controls */}
                       <div className="p-4 sm:p-5 pb-3 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div>
-                          <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                            My Leads Workspace
-                          </h2>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                              My Leads Workspace
+                            </h2>
+                            <span className="text-[11px] font-bold bg-orange-50 text-[#F95721] px-2 py-0.5 rounded-full border border-orange-200">
+                              10 Recent
+                            </span>
+                          </div>
                           <p className="text-xs text-slate-400 font-normal mt-0.5">
-                            Live customer inquiries and assigned follow-ups
+                            Live customer inquiries and follow-ups (10 most recently updated or added)
                           </p>
                         </div>
 
@@ -1688,7 +1742,7 @@ export default function SalesDashboardPage() {
                                   SOURCE
                                 </th>
                                 <th className="py-3 px-3 whitespace-nowrap">
-                                  CREATED AT
+                                  LAST UPDATED / ADDED
                                 </th>
                                 <th className="py-3 px-3 whitespace-nowrap">
                                   STATUS
@@ -1806,10 +1860,17 @@ export default function SalesDashboardPage() {
                                         </div>
                                       </td>
 
-                                      {/* Created At */}
+                                      {/* Last Updated / Added At */}
                                       <td className="py-3.5 px-3 text-slate-700 whitespace-nowrap">
-                                        <div className="font-bold text-xs text-slate-800 leading-tight">
-                                          {item.createdAtTime}
+                                        <div className="flex items-center gap-1.5">
+                                          <div className="font-bold text-xs text-slate-800 leading-tight">
+                                            {item.createdAtTime}
+                                          </div>
+                                          {item.isUpdated && (
+                                            <span className="text-[9px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.2 rounded border border-emerald-200">
+                                              Updated
+                                            </span>
+                                          )}
                                         </div>
                                         <div className="text-[11px] text-slate-400 font-medium">
                                           {item.createdAtDate}
@@ -1901,6 +1962,19 @@ export default function SalesDashboardPage() {
                           </table>
                         </div>
                       )}
+
+                      {/* Workspace Footer: Recent Leads Indicator & Link to All Leads */}
+                      <div className="p-3 sm:p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span className="font-medium">
+                          Showing 10 most recently updated or added leads
+                        </span>
+                        <Link
+                          href="/dashboard/leads"
+                          className="font-bold text-[#F95721] hover:underline inline-flex items-center gap-1"
+                        >
+                          View All Leads &rarr;
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -1137,6 +1137,15 @@ export default function LeadDetailPage() {
 
     const paymentType = paymentForm.paymentType || (advRecRupees < advReqRupees ? "ADVANCE" : "BALANCE");
 
+    if (paymentType === "BALANCE" && advRecRupees < advReqRupees) {
+      alert(
+        `Advance Payment Required:\n\n` +
+          `Quotation ${q.quotationNumber || q._id} requires an advance payment of ₹${advReqRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })} to be recorded and verified before recording the final balance.\n\n` +
+          `Please select "1. Advance / Half" to record the advance first.`,
+      );
+      return;
+    }
+
     if (paymentType === "ADVANCE") {
       const remAdv = Math.max(0, advReqRupees - advRecRupees);
       if (amountNum > remAdv) {
@@ -4498,6 +4507,12 @@ export default function LeadDetailPage() {
         const advRec = activeQuote ? (activeQuote.advanceReceivedPaise || 0) / 100 : 0;
         const totalPaid = activeQuote ? (activeQuote.directPaidPaise || 0) / 100 : advRec;
         const balDue = activeQuote ? (activeQuote.directBalancePaise !== undefined ? activeQuote.directBalancePaise / 100 : Math.max(0, qTotal - totalPaid)) : 0;
+        const quotePendingPayment = payments.find(
+          (p) =>
+            (String(p.quotationId?._id || p.quotationId) === String(activeQuote?._id)) &&
+            p.status === "PENDING_VERIFICATION"
+        );
+        const isAdvanceComplete = advRec >= advReq;
 
         return (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
@@ -4621,6 +4636,38 @@ export default function LeadDetailPage() {
                     </div>
                   </div>
 
+                  {/* Advance Awaiting Verification Banner */}
+                  {quotePendingPayment && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs flex items-start gap-2.5 shadow-2xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 space-y-1">
+                        <div className="font-bold flex items-center justify-between">
+                          <span>Advance Payment Awaiting Verification</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-950 font-bold">
+                            ₹{(quotePendingPayment.amountPaise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({quotePendingPayment.paymentMethod})
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          An advance payment (<strong>{quotePendingPayment.receiptNumber || "Pending"}</strong>) has already been submitted for this quotation and is pending Admin/Manager verification. The final balance cannot be recorded until this advance is verified.
+                        </p>
+                        {(isAdmin || isManager) && (
+                          <div className="pt-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setShowPaymentModal(false);
+                                await handleVerifyPayment(quotePendingPayment._id);
+                              }}
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[11px] shadow-xs cursor-pointer inline-flex items-center gap-1"
+                            >
+                              ✓ Verify Advance Payment Now
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Payment Type Selection (Advance vs Final Balance) */}
                   <div>
                     <label className="text-slate-700 font-bold block mb-1.5">
@@ -4645,7 +4692,7 @@ export default function LeadDetailPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold">1. Advance / Half</span>
-                          {advRec >= advReq && <span className="text-[9px] bg-emerald-200 text-emerald-800 px-1 rounded font-bold">Done</span>}
+                          {isAdvanceComplete && <span className="text-[9px] bg-emerald-200 text-emerald-800 px-1 rounded font-bold">Done</span>}
                         </div>
                         <span className="text-[10px] text-slate-500 mt-1">
                           Deposit / Token before starting
@@ -4654,7 +4701,9 @@ export default function LeadDetailPage() {
 
                       <button
                         type="button"
+                        disabled={!isAdvanceComplete}
                         onClick={() => {
+                          if (!isAdvanceComplete) return;
                           setPaymentForm({
                             ...paymentForm,
                             paymentType: "BALANCE",
@@ -4662,14 +4711,20 @@ export default function LeadDetailPage() {
                           });
                         }}
                         className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                          paymentForm.paymentType === "BALANCE"
+                          !isAdvanceComplete
+                            ? "bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-60"
+                            : paymentForm.paymentType === "BALANCE"
                             ? "bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold"
                             : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold">2. Final Balance</span>
-                          {balDue <= 0 && <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1 rounded font-bold">Cleared</span>}
+                          {!isAdvanceComplete ? (
+                            <span className="text-[9px] bg-amber-100 text-amber-800 px-1 rounded font-bold">Advance First</span>
+                          ) : balDue <= 0 ? (
+                            <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1 rounded font-bold">Cleared</span>
+                          ) : null}
                         </div>
                         <span className="text-[10px] text-slate-500 mt-1">
                           Full settlement upon completion
@@ -4864,12 +4919,18 @@ export default function LeadDetailPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={actionLoading || balDue <= 0}
+                      disabled={
+                        actionLoading ||
+                        balDue <= 0 ||
+                        (Boolean(quotePendingPayment) && paymentForm.paymentType === "ADVANCE")
+                      }
                       className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <CreditCard className="w-4 h-4" />
                       {actionLoading
                         ? "Recording..."
+                        : quotePendingPayment && paymentForm.paymentType === "ADVANCE"
+                        ? "Advance Awaiting Verification"
                         : paymentForm.paymentType === "ADVANCE"
                         ? "Record Advance Payment"
                         : "Record Final Balance"}
