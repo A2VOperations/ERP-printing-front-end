@@ -276,7 +276,7 @@ export default function LeadsDashboardPage() {
     if (typeof window !== "undefined" && window.innerWidth < 768) return "grid";
     return "list";
   }); // 'grid' | 'list'
-  const [sortBy, setSortBy] = useState("value_desc"); // 'value_desc' | 'value_asc' | 'date_desc' | 'name_asc'
+  const [sortBy, setSortBy] = useState("recent"); // 'recent' (default: latest updated/added first) | 'created_desc' | 'created_asc' | 'value_desc' | 'value_asc' | 'name_asc'
   const [timeframe, setTimeframe] = useState("This Month");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState(""); // 'YYYY-MM-DD'
@@ -409,7 +409,7 @@ export default function LeadsDashboardPage() {
 
       const [leadsRes, flwRes, usersRes, meRes, inboxRes, areasRes] =
         await Promise.allSettled([
-          api.get("/leads?limit=100"),
+          api.get("/leads?limit=250&sortBy=updatedAt&sortOrder=desc"),
           api.get("/followups?limit=100"),
           api.get("/users"),
           api.get("/auth/me"),
@@ -1113,6 +1113,16 @@ export default function LeadsDashboardPage() {
           ) {
             return false;
           }
+        } else if (datePreset === "OLDER") {
+          const thirtyDaysAgo = new Date(
+            now.getTime() - 30 * 24 * 60 * 60 * 1000,
+          );
+          if (leadDate >= thirtyDaysAgo) return false;
+        } else if (datePreset === "RECENT") {
+          const thirtyDaysAgo = new Date(
+            now.getTime() - 30 * 24 * 60 * 60 * 1000,
+          );
+          if (leadDate < thirtyDaysAgo) return false;
         }
       }
 
@@ -1180,8 +1190,6 @@ export default function LeadsDashboardPage() {
 
     // Sorting
     result.sort((a, b) => {
-      const valA = Number(a.expectedValue) || Number(a.estimatedBudget) || 0;
-      const valB = Number(b.expectedValue) || Number(b.estimatedBudget) || 0;
       if (sortBy === "value_desc") return valB - valA;
       if (sortBy === "value_asc") return valA - valB;
       if (sortBy === "name_asc") {
@@ -1199,9 +1207,39 @@ export default function LeadsDashboardPage() {
         ).toLowerCase();
         return nameA.localeCompare(nameB);
       }
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA;
+      if (sortBy === "created_desc") {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      }
+      if (sortBy === "created_asc" || sortBy === "older_first" || sortBy === "date_asc") {
+        // Older leads first (by creation date ascending)
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateA - dateB;
+      }
+      if (sortBy === "updated_asc") {
+        const timeA = Math.max(
+          new Date(a.updatedAt || a.createdAt || 0).getTime(),
+          new Date(a.createdAt || 0).getTime(),
+        );
+        const timeB = Math.max(
+          new Date(b.updatedAt || b.createdAt || 0).getTime(),
+          new Date(b.createdAt || 0).getTime(),
+        );
+        return timeA - timeB;
+      }
+
+      // Default: "recent" -> Latest updated or newly added leads ALWAYS at the very top
+      const timeA = Math.max(
+        new Date(a.updatedAt || a.createdAt || 0).getTime(),
+        new Date(a.createdAt || 0).getTime(),
+      );
+      const timeB = Math.max(
+        new Date(b.updatedAt || b.createdAt || 0).getTime(),
+        new Date(b.createdAt || 0).getTime(),
+      );
+      return timeB - timeA;
     });
 
     return result;
@@ -1442,7 +1480,11 @@ export default function LeadsDashboardPage() {
 
       // Optimistic Update
       setLeads((prev) =>
-        prev.map((l) => (l._id === leadId ? { ...l, status: newStatus } : l)),
+        prev.map((l) =>
+          l._id === leadId
+            ? { ...l, status: newStatus, updatedAt: new Date().toISOString() }
+            : l,
+        ),
       );
 
       try {
@@ -1595,6 +1637,7 @@ export default function LeadsDashboardPage() {
                 priority: quickEditForm.priority,
                 area: areaVal,
                 zone: zoneVal,
+                updatedAt: new Date().toISOString(),
               }
             : l,
         ),
@@ -2059,9 +2102,12 @@ export default function LeadsDashboardPage() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="appearance-none pl-7 pr-8 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs focus:outline-none"
                 >
+                  <option value="recent">Sort: Recently Active (Default)</option>
+                  <option value="created_desc">Sort: Newest Added First</option>
+                  <option value="created_asc">Sort: Older Leads First</option>
+                  <option value="updated_asc">Sort: Least Recently Active</option>
                   <option value="value_desc">Sort: Value (High to Low)</option>
                   <option value="value_asc">Sort: Value (Low to High)</option>
-                  <option value="date_desc">Sort: Newest First</option>
                   <option value="name_asc">Sort: Name (A-Z)</option>
                 </select>
                 <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2128,7 +2174,9 @@ export default function LeadsDashboardPage() {
                   {/* Quick Date Presets */}
                   <div className="flex items-center p-0.5 bg-slate-100 rounded-xl text-xs font-semibold text-slate-600 overflow-x-auto max-w-full scrollbar-none">
                     {[
-                      { id: "ALL", label: "All Dates" },
+                      { id: "ALL", label: "All Leads" },
+                      { id: "RECENT", label: "Recent Leads (≤30d)" },
+                      { id: "OLDER", label: "Older Leads (>30d)" },
                       { id: "TODAY", label: "Today" },
                       { id: "YESTERDAY", label: "Yesterday" },
                       { id: "THIS_WEEK", label: "7 Days" },
