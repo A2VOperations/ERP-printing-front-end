@@ -1275,21 +1275,11 @@ export default function LeadDetailPage() {
 
     const paymentType = paymentForm.paymentType || (advRecRupees < advReqRupees ? "ADVANCE" : "BALANCE");
 
-    if (paymentType === "BALANCE" && advRecRupees < advReqRupees) {
-      alert(
-        `Advance Payment Required:\n\n` +
-          `Quotation ${q.quotationNumber || q._id} requires an advance payment of ₹${advReqRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })} to be recorded and verified before recording the final balance.\n\n` +
-          `Please select "1. Advance / Half" to record the advance first.`,
-      );
-      return;
-    }
-
     if (paymentType === "ADVANCE") {
-      const remAdv = Math.max(0, advReqRupees - advRecRupees);
-      if (amountNum > remAdv) {
+      if (amountNum > balRupees) {
         alert(
-          `Payment Rejected: Advance payment cannot exceed the remaining advance amount of ₹${remAdv.toLocaleString("en-IN", { minimumFractionDigits: 2 })}.\n\n` +
-            `Once the advance is verified, the final balance of ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })} can be recorded.`,
+          `Payment Rejected: Advance payment cannot exceed the remaining quotation balance of ₹${balRupees.toLocaleString("en-IN", { minimumFractionDigits: 2 })}.\n\n` +
+            `Payments cannot exceed the remaining quotation balance.`,
         );
         return;
       }
@@ -4856,7 +4846,7 @@ export default function LeadDetailPage() {
                           </span>
                         </div>
                         <p className="text-[11px] text-amber-800 leading-relaxed">
-                          An advance payment (<strong>{quotePendingPayment.receiptNumber || "Pending"}</strong>) has already been submitted for this quotation and is pending Admin/Manager verification. The final balance cannot be recorded until this advance is verified.
+                          An advance payment (<strong>{quotePendingPayment.receiptNumber || "Pending"}</strong>) has been submitted for this quotation and is currently awaiting Admin/Manager verification.
                         </p>
                         {(isAdmin || isManager) && (
                           <div className="pt-1">
@@ -4899,27 +4889,27 @@ export default function LeadDetailPage() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold">1. Advance / Half</span>
+                          <span className="font-bold">1. Advance Payment</span>
                           {isAdvanceComplete && <span className="text-[9px] bg-emerald-200 text-emerald-800 px-1 rounded font-bold">Done</span>}
                         </div>
                         <span className="text-[10px] text-slate-500 mt-1">
-                          Deposit / Token before starting
+                          Deposit / Token (default 50%, can be manual or higher)
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        disabled={!isAdvanceComplete}
+                        disabled={balDue <= 0}
                         onClick={() => {
-                          if (!isAdvanceComplete) return;
+                          if (balDue <= 0) return;
                           setPaymentForm({
                             ...paymentForm,
                             paymentType: "BALANCE",
                             amount: balDue > 0 ? balDue.toString() : paymentForm.amount,
                           });
                         }}
-                        className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                          !isAdvanceComplete
+                        className={`p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                          balDue <= 0
                             ? "bg-slate-100/70 border-slate-200 text-slate-400 cursor-not-allowed opacity-60"
                             : paymentForm.paymentType === "BALANCE"
                             ? "bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-950 font-bold"
@@ -4928,11 +4918,11 @@ export default function LeadDetailPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold">2. Final Balance</span>
-                          {!isAdvanceComplete ? (
-                            <span className="text-[9px] bg-amber-100 text-amber-800 px-1 rounded font-bold">Advance First</span>
-                          ) : balDue <= 0 ? (
+                          {balDue <= 0 ? (
                             <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1 rounded font-bold">Cleared</span>
-                          ) : null}
+                          ) : (
+                            <span className="text-[9px] bg-indigo-100 text-indigo-800 px-1 rounded font-bold">Available</span>
+                          )}
                         </div>
                         <span className="text-[10px] text-slate-500 mt-1">
                           Full settlement upon completion
@@ -4949,16 +4939,28 @@ export default function LeadDetailPage() {
                           Amount (₹) *
                         </label>
                         {paymentForm.paymentType === "ADVANCE" && balDue > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const half = Math.round(qTotal * 0.5);
-                              setPaymentForm({ ...paymentForm, amount: half.toString() });
-                            }}
-                            className="text-[10px] text-emerald-600 hover:underline font-bold"
-                          >
-                            Set 50% (₹{Math.round(qTotal * 0.5).toLocaleString("en-IN")})
-                          </button>
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const half = Math.min(balDue, Math.round(qTotal * 0.5));
+                                setPaymentForm({ ...paymentForm, amount: half.toString() });
+                              }}
+                              className="text-emerald-600 hover:underline font-bold cursor-pointer"
+                            >
+                              Set 50% (₹{Math.min(balDue, Math.round(qTotal * 0.5)).toLocaleString("en-IN")})
+                            </button>
+                            <span className="text-slate-300">|</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaymentForm({ ...paymentForm, amount: balDue.toString() });
+                              }}
+                              className="text-emerald-700 hover:underline font-bold cursor-pointer"
+                            >
+                              Full (₹{balDue.toLocaleString("en-IN")})
+                            </button>
+                          </div>
                         )}
                         {paymentForm.paymentType === "BALANCE" && balDue > 0 && (
                           <button
@@ -4985,6 +4987,11 @@ export default function LeadDetailPage() {
                         }
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
                       />
+                      {paymentForm.paymentType === "ADVANCE" && (
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Default is 50%. You can enter any manual amount up to the balance due (₹{balDue.toLocaleString("en-IN")}).
+                        </p>
+                      )}
                     </div>
 
                     <div>

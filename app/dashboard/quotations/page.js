@@ -2987,16 +2987,63 @@ function QuotationsContent() {
 
             <p className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-900">
               {directPaymentForm.paymentType === "ADVANCE"
-                ? "Record the quotation advance first. The final balance can be recorded after the advance is verified."
-                : "The advance is complete. Record the remaining quotation balance as the final payment."}
+                ? "Record the deposit or advance payment for this quotation."
+                : "Record the settlement or remaining balance payment for this quotation."}
             </p>
 
             <form onSubmit={handleRecordDirectPayment} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  {directPaymentForm.paymentType === "ADVANCE" ? "Advance Amount (₹)" : "Final Payment Amount (₹)"}
-                </label>
-                <input type="number" min="0.01" step="0.01" required value={directPaymentForm.amount} onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, amount: e.target.value })} className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold" />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">
+                    {directPaymentForm.paymentType === "ADVANCE" ? "Advance Amount (₹) *" : "Final Payment Amount (₹) *"}
+                  </label>
+                  {directPaymentForm.paymentType === "ADVANCE" && (
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const qTot = (selectedQuote.grandTotalPaise || 0) / 100;
+                          const bal = (selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100;
+                          setDirectPaymentForm({
+                            ...directPaymentForm,
+                            amount: Math.min(bal, Math.round(qTot * 0.5)).toString(),
+                          });
+                        }}
+                        className="text-emerald-600 hover:underline font-bold cursor-pointer"
+                      >
+                        Set 50%
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const bal = (selectedQuote.directBalancePaise ?? selectedQuote.grandTotalPaise ?? 0) / 100;
+                          setDirectPaymentForm({
+                            ...directPaymentForm,
+                            amount: bal.toString(),
+                          });
+                        }}
+                        className="text-emerald-700 hover:underline font-bold cursor-pointer"
+                      >
+                        Full Balance
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  value={directPaymentForm.amount}
+                  onChange={(e) => setDirectPaymentForm({ ...directPaymentForm, amount: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 font-mono font-bold"
+                />
+                {directPaymentForm.paymentType === "ADVANCE" && (
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Default is 50%. You can enter any manual amount up to the full balance.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Payment Method</label>
